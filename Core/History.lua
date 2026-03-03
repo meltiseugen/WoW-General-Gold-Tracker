@@ -13,10 +13,49 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             totalValue = tonumber(entry.totalValue) or 0,
             vendorUnitValue = tonumber(entry.vendorUnitValue) or 0,
             vendorTotalValue = tonumber(entry.vendorTotalValue) or 0,
+            itemQuality = tonumber(entry.itemQuality),
             isSoulbound = entry.isSoulbound == true,
             timestamp = tonumber(entry.timestamp) or 0,
             valueSourceID = entry.valueSourceID or fallbackSourceID,
             valueSourceLabel = entry.valueSourceLabel or fallbackSourceLabel,
+            locationKey = entry.locationKey,
+            locationLabel = entry.locationLabel,
+            isInstanced = entry.isInstanced == true,
+            instanceName = entry.instanceName,
+            zoneName = entry.zoneName,
+            mapID = tonumber(entry.mapID),
+            mapName = entry.mapName,
+            mapPath = entry.mapPath,
+            continentName = entry.continentName,
+            expansionID = tonumber(entry.expansionID),
+            expansionName = entry.expansionName,
+            ahTracked = entry.ahTracked == true,
+            lootSourceType = entry.lootSourceType,
+            lootSourceName = entry.lootSourceName,
+            lootSourceIsAoe = entry.lootSourceIsAoe == true,
+            lootSourceText = entry.lootSourceText,
+        }
+    end
+    return copied
+end
+
+local function CloneMoneyLootEntries(moneyLoots)
+    local copied = {}
+    for i, entry in ipairs(moneyLoots or {}) do
+        copied[i] = {
+            amount = tonumber(entry.amount) or 0,
+            timestamp = tonumber(entry.timestamp) or 0,
+            locationKey = entry.locationKey,
+            locationLabel = entry.locationLabel,
+            isInstanced = entry.isInstanced == true,
+            instanceName = entry.instanceName,
+            zoneName = entry.zoneName,
+            mapID = tonumber(entry.mapID),
+            mapName = entry.mapName,
+            mapPath = entry.mapPath,
+            continentName = entry.continentName,
+            expansionID = tonumber(entry.expansionID),
+            expansionName = entry.expansionName,
         }
     end
     return copied
@@ -38,6 +77,9 @@ local function BuildAggregatedItems(itemLoots)
 
         item.quantity = item.quantity + (tonumber(entry.quantity) or 0)
         item.totalValue = item.totalValue + (tonumber(entry.totalValue) or 0)
+        if item.itemQuality == nil then
+            item.itemQuality = tonumber(entry.itemQuality)
+        end
     end
 
     local aggregated = {}
@@ -87,6 +129,81 @@ local function GetSessionPrimarySourceLabel(session)
     return "Unknown"
 end
 
+local function BuildSessionFallbackLocationKey(entry)
+    if type(entry.locationKey) == "string" and entry.locationKey ~= "" then
+        return entry.locationKey
+    end
+    if entry.isInstanced == true then
+        return string.format("instance:%s:%s", tostring(entry.instanceMapID or 0), tostring(entry.instanceName or ""))
+    end
+    return string.format("zone:%s:%s", tostring(entry.zoneName or ""), tostring(entry.mapID or 0))
+end
+
+local function BuildSessionFallbackLocationLabel(entry)
+    local label
+    if entry.isInstanced == true then
+        label = entry.instanceName or entry.zoneName or entry.mapName
+    else
+        label = entry.zoneName or entry.mapName
+    end
+    if type(label) ~= "string" or label == "" then
+        label = "Unknown"
+    end
+
+    if type(entry.expansionName) == "string" and entry.expansionName ~= "" then
+        label = string.format("%s (%s)", label, entry.expansionName)
+    end
+
+    return label
+end
+
+local function NormalizeLootLocationFields(target, fallbackKey, fallbackLabel, fallbackContext)
+    if type(target) ~= "table" then
+        return
+    end
+
+    if type(target.locationKey) ~= "string" or target.locationKey == "" then
+        target.locationKey = fallbackKey
+    end
+    if type(target.locationLabel) ~= "string" or target.locationLabel == "" then
+        target.locationLabel = fallbackLabel
+    end
+
+    if target.isInstanced == nil and type(fallbackContext) == "table" then
+        target.isInstanced = fallbackContext.isInstanced == true
+    else
+        target.isInstanced = target.isInstanced == true
+    end
+
+    if type(target.instanceName) ~= "string" or target.instanceName == "" then
+        target.instanceName = fallbackContext and fallbackContext.instanceName or nil
+    end
+    if type(target.zoneName) ~= "string" or target.zoneName == "" then
+        target.zoneName = fallbackContext and fallbackContext.zoneName or nil
+    end
+    if target.mapID == nil then
+        target.mapID = fallbackContext and fallbackContext.mapID or nil
+    end
+    target.mapID = tonumber(target.mapID)
+
+    if type(target.mapName) ~= "string" or target.mapName == "" then
+        target.mapName = fallbackContext and fallbackContext.mapName or nil
+    end
+    if type(target.mapPath) ~= "string" or target.mapPath == "" then
+        target.mapPath = fallbackContext and fallbackContext.mapPath or nil
+    end
+    if type(target.continentName) ~= "string" or target.continentName == "" then
+        target.continentName = fallbackContext and fallbackContext.continentName or nil
+    end
+    if target.expansionID == nil then
+        target.expansionID = fallbackContext and fallbackContext.expansionID or nil
+    end
+    target.expansionID = tonumber(target.expansionID)
+    if type(target.expansionName) ~= "string" or target.expansionName == "" then
+        target.expansionName = fallbackContext and fallbackContext.expansionName or nil
+    end
+end
+
 local function NormalizeHistoryEntry(entry)
     if type(entry) ~= "table" then
         return
@@ -107,16 +224,65 @@ local function NormalizeHistoryEntry(entry)
     if type(entry.itemLoots) ~= "table" then
         entry.itemLoots = {}
     end
+    if type(entry.moneyLoots) ~= "table" then
+        entry.moneyLoots = {}
+    end
 
     local fallbackSourceID = entry.valueSourceID
     local fallbackSourceLabel = GetSessionPrimarySourceLabel(entry)
+    local fallbackLocationKey = BuildSessionFallbackLocationKey(entry)
+    local fallbackLocationLabel = BuildSessionFallbackLocationLabel(entry)
+    local fallbackLocationContext = {
+        isInstanced = entry.isInstanced == true,
+        instanceName = entry.instanceName,
+        zoneName = entry.zoneName,
+        mapID = entry.mapID,
+        mapName = entry.mapName,
+        mapPath = entry.mapPath,
+        continentName = entry.continentName,
+        expansionID = entry.expansionID,
+        expansionName = entry.expansionName,
+    }
     for _, loot in ipairs(entry.itemLoots) do
+        if loot.itemQuality ~= nil then
+            loot.itemQuality = tonumber(loot.itemQuality)
+        end
+        if loot.itemQuality == nil and loot.itemLink then
+            loot.itemQuality = GoldTracker:GetItemQualityFromLink(loot.itemLink)
+        end
+        if loot.ahTracked == nil then
+            -- Older sessions only stored AH-tracked items; treat them as tracked.
+            loot.ahTracked = true
+        else
+            loot.ahTracked = loot.ahTracked == true
+        end
+        if type(loot.lootSourceType) ~= "string" or loot.lootSourceType == "" then
+            loot.lootSourceType = nil
+        end
+        if type(loot.lootSourceName) ~= "string" or loot.lootSourceName == "" then
+            loot.lootSourceName = nil
+        end
+        loot.lootSourceIsAoe = loot.lootSourceIsAoe == true
+        if type(loot.lootSourceText) ~= "string" or loot.lootSourceText == "" then
+            if loot.lootSourceType == "AOE" or loot.lootSourceIsAoe == true then
+                loot.lootSourceText = "AOE loot"
+            else
+                loot.lootSourceText = nil
+            end
+        end
         if type(loot.valueSourceLabel) ~= "string" or loot.valueSourceLabel == "" then
             loot.valueSourceLabel = fallbackSourceLabel
         end
         if loot.valueSourceID == nil then
             loot.valueSourceID = fallbackSourceID
         end
+        NormalizeLootLocationFields(loot, fallbackLocationKey, fallbackLocationLabel, fallbackLocationContext)
+    end
+
+    for _, money in ipairs(entry.moneyLoots) do
+        money.amount = tonumber(money.amount) or 0
+        money.timestamp = tonumber(money.timestamp) or 0
+        NormalizeLootLocationFields(money, fallbackLocationKey, fallbackLocationLabel, fallbackLocationContext)
     end
 
     local highlightCount = tonumber(entry.highlightItemCount)
@@ -134,6 +300,15 @@ local function NormalizeHistoryEntry(entry)
 
     if type(entry.items) ~= "table" or #entry.items == 0 then
         entry.items = BuildAggregatedItems(entry.itemLoots)
+    else
+        for _, item in ipairs(entry.items) do
+            if item.itemQuality ~= nil then
+                item.itemQuality = tonumber(item.itemQuality)
+            end
+            if item.itemQuality == nil and item.itemLink then
+                item.itemQuality = GoldTracker:GetItemQualityFromLink(item.itemLink)
+            end
+        end
     end
 end
 
@@ -388,6 +563,7 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
     local itemsValue = tonumber(self.session.itemValue) or 0
     local totalValue = rawGold + itemsValue
     local itemLoots = CloneItemLootEntries(self.session.itemLoots, source.id, source.label)
+    local moneyLoots = CloneMoneyLootEntries(self.session.moneyLoots)
     local sourceLabels = CollectSessionValueSourceLabels(itemLoots, source.label)
     local highlightItemCount = tonumber(self.session.highlightItemCount)
     if not highlightItemCount then
@@ -423,6 +599,7 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         expansionID = self.session.expansionID,
         expansionName = self.session.expansionName,
         itemLoots = itemLoots,
+        moneyLoots = moneyLoots,
         items = BuildAggregatedItems(itemLoots),
         pinned = false,
     }
@@ -593,6 +770,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
 
     local firstSession = sessions[1]
     local mergedLoots = {}
+    local mergedMoneyLoots = {}
     local sourceLabels = {}
     local sourceSeen = {}
     local rawGold = 0
@@ -605,6 +783,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     for _, session in ipairs(sessions) do
         local sessionSourceID = session.valueSourceID
         local sessionSourceLabel = GetSessionPrimarySourceLabel(session)
+        local fallbackTimestamp = tonumber(session.stopTime or session.savedAt or time()) or time()
 
         if type(session.valueSourceLabels) == "table" and #session.valueSourceLabels > 0 then
             for _, sourceLabel in ipairs(session.valueSourceLabels) do
@@ -633,13 +812,35 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
             stopTime = sessionStop
         end
 
+        if type(session.moneyLoots) == "table" and #session.moneyLoots > 0 then
+            local copiedMoneyLoots = CloneMoneyLootEntries(session.moneyLoots)
+            for _, money in ipairs(copiedMoneyLoots) do
+                mergedMoneyLoots[#mergedMoneyLoots + 1] = money
+            end
+        elseif (tonumber(session.rawGold) or 0) > 0 then
+            mergedMoneyLoots[#mergedMoneyLoots + 1] = {
+                amount = tonumber(session.rawGold) or 0,
+                timestamp = fallbackTimestamp,
+                locationKey = session.locationKey,
+                locationLabel = BuildSessionFallbackLocationLabel(session),
+                isInstanced = session.isInstanced == true,
+                instanceName = session.instanceName,
+                zoneName = session.zoneName,
+                mapID = session.mapID,
+                mapName = session.mapName,
+                mapPath = session.mapPath,
+                continentName = session.continentName,
+                expansionID = session.expansionID,
+                expansionName = session.expansionName,
+            }
+        end
+
         if type(session.itemLoots) == "table" and #session.itemLoots > 0 then
             local copiedLoots = CloneItemLootEntries(session.itemLoots, sessionSourceID, sessionSourceLabel)
             for _, loot in ipairs(copiedLoots) do
                 mergedLoots[#mergedLoots + 1] = loot
             end
         else
-            local fallbackTimestamp = tonumber(session.stopTime or session.savedAt or time()) or time()
             for _, item in ipairs(session.items or {}) do
                 local quantity = math.max(0, tonumber(item.quantity) or 0)
                 local totalItemValue = math.max(0, tonumber(item.totalValue) or 0)
@@ -654,10 +855,23 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
                     totalValue = totalItemValue,
                     vendorUnitValue = 0,
                     vendorTotalValue = 0,
+                    itemQuality = tonumber(item.itemQuality) or self:GetItemQualityFromLink(item.itemLink),
                     isSoulbound = item.isSoulbound == true,
                     timestamp = fallbackTimestamp,
                     valueSourceID = sessionSourceID,
                     valueSourceLabel = sessionSourceLabel,
+                    locationKey = session.locationKey,
+                    locationLabel = BuildSessionFallbackLocationLabel(session),
+                    isInstanced = session.isInstanced == true,
+                    instanceName = session.instanceName,
+                    zoneName = session.zoneName,
+                    mapID = session.mapID,
+                    mapName = session.mapName,
+                    mapPath = session.mapPath,
+                    continentName = session.continentName,
+                    expansionID = session.expansionID,
+                    expansionName = session.expansionName,
+                    ahTracked = true,
                 }
             end
         end
@@ -678,6 +892,9 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     end
 
     table.sort(mergedLoots, function(a, b)
+        return (tonumber(a and a.timestamp) or 0) < (tonumber(b and b.timestamp) or 0)
+    end)
+    table.sort(mergedMoneyLoots, function(a, b)
         return (tonumber(a and a.timestamp) or 0) < (tonumber(b and b.timestamp) or 0)
     end)
 
@@ -716,6 +933,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         expansionID = firstSession.expansionID,
         expansionName = firstSession.expansionName,
         itemLoots = mergedLoots,
+        moneyLoots = mergedMoneyLoots,
         items = BuildAggregatedItems(mergedLoots),
         pinned = false,
         name = mergedName,
@@ -750,6 +968,395 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     end
 
     return mergedEntry
+end
+
+local function BuildLootEntryLocationKey(entry, fallbackSession)
+    if type(entry) == "table" and type(entry.locationKey) == "string" and entry.locationKey ~= "" then
+        return entry.locationKey
+    end
+    if type(fallbackSession) == "table" then
+        return BuildSessionFallbackLocationKey(fallbackSession)
+    end
+    return "unknown"
+end
+
+local function BuildLootEntryLocationLabel(entry, fallbackSession)
+    if type(entry) == "table" and type(entry.locationLabel) == "string" and entry.locationLabel ~= "" then
+        return entry.locationLabel
+    end
+    if type(fallbackSession) == "table" then
+        return BuildSessionFallbackLocationLabel(fallbackSession)
+    end
+    return "Unknown"
+end
+
+local function CountHighlightedLootEntries(addon, itemLoots)
+    local threshold = addon:GetHighlightThreshold()
+    local count = 0
+    for _, entry in ipairs(itemLoots or {}) do
+        local totalValue = tonumber(entry and entry.totalValue) or 0
+        if totalValue > 0 and (threshold <= 0 or totalValue >= threshold) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+local function GetPrimaryValueSourceID(itemLoots, fallbackSourceID)
+    for _, entry in ipairs(itemLoots or {}) do
+        if entry and entry.valueSourceID ~= nil and entry.valueSourceID ~= "" then
+            return entry.valueSourceID
+        end
+    end
+    return fallbackSourceID
+end
+
+local function CloneNumberList(values)
+    local copied = {}
+    if type(values) ~= "table" then
+        return copied
+    end
+
+    for _, value in ipairs(values) do
+        local normalized = tonumber(value)
+        if normalized then
+            copied[#copied + 1] = normalized
+        end
+    end
+
+    return copied
+end
+
+local function FormatSessionTimeFrame(startTime, stopTime)
+    local normalizedStart = tonumber(startTime) or 0
+    local normalizedStop = tonumber(stopTime) or 0
+
+    if normalizedStart <= 0 and normalizedStop <= 0 then
+        return "Unknown time"
+    end
+    if normalizedStart <= 0 then
+        normalizedStart = normalizedStop
+    end
+    if normalizedStop <= 0 then
+        normalizedStop = normalizedStart
+    end
+    if normalizedStop < normalizedStart then
+        normalizedStop = normalizedStart
+    end
+
+    if normalizedStart == normalizedStop then
+        return date("%Y-%m-%d %H:%M:%S", normalizedStart)
+    end
+
+    return string.format(
+        "%s -> %s",
+        date("%Y-%m-%d %H:%M:%S", normalizedStart),
+        date("%Y-%m-%d %H:%M:%S", normalizedStop)
+    )
+end
+
+local function BuildSplitSessionName(locationLabel, startTime, stopTime)
+    local normalizedLabel = GoldTracker:Trim(type(locationLabel) == "string" and locationLabel or "")
+    if normalizedLabel == "" then
+        normalizedLabel = "Session"
+    end
+
+    return string.format("%s - %s", normalizedLabel, FormatSessionTimeFrame(startTime, stopTime))
+end
+
+function GoldTracker:SplitHistorySessionByLocation(sessionID)
+    local session = self:GetHistorySessionByID(sessionID)
+    if not session then
+        return nil, "not-found"
+    end
+
+    local fallbackLocationKey = BuildSessionFallbackLocationKey(session)
+    local fallbackLocationLabel = BuildSessionFallbackLocationLabel(session)
+    local fallbackSourceLabel = GetSessionPrimarySourceLabel(session)
+    local fallbackTimestamp = tonumber(session.stopTime or session.savedAt or time()) or time()
+    local sessionSavedAt = tonumber(session.savedAt or session.stopTime or fallbackTimestamp) or fallbackTimestamp
+
+    local bucketsByKey = {}
+    local bucketOrder = {}
+
+    local function GetOrCreateBucket(locationKey, locationLabel, sourceEntry, timestamp)
+        local key = locationKey
+        if type(key) ~= "string" or key == "" then
+            key = fallbackLocationKey
+        end
+
+        local label = locationLabel
+        if type(label) ~= "string" or label == "" then
+            label = fallbackLocationLabel
+        end
+
+        local bucket = bucketsByKey[key]
+        if not bucket then
+            bucket = {
+                locationKey = key,
+                locationLabel = label,
+                itemLoots = {},
+                moneyLoots = {},
+                firstTimestamp = 0,
+                lastTimestamp = 0,
+                isInstanced = (sourceEntry and sourceEntry.isInstanced == true) or session.isInstanced == true,
+                instanceName = (sourceEntry and sourceEntry.instanceName) or session.instanceName,
+                instanceMapID = tonumber((sourceEntry and sourceEntry.instanceMapID) or session.instanceMapID),
+                instanceType = (sourceEntry and sourceEntry.instanceType) or session.instanceType,
+                zoneName = (sourceEntry and sourceEntry.zoneName) or session.zoneName,
+                mapID = tonumber((sourceEntry and sourceEntry.mapID) or session.mapID),
+                mapName = (sourceEntry and sourceEntry.mapName) or session.mapName,
+                mapPath = (sourceEntry and sourceEntry.mapPath) or session.mapPath,
+                continentName = (sourceEntry and sourceEntry.continentName) or session.continentName,
+                expansionID = tonumber((sourceEntry and sourceEntry.expansionID) or session.expansionID),
+                expansionName = (sourceEntry and sourceEntry.expansionName) or session.expansionName,
+            }
+            bucketsByKey[key] = bucket
+            bucketOrder[#bucketOrder + 1] = bucket
+        else
+            if (type(bucket.locationLabel) ~= "string" or bucket.locationLabel == "") and type(label) == "string" and label ~= "" then
+                bucket.locationLabel = label
+            end
+            if (type(bucket.zoneName) ~= "string" or bucket.zoneName == "") and type(sourceEntry and sourceEntry.zoneName) == "string" then
+                bucket.zoneName = sourceEntry.zoneName
+            end
+            if (type(bucket.mapName) ~= "string" or bucket.mapName == "") and type(sourceEntry and sourceEntry.mapName) == "string" then
+                bucket.mapName = sourceEntry.mapName
+            end
+            if bucket.mapID == nil and sourceEntry and sourceEntry.mapID ~= nil then
+                bucket.mapID = tonumber(sourceEntry.mapID)
+            end
+            if bucket.expansionID == nil and sourceEntry and sourceEntry.expansionID ~= nil then
+                bucket.expansionID = tonumber(sourceEntry.expansionID)
+            end
+            if (type(bucket.expansionName) ~= "string" or bucket.expansionName == "") and type(sourceEntry and sourceEntry.expansionName) == "string" then
+                bucket.expansionName = sourceEntry.expansionName
+            end
+            if (type(bucket.instanceName) ~= "string" or bucket.instanceName == "") and type(sourceEntry and sourceEntry.instanceName) == "string" then
+                bucket.instanceName = sourceEntry.instanceName
+            end
+            if bucket.isInstanced ~= true and sourceEntry and sourceEntry.isInstanced == true then
+                bucket.isInstanced = true
+            end
+        end
+
+        local normalizedTimestamp = tonumber(timestamp) or 0
+        if normalizedTimestamp > 0 then
+            if bucket.firstTimestamp <= 0 or normalizedTimestamp < bucket.firstTimestamp then
+                bucket.firstTimestamp = normalizedTimestamp
+            end
+            if normalizedTimestamp > bucket.lastTimestamp then
+                bucket.lastTimestamp = normalizedTimestamp
+            end
+        end
+
+        return bucket
+    end
+
+    local clonedMoneyLoots = CloneMoneyLootEntries(session.moneyLoots)
+    for _, money in ipairs(clonedMoneyLoots) do
+        local bucket = GetOrCreateBucket(
+            BuildLootEntryLocationKey(money, session),
+            BuildLootEntryLocationLabel(money, session),
+            money,
+            money.timestamp
+        )
+        bucket.moneyLoots[#bucket.moneyLoots + 1] = money
+    end
+
+    local clonedItemLoots = CloneItemLootEntries(session.itemLoots, session.valueSourceID, fallbackSourceLabel)
+    for _, loot in ipairs(clonedItemLoots) do
+        local bucket = GetOrCreateBucket(
+            BuildLootEntryLocationKey(loot, session),
+            BuildLootEntryLocationLabel(loot, session),
+            loot,
+            loot.timestamp
+        )
+        bucket.itemLoots[#bucket.itemLoots + 1] = loot
+    end
+
+    -- Legacy fallback: if detailed money entries are unavailable, keep raw gold on the session's fallback location.
+    if #clonedMoneyLoots == 0 and (tonumber(session.rawGold) or 0) > 0 then
+        local bucket = GetOrCreateBucket(fallbackLocationKey, fallbackLocationLabel, session, fallbackTimestamp)
+        bucket.moneyLoots[#bucket.moneyLoots + 1] = {
+            amount = tonumber(session.rawGold) or 0,
+            timestamp = fallbackTimestamp,
+            locationKey = fallbackLocationKey,
+            locationLabel = fallbackLocationLabel,
+            isInstanced = session.isInstanced == true,
+            instanceName = session.instanceName,
+            zoneName = session.zoneName,
+            mapID = tonumber(session.mapID),
+            mapName = session.mapName,
+            mapPath = session.mapPath,
+            continentName = session.continentName,
+            expansionID = tonumber(session.expansionID),
+            expansionName = session.expansionName,
+        }
+    end
+
+    -- Legacy fallback: if detailed item entries are unavailable, materialize from aggregated items.
+    if #clonedItemLoots == 0 and type(session.items) == "table" and #session.items > 0 then
+        local bucket = GetOrCreateBucket(fallbackLocationKey, fallbackLocationLabel, session, fallbackTimestamp)
+        for _, item in ipairs(session.items) do
+            local quantity = math.max(0, tonumber(item and item.quantity) or 0)
+            local totalItemValue = math.max(0, tonumber(item and item.totalValue) or 0)
+            local unitValue = 0
+            if quantity > 0 then
+                unitValue = math.floor((totalItemValue / quantity) + 0.5)
+            end
+
+            bucket.itemLoots[#bucket.itemLoots + 1] = {
+                itemLink = item and item.itemLink or nil,
+                quantity = quantity,
+                unitValue = unitValue,
+                totalValue = totalItemValue,
+                vendorUnitValue = 0,
+                vendorTotalValue = 0,
+                itemQuality = tonumber(item and item.itemQuality) or self:GetItemQualityFromLink(item and item.itemLink),
+                isSoulbound = item and item.isSoulbound == true,
+                timestamp = fallbackTimestamp,
+                valueSourceID = session.valueSourceID,
+                valueSourceLabel = fallbackSourceLabel,
+                locationKey = fallbackLocationKey,
+                locationLabel = fallbackLocationLabel,
+                isInstanced = session.isInstanced == true,
+                instanceName = session.instanceName,
+                zoneName = session.zoneName,
+                mapID = tonumber(session.mapID),
+                mapName = session.mapName,
+                mapPath = session.mapPath,
+                continentName = session.continentName,
+                expansionID = tonumber(session.expansionID),
+                expansionName = session.expansionName,
+                ahTracked = true,
+            }
+        end
+    end
+
+    if #bucketOrder < 2 then
+        return nil, "single-location"
+    end
+
+    table.sort(bucketOrder, function(a, b)
+        local aTs = tonumber(a and a.firstTimestamp) or 0
+        local bTs = tonumber(b and b.firstTimestamp) or 0
+        if aTs > 0 and bTs > 0 and aTs ~= bTs then
+            return aTs < bTs
+        end
+        return tostring(a and a.locationLabel or "") < tostring(b and b.locationLabel or "")
+    end)
+
+    local mergedFromIDs = CloneNumberList(session.mergedFromSessionIDs)
+    local splitEntries = {}
+    for _, bucket in ipairs(bucketOrder) do
+        local rawGold = 0
+        for _, money in ipairs(bucket.moneyLoots) do
+            rawGold = rawGold + (tonumber(money.amount) or 0)
+        end
+
+        local itemsValue = 0
+        local itemsRawGold = 0
+        for _, loot in ipairs(bucket.itemLoots) do
+            itemsValue = itemsValue + (tonumber(loot.totalValue) or 0)
+            itemsRawGold = itemsRawGold + (tonumber(loot.vendorTotalValue) or 0)
+        end
+
+        local startTime = bucket.firstTimestamp > 0 and bucket.firstTimestamp or (tonumber(session.startTime) or sessionSavedAt)
+        local stopTime = bucket.lastTimestamp > 0 and bucket.lastTimestamp or (tonumber(session.stopTime) or startTime)
+        if stopTime < startTime then
+            stopTime = startTime
+        end
+
+        local sourceLabels = CollectSessionValueSourceLabels(bucket.itemLoots, fallbackSourceLabel)
+        if #sourceLabels == 0 then
+            sourceLabels[1] = "Unknown"
+        end
+        local valueSourceID = (#sourceLabels == 1 and GetPrimaryValueSourceID(bucket.itemLoots, session.valueSourceID)) or "MERGED"
+        local highlightItemCount = CountHighlightedLootEntries(self, bucket.itemLoots)
+
+        local splitEntry = {
+            id = self.db.nextHistoryID,
+            saveReason = "split",
+            savedAt = sessionSavedAt,
+            startTime = startTime,
+            stopTime = stopTime,
+            duration = math.max(0, stopTime - startTime),
+            rawGold = rawGold,
+            itemsValue = itemsValue,
+            itemsRawGold = itemsRawGold,
+            totalValue = rawGold + itemsValue,
+            highlightItemCount = highlightItemCount,
+            lowHighlightItemCount = 0,
+            highHighlightItemCount = highlightItemCount,
+            valueSourceID = valueSourceID,
+            valueSourceLabel = table.concat(sourceLabels, ", "),
+            valueSourceLabels = sourceLabels,
+            isInstanced = bucket.isInstanced == true,
+            instanceName = bucket.instanceName,
+            instanceMapID = bucket.instanceMapID,
+            instanceType = bucket.instanceType,
+            zoneName = bucket.zoneName,
+            mapID = bucket.mapID,
+            mapName = bucket.mapName,
+            mapPath = bucket.mapPath,
+            continentName = bucket.continentName,
+            expansionID = bucket.expansionID,
+            expansionName = bucket.expansionName,
+            locationKey = bucket.locationKey,
+            locationLabel = bucket.locationLabel,
+            itemLoots = bucket.itemLoots,
+            moneyLoots = bucket.moneyLoots,
+            items = BuildAggregatedItems(bucket.itemLoots),
+            pinned = session.pinned == true,
+            name = BuildSplitSessionName(bucket.locationLabel, startTime, stopTime),
+        }
+
+        if #mergedFromIDs > 0 then
+            splitEntry.mergedFromSessionIDs = CloneNumberList(mergedFromIDs)
+        end
+
+        self.db.nextHistoryID = self.db.nextHistoryID + 1
+        splitEntries[#splitEntries + 1] = splitEntry
+    end
+
+    local history = self:GetSessionHistory()
+    local updatedHistory = {}
+    local replaced = false
+    for _, existingEntry in ipairs(history) do
+        if existingEntry.id == session.id then
+            replaced = true
+            for _, splitEntry in ipairs(splitEntries) do
+                updatedHistory[#updatedHistory + 1] = splitEntry
+            end
+        else
+            updatedHistory[#updatedHistory + 1] = existingEntry
+        end
+    end
+
+    if not replaced then
+        return nil, "not-found"
+    end
+
+    while #updatedHistory > MAX_HISTORY_SESSIONS do
+        table.remove(updatedHistory)
+    end
+    self.db.sessionHistory = updatedHistory
+
+    if self.historyFrame
+        and self.historyFrame.view == "details"
+        and self.historyFrame.selectedSessionID == session.id
+        and self.ShowHistoryListView then
+        self:ShowHistoryListView()
+    end
+    if self.RefreshHistoryWindow then
+        self:RefreshHistoryWindow()
+    end
+    if self.RefreshHistoryDetailsWindow then
+        self:RefreshHistoryDetailsWindow()
+    end
+
+    return splitEntries
 end
 
 function GoldTracker:RenameHistorySession(sessionID, newName)

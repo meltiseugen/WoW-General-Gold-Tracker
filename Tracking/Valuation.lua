@@ -22,9 +22,74 @@ local function IsSoulboundTooltipLine(text)
     return false
 end
 
+local function BuildLocationLabel(session)
+    if type(session) ~= "table" then
+        return "Unknown"
+    end
+
+    local baseName
+    if session.isInstanced == true then
+        baseName = session.instanceName or session.zoneName or session.mapName
+    else
+        baseName = session.zoneName or session.mapName
+    end
+    if type(baseName) ~= "string" or baseName == "" then
+        baseName = "Unknown"
+    end
+
+    local expansionName = session.expansionName
+    if type(expansionName) == "string" and expansionName ~= "" then
+        return string.format("%s (%s)", baseName, expansionName)
+    end
+
+    return baseName
+end
+
+local function ShouldDisplayLootSourceHint(addon, itemLink, itemQuality)
+    local quality = tonumber(itemQuality)
+    if quality then
+        quality = math.floor(quality + 0.5)
+    else
+        quality = addon:GetItemQualityFromLink(itemLink)
+    end
+
+    if type(quality) == "number" and quality >= 2 then
+        return true
+    end
+
+    return addon:IsCraftingReagentItem(itemLink)
+end
+
+function GoldTracker:GetCurrentSessionLootLocationData()
+    local session = self.session or {}
+    return {
+        locationKey = session.locationKey,
+        locationLabel = BuildLocationLabel(session),
+        isInstanced = session.isInstanced == true,
+        instanceName = session.instanceName,
+        zoneName = session.zoneName,
+        mapID = session.mapID,
+        mapName = session.mapName,
+        mapPath = session.mapPath,
+        continentName = session.continentName,
+        expansionID = session.expansionID,
+        expansionName = session.expansionName,
+    }
+end
+
 function GoldTracker:IsSoulboundLootItem(itemLink)
     if type(itemLink) ~= "string" then
         return false
+    end
+
+    local cacheKey = self:GetItemIDFromLink(itemLink) or itemLink
+    if type(self.soulboundLootTypeCache) ~= "table" then
+        self.soulboundLootTypeCache = {}
+    else
+        local cachedValue = self.soulboundLootTypeCache[cacheKey]
+        if cachedValue ~= nil then
+            return cachedValue == true
+        end
     end
 
     local bindType
@@ -35,6 +100,7 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
     end
 
     if type(bindType) == "number" and ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST)) then
+        self.soulboundLootTypeCache[cacheKey] = true
         return true
     end
 
@@ -48,6 +114,7 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
             if type(tooltipData.lines) == "table" then
                 for _, line in ipairs(tooltipData.lines) do
                     if IsSoulboundTooltipLine(line and (line.leftText or line.text)) then
+                        self.soulboundLootTypeCache[cacheKey] = true
                         return true
                     end
                 end
@@ -55,6 +122,7 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
         end
     end
 
+    self.soulboundLootTypeCache[cacheKey] = false
     return false
 end
 
@@ -151,6 +219,25 @@ function GoldTracker:TrackLootMoney(amount)
     end
 
     self:UpdateSessionLocationContext()
+    if type(self.session.moneyLoots) ~= "table" then
+        self.session.moneyLoots = {}
+    end
+    local locationData = self:GetCurrentSessionLootLocationData()
+    self.session.moneyLoots[#self.session.moneyLoots + 1] = {
+        amount = amount,
+        timestamp = time(),
+        locationKey = locationData.locationKey,
+        locationLabel = locationData.locationLabel,
+        isInstanced = locationData.isInstanced,
+        instanceName = locationData.instanceName,
+        zoneName = locationData.zoneName,
+        mapID = locationData.mapID,
+        mapName = locationData.mapName,
+        mapPath = locationData.mapPath,
+        continentName = locationData.continentName,
+        expansionID = locationData.expansionID,
+        expansionName = locationData.expansionName,
+    }
     self.session.goldLooted = self.session.goldLooted + amount
     if self.db and self.db.showRawLootedGoldInLog then
         self:AddLogMessage(string.format("%s  |cffffd100Raw looted gold|r +%s", date("%H:%M:%S"), self:FormatMoney(amount)), 1, 0.85, 0)
@@ -158,7 +245,7 @@ function GoldTracker:TrackLootMoney(amount)
     self:UpdateMainWindow()
 end
 
-function GoldTracker:TrackLootItem(itemLink, quantity)
+function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     if not itemLink then
         return
     end
@@ -167,8 +254,20 @@ function GoldTracker:TrackLootItem(itemLink, quantity)
 
     local selectedUnitValue, selectedValueSourceID, selectedValueSourceLabel = self:GetItemUnitValue(itemLink)
     local vendorUnitValue = self:GetVendorItemValue(itemLink)
-    local isSoulboundLoot = self:IsSoulboundLootItem(itemLink)
-    if isSoulboundLoot then
+    local itemQuality = self:GetItemQualityFromLink(itemLink)
+    local shouldTrackForAH = self:ShouldTrackItemForAH(itemQuality)
+    local isSoulboundLoot = false
+    if shouldTrackForAH and selectedUnitValue > 0 then
+        isSoulboundLoot = self:IsSoulboundLootItem(itemLink)
+    end
+    local lootSourceKind = lootSourceInfo and lootSourceInfo.kind or nil
+    local lootSourceName = lootSourceInfo and lootSourceInfo.name or nil
+    local lootSourceIsAoe = lootSourceInfo and lootSourceInfo.isAoe == true
+    local lootSourceText = lootSourceInfo and lootSourceInfo.text or nil
+    if (type(lootSourceText) ~= "string" or lootSourceText == "") and (lootSourceIsAoe or lootSourceKind == "AOE") then
+        lootSourceText = "AOE loot"
+    end
+    if isSoulboundLoot or not shouldTrackForAH then
         selectedUnitValue = 0
     end
     local selectedTotalValue = math.max(0, math.floor((selectedUnitValue * quantity) + 0.5))
@@ -176,6 +275,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity)
     local highlightThreshold = self:GetHighlightThreshold()
 
     self:UpdateSessionLocationContext()
+    local locationData = self:GetCurrentSessionLootLocationData()
     self.session.itemValue = (self.session.itemValue or 0) + selectedTotalValue
     self.session.itemVendorValue = (self.session.itemVendorValue or 0) + vendorTotalValue
     if selectedTotalValue > 0 and selectedTotalValue >= highlightThreshold then
@@ -195,15 +295,41 @@ function GoldTracker:TrackLootItem(itemLink, quantity)
         totalValue = selectedTotalValue,
         vendorUnitValue = vendorUnitValue,
         vendorTotalValue = vendorTotalValue,
+        itemQuality = itemQuality,
         isSoulbound = isSoulboundLoot,
         timestamp = time(),
         valueSourceID = selectedValueSourceID,
         valueSourceLabel = selectedValueSourceLabel,
+        locationKey = locationData.locationKey,
+        locationLabel = locationData.locationLabel,
+        isInstanced = locationData.isInstanced,
+        instanceName = locationData.instanceName,
+        zoneName = locationData.zoneName,
+        mapID = locationData.mapID,
+        mapName = locationData.mapName,
+        mapPath = locationData.mapPath,
+        continentName = locationData.continentName,
+        expansionID = locationData.expansionID,
+        expansionName = locationData.expansionName,
+        ahTracked = shouldTrackForAH == true,
+        lootSourceType = lootSourceKind,
+        lootSourceName = lootSourceName,
+        lootSourceIsAoe = lootSourceIsAoe,
+        lootSourceText = lootSourceText,
     }
 
-    if not isSoulboundLoot then
+    if shouldTrackForAH and not isSoulboundLoot then
+        local sourceSuffix = ""
+        if type(lootSourceText) == "string"
+            and lootSourceText ~= ""
+            and (lootSourceIsAoe or lootSourceKind == "AOE" or ShouldDisplayLootSourceHint(self, itemLink, itemQuality)) then
+            sourceSuffix = string.format("  [From: %s]", lootSourceText)
+        elseif lootSourceIsAoe then
+            sourceSuffix = "  [From: AOE loot]"
+        end
+
         self:AddLogMessage(
-            string.format("%s  %s x%d  (%s)", date("%H:%M:%S"), itemLink, quantity, self:FormatMoney(selectedTotalValue)),
+            string.format("%s  %s x%d  (%s)%s", date("%H:%M:%S"), itemLink, quantity, self:FormatMoney(selectedTotalValue), sourceSuffix),
             0.9,
             0.9,
             1

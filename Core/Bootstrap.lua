@@ -32,8 +32,13 @@ function GoldTracker:HandleSlashCommand(message)
         return
     end
 
+    if command == "total" then
+        self:ToggleTotalWindow()
+        return
+    end
+
     if command == "help" then
-        self:Print("Commands: /gt, /gt start, /gt new, /gt stop, /gt options")
+        self:Print("Commands: /gt, /gt start, /gt new, /gt stop, /gt options, /gt total, /gtt")
         return
     end
 
@@ -60,6 +65,13 @@ function GoldTracker:OnAddonLoaded(addonName)
 
     self:RegisterEvent("CHAT_MSG_LOOT")
     self:RegisterEvent("CHAT_MSG_MONEY")
+    self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    self:RegisterEvent("LOOT_OPENED")
+    self:RegisterEvent("LOOT_CLOSED")
+    self:RegisterEvent("PLAYER_TARGET_CHANGED")
+    self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+    self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+    self:RegisterEvent("PLAYER_FOCUS_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("PLAYER_LOGOUT")
     self:UnregisterEvent("ADDON_LOADED")
@@ -89,6 +101,8 @@ function GoldTracker:OnPlayerEnteringWorld(isInitialLogin, isReloadingUI)
         self:CreateMinimapButton()
     end
 
+    self:TryRestorePendingReloadSession()
+
     if self.session and self.session.active then
         self:HandleSessionLocationTransition()
         return
@@ -115,6 +129,20 @@ GoldTracker:SetScript("OnEvent", function(_, event, ...)
         GoldTracker:OnChatMsgLoot(...)
     elseif event == "CHAT_MSG_MONEY" then
         GoldTracker:OnChatMsgMoney(...)
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        GoldTracker:OnUnitSpellcastSucceeded(...)
+    elseif event == "LOOT_OPENED" then
+        GoldTracker:OnLootOpened(...)
+    elseif event == "LOOT_CLOSED" then
+        GoldTracker:OnLootClosed(...)
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        GoldTracker:OnPlayerTargetChanged(...)
+    elseif event == "UPDATE_MOUSEOVER_UNIT" then
+        GoldTracker:OnUpdateMouseoverUnit(...)
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        GoldTracker:OnNamePlateUnitAdded(...)
+    elseif event == "PLAYER_FOCUS_CHANGED" then
+        GoldTracker:OnPlayerFocusChanged(...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         GoldTracker:OnPlayerEnteringWorld(...)
     elseif event == "PLAYER_LOGOUT" then
@@ -127,4 +155,9 @@ GoldTracker:RegisterEvent("ADDON_LOADED")
 SLASH_WOWGENERALGOLDTRACKER1 = "/gt"
 SlashCmdList.WOWGENERALGOLDTRACKER = function(message)
     GoldTracker:HandleSlashCommand(message)
+end
+
+SLASH_WOWGENERALGOLDTRACKERTOTAL1 = "/gtt"
+SlashCmdList.WOWGENERALGOLDTRACKERTOTAL = function()
+    GoldTracker:ToggleTotalWindow()
 end

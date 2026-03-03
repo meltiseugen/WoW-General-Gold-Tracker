@@ -62,11 +62,14 @@ function GoldTracker:UpdateMainWindow()
         highlightCount = (tonumber(session.lowHighlightItemCount) or 0) + (tonumber(session.highHighlightItemCount) or 0)
     end
     frame.highlightValue:SetText(tostring(math.max(0, highlightCount or 0)))
-    frame.totalValue:SetText(self:FormatMoney(self:GetSessionTotalValue()))
-    frame.totalRawValue:SetText(self:FormatMoney((tonumber(session.goldLooted) or 0) + (tonumber(session.itemVendorValue) or 0)))
+    local sessionTotal = self:GetSessionTotalValue()
+    local sessionTotalRaw = (tonumber(session.goldLooted) or 0) + (tonumber(session.itemVendorValue) or 0)
+    frame.totalValue:SetText(self:FormatMoney(sessionTotal))
+    frame.totalRawValue:SetText(self:FormatMoney(sessionTotalRaw))
     frame.sourceValue:SetText(source.label)
     frame.startStopButton:SetText(session.active and "Stop Session" or "Start Session")
     self:RefreshHistoryButtonVisibility()
+    self:UpdateTotalWindow()
 end
 
 function GoldTracker:ToggleMainWindow()
@@ -82,15 +85,105 @@ function GoldTracker:ToggleMainWindow()
     end
 end
 
+function GoldTracker:UpdateTotalWindow()
+    if not self.totalFrame or not self.totalFrame.sessionTotalText or not self.totalFrame.sessionTotalRawText then
+        return
+    end
+
+    if self.session and self.session.active then
+        local sessionTotal = self:GetSessionTotalValue()
+        local sessionTotalRaw = (tonumber(self.session.goldLooted) or 0) + (tonumber(self.session.itemVendorValue) or 0)
+        self.totalFrame.sessionTotalText:SetText(string.format("ST: %s", self:FormatMoney(sessionTotal)))
+        self.totalFrame.sessionTotalRawText:SetText(string.format("Raw: %s", self:FormatMoney(sessionTotalRaw)))
+    else
+        self.totalFrame.sessionTotalText:SetText("ST: ---")
+        self.totalFrame.sessionTotalRawText:SetText("Raw: ---")
+    end
+end
+
+function GoldTracker:CreateTotalWindow()
+    if self.totalFrame then
+        return
+    end
+
+    local addon = self
+    local frame = CreateFrame("Frame", "GoldTrackerTotalFrame", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(300, 92)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
+    frame:SetFrameStrata("DIALOG")
+    if frame.SetToplevel then
+        frame:SetToplevel(true)
+    end
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnMouseDown", function(self)
+        self:Raise()
+    end)
+    frame:SetScript("OnDragStart", function(self)
+        self:Raise()
+        self:StartMoving()
+    end)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:Hide()
+
+    if frame.TitleText then
+        frame.TitleText:SetText("Session Total")
+    end
+    if frame.CloseButton then
+        frame.CloseButton:SetScript("OnClick", function()
+            frame:Hide()
+        end)
+    end
+
+    local sessionTotalText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    sessionTotalText:SetPoint("TOP", frame, "TOP", 0, -30)
+    sessionTotalText:SetJustifyH("CENTER")
+    sessionTotalText:SetText("ST: ---")
+    frame.sessionTotalText = sessionTotalText
+
+    local sessionTotalRawText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    sessionTotalRawText:SetPoint("TOP", sessionTotalText, "BOTTOM", 0, -6)
+    sessionTotalRawText:SetJustifyH("CENTER")
+    sessionTotalRawText:SetText("Raw: ---")
+    frame.sessionTotalRawText = sessionTotalRawText
+
+    frame:SetScript("OnShow", function()
+        addon:UpdateTotalWindow()
+    end)
+
+    self.totalFrame = frame
+end
+
+function GoldTracker:ToggleTotalWindow()
+    self:CreateTotalWindow()
+    if not self.totalFrame then
+        return
+    end
+
+    if self.totalFrame:IsShown() then
+        self.totalFrame:Hide()
+    else
+        self.totalFrame:Show()
+        self.totalFrame:Raise()
+        self:UpdateTotalWindow()
+    end
+end
+
 function GoldTracker:CreateMainWindow()
     if self.mainFrame then
         return
     end
 
     local addon = self
-    local fixedWidth = self.db.windowWidth or self.DEFAULTS.windowWidth
+    local minWidth, minHeight = 480, 320
+    local maxWidth, maxHeight = 1200, 1000
+    local configuredWidth = tonumber(self.db.windowWidth) or self.DEFAULTS.windowWidth
+    local configuredHeight = tonumber(self.db.windowHeight) or self.DEFAULTS.windowHeight
+    local initialWidth = math.floor(math.max(minWidth, math.min(maxWidth, configuredWidth)) + 0.5)
+    local initialHeight = math.floor(math.max(minHeight, math.min(maxHeight, configuredHeight)) + 0.5)
     local frame = CreateFrame("Frame", "GoldTrackerMainFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(fixedWidth, self.db.windowHeight or self.DEFAULTS.windowHeight)
+    frame:SetSize(initialWidth, initialHeight)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -99,13 +192,13 @@ function GoldTracker:CreateMainWindow()
     frame:SetMovable(true)
     frame:SetResizable(true)
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(fixedWidth, 320, fixedWidth, 1000)
+        frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
     else
         if frame.SetMinResize then
-            frame:SetMinResize(fixedWidth, 320)
+            frame:SetMinResize(minWidth, minHeight)
         end
         if frame.SetMaxResize then
-            frame:SetMaxResize(fixedWidth, 1000)
+            frame:SetMaxResize(maxWidth, maxHeight)
         end
     end
     frame:EnableMouse(true)
@@ -120,9 +213,11 @@ function GoldTracker:CreateMainWindow()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
 
-    frame:SetScript("OnSizeChanged", function(_, _, height)
-        addon.db.windowWidth = fixedWidth
-        addon.db.windowHeight = math.floor(height + 0.5)
+    frame:SetScript("OnSizeChanged", function(_, width, height)
+        local clampedWidth = math.floor(math.max(minWidth, math.min(maxWidth, tonumber(width) or minWidth)) + 0.5)
+        local clampedHeight = math.floor(math.max(minHeight, math.min(maxHeight, tonumber(height) or minHeight)) + 0.5)
+        addon.db.windowWidth = clampedWidth
+        addon.db.windowHeight = clampedHeight
     end)
 
     if frame.TitleText then
@@ -215,7 +310,7 @@ function GoldTracker:CreateMainWindow()
     frame.goldValue = goldValue
 
     local itemVendorValueLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    itemVendorValueLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", rightColumnX, rowOneY + (rowStep * 2))
+    itemVendorValueLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 3))
     itemVendorValueLabel:SetText("Vendor items gold:")
 
     local itemVendorValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -223,7 +318,7 @@ function GoldTracker:CreateMainWindow()
     frame.itemVendorValue = itemVendorValue
 
     local highlightLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    highlightLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 3))
+    highlightLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 4))
     highlightLabel:SetText("Highlights:")
 
     local highlightValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -231,7 +326,7 @@ function GoldTracker:CreateMainWindow()
     frame.highlightValue = highlightValue
 
     local totalValueLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    totalValueLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 4))
+    totalValueLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 5))
     totalValueLabel:SetText("Session Total:")
 
     local totalValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -239,7 +334,7 @@ function GoldTracker:CreateMainWindow()
     frame.totalValue = totalValue
 
     local totalRawValueLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    totalRawValueLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", rightColumnX, rowOneY + (rowStep * 4))
+    totalRawValueLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 6))
     totalRawValueLabel:SetText("Session Total Raw:")
 
     local totalRawValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -247,12 +342,12 @@ function GoldTracker:CreateMainWindow()
     frame.totalRawValue = totalRawValue
 
     local logLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    logLabel:SetPoint("TOP", frame, "TOP", 0, rowOneY + (rowStep * 5))
+    logLabel:SetPoint("TOP", frame, "TOP", 0, rowOneY + (rowStep * 7))
     logLabel:SetJustifyH("CENTER")
     logLabel:SetText("Loot Log")
 
     local log = CreateFrame("ScrollingMessageFrame", nil, frame)
-    log:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 5) - 18)
+    log:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 7) - 18)
     log:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 20)
     log:SetFontObject(GameFontHighlightSmall)
     log:SetJustifyH("LEFT")
@@ -285,17 +380,20 @@ function GoldTracker:CreateMainWindow()
     frame.log = log
 
     local resizeButton = CreateFrame("Button", nil, frame)
-    resizeButton:SetSize(18, 18)
-    resizeButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 6)
-    resizeButton:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up")
-    resizeButton:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Highlight")
-    resizeButton:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Down")
+    resizeButton:SetSize(16, 16)
+    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
+    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
     resizeButton:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" then
-            frame:StartSizing("BOTTOM")
+            frame:StartSizing("BOTTOMRIGHT")
         end
     end)
     resizeButton:SetScript("OnMouseUp", function()
+        frame:StopMovingOrSizing()
+    end)
+    resizeButton:SetScript("OnHide", function()
         frame:StopMovingOrSizing()
     end)
     frame.resizeButton = resizeButton

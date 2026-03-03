@@ -10,20 +10,23 @@ GoldTracker.MIN_INTERFACE = 120000
 GoldTracker.REQUIRED_PROJECT = WOW_PROJECT_MAINLINE
 GoldTracker.LEGACY_DEFAULT_WINDOW_WIDTH = 680
 GoldTracker.PREVIOUS_DEFAULT_WINDOW_WIDTH = 760
+GoldTracker.OLDER_DEFAULT_WINDOW_WIDTH = 790
 
 GoldTracker.DEFAULTS = {
     valueSource = "TSM_DBMARKET",
     fallbackValueSource = "",
+    minimumTrackedItemQuality = 0,
     highlightThreshold = 100000,
     notificationsEnabled = true,
     autoStartSessionOnFirstLoot = true,
     autoStartSessionOnEnterWorld = false,
+    resumeSessionAfterReload = false,
     enableSessionHistory = false,
     historyRowsPerPage = 10,
     showRawLootedGoldInLog = true,
     minimapButtonAngle = 225,
     windowAlpha = 0.90,
-    windowWidth = 790,
+    windowWidth = 720,
     windowHeight = 460,
 }
 
@@ -42,6 +45,51 @@ for _, source in ipairs(GoldTracker.VALUE_SOURCES) do
     GoldTracker.VALUE_SOURCE_BY_ID[source.id] = source
 end
 
+GoldTracker.MINIMUM_TRACKED_ITEM_QUALITIES = { 0, 2, 3, 4, 5 }
+GoldTracker.TRACKED_ITEM_QUALITY_OPTIONS = {}
+GoldTracker.TRACKED_ITEM_QUALITY_BY_ID = {}
+GoldTracker.ITEM_QUALITY_BY_LINK_COLOR = {}
+
+local function NormalizeColorHex(colorHex)
+    if type(colorHex) ~= "string" then
+        return nil
+    end
+
+    local cleaned = colorHex:gsub("|[cC]", ""):gsub("#", "")
+    local eightDigits = cleaned:match("([%x][%x][%x][%x][%x][%x][%x][%x])")
+    if eightDigits then
+        return string.lower(eightDigits)
+    end
+
+    local sixDigits = cleaned:match("([%x][%x][%x][%x][%x][%x])")
+    if sixDigits then
+        return string.lower("ff" .. sixDigits)
+    end
+
+    return nil
+end
+
+if type(ITEM_QUALITY_COLORS) == "table" then
+    for quality, colorData in pairs(ITEM_QUALITY_COLORS) do
+        if type(quality) == "number" and type(colorData) == "table" then
+            local normalizedHex = NormalizeColorHex(colorData.hex)
+            if normalizedHex then
+                GoldTracker.ITEM_QUALITY_BY_LINK_COLOR[normalizedHex] = quality
+            end
+        end
+    end
+end
+
+for _, itemQuality in ipairs(GoldTracker.MINIMUM_TRACKED_ITEM_QUALITIES) do
+    local label = _G["ITEM_QUALITY" .. itemQuality .. "_DESC"] or tostring(itemQuality)
+    local option = {
+        id = itemQuality,
+        label = label,
+    }
+    GoldTracker.TRACKED_ITEM_QUALITY_OPTIONS[#GoldTracker.TRACKED_ITEM_QUALITY_OPTIONS + 1] = option
+    GoldTracker.TRACKED_ITEM_QUALITY_BY_ID[itemQuality] = option
+end
+
 GoldTracker.session = GoldTracker.session or {
     active = false,
     startTime = nil,
@@ -51,6 +99,7 @@ GoldTracker.session = GoldTracker.session or {
     itemVendorValue = 0,
     highlightItemCount = 0,
     itemLoots = {},
+    moneyLoots = {},
     isInstanced = false,
     instanceName = nil,
     instanceMapID = nil,
@@ -151,6 +200,8 @@ function GoldTracker:InitializeDatabase()
         self.db.fallbackValueSource = self.DEFAULTS.fallbackValueSource
     end
 
+    self:NormalizeMinimumTrackedItemQuality()
+
     local threshold = tonumber(self.db.highlightThreshold)
     if not threshold or threshold < 0 then
         if legacyHighThreshold and legacyHighThreshold >= 0 then
@@ -181,6 +232,10 @@ function GoldTracker:InitializeDatabase()
         self.db.autoStartSessionOnEnterWorld = self.DEFAULTS.autoStartSessionOnEnterWorld
     end
 
+    if type(self.db.resumeSessionAfterReload) ~= "boolean" then
+        self.db.resumeSessionAfterReload = self.DEFAULTS.resumeSessionAfterReload
+    end
+
     if type(self.db.enableSessionHistory) ~= "boolean" then
         self.db.enableSessionHistory = self.DEFAULTS.enableSessionHistory
     end
@@ -203,6 +258,9 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.sessionHistory) ~= "table" then
         self.db.sessionHistory = {}
     end
+    if type(self.db.pendingReloadSession) ~= "table" then
+        self.db.pendingReloadSession = nil
+    end
 
     if type(self.db.nextHistoryID) ~= "number" or self.db.nextHistoryID < 1 then
         self.db.nextHistoryID = 1
@@ -218,7 +276,8 @@ function GoldTracker:InitializeDatabase()
     else
         local roundedWindowWidth = math.floor(self.db.windowWidth + 0.5)
         if roundedWindowWidth == self.LEGACY_DEFAULT_WINDOW_WIDTH
-            or roundedWindowWidth == self.PREVIOUS_DEFAULT_WINDOW_WIDTH then
+            or roundedWindowWidth == self.PREVIOUS_DEFAULT_WINDOW_WIDTH
+            or roundedWindowWidth == self.OLDER_DEFAULT_WINDOW_WIDTH then
             self.db.windowWidth = self.DEFAULTS.windowWidth
         end
     end
@@ -234,6 +293,122 @@ function GoldTracker:GetLowHighlightThreshold()
     return self:GetHighlightThreshold()
 end
 
+function GoldTracker:GetItemQualityColorHex(itemQuality)
+    local normalizedQuality = tonumber(itemQuality)
+    if normalizedQuality then
+        normalizedQuality = math.floor(normalizedQuality + 0.5)
+    end
+
+    local colorData = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[normalizedQuality]
+    if type(colorData) == "table" then
+        local normalizedHex = NormalizeColorHex(colorData.hex)
+        if normalizedHex then
+            return normalizedHex
+        end
+    end
+
+    return "ffffffff"
+end
+
+function GoldTracker:GetColoredItemQualityLabel(itemQuality, fallbackLabel)
+    local normalizedQuality = tonumber(itemQuality)
+    if normalizedQuality then
+        normalizedQuality = math.floor(normalizedQuality + 0.5)
+    end
+
+    local option = self.TRACKED_ITEM_QUALITY_BY_ID[normalizedQuality]
+    local label = fallbackLabel
+    if type(label) ~= "string" or label == "" then
+        if option and option.label then
+            label = option.label
+        else
+            label = _G["ITEM_QUALITY" .. tostring(normalizedQuality) .. "_DESC"] or "Unknown"
+        end
+    end
+
+    return string.format("|c%s%s|r", self:GetItemQualityColorHex(normalizedQuality), label)
+end
+
+function GoldTracker:GetConfiguredMinimumTrackedItemQuality()
+    local configuredQuality = tonumber(self.db and self.db.minimumTrackedItemQuality)
+    if configuredQuality then
+        configuredQuality = math.floor(configuredQuality + 0.5)
+    end
+    if self.TRACKED_ITEM_QUALITY_BY_ID[configuredQuality] then
+        return configuredQuality
+    end
+    return self.DEFAULTS.minimumTrackedItemQuality
+end
+
+function GoldTracker:NormalizeMinimumTrackedItemQuality()
+    if not self.db then
+        return
+    end
+
+    self.db.minimumTrackedItemQuality = self:GetConfiguredMinimumTrackedItemQuality()
+end
+
+function GoldTracker:GetItemQualityFromLink(itemLink)
+    if type(itemLink) ~= "string" then
+        return nil
+    end
+
+    local colorHex = string.match(itemLink, "^|c([%x][%x][%x][%x][%x][%x][%x][%x])")
+    if colorHex then
+        local qualityFromColor = self.ITEM_QUALITY_BY_LINK_COLOR[string.lower(colorHex)]
+        if type(qualityFromColor) == "number" then
+            return qualityFromColor
+        end
+    end
+
+    local itemQuality
+    if C_Item and C_Item.GetItemInfo then
+        itemQuality = select(3, C_Item.GetItemInfo(itemLink))
+    else
+        itemQuality = select(3, GetItemInfo(itemLink))
+    end
+
+    if type(itemQuality) == "number" then
+        return math.floor(itemQuality + 0.5)
+    end
+
+    return nil
+end
+
+function GoldTracker:IsCraftingReagentItem(itemLink)
+    if type(itemLink) ~= "string" or itemLink == "" then
+        return false
+    end
+
+    if C_Item and type(C_Item.IsCraftingReagentItem) == "function" then
+        local ok, result = pcall(C_Item.IsCraftingReagentItem, itemLink)
+        if ok and result ~= nil then
+            return result == true
+        end
+    end
+
+    local isCraftingReagent = select(17, GetItemInfo(itemLink))
+    if type(isCraftingReagent) == "boolean" then
+        return isCraftingReagent
+    end
+
+    local itemClassID = select(12, GetItemInfo(itemLink))
+    local tradeGoodsClassID = (Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods) or LE_ITEM_CLASS_TRADEGOODS or 7
+    return tonumber(itemClassID) == tonumber(tradeGoodsClassID)
+end
+
+function GoldTracker:ShouldTrackItemForAH(itemQuality)
+    local normalizedQuality = tonumber(itemQuality)
+    if normalizedQuality then
+        normalizedQuality = math.floor(normalizedQuality + 0.5)
+    else
+        -- Keep unknown-quality items rather than silently dropping tracked value.
+        return true
+    end
+
+    return normalizedQuality >= self:GetConfiguredMinimumTrackedItemQuality()
+end
+
 function GoldTracker:GetHighHighlightThreshold()
     return self:GetHighlightThreshold()
 end
@@ -246,6 +421,10 @@ end
 function GoldTracker:GetHistoryRowsPerPage()
     local value = tonumber(self.db and self.db.historyRowsPerPage) or self.DEFAULTS.historyRowsPerPage
     return math.max(5, math.min(30, math.floor(value + 0.5)))
+end
+
+function GoldTracker:IsResumeSessionAfterReloadEnabled()
+    return self.db and self.db.resumeSessionAfterReload == true
 end
 
 function GoldTracker:NormalizeHighlightThresholds()

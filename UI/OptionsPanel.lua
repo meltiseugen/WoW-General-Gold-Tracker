@@ -31,10 +31,19 @@ function GoldTracker:RefreshOptionsControls()
         UIDropDownMenu_SetSelectedValue(controls.fallbackValueSourceDropdown, "")
         UIDropDownMenu_SetText(controls.fallbackValueSourceDropdown, "None")
     end
+    local minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
+    local minimumQualityOption = self.TRACKED_ITEM_QUALITY_BY_ID[minimumQuality]
+        or self.TRACKED_ITEM_QUALITY_BY_ID[self.DEFAULTS.minimumTrackedItemQuality]
+    UIDropDownMenu_SetSelectedValue(controls.minimumTrackedQualityDropdown, minimumQualityOption.id)
+    UIDropDownMenu_SetText(
+        controls.minimumTrackedQualityDropdown,
+        self:GetColoredItemQualityLabel(minimumQualityOption.id, minimumQualityOption.label)
+    )
     controls.highlightThresholdInput:SetText(string.format("%.2f", self:GetHighlightThreshold() / self.COPPER_PER_GOLD))
     controls.notificationsCheckbox:SetChecked(self.db.notificationsEnabled)
     controls.autoStartOnLootCheckbox:SetChecked(self.db.autoStartSessionOnFirstLoot)
     controls.autoStartOnEnterWorldCheckbox:SetChecked(self.db.autoStartSessionOnEnterWorld)
+    controls.resumeAfterReloadCheckbox:SetChecked(self.db.resumeSessionAfterReload)
     controls.enableHistoryCheckbox:SetChecked(self.db.enableSessionHistory)
     controls.historyRowsPerPageInput:SetText(tostring(self:GetHistoryRowsPerPage()))
     controls.rawLootLogCheckbox:SetChecked(self.db.showRawLootedGoldInLog)
@@ -184,8 +193,8 @@ function GoldTracker:CreateOptionsPanel()
 
     local tabsUnderline = panel:CreateTexture(nil, "ARTWORK")
     tabsUnderline:SetColorTexture(1, 0.82, 0, 0.35)
-    tabsUnderline:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -102)
-    tabsUnderline:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -16, -102)
+    tabsUnderline:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -112)
+    tabsUnderline:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -16, -112)
     tabsUnderline:SetHeight(1)
 
     local previousTabButton
@@ -225,7 +234,7 @@ function GoldTracker:CreateOptionsPanel()
         end
         tabButton:ClearAllPoints()
         if previousTabButton then
-            tabButton:SetPoint("LEFT", previousTabButton, "RIGHT", -6, 0)
+            tabButton:SetPoint("LEFT", previousTabButton, "RIGHT", 8, 0)
         else
             tabButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -78)
         end
@@ -241,7 +250,7 @@ function GoldTracker:CreateOptionsPanel()
     local generalContent = tabs.General.content
 
     local sourceLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    sourceLabel:SetPoint("TOPLEFT", generalContent, "TOPLEFT", 0, -8)
+    sourceLabel:SetPoint("TOPLEFT", generalContent, "TOPLEFT", 12, -8)
     sourceLabel:SetText("Item value source")
 
     local dropdown = CreateFrame("Frame", "GoldTrackerValueSourceDropdown", generalContent, "UIDropDownMenuTemplate")
@@ -302,8 +311,35 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
+    local minimumQualityLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    minimumQualityLabel:SetPoint("TOPLEFT", fallbackDropdown, "BOTTOMLEFT", 16, -14)
+    minimumQualityLabel:SetText("Min item quality for AH and loot log")
+
+    local minimumQualityDropdown = CreateFrame("Frame", "GoldTrackerMinimumQualityDropdown", generalContent, "UIDropDownMenuTemplate")
+    minimumQualityDropdown:SetPoint("TOPLEFT", minimumQualityLabel, "BOTTOMLEFT", -16, -6)
+    UIDropDownMenu_SetWidth(minimumQualityDropdown, 240)
+    UIDropDownMenu_Initialize(minimumQualityDropdown, function(_, level)
+        for _, qualityOption in ipairs(addon.TRACKED_ITEM_QUALITY_OPTIONS) do
+            local info = UIDropDownMenu_CreateInfo()
+            local qualityID = qualityOption.id
+            info.text = addon:GetColoredItemQualityLabel(qualityID, qualityOption.label)
+            info.value = qualityID
+            info.checked = addon:GetConfiguredMinimumTrackedItemQuality() == qualityID
+            info.func = function()
+                addon.db.minimumTrackedItemQuality = qualityID
+                addon:NormalizeMinimumTrackedItemQuality()
+                addon:RefreshOptionsControls()
+                addon:UpdateMainWindow()
+                if addon.historyFrame and addon.historyFrame.view == "details" then
+                    addon:RefreshHistoryDetailsWindow()
+                end
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+
     local highlightThresholdLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    highlightThresholdLabel:SetPoint("TOPLEFT", fallbackDropdown, "BOTTOMLEFT", 16, -24)
+    highlightThresholdLabel:SetPoint("TOPLEFT", minimumQualityDropdown, "BOTTOMLEFT", 16, -24)
     highlightThresholdLabel:SetText("Highlight threshold (gold)")
 
     local highlightThresholdInput = CreateFrame("EditBox", nil, generalContent, "InputBoxTemplate")
@@ -348,8 +384,21 @@ function GoldTracker:CreateOptionsPanel()
     autoStartOnEnterWorldLabel:SetPoint("LEFT", autoStartOnEnterWorldCheckbox, "RIGHT", 4, 1)
     autoStartOnEnterWorldLabel:SetText("Auto start session on world/instance entry and reload")
 
+    local resumeAfterReloadCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
+    resumeAfterReloadCheckbox:SetPoint("TOPLEFT", autoStartOnEnterWorldCheckbox, "BOTTOMLEFT", 0, -8)
+    resumeAfterReloadCheckbox:SetScript("OnClick", function(button)
+        addon.db.resumeSessionAfterReload = button:GetChecked() and true or false
+        if not addon.db.resumeSessionAfterReload then
+            addon:ClearPendingReloadSession()
+        end
+    end)
+
+    local resumeAfterReloadLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    resumeAfterReloadLabel:SetPoint("LEFT", resumeAfterReloadCheckbox, "RIGHT", 4, 1)
+    resumeAfterReloadLabel:SetText("Resume active session after /reload")
+
     local enableHistoryCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
-    enableHistoryCheckbox:SetPoint("TOPLEFT", autoStartOnEnterWorldCheckbox, "BOTTOMLEFT", 0, -8)
+    enableHistoryCheckbox:SetPoint("TOPLEFT", resumeAfterReloadCheckbox, "BOTTOMLEFT", 0, -8)
     enableHistoryCheckbox:SetScript("OnClick", function(button)
         addon.db.enableSessionHistory = button:GetChecked() and true or false
         addon:RefreshHistoryButtonVisibility()
@@ -433,7 +482,7 @@ function GoldTracker:CreateOptionsPanel()
         transparencyValueText:SetText(string.format("Current opacity: %d%%", math.floor((alpha * 100) + 0.5)))
     end)
 
-    generalContent:SetHeight(760)
+    generalContent:SetHeight(860)
 
     local alertsContent = tabs.Alerts.content
     local alertsPlaceholder = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
@@ -455,10 +504,12 @@ function GoldTracker:CreateOptionsPanel()
     self.optionsControls = {
         valueSourceDropdown = dropdown,
         fallbackValueSourceDropdown = fallbackDropdown,
+        minimumTrackedQualityDropdown = minimumQualityDropdown,
         highlightThresholdInput = highlightThresholdInput,
         notificationsCheckbox = notificationsCheckbox,
         autoStartOnLootCheckbox = autoStartOnLootCheckbox,
         autoStartOnEnterWorldCheckbox = autoStartOnEnterWorldCheckbox,
+        resumeAfterReloadCheckbox = resumeAfterReloadCheckbox,
         enableHistoryCheckbox = enableHistoryCheckbox,
         historyRowsPerPageInput = historyRowsPerPageInput,
         rawLootLogCheckbox = rawLootLogCheckbox,
