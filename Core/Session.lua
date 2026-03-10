@@ -174,6 +174,17 @@ function GoldTracker:TryRestorePendingReloadSession()
     session.continentName = snapshot.continentName
     session.expansionID = snapshot.expansionID
     session.expansionName = snapshot.expansionName
+    if type(self.GetMostRecentSessionLootTimestamp) == "function" then
+        session.lastLootAt = self:GetMostRecentSessionLootTimestamp(session)
+    else
+        session.lastLootAt = tonumber(snapshot.startTime) or time()
+    end
+    if type(self.EnsureAlertRuntimeState) == "function" then
+        local runtime = self:EnsureAlertRuntimeState()
+        runtime.sessionStartTime = tonumber(session.startTime) or 0
+        runtime.milestoneTriggeredByRule = {}
+        runtime.noLootTriggered = false
+    end
 
     self.db.pendingReloadSession = nil
     self.tsmWarningShown = false
@@ -216,7 +227,14 @@ function GoldTracker:StartSession(forceNew, options)
     self.session.continentName = nil
     self.session.expansionID = nil
     self.session.expansionName = nil
+    self.session.lastLootAt = self.session.startTime
     self.tsmWarningShown = false
+    if type(self.EnsureAlertRuntimeState) == "function" then
+        local runtime = self:EnsureAlertRuntimeState()
+        runtime.sessionStartTime = tonumber(self.session.startTime) or 0
+        runtime.milestoneTriggeredByRule = {}
+        runtime.noLootTriggered = false
+    end
     self:UpdateSessionLocationContext()
 
     if not options.keepLog then
@@ -243,6 +261,7 @@ function GoldTracker:StopSession(options)
 
     self.session.active = false
     self.session.stopTime = time()
+    self.session.lastLootAt = nil
     if not options.skipContextRefresh then
         self:UpdateSessionLocationContext()
     end

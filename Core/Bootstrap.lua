@@ -62,6 +62,7 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:CreateMainWindow()
     self:CreateOptionsPanel()
     self:UpdateMainWindow()
+    self:StartAlertTicker()
 
     self:RegisterEvent("CHAT_MSG_LOOT")
     self:RegisterEvent("CHAT_MSG_MONEY")
@@ -123,6 +124,10 @@ function GoldTracker:OnPlayerEnteringWorld(isInitialLogin, isReloadingUI)
 end
 
 GoldTracker:SetScript("OnEvent", function(_, event, ...)
+    if type(GoldTracker.IncrementDiagnosticCounter) == "function" then
+        GoldTracker:IncrementDiagnosticCounter("event_" .. tostring(event))
+    end
+
     if event == "ADDON_LOADED" then
         GoldTracker:OnAddonLoaded(...)
     elseif event == "CHAT_MSG_LOOT" then

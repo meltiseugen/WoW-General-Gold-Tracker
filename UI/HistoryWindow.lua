@@ -1,171 +1,35 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
+local HistoryConstants = NS.HistoryConstants
+local HistoryDateFilter = NS.HistoryDateFilter
+local HistorySessionModel = NS.HistorySessionModel
+local HistoryFormatter = NS.HistoryFormatter
+local HistoryDataService = NS.HistoryDataService
 
 local RENAME_DIALOG_KEY = "GOLDTRACKER_RENAME_HISTORY_SESSION"
 local SPLIT_DIALOG_KEY = "GOLDTRACKER_SPLIT_HISTORY_SESSION"
-local ROW_HEIGHT = 40
-local ROW_SPACING = 44
-local DETAILS_LOCATION_FILTER_ALL = "__all__"
-local HISTORY_DATE_FILTER_ALL = "__all_time__"
-local HISTORY_DATE_FILTER_TODAY = "__today__"
-local HISTORY_DATE_FILTER_YESTERDAY = "__yesterday__"
-local HISTORY_DATE_FILTER_LAST_7_DAYS = "__last_7_days__"
-local HISTORY_DATE_FILTER_THIS_MONTH = "__this_month__"
-local HISTORY_DATE_FILTER_OPTIONS = {
-    { key = HISTORY_DATE_FILTER_ALL, label = "All time" },
-    { key = HISTORY_DATE_FILTER_TODAY, label = "Today" },
-    { key = HISTORY_DATE_FILTER_YESTERDAY, label = "Yesterday" },
-    { key = HISTORY_DATE_FILTER_LAST_7_DAYS, label = "Last 7 days" },
-    { key = HISTORY_DATE_FILTER_THIS_MONTH, label = "This month" },
-}
+local ROW_HEIGHT = HistoryConstants.ROW_HEIGHT
+local ROW_SPACING = HistoryConstants.ROW_SPACING
+local DETAILS_LOCATION_FILTER_ALL = HistoryConstants.DETAILS_LOCATION_FILTER_ALL
+local HISTORY_DATE_FILTER_ALL = HistoryConstants.DATE_FILTER_ALL
+local HISTORY_DATE_FILTER_OPTIONS = HistoryConstants.DATE_FILTER_OPTIONS
+local HISTORY_WINDOW_DEFAULT_HEIGHT = 500
+local HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT = 620
+local LOCATION_TABLE_MAX_VISIBLE_ROWS = 3
+local DETAILS_GAP_LOCATION_TABLE_TO_FILTER = 10
+local DETAILS_GAP_FILTER_TO_SUMMARY = 12
+local DETAILS_GAP_SUMMARY_TO_ITEMS = 6
 
-local function GetSessionEventTimeBounds(session)
-    if type(session) ~= "table" then
-        return 0, 0, 0, 0
-    end
+local historyDateFilter = HistoryDateFilter:New()
+local historyFormatter = HistoryFormatter:New(GoldTracker)
+local historyDataService = HistoryDataService:New(GoldTracker, DETAILS_LOCATION_FILTER_ALL)
 
-    local firstEventTimestamp = 0
-    local lastEventTimestamp = 0
-
-    local function ConsiderTimestamp(timestamp)
-        local normalized = tonumber(timestamp) or 0
-        if normalized <= 0 then
-            return
-        end
-
-        if firstEventTimestamp <= 0 or normalized < firstEventTimestamp then
-            firstEventTimestamp = normalized
-        end
-        if normalized > lastEventTimestamp then
-            lastEventTimestamp = normalized
-        end
-    end
-
-    for _, loot in ipairs(session.itemLoots or {}) do
-        ConsiderTimestamp(loot and loot.timestamp)
-    end
-    for _, money in ipairs(session.moneyLoots or {}) do
-        ConsiderTimestamp(money and money.timestamp)
-    end
-
-    local startTimestamp = tonumber(session.startTime) or 0
-    local stopTimestamp = tonumber(session.stopTime or session.savedAt) or 0
-
-    if firstEventTimestamp > 0 and (startTimestamp <= 0 or firstEventTimestamp < startTimestamp) then
-        startTimestamp = firstEventTimestamp
-    end
-    if stopTimestamp <= 0 then
-        stopTimestamp = lastEventTimestamp
-    elseif lastEventTimestamp > 0 and lastEventTimestamp > stopTimestamp then
-        stopTimestamp = lastEventTimestamp
-    end
-    if startTimestamp <= 0 then
-        startTimestamp = stopTimestamp
-    end
-    if stopTimestamp <= 0 then
-        stopTimestamp = startTimestamp
-    end
-    if stopTimestamp > 0 and startTimestamp > 0 and stopTimestamp < startTimestamp then
-        stopTimestamp = startTimestamp
-    end
-
-    return startTimestamp, stopTimestamp, firstEventTimestamp, lastEventTimestamp
-end
-
-local function GetSessionReferenceTimestamp(session)
-    local startTimestamp = GetSessionEventTimeBounds(session)
-    return tonumber(startTimestamp) or 0
-end
-
-local function GetSessionDurationSeconds(session)
-    if type(session) ~= "table" then
-        return 0
-    end
-
-    local explicitDuration = math.max(0, math.floor((tonumber(session.duration) or 0) + 0.5))
-    local startTimestamp, stopTimestamp, firstEventTimestamp, lastEventTimestamp = GetSessionEventTimeBounds(session)
-    local boundedDuration = 0
-    if startTimestamp > 0 and stopTimestamp >= startTimestamp then
-        boundedDuration = stopTimestamp - startTimestamp
-    end
-
-    local eventDuration = 0
-    if firstEventTimestamp > 0 and lastEventTimestamp >= firstEventTimestamp then
-        eventDuration = lastEventTimestamp - firstEventTimestamp
-    end
-
-    return math.max(explicitDuration, boundedDuration, eventDuration)
-end
-
-local function FormatDurationMinutesLabel(durationSeconds)
-    local seconds = math.max(0, math.floor((tonumber(durationSeconds) or 0) + 0.5))
-    if seconds < 60 then
-        return "<1m"
-    end
-
-    local totalMinutes = math.floor(seconds / 60)
-    local hours = math.floor(totalMinutes / 60)
-    local minutes = totalMinutes % 60
-
-    if hours > 0 then
-        return string.format("%dh %02dm", hours, minutes)
-    end
-
-    return string.format("%dm", totalMinutes)
-end
-
-local function GetDayStartWithOffset(referenceTimestamp, dayOffset)
-    local parts = date("*t", tonumber(referenceTimestamp) or time())
-    if type(parts) ~= "table" then
-        return 0
-    end
-
-    parts.day = (parts.day or 1) + (tonumber(dayOffset) or 0)
-    parts.hour = 0
-    parts.min = 0
-    parts.sec = 0
-
-    return tonumber(time(parts)) or 0
+local function NewHistorySessionModel(session)
+    return HistorySessionModel:New(GoldTracker, session, DETAILS_LOCATION_FILTER_ALL)
 end
 
 local function SessionMatchesDateFilter(session, filterKey)
-    if filterKey == nil or filterKey == "" or filterKey == HISTORY_DATE_FILTER_ALL then
-        return true
-    end
-
-    local sessionTimestamp = GetSessionReferenceTimestamp(session)
-    if sessionTimestamp <= 0 then
-        return false
-    end
-
-    local now = time()
-    local todayStart = GetDayStartWithOffset(now, 0)
-    local tomorrowStart = GetDayStartWithOffset(now, 1)
-
-    if filterKey == HISTORY_DATE_FILTER_TODAY then
-        return sessionTimestamp >= todayStart and sessionTimestamp < tomorrowStart
-    end
-
-    if filterKey == HISTORY_DATE_FILTER_YESTERDAY then
-        local yesterdayStart = GetDayStartWithOffset(now, -1)
-        return sessionTimestamp >= yesterdayStart and sessionTimestamp < todayStart
-    end
-
-    if filterKey == HISTORY_DATE_FILTER_LAST_7_DAYS then
-        local sevenDaysStart = GetDayStartWithOffset(now, -6)
-        return sessionTimestamp >= sevenDaysStart and sessionTimestamp < tomorrowStart
-    end
-
-    if filterKey == HISTORY_DATE_FILTER_THIS_MONTH then
-        local nowParts = date("*t", now)
-        local sessionParts = date("*t", sessionTimestamp)
-        if type(nowParts) ~= "table" or type(sessionParts) ~= "table" then
-            return false
-        end
-        return (nowParts.year == sessionParts.year) and (nowParts.month == sessionParts.month)
-    end
-
-    return true
+    return historyDateFilter:MatchesTimestamp(NewHistorySessionModel(session):GetReferenceTimestamp(), filterKey)
 end
 
 local function GetDialogEditBox(dialog)
@@ -226,197 +90,24 @@ local function EnsureRenameDialogRegistered()
 end
 
 local function FormatSessionSummary(addon, session)
-    local highlightCount = tonumber(session.highlightItemCount)
-    if not highlightCount then
-        highlightCount = (tonumber(session.lowHighlightItemCount) or 0) + (tonumber(session.highHighlightItemCount) or 0)
-    end
-    return tostring(math.max(0, math.floor((highlightCount or 0) + 0.5)))
+    return historyFormatter:FormatSessionSummary(session)
 end
 
 local function FormatSessionTotal(addon, session)
-    local text = addon:FormatMoney(tonumber(session.totalValue) or 0)
-    text = text:gsub("^[%s\194\160]+", "")
-    return text
+    return historyFormatter:FormatSessionTotal(session)
 end
 
 local function FormatSessionTotalRaw(addon, session)
-    local rawGold = tonumber(session.rawGold) or 0
-    local itemsRawGold = tonumber(session.itemsRawGold) or 0
-    local text = addon:FormatMoney(rawGold + itemsRawGold)
-    text = text:gsub("^[%s\194\160]+", "")
-    return text
+    return historyFormatter:FormatSessionTotalRaw(session)
 end
 
-local function NormalizeDisplayedMapPath(addon, mapPath)
-    if type(mapPath) ~= "string" then
-        return nil
-    end
-
-    local trimmedPath = addon:Trim(mapPath)
-    if trimmedPath == "" then
-        return nil
-    end
-
-    local segments = {}
-    for rawSegment in trimmedPath:gmatch("[^>]+") do
-        local segment = addon:Trim(rawSegment)
-        if segment ~= "" then
-            segments[#segments + 1] = segment
-        end
-    end
-
-    if #segments == 0 then
-        return nil
-    end
-
-    if string.lower(segments[1]) == "cosmic" then
-        table.remove(segments, 1)
-    end
-
-    if #segments == 0 then
-        return nil
-    end
-
-    return table.concat(segments, " > ")
-end
-
-local function BuildLocationDetailsText(session)
-    local parts = {}
-    local displayPath = NormalizeDisplayedMapPath(GoldTracker, session.mapPath)
-
-    if type(displayPath) == "string" and displayPath ~= "" then
-        parts[#parts + 1] = string.format("Location: %s", displayPath)
-    elseif type(session.mapName) == "string" and session.mapName ~= "" then
-        parts[#parts + 1] = string.format("Location: %s", session.mapName)
-    end
-
-    if type(session.expansionName) == "string" and session.expansionName ~= "" then
-        parts[#parts + 1] = string.format("Expansion: %s", session.expansionName)
-    end
-
-    if #parts == 0 then
-        return ""
-    end
-
-    return table.concat(parts, "   ")
-end
-
-local function FormatHistoryTimeFrame(startTime, stopTime)
-    local normalizedStart = tonumber(startTime) or 0
-    local normalizedStop = tonumber(stopTime) or 0
-
-    if normalizedStart <= 0 and normalizedStop <= 0 then
-        return ""
-    end
-    if normalizedStart <= 0 then
-        normalizedStart = normalizedStop
-    end
-    if normalizedStop <= 0 then
-        normalizedStop = normalizedStart
-    end
-    if normalizedStop < normalizedStart then
-        normalizedStop = normalizedStart
-    end
-
-    if normalizedStart == normalizedStop then
-        return date("%Y-%m-%d %H:%M:%S", normalizedStart)
-    end
-
-    return string.format(
-        "%s -> %s",
-        date("%Y-%m-%d %H:%M:%S", normalizedStart),
-        date("%Y-%m-%d %H:%M:%S", normalizedStop)
-    )
+local function FormatSessionDuration(session)
+    local model = NewHistorySessionModel(session)
+    return model:FormatDurationMinutesLabel(model:GetDurationSeconds(session))
 end
 
 local function TruncateSessionNameKeepingDate(addon, fullName, nameFontString)
-    if type(fullName) ~= "string" or fullName == "" then
-        return "Session"
-    end
-    if not nameFontString or type(nameFontString.GetStringWidth) ~= "function" then
-        return fullName
-    end
-
-    local maxWidth = tonumber(nameFontString:GetWidth()) or 0
-    if maxWidth <= 0 then
-        return fullName
-    end
-
-    nameFontString:SetText(fullName)
-    if (nameFontString:GetStringWidth() or 0) <= maxWidth then
-        return fullName
-    end
-
-    local prefix, datetimeSuffix = fullName:match("^(.*)( %- %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d %- .+)$")
-    if not prefix or not datetimeSuffix then
-        prefix, datetimeSuffix = fullName:match("^(.*)( %- %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d %-%> %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d)$")
-    end
-    if not prefix or not datetimeSuffix then
-        prefix, datetimeSuffix = fullName:match("^(.*)( %- %d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d)$")
-    end
-    local ellipsis = "..."
-
-    if prefix and datetimeSuffix then
-        local trimmedPrefix = addon:Trim(prefix)
-        while #trimmedPrefix > 0 do
-            local candidate = string.format("%s%s%s", trimmedPrefix, ellipsis, datetimeSuffix)
-            nameFontString:SetText(candidate)
-            if (nameFontString:GetStringWidth() or 0) <= maxWidth then
-                return candidate
-            end
-            trimmedPrefix = trimmedPrefix:sub(1, #trimmedPrefix - 1)
-        end
-
-        local compactCandidate = ellipsis .. datetimeSuffix
-        nameFontString:SetText(compactCandidate)
-        if (nameFontString:GetStringWidth() or 0) <= maxWidth then
-            return compactCandidate
-        end
-    end
-
-    local trimmed = fullName
-    while #trimmed > 0 do
-        local candidate = trimmed .. ellipsis
-        nameFontString:SetText(candidate)
-        if (nameFontString:GetStringWidth() or 0) <= maxWidth then
-            return candidate
-        end
-        trimmed = trimmed:sub(1, #trimmed - 1)
-    end
-
-    return fullName
-end
-
-local function SessionHasMultipleValueSources(session)
-    local labelsSeen = {}
-    local count = 0
-
-    local function Add(label)
-        if type(label) ~= "string" or label == "" or labelsSeen[label] then
-            return
-        end
-        labelsSeen[label] = true
-        count = count + 1
-    end
-
-    for _, label in ipairs(session.valueSourceLabels or {}) do
-        Add(label)
-        if count > 1 then
-            return true
-        end
-    end
-
-    if type(session.itemLoots) == "table" then
-        for _, entry in ipairs(session.itemLoots) do
-            Add(entry and entry.valueSourceLabel)
-            if count > 1 then
-                return true
-            end
-        end
-    end
-
-    Add(session.valueSourceLabel)
-    return count > 1
+    return historyFormatter:TruncateSessionNameKeepingDate(fullName, nameFontString)
 end
 
 local function EnsureSplitDialogRegistered()
@@ -445,466 +136,32 @@ local function EnsureSplitDialogRegistered()
     }
 end
 
-local function ResolveHistoryLocationKey(entry, fallbackSession)
-    if type(entry) == "table" and type(entry.locationKey) == "string" and entry.locationKey ~= "" then
-        return entry.locationKey
-    end
-
-    local source = entry
-    if type(source) ~= "table" then
-        source = fallbackSession
-    end
-    if type(source) ~= "table" then
-        return "unknown"
-    end
-
-    local isInstanced = source.isInstanced == true
-    if isInstanced then
-        return string.format("instance:%s:%s", tostring(source.instanceMapID or source.mapID or 0), tostring(source.instanceName or ""))
-    end
-    return string.format("zone:%s:%s", tostring(source.zoneName or source.mapName or ""), tostring(source.mapID or 0))
-end
-
-local function ResolveHistoryLocationLabel(entry, fallbackSession)
-    if type(entry) == "table" and type(entry.locationLabel) == "string" and entry.locationLabel ~= "" then
-        return entry.locationLabel
-    end
-
-    local source = entry
-    if type(source) ~= "table" then
-        source = fallbackSession
-    end
-    if type(source) ~= "table" then
-        return "Unknown"
-    end
-
-    local base
-    if source.isInstanced == true then
-        base = source.instanceName or source.zoneName or source.mapName
-    else
-        base = source.zoneName or source.mapName
-    end
-    if type(base) ~= "string" or base == "" then
-        base = "Unknown"
-    end
-
-    if type(source.expansionName) == "string" and source.expansionName ~= "" then
-        return string.format("%s (%s)", base, source.expansionName)
-    end
-
-    return base
-end
-
-local function EntryMatchesHistoryLocation(entry, selectedLocationKey, fallbackSession)
-    if type(selectedLocationKey) ~= "string" or selectedLocationKey == "" or selectedLocationKey == DETAILS_LOCATION_FILTER_ALL then
-        return true
-    end
-
-    return ResolveHistoryLocationKey(entry, fallbackSession) == selectedLocationKey
-end
-
 local function BuildHistoryLocationOptions(session)
-    local options = {
-        { key = DETAILS_LOCATION_FILTER_ALL, label = "All", firstTimestamp = 0 },
-    }
-    local byKey = {}
-
-    local function AddLocation(entry, fallbackTimestamp)
-        local key = ResolveHistoryLocationKey(entry, session)
-        local label = ResolveHistoryLocationLabel(entry, session)
-        local timestamp = tonumber(entry and entry.timestamp) or tonumber(fallbackTimestamp) or 0
-        local existing = byKey[key]
-        if existing then
-            if timestamp > 0 and (existing.firstTimestamp <= 0 or timestamp < existing.firstTimestamp) then
-                existing.firstTimestamp = timestamp
-            end
-            return
-        end
-
-        local option = {
-            key = key,
-            label = label,
-            firstTimestamp = timestamp,
-        }
-        byKey[key] = option
-        options[#options + 1] = option
-    end
-
-    if type(session.itemLoots) == "table" then
-        for _, entry in ipairs(session.itemLoots) do
-            AddLocation(entry, session.startTime)
-        end
-    end
-    if type(session.moneyLoots) == "table" then
-        for _, entry in ipairs(session.moneyLoots) do
-            AddLocation(entry, session.startTime)
-        end
-    end
-
-    if #options == 1 then
-        AddLocation(session, session.startTime)
-    end
-
-    table.sort(options, function(a, b)
-        local aAll = a.key == DETAILS_LOCATION_FILTER_ALL
-        local bAll = b.key == DETAILS_LOCATION_FILTER_ALL
-        if aAll ~= bAll then
-            return aAll
-        end
-
-        local aTs = tonumber(a.firstTimestamp) or 0
-        local bTs = tonumber(b.firstTimestamp) or 0
-        if aTs > 0 and bTs > 0 and aTs ~= bTs then
-            return aTs < bTs
-        end
-        return tostring(a.label) < tostring(b.label)
-    end)
-
-    return options
+    return NewHistorySessionModel(session):BuildHistoryLocationOptions(session)
 end
 
-local function ResolveHistoryLocationPath(entry, fallbackSession)
-    local source = entry
-    if type(source) ~= "table" then
-        source = fallbackSession
-    end
-    if type(source) ~= "table" then
-        return "Unknown"
-    end
-
-    local displayPath = NormalizeDisplayedMapPath(GoldTracker, source.mapPath)
-    if type(displayPath) == "string" and displayPath ~= "" then
-        return displayPath
-    end
-    if type(source.mapName) == "string" and source.mapName ~= "" then
-        return source.mapName
-    end
-
-    return ResolveHistoryLocationLabel(source, fallbackSession)
-end
-
-local function BuildLocationDetailsTextForSelection(session, selectedLocationKey)
-    local selectedKey = selectedLocationKey or DETAILS_LOCATION_FILTER_ALL
-    local locations = {}
-    local byKey = {}
-
-    local function Add(entry, fallbackTimestamp)
-        if not EntryMatchesHistoryLocation(entry, selectedKey, session) then
-            return
-        end
-
-        local key = ResolveHistoryLocationKey(entry, session)
-        local existing = byKey[key]
-        local timestamp = tonumber(entry and entry.timestamp) or tonumber(fallbackTimestamp) or 0
-        if existing then
-            if timestamp > 0 and (existing.firstTimestamp <= 0 or timestamp < existing.firstTimestamp) then
-                existing.firstTimestamp = timestamp
-            end
-            return
-        end
-
-        local location = {
-            key = key,
-            path = ResolveHistoryLocationPath(entry, session),
-            firstTimestamp = timestamp,
-        }
-        byKey[key] = location
-        locations[#locations + 1] = location
-    end
-
-    for _, loot in ipairs(session.itemLoots or {}) do
-        Add(loot, session.startTime)
-    end
-    for _, money in ipairs(session.moneyLoots or {}) do
-        Add(money, session.startTime)
-    end
-    if selectedKey == DETAILS_LOCATION_FILTER_ALL then
-        Add(session, session.startTime)
-    elseif #locations == 0 then
-        Add(session, session.startTime)
-    end
-
-    table.sort(locations, function(a, b)
-        local aTs = tonumber(a and a.firstTimestamp) or 0
-        local bTs = tonumber(b and b.firstTimestamp) or 0
-        if aTs > 0 and bTs > 0 and aTs ~= bTs then
-            return aTs < bTs
-        end
-        return tostring(a and a.path or "") < tostring(b and b.path or "")
-    end)
-
-    if selectedKey == DETAILS_LOCATION_FILTER_ALL and #locations > 1 then
-        local sessionPrimaryKey = ResolveHistoryLocationKey(session, session)
-        local sessionPrimary = byKey[sessionPrimaryKey]
-        if sessionPrimary then
-            local ordered = { sessionPrimary }
-            for _, location in ipairs(locations) do
-                if location.key ~= sessionPrimaryKey then
-                    ordered[#ordered + 1] = location
-                end
-            end
-            locations = ordered
-        end
-    end
-
-    if #locations == 0 then
-        return BuildLocationDetailsText(session)
-    end
-
-    local primary = locations[1].path or "Unknown"
-    local detailsText = string.format("Location: %s", primary)
-    if #locations > 1 then
-        local others = {}
-        for index = 2, #locations do
-            others[#others + 1] = locations[index].path or "Unknown"
-        end
-        detailsText = string.format("%s   Also: %s", detailsText, table.concat(others, " | "))
-    end
-
-    return detailsText
+local function BuildLocationDetailsRowsForSelection(session, selectedLocationKey)
+    return NewHistorySessionModel(session):BuildLocationDetailsRowsForSelection(selectedLocationKey, session)
 end
 
 local function BuildHistoryRowTitleAndSubtitle(session)
-    local locationOptions = BuildHistoryLocationOptions(session)
-    local locationLabels = {}
-    local labelsByKey = {}
-    for _, option in ipairs(locationOptions) do
-        if option.key ~= DETAILS_LOCATION_FILTER_ALL then
-            locationLabels[#locationLabels + 1] = option
-            labelsByKey[option.key] = option.label
-        end
-    end
-
-    local primaryKey = ResolveHistoryLocationKey(session, session)
-    local primaryLocation = labelsByKey[primaryKey] or ResolveHistoryLocationLabel(session, session)
-    if (type(primaryLocation) ~= "string" or primaryLocation == "") and locationLabels[1] then
-        primaryLocation = locationLabels[1].label
-    end
-    if type(primaryLocation) ~= "string" or primaryLocation == "" then
-        primaryLocation = "Session"
-    end
-
-    local startTimestamp = GetSessionReferenceTimestamp(session)
-    local startText = (startTimestamp > 0) and date("%Y-%m-%d %H:%M:%S", startTimestamp) or "Unknown start"
-    local durationText = FormatDurationMinutesLabel(GetSessionDurationSeconds(session))
-    local titleText = string.format("%s - %s - %s", primaryLocation, startText, durationText)
-
-    local subtitleText = nil
-    if #locationLabels > 0 then
-        local others = {}
-        for _, option in ipairs(locationLabels) do
-            if option.key ~= primaryKey and option.label and option.label ~= "" then
-                others[#others + 1] = option.label
-            end
-        end
-        if #others > 0 then
-            subtitleText = string.format("Also: %s", table.concat(others, ", "))
-        end
-    end
-
-    return titleText, subtitleText
+    return NewHistorySessionModel(session):BuildRowTitleAndSubtitle(session)
 end
 
 local function BuildHistoryDetailsSummary(session, selectedLocationKey)
-    local summary = {
-        rawGold = 0,
-        itemsValue = 0,
-        itemsRawGold = 0,
-        totalValue = 0,
-        duration = 0,
-        startTime = 0,
-        stopTime = 0,
-    }
-
-    local firstTimestamp
-    local lastTimestamp
-    local fallbackSessionLocationKey = ResolveHistoryLocationKey(session, session)
-    local function ConsiderTimestamp(timestamp)
-        local normalized = tonumber(timestamp)
-        if not normalized or normalized <= 0 then
-            return
-        end
-        if not firstTimestamp or normalized < firstTimestamp then
-            firstTimestamp = normalized
-        end
-        if not lastTimestamp or normalized > lastTimestamp then
-            lastTimestamp = normalized
-        end
-    end
-
-    local hasMoneyDetails = type(session.moneyLoots) == "table" and #session.moneyLoots > 0
-    if hasMoneyDetails then
-        for _, money in ipairs(session.moneyLoots) do
-            if EntryMatchesHistoryLocation(money, selectedLocationKey, session) then
-                summary.rawGold = summary.rawGold + (tonumber(money.amount) or 0)
-                ConsiderTimestamp(money.timestamp)
-            end
-        end
-    elseif selectedLocationKey == DETAILS_LOCATION_FILTER_ALL or selectedLocationKey == fallbackSessionLocationKey then
-        summary.rawGold = tonumber(session.rawGold) or 0
-    end
-
-    local hasItemDetails = type(session.itemLoots) == "table" and #session.itemLoots > 0
-    if hasItemDetails then
-        for _, loot in ipairs(session.itemLoots) do
-            if EntryMatchesHistoryLocation(loot, selectedLocationKey, session) then
-                summary.itemsValue = summary.itemsValue + (tonumber(loot.totalValue) or 0)
-                summary.itemsRawGold = summary.itemsRawGold + (tonumber(loot.vendorTotalValue) or 0)
-                ConsiderTimestamp(loot.timestamp)
-            end
-        end
-    elseif selectedLocationKey == DETAILS_LOCATION_FILTER_ALL or selectedLocationKey == fallbackSessionLocationKey then
-        summary.itemsValue = tonumber(session.itemsValue) or 0
-        summary.itemsRawGold = tonumber(session.itemsRawGold) or 0
-    end
-
-    summary.totalValue = summary.rawGold + summary.itemsValue
-    if selectedLocationKey == DETAILS_LOCATION_FILTER_ALL or (not hasItemDetails and not hasMoneyDetails and selectedLocationKey == fallbackSessionLocationKey) then
-        local sessionStart, sessionStop = GetSessionEventTimeBounds(session)
-        summary.startTime = sessionStart
-        summary.stopTime = sessionStop
-        summary.duration = GetSessionDurationSeconds(session)
-    elseif firstTimestamp and lastTimestamp then
-        summary.duration = math.max(0, lastTimestamp - firstTimestamp)
-        summary.startTime = firstTimestamp
-        summary.stopTime = lastTimestamp
-    else
-        local fallbackTs = GetSessionReferenceTimestamp(session)
-        summary.startTime = fallbackTs
-        summary.stopTime = fallbackTs
-        summary.duration = 0
-    end
-
-    if summary.stopTime > 0 and summary.startTime > 0 and summary.stopTime < summary.startTime then
-        summary.stopTime = summary.startTime
-    end
-
-    return summary
+    return historyDataService:BuildHistoryDetailsSummary(session, selectedLocationKey)
 end
 
 local function BuildVisibleHistoryItems(session, selectedLocationKey)
-    local byLink = {}
-    local hasDetailedLoot = type(session.itemLoots) == "table" and #session.itemLoots > 0
-    local includeSourceLabel = SessionHasMultipleValueSources(session)
-    local fallbackSourceLabel = session.valueSourceLabel or "Unknown"
-    local minimumTrackedQuality = GoldTracker:GetConfiguredMinimumTrackedItemQuality()
-
-    local function PassesQualityFilter(itemQuality, itemLink)
-        local quality = tonumber(itemQuality)
-        if quality then
-            quality = math.floor(quality + 0.5)
-        else
-            quality = GoldTracker:GetItemQualityFromLink(itemLink)
-        end
-
-        if type(quality) ~= "number" then
-            return true
-        end
-
-        return quality >= minimumTrackedQuality
-    end
-
-    if hasDetailedLoot then
-        for _, entry in ipairs(session.itemLoots) do
-            if entry
-                and EntryMatchesHistoryLocation(entry, selectedLocationKey, session)
-                and entry.ahTracked == true
-                and entry.isSoulbound ~= true
-                and PassesQualityFilter(entry.itemQuality, entry.itemLink) then
-                local sourceLabel = entry.valueSourceLabel or fallbackSourceLabel
-                local lootSourceText = nil
-                if type(entry.lootSourceText) == "string" and entry.lootSourceText ~= "" then
-                    lootSourceText = entry.lootSourceText
-                elseif entry.lootSourceType == "AOE" or entry.lootSourceIsAoe == true then
-                    lootSourceText = "AOE loot"
-                end
-                local key = entry.itemLink or "unknown"
-                if includeSourceLabel then
-                    key = string.format("%s\001%s", key, sourceLabel)
-                end
-                if lootSourceText then
-                    key = string.format("%s\001%s", key, lootSourceText)
-                end
-                local item = byLink[key]
-                if not item then
-                    item = {
-                        itemLink = entry.itemLink,
-                        quantity = 0,
-                        totalValue = 0,
-                        valueSourceLabel = sourceLabel,
-                        itemQuality = tonumber(entry.itemQuality),
-                        lootSourceText = lootSourceText,
-                    }
-                    byLink[key] = item
-                end
-
-                item.quantity = item.quantity + (tonumber(entry.quantity) or 0)
-                item.totalValue = item.totalValue + (tonumber(entry.totalValue) or 0)
-                if item.itemQuality == nil then
-                    item.itemQuality = tonumber(entry.itemQuality)
-                end
-                if not item.lootSourceText and lootSourceText then
-                    item.lootSourceText = lootSourceText
-                end
-            end
-        end
-
-        local items = {}
-        for _, item in pairs(byLink) do
-            items[#items + 1] = item
-        end
-
-        table.sort(items, function(a, b)
-            return (a.totalValue or 0) > (b.totalValue or 0)
-        end)
-
-        return items, includeSourceLabel
-    end
-
-    local fallbackSessionLocationKey = ResolveHistoryLocationKey(session, session)
-    if selectedLocationKey ~= DETAILS_LOCATION_FILTER_ALL and selectedLocationKey ~= fallbackSessionLocationKey then
-        return {}, includeSourceLabel
-    end
-
-    local fallbackItems = {}
-    for _, item in ipairs(session.items or {}) do
-        if item and item.isSoulbound ~= true and PassesQualityFilter(item.itemQuality, item.itemLink) then
-            fallbackItems[#fallbackItems + 1] = {
-                itemLink = item.itemLink,
-                quantity = tonumber(item.quantity) or 0,
-                totalValue = tonumber(item.totalValue) or 0,
-                valueSourceLabel = fallbackSourceLabel,
-                itemQuality = tonumber(item.itemQuality),
-            }
-        end
-    end
-
-    table.sort(fallbackItems, function(a, b)
-        return (a.totalValue or 0) > (b.totalValue or 0)
-    end)
-
-    return fallbackItems, includeSourceLabel
+    return historyDataService:BuildVisibleHistoryItems(session, selectedLocationKey)
 end
 
 local function CompareHistorySessionsByRecency(a, b)
-    local aSaved = tonumber(a and (a.savedAt or a.stopTime)) or 0
-    local bSaved = tonumber(b and (b.savedAt or b.stopTime)) or 0
-    if aSaved ~= bSaved then
-        return aSaved > bSaved
-    end
-    return (tonumber(a and a.id) or 0) > (tonumber(b and b.id) or 0)
+    return historyDataService:CompareHistorySessionsByRecency(a, b)
 end
 
 local function GetHistorySortValue(session, sortKey)
-    if sortKey == "sessionTotal" then
-        return tonumber(session and session.totalValue) or 0
-    end
-    if sortKey == "sessionTotalRaw" then
-        local rawGold = tonumber(session and session.rawGold) or 0
-        local itemsRawGold = tonumber(session and session.itemsRawGold) or 0
-        return rawGold + itemsRawGold
-    end
-    return tonumber(session and (session.savedAt or session.stopTime)) or 0
+    return historyDataService:GetHistorySortValue(session, sortKey)
 end
 
 function GoldTracker:PromptRenameHistorySession(sessionID)
@@ -933,12 +190,25 @@ function GoldTracker:HandleHistoryPageMouseWheel(delta)
         return
     end
 
-    local currentPage = self.historyFrame.currentPage or 1
-    if delta > 0 then
-        self:SetHistoryPage(currentPage - 1)
-    elseif delta < 0 then
-        self:SetHistoryPage(currentPage + 1)
+    local scrollFrame = self.historyFrame.scrollFrame
+    if not scrollFrame then
+        return
     end
+
+    local maxScroll = tonumber(scrollFrame:GetVerticalScrollRange()) or 0
+    if maxScroll <= 0 then
+        return
+    end
+
+    local currentScroll = tonumber(scrollFrame:GetVerticalScroll()) or 0
+    local step = math.max(24, math.floor((ROW_HEIGHT or 40) * 0.8))
+    local nextScroll = currentScroll - ((tonumber(delta) or 0) * step)
+    if nextScroll < 0 then
+        nextScroll = 0
+    elseif nextScroll > maxScroll then
+        nextScroll = maxScroll
+    end
+    scrollFrame:SetVerticalScroll(nextScroll)
 end
 
 function GoldTracker:CreateHistoryWindow()
@@ -948,7 +218,7 @@ function GoldTracker:CreateHistoryWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerHistoryFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(900, 500)
+    frame:SetSize(900, HISTORY_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -1087,47 +357,70 @@ function GoldTracker:CreateHistoryWindow()
     frame.historyDateFilterDropdown = historyDateFilterDropdown
 
     local hint = listContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 20, -44)
-    hint:SetText("Click a row for details. Use checkboxes for Merge/Bulk Delete, Pin to keep sessions on top, and Filter to limit by date.")
+    hint:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 20, -40)
+    hint:SetText("Click a row for details. Use row checkboxes (or the header checkbox) for Merge/Bulk Delete, Pin to keep sessions on top, and Filter to limit by date.")
     frame.listHintText = hint
 
     local header = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    header:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 24, -56)
+    header:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 36, -56)
     header:SetText("Session name")
     frame.listHeaderText = header
 
+    local selectPageCheckbox = CreateFrame("CheckButton", nil, listContainer, "UICheckButtonTemplate")
+    selectPageCheckbox:SetSize(22, 22)
+    selectPageCheckbox:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 8, -53)
+    selectPageCheckbox:SetChecked(false)
+    selectPageCheckbox:SetScript("OnClick", function(button)
+        addon:SetHistoryCurrentPageSelection(button:GetChecked() == true)
+    end)
+    frame.selectPageCheckbox = selectPageCheckbox
+
     local summaryHeader = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    summaryHeader:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 340, -56)
+    summaryHeader:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 302, -56)
     summaryHeader:SetText("Highlights")
     frame.listSummaryHeaderText = summaryHeader
 
     local totalHeaderButton = CreateFrame("Button", nil, listContainer)
-    totalHeaderButton:SetSize(110, 18)
-    totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 420, -56)
+    totalHeaderButton:SetSize(104, 18)
+    totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 370, -56)
     totalHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("sessionTotal")
     end)
     local totalHeaderText = totalHeaderButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     totalHeaderText:SetPoint("TOPLEFT", totalHeaderButton, "TOPLEFT", 0, 0)
-    totalHeaderText:SetWidth(110)
+    totalHeaderText:SetWidth(104)
     totalHeaderText:SetJustifyH("LEFT")
     totalHeaderText:SetText("Session Total")
     totalHeaderButton.text = totalHeaderText
     frame.totalHeaderButton = totalHeaderButton
 
     local totalRawHeaderButton = CreateFrame("Button", nil, listContainer)
-    totalRawHeaderButton:SetSize(128, 18)
-    totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 536, -56)
+    totalRawHeaderButton:SetSize(106, 18)
+    totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 482, -56)
     totalRawHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("sessionTotalRaw")
     end)
     local totalRawHeaderText = totalRawHeaderButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     totalRawHeaderText:SetPoint("TOPLEFT", totalRawHeaderButton, "TOPLEFT", 0, 0)
-    totalRawHeaderText:SetWidth(128)
+    totalRawHeaderText:SetWidth(106)
     totalRawHeaderText:SetJustifyH("LEFT")
-    totalRawHeaderText:SetText("Raw Session Total")
+    totalRawHeaderText:SetText("Raw Total")
     totalRawHeaderButton.text = totalRawHeaderText
     frame.totalRawHeaderButton = totalRawHeaderButton
+
+    local durationHeaderButton = CreateFrame("Button", nil, listContainer)
+    durationHeaderButton:SetSize(64, 18)
+    durationHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 596, -56)
+    durationHeaderButton:SetScript("OnClick", function()
+        addon:ToggleHistorySort("duration")
+    end)
+    local durationHeaderText = durationHeaderButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    durationHeaderText:SetPoint("TOPLEFT", durationHeaderButton, "TOPLEFT", 0, 0)
+    durationHeaderText:SetWidth(64)
+    durationHeaderText:SetJustifyH("LEFT")
+    durationHeaderText:SetText("Duration")
+    durationHeaderButton.text = durationHeaderText
+    frame.durationHeaderButton = durationHeaderButton
 
     local dividerColorR, dividerColorG, dividerColorB, dividerColorA = 1, 0.82, 0, 0.60
     local function CreateHeaderDivider(x)
@@ -1138,9 +431,10 @@ function GoldTracker:CreateHistoryWindow()
         return divider
     end
 
-    frame.headerDividerNameSummary = CreateHeaderDivider(332)
-    frame.headerDividerSummaryTotal = CreateHeaderDivider(414)
-    frame.headerDividerTotalRaw = CreateHeaderDivider(530)
+    frame.headerDividerNameSummary = CreateHeaderDivider(294)
+    frame.headerDividerSummaryTotal = CreateHeaderDivider(364)
+    frame.headerDividerTotalRaw = CreateHeaderDivider(476)
+    frame.headerDividerRawDuration = CreateHeaderDivider(590)
 
     local headerUnderline = listContainer:CreateTexture(nil, "ARTWORK")
     headerUnderline:SetColorTexture(1, 0.82, 0, 0.35)
@@ -1167,6 +461,7 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.content = content
     frame.rows = {}
+    frame.visibleSessionIDs = {}
 
     local emptyText = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     emptyText:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -8)
@@ -1215,41 +510,106 @@ function GoldTracker:CreateHistoryWindow()
     sessionName:SetJustifyH("LEFT")
     frame.sessionNameText = sessionName
 
-    local location = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    location:SetPoint("TOPLEFT", sessionName, "BOTTOMLEFT", 0, -6)
-    location:SetWidth(850)
-    location:SetJustifyH("LEFT")
-    location:SetText("")
-    location:Hide()
-    frame.locationText = location
+    local locationTableFrame = CreateFrame("Frame", nil, detailsContainer)
+    locationTableFrame:SetPoint("TOPLEFT", sessionName, "BOTTOMLEFT", 0, -6)
+    locationTableFrame:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
+    locationTableFrame:SetHeight(20)
+    locationTableFrame:Hide()
+    frame.locationTableFrame = locationTableFrame
 
-    local timeFrame = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    timeFrame:SetPoint("TOPLEFT", location, "BOTTOMLEFT", 0, -4)
-    timeFrame:SetWidth(850)
-    timeFrame:SetJustifyH("LEFT")
-    timeFrame:SetText("")
-    timeFrame:Hide()
-    frame.timeFrameText = timeFrame
+    local locationColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    locationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, 0)
+    locationColumnHeader:SetWidth(470)
+    locationColumnHeader:SetJustifyH("LEFT")
+    if locationColumnHeader.SetWordWrap then
+        locationColumnHeader:SetWordWrap(false)
+    end
+    locationColumnHeader:SetText("Location")
+    frame.locationHeaderText = locationColumnHeader
 
-    local summary = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    summary:SetPoint("TOPLEFT", timeFrame, "BOTTOMLEFT", 0, -10)
-    summary:SetWidth(850)
-    summary:SetJustifyH("LEFT")
-    frame.summaryText = summary
+    local timeFrameColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    timeFrameColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 476, 0)
+    timeFrameColumnHeader:SetWidth(210)
+    timeFrameColumnHeader:SetJustifyH("LEFT")
+    if timeFrameColumnHeader.SetWordWrap then
+        timeFrameColumnHeader:SetWordWrap(false)
+    end
+    timeFrameColumnHeader:SetText("Time frame")
+    frame.timeFrameHeaderText = timeFrameColumnHeader
 
-    local source = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    source:SetPoint("TOPLEFT", summary, "BOTTOMLEFT", 0, -6)
-    source:SetWidth(850)
-    source:SetJustifyH("LEFT")
-    frame.sourceText = source
+    local highlightsColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    highlightsColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 692, 0)
+    highlightsColumnHeader:SetWidth(80)
+    highlightsColumnHeader:SetJustifyH("LEFT")
+    if highlightsColumnHeader.SetWordWrap then
+        highlightsColumnHeader:SetWordWrap(false)
+    end
+    highlightsColumnHeader:SetText("Highlights")
+    frame.highlightsHeaderText = highlightsColumnHeader
+
+    local durationColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    durationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 776, 0)
+    durationColumnHeader:SetWidth(56)
+    durationColumnHeader:SetJustifyH("LEFT")
+    if durationColumnHeader.SetWordWrap then
+        durationColumnHeader:SetWordWrap(false)
+    end
+    durationColumnHeader:SetText("Duration")
+    frame.durationHeaderText = durationColumnHeader
+
+    local tableUnderline = locationTableFrame:CreateTexture(nil, "ARTWORK")
+    tableUnderline:SetColorTexture(1, 0.82, 0, 0.28)
+    tableUnderline:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, -16)
+    tableUnderline:SetPoint("TOPRIGHT", locationTableFrame, "TOPRIGHT", 0, -16)
+    tableUnderline:SetHeight(1)
+    frame.locationTableUnderline = tableUnderline
+
+    local locationTableScrollFrame = CreateFrame("ScrollFrame", nil, locationTableFrame, "UIPanelScrollFrameTemplate")
+    locationTableScrollFrame:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, -19)
+    locationTableScrollFrame:SetPoint("TOPRIGHT", locationTableFrame, "TOPRIGHT", -27, -19)
+    locationTableScrollFrame:SetHeight(1)
+    locationTableScrollFrame:EnableMouseWheel(true)
+    locationTableScrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local step = 24
+        local nextScroll = self:GetVerticalScroll() - (delta * step)
+        local maxScroll = self:GetVerticalScrollRange()
+        if nextScroll < 0 then
+            nextScroll = 0
+        elseif nextScroll > maxScroll then
+            nextScroll = maxScroll
+        end
+        self:SetVerticalScroll(nextScroll)
+    end)
+    frame.locationTableScrollFrame = locationTableScrollFrame
+
+    local locationTableContent = CreateFrame("Frame", nil, locationTableScrollFrame)
+    locationTableContent:SetSize(1, 1)
+    locationTableContent:SetPoint("TOPLEFT", locationTableScrollFrame, "TOPLEFT", 0, 0)
+    locationTableScrollFrame:SetScrollChild(locationTableContent)
+    frame.locationTableContent = locationTableContent
+
+    frame.locationTableRows = {}
+    frame.locationText = nil
+    frame.timeFrameText = nil
+    frame.locationDurationText = nil
+
+    local summaryTableFrame = CreateFrame("Frame", nil, detailsContainer)
+    summaryTableFrame:SetPoint("TOPLEFT", locationTableFrame, "BOTTOMLEFT", 0, -(DETAILS_GAP_LOCATION_TABLE_TO_FILTER + DETAILS_GAP_FILTER_TO_SUMMARY))
+    summaryTableFrame:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
+    summaryTableFrame:SetHeight(16)
+    summaryTableFrame:Hide()
+    frame.summaryTableFrame = summaryTableFrame
+    frame.summaryRows = {}
+    frame.summaryText = nil
+    frame.sourceText = nil
 
     local locationFilterLabel = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    locationFilterLabel:SetPoint("TOPLEFT", source, "BOTTOMLEFT", 0, -10)
+    locationFilterLabel:SetPoint("TOPLEFT", locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
     locationFilterLabel:SetText("Location")
     frame.locationFilterLabelText = locationFilterLabel
 
     local locationFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryLocationFilterDropdown", detailsContainer, "UIDropDownMenuTemplate")
-    locationFilterDropdown:SetPoint("TOPLEFT", locationFilterLabel, "BOTTOMLEFT", -16, -2)
+    locationFilterDropdown:SetPoint("LEFT", locationFilterLabel, "RIGHT", -6, -1)
     UIDropDownMenu_SetWidth(locationFilterDropdown, 280)
     UIDropDownMenu_Initialize(locationFilterDropdown, function(_, level)
         for _, option in ipairs(frame.detailsLocationOptions or {}) do
@@ -1284,12 +644,12 @@ function GoldTracker:CreateHistoryWindow()
     frame.splitButton = splitButton
 
     local itemsHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    itemsHeader:SetPoint("TOPLEFT", locationFilterDropdown, "BOTTOMLEFT", 16, -8)
+    itemsHeader:SetPoint("TOPLEFT", summaryTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_SUMMARY_TO_ITEMS)
     itemsHeader:SetText("Items")
     frame.itemsHeaderText = itemsHeader
 
     local log = CreateFrame("ScrollingMessageFrame", nil, detailsContainer)
-    log:SetPoint("TOPLEFT", itemsHeader, "BOTTOMLEFT", 0, -8)
+    log:SetPoint("TOPLEFT", itemsHeader, "BOTTOMLEFT", 0, -2)
     log:SetPoint("BOTTOMRIGHT", detailsContainer, "BOTTOMRIGHT", -20, 20)
     log:SetFontObject(GameFontHighlightSmall)
     log:SetJustifyH("LEFT")
@@ -1324,6 +684,7 @@ function GoldTracker:CreateHistoryWindow()
     end)
 
     self.historyFrame = frame
+    self:ApplyHistoryDetailsFontSize()
     self:ShowHistoryListView()
 end
 
@@ -1359,13 +720,13 @@ function GoldTracker:GetHistoryRow(index)
 
     local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     nameText:SetPoint("TOPLEFT", selectCheckbox, "TOPRIGHT", 0, -2)
-    nameText:SetWidth(300)
+    nameText:SetWidth(260)
     nameText:SetJustifyH("LEFT")
     row.nameText = nameText
 
     local subtitleText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -2)
-    subtitleText:SetWidth(300)
+    subtitleText:SetWidth(260)
     subtitleText:SetJustifyH("LEFT")
     subtitleText:SetTextColor(0.78, 0.78, 0.78)
     subtitleText:SetText("")
@@ -1391,22 +752,28 @@ function GoldTracker:GetHistoryRow(index)
     row.deleteButton = deleteButton
 
     local summaryText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    summaryText:SetPoint("LEFT", row, "LEFT", 340, 0)
-    summaryText:SetWidth(74)
+    summaryText:SetPoint("LEFT", row, "LEFT", 302, 0)
+    summaryText:SetWidth(60)
     summaryText:SetJustifyH("LEFT")
     row.summaryText = summaryText
 
     local totalText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    totalText:SetPoint("LEFT", row, "LEFT", 415, 0)
-    totalText:SetPoint("RIGHT", row, "LEFT", 529, 0)
+    totalText:SetPoint("LEFT", row, "LEFT", 370, 0)
+    totalText:SetPoint("RIGHT", row, "LEFT", 474, 0)
     totalText:SetJustifyH("LEFT")
     row.totalText = totalText
 
     local totalRawText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    totalRawText:SetPoint("LEFT", row, "LEFT", 531, 0)
-    totalRawText:SetPoint("RIGHT", pinButton, "LEFT", -8, 0)
+    totalRawText:SetPoint("LEFT", row, "LEFT", 482, 0)
+    totalRawText:SetPoint("RIGHT", row, "LEFT", 588, 0)
     totalRawText:SetJustifyH("LEFT")
     row.totalRawText = totalRawText
+
+    local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    durationText:SetPoint("LEFT", row, "LEFT", 596, 0)
+    durationText:SetPoint("RIGHT", pinButton, "LEFT", -8, 0)
+    durationText:SetJustifyH("LEFT")
+    row.durationText = durationText
 
     frame.rows[index] = row
     return row
@@ -1445,6 +812,124 @@ function GoldTracker:GetHistoryTotalsRow()
     return row
 end
 
+function GoldTracker:GetHistoryLocationDetailsRow(index)
+    local frame = self.historyFrame
+    if not frame or not frame.locationTableFrame then
+        return nil
+    end
+
+    frame.locationTableRows = frame.locationTableRows or {}
+    local row = frame.locationTableRows[index]
+    if row then
+        return row
+    end
+
+    row = CreateFrame("Frame", nil, frame.locationTableContent or frame.locationTableFrame)
+    row:SetHeight(16)
+
+    local locationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    locationText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    locationText:SetWidth(470)
+    locationText:SetJustifyH("LEFT")
+    if locationText.SetJustifyV then
+        locationText:SetJustifyV("TOP")
+    end
+    if locationText.SetWordWrap then
+        locationText:SetWordWrap(true)
+    end
+    row.locationText = locationText
+
+    local timeFrameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    timeFrameText:SetPoint("TOPLEFT", row, "TOPLEFT", 476, 0)
+    timeFrameText:SetWidth(210)
+    timeFrameText:SetJustifyH("LEFT")
+    if timeFrameText.SetJustifyV then
+        timeFrameText:SetJustifyV("TOP")
+    end
+    if timeFrameText.SetWordWrap then
+        timeFrameText:SetWordWrap(true)
+    end
+    row.timeFrameText = timeFrameText
+
+    local highlightsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    highlightsText:SetPoint("TOPLEFT", row, "TOPLEFT", 692, 0)
+    highlightsText:SetWidth(80)
+    highlightsText:SetJustifyH("LEFT")
+    if highlightsText.SetJustifyV then
+        highlightsText:SetJustifyV("TOP")
+    end
+    if highlightsText.SetWordWrap then
+        highlightsText:SetWordWrap(false)
+    end
+    row.highlightsText = highlightsText
+
+    local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    durationText:SetPoint("TOPLEFT", row, "TOPLEFT", 776, 0)
+    durationText:SetWidth(56)
+    durationText:SetJustifyH("LEFT")
+    if durationText.SetJustifyV then
+        durationText:SetJustifyV("TOP")
+    end
+    if durationText.SetWordWrap then
+        durationText:SetWordWrap(false)
+    end
+    row.durationText = durationText
+
+    local rowDivider = row:CreateTexture(nil, "ARTWORK")
+    rowDivider:SetColorTexture(1, 0.82, 0, 0.22)
+    rowDivider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+    rowDivider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+    rowDivider:SetHeight(1)
+    rowDivider:Hide()
+    row.divider = rowDivider
+
+    frame.locationTableRows[index] = row
+    return row
+end
+
+function GoldTracker:GetHistoryDetailsSummaryRow(index)
+    local frame = self.historyFrame
+    if not frame or not frame.summaryTableFrame then
+        return nil
+    end
+
+    frame.summaryRows = frame.summaryRows or {}
+    local row = frame.summaryRows[index]
+    if row then
+        return row
+    end
+
+    row = CreateFrame("Frame", nil, frame.summaryTableFrame)
+    row:SetHeight(16)
+
+    local labelText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    labelText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    labelText:SetWidth(230)
+    labelText:SetJustifyH("LEFT")
+    if labelText.SetJustifyV then
+        labelText:SetJustifyV("TOP")
+    end
+    if labelText.SetWordWrap then
+        labelText:SetWordWrap(false)
+    end
+    row.labelText = labelText
+
+    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    valueText:SetPoint("TOPLEFT", row, "TOPLEFT", 236, 0)
+    valueText:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
+    valueText:SetJustifyH("LEFT")
+    if valueText.SetJustifyV then
+        valueText:SetJustifyV("TOP")
+    end
+    if valueText.SetWordWrap then
+        valueText:SetWordWrap(false)
+    end
+    row.valueText = valueText
+
+    frame.summaryRows[index] = row
+    return row
+end
+
 function GoldTracker:GetSelectedHistorySessionIDsInOrder()
     local frame = self.historyFrame
     if not frame then
@@ -1468,9 +953,66 @@ function GoldTracker:ClearHistorySelection()
     end
 
     self.historyFrame.selectedSessionIDs = {}
+    self.historyFrame.visibleSessionIDs = self.historyFrame.visibleSessionIDs or {}
     if self.UpdateHistoryActionButtons then
         self:UpdateHistoryActionButtons()
     end
+end
+
+function GoldTracker:UpdateHistoryPageSelectAllState()
+    local frame = self.historyFrame
+    if not frame or not frame.selectPageCheckbox then
+        return
+    end
+
+    local isListView = frame.view == "list"
+    frame.selectPageCheckbox:SetShown(isListView)
+    if not isListView then
+        frame.selectPageCheckbox:SetChecked(false)
+        return
+    end
+
+    local visibleSessionIDs = frame.visibleSessionIDs or {}
+    if #visibleSessionIDs == 0 then
+        frame.selectPageCheckbox:SetChecked(false)
+        frame.selectPageCheckbox:SetEnabled(false)
+        return
+    end
+
+    frame.selectPageCheckbox:SetEnabled(true)
+    local selectedMap = frame.selectedSessionIDs or {}
+    local allVisibleSelected = true
+    for _, sessionID in ipairs(visibleSessionIDs) do
+        if selectedMap[sessionID] ~= true then
+            allVisibleSelected = false
+            break
+        end
+    end
+    frame.selectPageCheckbox:SetChecked(allVisibleSelected)
+end
+
+function GoldTracker:SetHistoryCurrentPageSelection(shouldSelect)
+    local frame = self.historyFrame
+    if not frame then
+        return
+    end
+
+    local visibleSessionIDs = frame.visibleSessionIDs or {}
+    if #visibleSessionIDs == 0 then
+        self:UpdateHistoryPageSelectAllState()
+        return
+    end
+
+    local selectedMap = frame.selectedSessionIDs or {}
+    for _, sessionID in ipairs(visibleSessionIDs) do
+        if shouldSelect then
+            selectedMap[sessionID] = true
+        else
+            selectedMap[sessionID] = nil
+        end
+    end
+    frame.selectedSessionIDs = selectedMap
+    self:RefreshHistoryWindow()
 end
 
 function GoldTracker:UpdateHistoryActionButtons()
@@ -1503,6 +1045,8 @@ function GoldTracker:UpdateHistoryActionButtons()
             frame.mergeButton:Hide()
         end
     end
+
+    self:UpdateHistoryPageSelectAllState()
 end
 
 function GoldTracker:GetDisplaySortedSessionHistory()
@@ -1526,7 +1070,7 @@ function GoldTracker:GetDisplaySortedSessionHistory()
             return aPinned and not bPinned
         end
 
-        if sortKey == "sessionTotal" or sortKey == "sessionTotalRaw" then
+        if sortKey == "sessionTotal" or sortKey == "sessionTotalRaw" or sortKey == "duration" then
             local aValue = GetHistorySortValue(a, sortKey)
             local bValue = GetHistorySortValue(b, sortKey)
             if aValue ~= bValue then
@@ -1551,12 +1095,15 @@ function GoldTracker:UpdateHistorySortHeaderState()
     local frame = self.historyFrame
     local sortKey = frame.sortKey
     local totalLabel = "Session Total"
-    local totalRawLabel = "Raw Session Total"
+    local totalRawLabel = "Raw Total"
+    local durationLabel = "Duration"
 
     if sortKey == "sessionTotal" then
         totalLabel = frame.sortAscending and "Session Total \226\150\178" or "Session Total \226\150\188"
     elseif sortKey == "sessionTotalRaw" then
-        totalRawLabel = frame.sortAscending and "Raw Session Total \226\150\178" or "Raw Session Total \226\150\188"
+        totalRawLabel = frame.sortAscending and "Raw Total \226\150\178" or "Raw Total \226\150\188"
+    elseif sortKey == "duration" then
+        durationLabel = frame.sortAscending and "Duration \226\150\178" or "Duration \226\150\188"
     end
 
     if frame.totalHeaderButton and frame.totalHeaderButton.text then
@@ -1575,6 +1122,14 @@ function GoldTracker:UpdateHistorySortHeaderState()
             frame.totalRawHeaderButton.text:SetTextColor(1, 0.82, 0)
         end
     end
+    if frame.durationHeaderButton and frame.durationHeaderButton.text then
+        frame.durationHeaderButton.text:SetText(durationLabel)
+        if sortKey == "duration" then
+            frame.durationHeaderButton.text:SetTextColor(1, 1, 1)
+        else
+            frame.durationHeaderButton.text:SetTextColor(1, 0.82, 0)
+        end
+    end
 end
 
 function GoldTracker:ToggleHistorySort(sortKey)
@@ -1583,7 +1138,7 @@ function GoldTracker:ToggleHistorySort(sortKey)
     end
 
     local frame = self.historyFrame
-    if sortKey ~= "sessionTotal" and sortKey ~= "sessionTotalRaw" then
+    if sortKey ~= "sessionTotal" and sortKey ~= "sessionTotalRaw" and sortKey ~= "duration" then
         return
     end
 
@@ -1667,6 +1222,10 @@ function GoldTracker:ShowHistoryDetailsView(sessionID)
     frame.view = "details"
     frame.selectedSessionID = sessionID
     frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
+    local _, currentHeight = frame:GetSize()
+    if (tonumber(currentHeight) or 0) <= HISTORY_WINDOW_DEFAULT_HEIGHT then
+        frame:SetHeight(HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT)
+    end
 
     if frame.TitleText then
         frame.TitleText:SetText("Gold Tracker - Session Details")
@@ -1733,6 +1292,7 @@ function GoldTracker:RefreshHistoryWindow()
     frame.selectedSessionIDs = selectedMap
 
     local renderedRows = 0
+    local visibleSessionIDs = {}
     local dividerAfterRow = nil
     local previousWasPinned = nil
     for historyIndex = startIndex, endIndex do
@@ -1744,6 +1304,7 @@ function GoldTracker:RefreshHistoryWindow()
         end
         previousWasPinned = currentIsPinned
         local sessionID = session.id
+        visibleSessionIDs[#visibleSessionIDs + 1] = sessionID
         local row = self:GetHistoryRow(renderedRows)
         row:SetWidth(width)
         if row.bg then
@@ -1767,6 +1328,9 @@ function GoldTracker:RefreshHistoryWindow()
         row.summaryText:SetText(FormatSessionSummary(self, session))
         row.totalText:SetText(FormatSessionTotal(self, session))
         row.totalRawText:SetText(FormatSessionTotalRaw(self, session))
+        if row.durationText then
+            row.durationText:SetText(FormatSessionDuration(session))
+        end
 
         row.selectCheckbox:SetChecked(selectedMap[sessionID] == true)
         row.selectCheckbox:SetScript("OnClick", function(button)
@@ -1801,6 +1365,8 @@ function GoldTracker:RefreshHistoryWindow()
         end)
         row:Show()
     end
+
+    frame.visibleSessionIDs = visibleSessionIDs
 
     for i = renderedRows + 1, #frame.rows do
         frame.rows[i]:Hide()
@@ -1882,6 +1448,63 @@ function GoldTracker:RefreshHistoryWindow()
     self:UpdateHistoryActionButtons()
 end
 
+function GoldTracker:ApplyHistoryDetailsFontSize()
+    local frame = self.historyFrame
+    if not frame then
+        return
+    end
+
+    local baseSize = 12
+    if type(self.GetHistoryDetailsFontSize) == "function" then
+        baseSize = self:GetHistoryDetailsFontSize()
+    end
+    baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
+
+    local function ApplyFontSize(region, size, fallbackFontObject)
+        if not region or type(region.GetFont) ~= "function" or type(region.SetFont) ~= "function" then
+            return
+        end
+
+        local fontPath, _, fontFlags = region:GetFont()
+        if not fontPath and fallbackFontObject and type(fallbackFontObject.GetFont) == "function" then
+            fontPath, _, fontFlags = fallbackFontObject:GetFont()
+        end
+        if not fontPath then
+            fontPath = "Fonts\\FRIZQT__.TTF"
+        end
+
+        region:SetFont(fontPath, size, fontFlags)
+    end
+
+    ApplyFontSize(frame.sessionNameText, baseSize + 2, GameFontHighlight)
+    ApplyFontSize(frame.locationHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    ApplyFontSize(frame.timeFrameHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    ApplyFontSize(frame.highlightsHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    ApplyFontSize(frame.durationHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    for _, row in ipairs(frame.locationTableRows or {}) do
+        ApplyFontSize(row.locationText, baseSize, GameFontHighlightSmall)
+        ApplyFontSize(row.timeFrameText, baseSize, GameFontHighlightSmall)
+        ApplyFontSize(row.highlightsText, baseSize, GameFontHighlightSmall)
+        ApplyFontSize(row.durationText, baseSize, GameFontHighlightSmall)
+    end
+    for _, row in ipairs(frame.summaryRows or {}) do
+        ApplyFontSize(row.labelText, baseSize, GameFontHighlightSmall)
+        ApplyFontSize(row.valueText, baseSize, GameFontHighlightSmall)
+    end
+    ApplyFontSize(frame.itemsHeaderText, baseSize, GameFontNormal)
+
+    if frame.detailsLog and type(frame.detailsLog.GetFont) == "function" and type(frame.detailsLog.SetFont) == "function" then
+        local fontPath, _, fontFlags = frame.detailsLog:GetFont()
+        if not fontPath and GameFontHighlightSmall and type(GameFontHighlightSmall.GetFont) == "function" then
+            fontPath, _, fontFlags = GameFontHighlightSmall:GetFont()
+        end
+        if not fontPath then
+            fontPath = "Fonts\\FRIZQT__.TTF"
+        end
+        frame.detailsLog:SetFont(fontPath, baseSize, fontFlags)
+    end
+end
+
 function GoldTracker:OpenHistoryWindow()
     if not self:IsSessionHistoryEnabled() then
         self:Print("Session history is disabled. Enable it in options first.")
@@ -1899,6 +1522,8 @@ function GoldTracker:RefreshHistoryDetailsWindow()
     if not frame or frame.view ~= "details" then
         return
     end
+
+    self:ApplyHistoryDetailsFontSize()
 
     local session = self:GetHistorySessionByID(frame.selectedSessionID)
     if not session then
@@ -1932,69 +1557,211 @@ function GoldTracker:RefreshHistoryDetailsWindow()
     end
 
     local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey)
-    local summaryPrefix = ""
-    if selectedLocationKey ~= DETAILS_LOCATION_FILTER_ALL then
-        summaryPrefix = string.format("[%s] ", selectedLocationLabel)
-    end
 
     frame.sessionNameText:SetText(session.name or "Session")
-    frame.summaryText:SetText(
-        string.format(
-            "%sRaw gold: %s   Vendor items gold: %s   Items value: %s   Total: %s\nRaw session total: %s   Duration: %s",
-            summaryPrefix,
-            self:FormatMoney(filteredSummary.rawGold or 0),
-            self:FormatMoney(filteredSummary.itemsRawGold or 0),
-            self:FormatMoney(filteredSummary.itemsValue or 0),
-            self:FormatMoney(filteredSummary.totalValue or 0),
-            self:FormatMoney((tonumber(filteredSummary.rawGold) or 0) + (tonumber(filteredSummary.itemsRawGold) or 0)),
-            self:FormatDuration(filteredSummary.duration or 0)
-        )
-    )
-    frame.sourceText:SetText(string.format("Value source: %s", session.valueSourceLabel or "Unknown"))
 
-    local locationDetailsText = BuildLocationDetailsTextForSelection(session, selectedLocationKey)
-    if selectedLocationKey ~= DETAILS_LOCATION_FILTER_ALL then
-        if locationDetailsText ~= "" then
-            locationDetailsText = string.format("Selected: %s   %s", selectedLocationLabel, locationDetailsText)
-        else
-            locationDetailsText = string.format("Selected: %s", selectedLocationLabel)
+    local summaryDurationSeconds = tonumber(filteredSummary.duration) or 0
+    local summaryRawTotal = (tonumber(filteredSummary.rawGold) or 0) + (tonumber(filteredSummary.itemsRawGold) or 0)
+
+    local summaryRowsData = {
+        { label = "Duration", value = self:FormatDuration(filteredSummary.duration or 0) },
+        { label = "Value source", value = session.valueSourceLabel or "Unknown" },
+        { label = "Raw gold", value = self:FormatMoney(filteredSummary.rawGold or 0) },
+        { label = "Vendor items gold", value = self:FormatMoney(filteredSummary.itemsRawGold or 0) },
+        { label = "AH value", value = self:FormatMoney(filteredSummary.itemsValue or 0) },
+        { label = "Raw session total", value = self:FormatMoney(summaryRawTotal) },
+        { label = "Session Total", value = self:FormatMoney(filteredSummary.totalValue or 0) },
+        { label = "Session / hour", value = self:FormatMoneyPerHour(filteredSummary.totalValue or 0, summaryDurationSeconds) },
+        { label = "AH / hour", value = self:FormatMoneyPerHour(filteredSummary.itemsValue or 0, summaryDurationSeconds) },
+        { label = "Raw / hour", value = self:FormatMoneyPerHour(summaryRawTotal, summaryDurationSeconds) },
+    }
+
+    -- Always show the complete per-location table; dropdown still filters summary and item list.
+    local locationRows = BuildLocationDetailsRowsForSelection(session, DETAILS_LOCATION_FILTER_ALL)
+    local hasLocationRows = type(locationRows) == "table" and #locationRows > 0
+
+    if hasLocationRows and frame.locationTableFrame then
+        for index = 1, #locationRows do
+            self:GetHistoryLocationDetailsRow(index)
+        end
+        self:ApplyHistoryDetailsFontSize()
+
+        local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
+        baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
+        local rowSpacing = 4
+        local minRowHeight = math.max(12, baseSize + 3)
+        local yOffset = 0
+        local bodyHeight = 0
+        local visibleBodyHeight = 0
+
+        for index, rowData in ipairs(locationRows) do
+            local row = self:GetHistoryLocationDetailsRow(index)
+            if row then
+                local startText = rowData.timeFrameStart or "Unknown"
+                local endText = rowData.timeFrameEnd or ""
+                local timeFrameCellText = startText
+                if type(endText) == "string" and endText ~= "" then
+                    timeFrameCellText = string.format("%s\n%s", startText, endText)
+                end
+
+                row.locationText:SetText(rowData.location or "Unknown")
+                row.timeFrameText:SetText(timeFrameCellText)
+                row.highlightsText:SetText(tostring(math.max(0, math.floor((tonumber(rowData.highlights) or 0) + 0.5))))
+                row.durationText:SetText(rowData.duration or "<1m")
+
+                local rowHeight = math.max(
+                    minRowHeight,
+                    tonumber(row.locationText:GetStringHeight()) or minRowHeight,
+                    tonumber(row.timeFrameText:GetStringHeight()) or minRowHeight,
+                    tonumber(row.highlightsText:GetStringHeight()) or minRowHeight,
+                    tonumber(row.durationText:GetStringHeight()) or minRowHeight
+                ) + 2
+
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", frame.locationTableContent, "TOPLEFT", 0, -yOffset)
+                row:SetPoint("TOPRIGHT", frame.locationTableContent, "TOPRIGHT", 0, -yOffset)
+                row:SetHeight(rowHeight)
+                row:Show()
+                if row.divider then
+                    row.divider:SetShown(index < #locationRows)
+                end
+
+                bodyHeight = bodyHeight + rowHeight
+                if index <= LOCATION_TABLE_MAX_VISIBLE_ROWS then
+                    visibleBodyHeight = visibleBodyHeight + rowHeight
+                end
+                if index < #locationRows then
+                    bodyHeight = bodyHeight + rowSpacing
+                    yOffset = yOffset + rowHeight + rowSpacing
+                    if index < LOCATION_TABLE_MAX_VISIBLE_ROWS then
+                        visibleBodyHeight = visibleBodyHeight + rowSpacing
+                    end
+                else
+                    yOffset = yOffset + rowHeight
+                end
+            end
+        end
+
+        for index = (#locationRows + 1), #(frame.locationTableRows or {}) do
+            if frame.locationTableRows[index] then
+                if frame.locationTableRows[index].divider then
+                    frame.locationTableRows[index].divider:Hide()
+                end
+                frame.locationTableRows[index]:Hide()
+            end
+        end
+
+        local scrollBodyHeight = bodyHeight
+        local maxVisibleBodyHeight = (visibleBodyHeight > 0) and visibleBodyHeight or bodyHeight
+        if #locationRows <= LOCATION_TABLE_MAX_VISIBLE_ROWS then
+            maxVisibleBodyHeight = bodyHeight
+        end
+
+        if frame.locationTableContent then
+            frame.locationTableContent:SetHeight(math.max(1, scrollBodyHeight))
+            if frame.locationTableScrollFrame then
+                local scrollWidth = (frame.locationTableScrollFrame:GetWidth() or 0) - 6
+                if scrollWidth <= 1 and frame.locationTableFrame then
+                    scrollWidth = (frame.locationTableFrame:GetWidth() or 0) - 33
+                end
+                frame.locationTableContent:SetWidth(math.max(1, scrollWidth))
+            end
+        end
+        if frame.locationTableScrollFrame then
+            frame.locationTableScrollFrame:SetHeight(math.max(1, maxVisibleBodyHeight))
+            if frame.locationTableScrollFrame.UpdateScrollChildRect then
+                frame.locationTableScrollFrame:UpdateScrollChildRect()
+            end
+            frame.locationTableScrollFrame:SetVerticalScroll(0)
+        end
+
+        frame.locationTableFrame:SetHeight(20 + math.max(1, maxVisibleBodyHeight) + 6)
+        frame.locationTableFrame:Show()
+    else
+        for _, row in ipairs(frame.locationTableRows or {}) do
+            if row.divider then
+                row.divider:Hide()
+            end
+            row:Hide()
+        end
+        if frame.locationTableFrame then
+            frame.locationTableFrame:Hide()
+        end
+        if frame.locationTableContent then
+            frame.locationTableContent:SetHeight(1)
+        end
+        if frame.locationTableScrollFrame then
+            frame.locationTableScrollFrame:SetHeight(1)
+            frame.locationTableScrollFrame:SetVerticalScroll(0)
         end
     end
-    local timeFrameText = FormatHistoryTimeFrame(filteredSummary.startTime, filteredSummary.stopTime)
-    local displayTimeFrameText = (timeFrameText ~= "") and string.format("Time frame: %s", timeFrameText) or ""
 
-    local hasLocationLine = type(locationDetailsText) == "string" and locationDetailsText ~= ""
-    local hasTimeFrameLine = displayTimeFrameText ~= ""
-
-    if frame.locationText then
-        if hasLocationLine then
-            frame.locationText:SetText(locationDetailsText)
-            frame.locationText:Show()
+    if frame.locationFilterLabelText then
+        frame.locationFilterLabelText:ClearAllPoints()
+        if hasLocationRows and frame.locationTableFrame then
+            frame.locationFilterLabelText:SetPoint("TOPLEFT", frame.locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
         else
-            frame.locationText:SetText("")
-            frame.locationText:Hide()
+            frame.locationFilterLabelText:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
         end
     end
-    if frame.timeFrameText then
-        if hasTimeFrameLine then
-            frame.timeFrameText:SetText(displayTimeFrameText)
-            frame.timeFrameText:Show()
+
+    if frame.summaryTableFrame then
+        frame.summaryTableFrame:ClearAllPoints()
+        if frame.locationFilterLabelText then
+            frame.summaryTableFrame:SetPoint("TOPLEFT", frame.locationFilterLabelText, "BOTTOMLEFT", 0, -DETAILS_GAP_FILTER_TO_SUMMARY)
         else
-            frame.timeFrameText:SetText("")
-            frame.timeFrameText:Hide()
+            frame.summaryTableFrame:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -8)
         end
-    end
-    if frame.summaryText then
-        frame.summaryText:ClearAllPoints()
-        if hasLocationLine and hasTimeFrameLine and frame.timeFrameText then
-            frame.summaryText:SetPoint("TOPLEFT", frame.timeFrameText, "BOTTOMLEFT", 0, -10)
-        elseif hasLocationLine and frame.locationText then
-            frame.summaryText:SetPoint("TOPLEFT", frame.locationText, "BOTTOMLEFT", 0, -10)
-        elseif hasTimeFrameLine and frame.timeFrameText then
-            frame.summaryText:SetPoint("TOPLEFT", frame.timeFrameText, "BOTTOMLEFT", 0, -10)
-        else
-            frame.summaryText:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -8)
+        frame.summaryTableFrame:SetPoint("RIGHT", frame.detailsContainer, "RIGHT", -20, 0)
+
+        for index = 1, #summaryRowsData do
+            self:GetHistoryDetailsSummaryRow(index)
         end
+        self:ApplyHistoryDetailsFontSize()
+
+        local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
+        baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
+        local rowSpacing = 1
+        local minRowHeight = math.max(12, baseSize + 2)
+        local yOffset = 0
+        local bodyHeight = 0
+
+        for index, rowData in ipairs(summaryRowsData) do
+            local row = self:GetHistoryDetailsSummaryRow(index)
+            if row then
+                row.labelText:SetText(string.format("%s:", rowData.label or ""))
+                row.valueText:SetText(rowData.value or "")
+
+                local rowHeight = math.max(
+                    minRowHeight,
+                    tonumber(row.labelText:GetStringHeight()) or minRowHeight,
+                    tonumber(row.valueText:GetStringHeight()) or minRowHeight
+                ) + 1
+
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", frame.summaryTableFrame, "TOPLEFT", 0, -yOffset)
+                row:SetPoint("TOPRIGHT", frame.summaryTableFrame, "TOPRIGHT", 0, -yOffset)
+                row:SetHeight(rowHeight)
+                row:Show()
+
+                bodyHeight = bodyHeight + rowHeight
+                if index < #summaryRowsData then
+                    bodyHeight = bodyHeight + rowSpacing
+                    yOffset = yOffset + rowHeight + rowSpacing
+                else
+                    yOffset = yOffset + rowHeight
+                end
+            end
+        end
+
+        for index = (#summaryRowsData + 1), #(frame.summaryRows or {}) do
+            if frame.summaryRows[index] then
+                frame.summaryRows[index]:Hide()
+            end
+        end
+
+        frame.summaryTableFrame:SetHeight(math.max(1, bodyHeight))
+        frame.summaryTableFrame:Show()
     end
 
     frame.detailsLog:Clear()

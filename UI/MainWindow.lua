@@ -15,6 +15,47 @@ function GoldTracker:ApplyMainWindowAlpha()
     self.mainFrame:SetAlpha(self:GetConfiguredWindowAlpha())
 end
 
+function GoldTracker:ApplyMainWindowGoldPerHourVisibility()
+    if not self.mainFrame then
+        return
+    end
+
+    local shouldShow = self:IsMainWindowGoldPerHourEnabled()
+    if self.mainFrame.sessionPerHourLabel then
+        self.mainFrame.sessionPerHourLabel:SetShown(shouldShow)
+    end
+    if self.mainFrame.sessionPerHourValue then
+        self.mainFrame.sessionPerHourValue:SetShown(shouldShow)
+    end
+    if self.mainFrame.ahPerHourLabel then
+        self.mainFrame.ahPerHourLabel:SetShown(shouldShow)
+    end
+    if self.mainFrame.ahPerHourValue then
+        self.mainFrame.ahPerHourValue:SetShown(shouldShow)
+    end
+    if self.mainFrame.rawPerHourLabel then
+        self.mainFrame.rawPerHourLabel:SetShown(shouldShow)
+    end
+    if self.mainFrame.rawPerHourValue then
+        self.mainFrame.rawPerHourValue:SetShown(shouldShow)
+    end
+end
+
+function GoldTracker:ApplyTotalWindowGoldPerHourVisibility()
+    if not self.totalFrame then
+        return
+    end
+
+    local shouldShow = self:IsTotalWindowGoldPerHourEnabled()
+    if self.totalFrame.sessionPerHourText then
+        self.totalFrame.sessionPerHourText:SetShown(shouldShow)
+    end
+    if self.totalFrame.sessionRawPerHourText then
+        self.totalFrame.sessionRawPerHourText:SetShown(shouldShow)
+    end
+    self.totalFrame:SetHeight(shouldShow and 128 or 96)
+end
+
 function GoldTracker:RefreshHistoryButtonVisibility()
     if not self.mainFrame or not self.mainFrame.historyButton then
         return
@@ -57,6 +98,11 @@ function GoldTracker:UpdateMainWindow()
     frame.goldValue:SetText(self:FormatMoney(session.goldLooted))
     frame.itemValue:SetText(self:FormatMoney(session.itemValue))
     frame.itemVendorValue:SetText(self:FormatMoney(session.itemVendorValue))
+    local elapsedSeconds = self:GetSessionElapsedSeconds()
+    local elapsedForRate = elapsedSeconds
+    if session.active and elapsedForRate > 0 then
+        elapsedForRate = math.max(60, elapsedForRate)
+    end
     local highlightCount = tonumber(session.highlightItemCount)
     if not highlightCount then
         highlightCount = (tonumber(session.lowHighlightItemCount) or 0) + (tonumber(session.highHighlightItemCount) or 0)
@@ -66,10 +112,37 @@ function GoldTracker:UpdateMainWindow()
     local sessionTotalRaw = (tonumber(session.goldLooted) or 0) + (tonumber(session.itemVendorValue) or 0)
     frame.totalValue:SetText(self:FormatMoney(sessionTotal))
     frame.totalRawValue:SetText(self:FormatMoney(sessionTotalRaw))
+    local shouldShowMainWindowGoldPerHour = self:IsMainWindowGoldPerHourEnabled()
+    self:ApplyMainWindowGoldPerHourVisibility()
+    if shouldShowMainWindowGoldPerHour and frame.sessionPerHourValue then
+        frame.sessionPerHourValue:SetText(self:FormatMoneyPerHour(sessionTotal, elapsedForRate))
+    end
+    if shouldShowMainWindowGoldPerHour and frame.ahPerHourValue then
+        frame.ahPerHourValue:SetText(self:FormatMoneyPerHour(session.itemValue or 0, elapsedForRate))
+    end
+    if shouldShowMainWindowGoldPerHour and frame.rawPerHourValue then
+        frame.rawPerHourValue:SetText(self:FormatMoneyPerHour(sessionTotalRaw, elapsedForRate))
+    end
     frame.sourceValue:SetText(source.label)
     frame.startStopButton:SetText(session.active and "Stop Session" or "Start Session")
     self:RefreshHistoryButtonVisibility()
+    self:RefreshDiagnosisButtonVisibility()
     self:UpdateTotalWindow()
+    if type(self.UpdateDiagnosisWindow) == "function" then
+        self:UpdateDiagnosisWindow()
+    end
+end
+
+function GoldTracker:RefreshDiagnosisButtonVisibility()
+    if not self.mainFrame or not self.mainFrame.diagnosisButton then
+        return
+    end
+
+    if self:IsDiagnosticsPanelEnabled() then
+        self.mainFrame.diagnosisButton:Show()
+    else
+        self.mainFrame.diagnosisButton:Hide()
+    end
 end
 
 function GoldTracker:ToggleMainWindow()
@@ -90,14 +163,34 @@ function GoldTracker:UpdateTotalWindow()
         return
     end
 
+    local shouldShowTotalWindowGoldPerHour = self:IsTotalWindowGoldPerHourEnabled()
+    self:ApplyTotalWindowGoldPerHourVisibility()
+
     if self.session and self.session.active then
         local sessionTotal = self:GetSessionTotalValue()
         local sessionTotalRaw = (tonumber(self.session.goldLooted) or 0) + (tonumber(self.session.itemVendorValue) or 0)
+        local elapsedSeconds = self:GetSessionElapsedSeconds()
+        local elapsedForRate = elapsedSeconds
+        if elapsedForRate > 0 then
+            elapsedForRate = math.max(60, elapsedForRate)
+        end
         self.totalFrame.sessionTotalText:SetText(string.format("ST: %s", self:FormatMoney(sessionTotal)))
         self.totalFrame.sessionTotalRawText:SetText(string.format("Raw: %s", self:FormatMoney(sessionTotalRaw)))
+        if shouldShowTotalWindowGoldPerHour and self.totalFrame.sessionPerHourText then
+            self.totalFrame.sessionPerHourText:SetText(string.format("ST/h: %s", self:FormatMoneyPerHour(sessionTotal, elapsedForRate)))
+        end
+        if shouldShowTotalWindowGoldPerHour and self.totalFrame.sessionRawPerHourText then
+            self.totalFrame.sessionRawPerHourText:SetText(string.format("Raw/h: %s", self:FormatMoneyPerHour(sessionTotalRaw, elapsedForRate)))
+        end
     else
         self.totalFrame.sessionTotalText:SetText("ST: ---")
         self.totalFrame.sessionTotalRawText:SetText("Raw: ---")
+        if shouldShowTotalWindowGoldPerHour and self.totalFrame.sessionPerHourText then
+            self.totalFrame.sessionPerHourText:SetText("ST/h: ---")
+        end
+        if shouldShowTotalWindowGoldPerHour and self.totalFrame.sessionRawPerHourText then
+            self.totalFrame.sessionRawPerHourText:SetText("Raw/h: ---")
+        end
     end
 end
 
@@ -108,7 +201,7 @@ function GoldTracker:CreateTotalWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerTotalFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(300, 92)
+    frame:SetSize(300, 128)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -148,11 +241,24 @@ function GoldTracker:CreateTotalWindow()
     sessionTotalRawText:SetText("Raw: ---")
     frame.sessionTotalRawText = sessionTotalRawText
 
+    local sessionPerHourText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    sessionPerHourText:SetPoint("TOP", sessionTotalRawText, "BOTTOM", 0, -4)
+    sessionPerHourText:SetJustifyH("CENTER")
+    sessionPerHourText:SetText("ST/h: ---")
+    frame.sessionPerHourText = sessionPerHourText
+
+    local sessionRawPerHourText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    sessionRawPerHourText:SetPoint("TOP", sessionPerHourText, "BOTTOM", 0, -2)
+    sessionRawPerHourText:SetJustifyH("CENTER")
+    sessionRawPerHourText:SetText("Raw/h: ---")
+    frame.sessionRawPerHourText = sessionRawPerHourText
+
     frame:SetScript("OnShow", function()
         addon:UpdateTotalWindow()
     end)
 
     self.totalFrame = frame
+    self:ApplyTotalWindowGoldPerHourVisibility()
 end
 
 function GoldTracker:ToggleTotalWindow()
@@ -260,6 +366,17 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.historyButton = historyButton
 
+    local diagnosisButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    diagnosisButton:SetSize(90, 24)
+    diagnosisButton:SetPoint("LEFT", historyButton, "RIGHT", 8, 0)
+    diagnosisButton:SetText("Diagnosis")
+    diagnosisButton:SetScript("OnClick", function()
+        if type(addon.ToggleDiagnosisWindow) == "function" then
+            addon:ToggleDiagnosisWindow()
+        end
+    end)
+    frame.diagnosisButton = diagnosisButton
+
     local leftColumnX = 20
     local rightColumnX = 280
     local rowOneY = -66
@@ -300,6 +417,39 @@ function GoldTracker:CreateMainWindow()
     itemValue:SetPoint("RIGHT", frame, "RIGHT", -20, 0)
     itemValue:SetJustifyH("LEFT")
     frame.itemValue = itemValue
+
+    local sessionPerHourLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    sessionPerHourLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", rightColumnX, rowOneY + (rowStep * 2))
+    sessionPerHourLabel:SetText("Session/h:")
+    frame.sessionPerHourLabel = sessionPerHourLabel
+
+    local sessionPerHourValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    sessionPerHourValue:SetPoint("LEFT", sessionPerHourLabel, "RIGHT", 8, 0)
+    sessionPerHourValue:SetPoint("RIGHT", frame, "RIGHT", -20, 0)
+    sessionPerHourValue:SetJustifyH("LEFT")
+    frame.sessionPerHourValue = sessionPerHourValue
+
+    local ahPerHourLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    ahPerHourLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", rightColumnX, rowOneY + (rowStep * 3))
+    ahPerHourLabel:SetText("AH/h:")
+    frame.ahPerHourLabel = ahPerHourLabel
+
+    local ahPerHourValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    ahPerHourValue:SetPoint("LEFT", ahPerHourLabel, "RIGHT", 8, 0)
+    ahPerHourValue:SetPoint("RIGHT", frame, "RIGHT", -20, 0)
+    ahPerHourValue:SetJustifyH("LEFT")
+    frame.ahPerHourValue = ahPerHourValue
+
+    local rawPerHourLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    rawPerHourLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", rightColumnX, rowOneY + (rowStep * 4))
+    rawPerHourLabel:SetText("Raw/h:")
+    frame.rawPerHourLabel = rawPerHourLabel
+
+    local rawPerHourValue = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    rawPerHourValue:SetPoint("LEFT", rawPerHourLabel, "RIGHT", 8, 0)
+    rawPerHourValue:SetPoint("RIGHT", frame, "RIGHT", -20, 0)
+    rawPerHourValue:SetJustifyH("LEFT")
+    frame.rawPerHourValue = rawPerHourValue
 
     local goldLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     goldLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 2))
@@ -413,5 +563,7 @@ function GoldTracker:CreateMainWindow()
 
     self.mainFrame = frame
     self:ApplyMainWindowAlpha()
+    self:ApplyMainWindowGoldPerHourVisibility()
     self:RefreshHistoryButtonVisibility()
+    self:RefreshDiagnosisButtonVisibility()
 end

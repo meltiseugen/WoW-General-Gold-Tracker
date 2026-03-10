@@ -7,12 +7,22 @@
 ## OptionalDeps: TradeSkillMaster
 
 Core/Namespace.lua
+Core/Diagnostics.lua
+Core/Alerts.lua
 Core/History.lua
 Core/Session.lua
 UI/MinimapButton.lua
 UI/MainWindow.lua
+UI/DiagnosisWindow.lua
 UI/OptionsPanel.lua
+UI/History/HistoryConstants.lua
+UI/History/HistoryDateFilter.lua
+UI/History/HistorySessionModel.lua
+UI/History/HistoryFormatter.lua
+UI/History/HistoryDataService.lua
 UI/HistoryWindow.lua
 Tracking/Valuation.lua
+Tracking/Loot/LootChatParser.lua
+Tracking/Loot/LootSourceService.lua
 Tracking/LootEvents.lua
 Core/Bootstrap.lua

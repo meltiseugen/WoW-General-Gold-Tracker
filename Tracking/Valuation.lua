@@ -99,11 +99,14 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
         bindType = select(14, GetItemInfo(itemLink))
     end
 
-    if type(bindType) == "number" and ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST)) then
-        self.soulboundLootTypeCache[cacheKey] = true
-        return true
+    if type(bindType) == "number" then
+        local isSoulboundByBindType =
+            ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST))
+        self.soulboundLootTypeCache[cacheKey] = isSoulboundByBindType and true or false
+        return isSoulboundByBindType == true
     end
 
+    local sawTooltipTextLine = false
     if C_TooltipInfo and C_TooltipInfo.GetHyperlink then
         local tooltipData = C_TooltipInfo.GetHyperlink(itemLink)
         if tooltipData then
@@ -113,7 +116,18 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
 
             if type(tooltipData.lines) == "table" then
                 for _, line in ipairs(tooltipData.lines) do
-                    if IsSoulboundTooltipLine(line and (line.leftText or line.text)) then
+                    local leftText = line and line.leftText or nil
+                    local rightText = line and line.rightText or nil
+                    local lineText = line and line.text or nil
+                    if (type(leftText) == "string" and leftText ~= "")
+                        or (type(rightText) == "string" and rightText ~= "")
+                        or (type(lineText) == "string" and lineText ~= "") then
+                        sawTooltipTextLine = true
+                    end
+
+                    if IsSoulboundTooltipLine(leftText)
+                        or IsSoulboundTooltipLine(rightText)
+                        or IsSoulboundTooltipLine(lineText) then
                         self.soulboundLootTypeCache[cacheKey] = true
                         return true
                     end
@@ -122,7 +136,11 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
         end
     end
 
-    self.soulboundLootTypeCache[cacheKey] = false
+    -- If tooltip data had textual lines we can safely cache a non-soulbound result.
+    -- Otherwise item info is likely not ready yet; avoid caching a false negative.
+    if sawTooltipTextLine then
+        self.soulboundLootTypeCache[cacheKey] = false
+    end
     return false
 end
 
@@ -189,34 +207,20 @@ function GoldTracker:GetItemUnitValue(itemLink)
 end
 
 function GoldTracker:NotifyHighValueItem(itemLink, quantity, totalValue)
-    if not self.db.notificationsEnabled then
+    if type(self.ProcessHighValueDropAlerts) == "function" then
+        self:ProcessHighValueDropAlerts(itemLink, quantity, totalValue)
         return
     end
-
-    local threshold = self:GetHighHighlightThreshold()
-    if threshold <= 0 or totalValue <= threshold then
-        return
-    end
-
-    local message = string.format("High value loot: %s x%d (%s)", itemLink, quantity, self:FormatMoney(totalValue))
-    local raidWarningColor = ChatTypeInfo and ChatTypeInfo["RAID_WARNING"]
-    if raidWarningColor then
-        RaidNotice_AddMessage(RaidWarningFrame, message, raidWarningColor)
-    else
-        RaidNotice_AddMessage(RaidWarningFrame, message, { r = 1, g = 0.2, b = 0.2 })
-    end
-
-    if PlaySound and SOUNDKIT and SOUNDKIT.UI_EPICLOOT_TOAST then
-        PlaySound(SOUNDKIT.UI_EPICLOOT_TOAST)
-    end
-
-    self:Print(message)
 end
 
 function GoldTracker:TrackLootMoney(amount)
     if amount <= 0 then
         return
     end
+
+    local trackMoneyStart = self:BeginDiagnosticTimer()
+    local previousSessionTotal = self:GetSessionTotalValue()
+    local lootTimestamp = time()
 
     self:UpdateSessionLocationContext()
     if type(self.session.moneyLoots) ~= "table" then
@@ -225,7 +229,7 @@ function GoldTracker:TrackLootMoney(amount)
     local locationData = self:GetCurrentSessionLootLocationData()
     self.session.moneyLoots[#self.session.moneyLoots + 1] = {
         amount = amount,
-        timestamp = time(),
+        timestamp = lootTimestamp,
         locationKey = locationData.locationKey,
         locationLabel = locationData.locationLabel,
         isInstanced = locationData.isInstanced,
@@ -239,10 +243,19 @@ function GoldTracker:TrackLootMoney(amount)
         expansionName = locationData.expansionName,
     }
     self.session.goldLooted = self.session.goldLooted + amount
+    self:IncrementDiagnosticCounter("money_entries_tracked")
+    self:IncrementDiagnosticCounter("money_copper_tracked", amount)
+    if type(self.MarkSessionLootActivity) == "function" then
+        self:MarkSessionLootActivity(lootTimestamp)
+    end
+    if type(self.ProcessSessionMilestoneAlerts) == "function" then
+        self:ProcessSessionMilestoneAlerts(previousSessionTotal, self:GetSessionTotalValue())
+    end
     if self.db and self.db.showRawLootedGoldInLog then
         self:AddLogMessage(string.format("%s  |cffffd100Raw looted gold|r +%s", date("%H:%M:%S"), self:FormatMoney(amount)), 1, 0.85, 0)
     end
     self:UpdateMainWindow()
+    self:EndDiagnosticTimer("track_loot_money_total", trackMoneyStart)
 end
 
 function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
@@ -250,22 +263,35 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         return
     end
 
+    local trackItemStart = self:BeginDiagnosticTimer()
+    local previousSessionTotal = self:GetSessionTotalValue()
+    local lootTimestamp = time()
+
     quantity = math.max(1, math.floor(tonumber(quantity) or 1))
 
+    local resolveStart = self:BeginDiagnosticTimer()
     local selectedUnitValue, selectedValueSourceID, selectedValueSourceLabel = self:GetItemUnitValue(itemLink)
+    self:EndDiagnosticTimer("item_value_resolve", resolveStart)
     local vendorUnitValue = self:GetVendorItemValue(itemLink)
     local itemQuality = self:GetItemQualityFromLink(itemLink)
     local shouldTrackForAH = self:ShouldTrackItemForAH(itemQuality)
     local isSoulboundLoot = false
-    if shouldTrackForAH and selectedUnitValue > 0 then
+    if shouldTrackForAH then
         isSoulboundLoot = self:IsSoulboundLootItem(itemLink)
     end
-    local lootSourceKind = lootSourceInfo and lootSourceInfo.kind or nil
-    local lootSourceName = lootSourceInfo and lootSourceInfo.name or nil
-    local lootSourceIsAoe = lootSourceInfo and lootSourceInfo.isAoe == true
-    local lootSourceText = lootSourceInfo and lootSourceInfo.text or nil
-    if (type(lootSourceText) ~= "string" or lootSourceText == "") and (lootSourceIsAoe or lootSourceKind == "AOE") then
-        lootSourceText = "AOE loot"
+    local trackLootSource = self:IsLootSourceTrackingEnabled()
+    local lootSourceKind = nil
+    local lootSourceName = nil
+    local lootSourceIsAoe = false
+    local lootSourceText = nil
+    if trackLootSource then
+        lootSourceKind = lootSourceInfo and lootSourceInfo.kind or nil
+        lootSourceName = lootSourceInfo and lootSourceInfo.name or nil
+        lootSourceIsAoe = lootSourceInfo and lootSourceInfo.isAoe == true
+        lootSourceText = lootSourceInfo and lootSourceInfo.text or nil
+        if (type(lootSourceText) ~= "string" or lootSourceText == "") and (lootSourceIsAoe or lootSourceKind == "AOE") then
+            lootSourceText = "AOE loot"
+        end
     end
     if isSoulboundLoot or not shouldTrackForAH then
         selectedUnitValue = 0
@@ -278,6 +304,18 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     local locationData = self:GetCurrentSessionLootLocationData()
     self.session.itemValue = (self.session.itemValue or 0) + selectedTotalValue
     self.session.itemVendorValue = (self.session.itemVendorValue or 0) + vendorTotalValue
+    self:IncrementDiagnosticCounter("item_entries_tracked")
+    self:IncrementDiagnosticCounter("item_quantity_tracked", quantity)
+    if not shouldTrackForAH then
+        self:IncrementDiagnosticCounter("item_filtered_quality", quantity)
+    elseif isSoulboundLoot then
+        self:IncrementDiagnosticCounter("item_filtered_soulbound", quantity)
+    else
+        self:IncrementDiagnosticCounter("item_ah_tracked", quantity)
+    end
+    if trackLootSource and type(lootSourceText) == "string" and lootSourceText ~= "" then
+        self:IncrementDiagnosticCounter("loot_source_attached")
+    end
     if selectedTotalValue > 0 and selectedTotalValue >= highlightThreshold then
         self.session.highlightItemCount = (self.session.highlightItemCount or 0) + 1
     end
@@ -297,7 +335,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         vendorTotalValue = vendorTotalValue,
         itemQuality = itemQuality,
         isSoulbound = isSoulboundLoot,
-        timestamp = time(),
+        timestamp = lootTimestamp,
         valueSourceID = selectedValueSourceID,
         valueSourceLabel = selectedValueSourceLabel,
         locationKey = locationData.locationKey,
@@ -318,13 +356,21 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         lootSourceText = lootSourceText,
     }
 
+    if type(self.MarkSessionLootActivity) == "function" then
+        self:MarkSessionLootActivity(lootTimestamp)
+    end
+    if type(self.ProcessSessionMilestoneAlerts) == "function" then
+        self:ProcessSessionMilestoneAlerts(previousSessionTotal, self:GetSessionTotalValue())
+    end
+
     if shouldTrackForAH and not isSoulboundLoot then
         local sourceSuffix = ""
-        if type(lootSourceText) == "string"
+        if trackLootSource
+            and type(lootSourceText) == "string"
             and lootSourceText ~= ""
             and (lootSourceIsAoe or lootSourceKind == "AOE" or ShouldDisplayLootSourceHint(self, itemLink, itemQuality)) then
             sourceSuffix = string.format("  [From: %s]", lootSourceText)
-        elseif lootSourceIsAoe then
+        elseif trackLootSource and lootSourceIsAoe then
             sourceSuffix = "  [From: AOE loot]"
         end
 
@@ -338,4 +384,5 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
 
     self:NotifyHighValueItem(itemLink, quantity, selectedTotalValue)
     self:UpdateMainWindow()
+    self:EndDiagnosticTimer("track_loot_item_total", trackItemStart)
 end

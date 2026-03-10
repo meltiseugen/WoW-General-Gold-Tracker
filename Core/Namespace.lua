@@ -23,7 +23,13 @@ GoldTracker.DEFAULTS = {
     resumeSessionAfterReload = false,
     enableSessionHistory = false,
     historyRowsPerPage = 10,
+    historyDetailsFontSize = 12,
     showRawLootedGoldInLog = true,
+    ignoreMailboxLootWhenMailOpen = true,
+    showMainWindowGoldPerHour = true,
+    showTotalWindowGoldPerHour = true,
+    enableLootSourceTracking = true,
+    enableDiagnosticsPanel = false,
     minimapButtonAngle = 225,
     windowAlpha = 0.90,
     windowWidth = 720,
@@ -128,6 +134,25 @@ function GoldTracker:FormatMoney(copper)
     return GetMoneyString(clamped, true)
 end
 
+function GoldTracker:GetPerHourValue(totalCopper, durationSeconds)
+    local total = tonumber(totalCopper) or 0
+    local seconds = tonumber(durationSeconds) or 0
+    if seconds <= 0 then
+        return nil
+    end
+
+    return math.max(0, math.floor(((total * 3600) / seconds) + 0.5))
+end
+
+function GoldTracker:FormatMoneyPerHour(totalCopper, durationSeconds)
+    local perHourValue = self:GetPerHourValue(totalCopper, durationSeconds)
+    if not perHourValue then
+        return "---"
+    end
+
+    return string.format("%s/h", self:FormatMoney(perHourValue))
+end
+
 function GoldTracker:FormatDuration(totalSeconds)
     local seconds = math.max(0, math.floor(totalSeconds or 0))
     local hours = math.floor(seconds / 3600)
@@ -175,14 +200,31 @@ function GoldTracker:InitializeDatabase()
         WoWGeneralGoldTrackerDB = {}
     end
 
+    local function CloneDefaultValue(value)
+        if type(value) ~= "table" then
+            return value
+        end
+
+        local copied = {}
+        for key, nestedValue in pairs(value) do
+            if type(nestedValue) == "table" then
+                copied[key] = CloneDefaultValue(nestedValue)
+            else
+                copied[key] = nestedValue
+            end
+        end
+        return copied
+    end
+
     self.db = WoWGeneralGoldTrackerDB
     local legacyLowThreshold = tonumber(self.db.lowHighlightThreshold)
     local legacyHighThreshold = tonumber(self.db.highHighlightThreshold)
     local legacyNotificationThreshold = tonumber(self.db.notificationThreshold)
+    local hadHighValueDropAlerts = self.db.highValueDropAlerts ~= nil
 
     for key, value in pairs(self.DEFAULTS) do
         if self.db[key] == nil then
-            self.db[key] = value
+            self.db[key] = CloneDefaultValue(value)
         end
     end
 
@@ -240,14 +282,36 @@ function GoldTracker:InitializeDatabase()
         self.db.enableSessionHistory = self.DEFAULTS.enableSessionHistory
     end
 
+    if type(self.db.enableDiagnosticsPanel) ~= "boolean" then
+        self.db.enableDiagnosticsPanel = self.DEFAULTS.enableDiagnosticsPanel
+    end
+
     local historyRowsPerPage = tonumber(self.db.historyRowsPerPage)
     if not historyRowsPerPage then
         historyRowsPerPage = self.DEFAULTS.historyRowsPerPage
     end
     self.db.historyRowsPerPage = math.floor(math.max(5, math.min(30, historyRowsPerPage)) + 0.5)
 
+    local historyDetailsFontSize = tonumber(self.db.historyDetailsFontSize)
+    if not historyDetailsFontSize then
+        historyDetailsFontSize = self.DEFAULTS.historyDetailsFontSize
+    end
+    self.db.historyDetailsFontSize = math.floor(math.max(8, math.min(24, historyDetailsFontSize)) + 0.5)
+
     if type(self.db.showRawLootedGoldInLog) ~= "boolean" then
         self.db.showRawLootedGoldInLog = self.DEFAULTS.showRawLootedGoldInLog
+    end
+    if type(self.db.ignoreMailboxLootWhenMailOpen) ~= "boolean" then
+        self.db.ignoreMailboxLootWhenMailOpen = self.DEFAULTS.ignoreMailboxLootWhenMailOpen
+    end
+    if type(self.db.showMainWindowGoldPerHour) ~= "boolean" then
+        self.db.showMainWindowGoldPerHour = self.DEFAULTS.showMainWindowGoldPerHour
+    end
+    if type(self.db.showTotalWindowGoldPerHour) ~= "boolean" then
+        self.db.showTotalWindowGoldPerHour = self.DEFAULTS.showTotalWindowGoldPerHour
+    end
+    if type(self.db.enableLootSourceTracking) ~= "boolean" then
+        self.db.enableLootSourceTracking = self.DEFAULTS.enableLootSourceTracking
     end
 
     if type(self.db.minimapButtonAngle) ~= "number" then
@@ -287,6 +351,16 @@ function GoldTracker:InitializeDatabase()
         self.db.windowHeight = self.DEFAULTS.windowHeight
     end
     self.db.windowHeight = math.floor(math.max(320, math.min(1000, self.db.windowHeight)) + 0.5)
+
+    if not hadHighValueDropAlerts
+        and type(self.db.highValueDropAlerts) == "table"
+        and type(self.db.highValueDropAlerts[1]) == "table" then
+        self.db.highValueDropAlerts[1].threshold = self.db.highlightThreshold
+    end
+
+    if type(self.NormalizeAlertSettings) == "function" then
+        self:NormalizeAlertSettings()
+    end
 end
 
 function GoldTracker:GetLowHighlightThreshold()
@@ -414,6 +488,26 @@ function GoldTracker:GetHighHighlightThreshold()
 end
 
 function GoldTracker:GetHighlightThreshold()
+    if type(self.GetAlertRules) == "function"
+        and type(self.ALERT_RULE_LIST_KEYS) == "table"
+        and type(self.ALERT_RULE_LIST_KEYS.HIGH_VALUE_DROPS) == "string" then
+        local minimumEnabledRuleThreshold = nil
+        local rules = self:GetAlertRules(self.ALERT_RULE_LIST_KEYS.HIGH_VALUE_DROPS)
+        for _, rule in ipairs(rules or {}) do
+            if rule and rule.enabled == true then
+                local threshold = tonumber(rule.threshold)
+                if threshold and threshold > 0 then
+                    if not minimumEnabledRuleThreshold or threshold < minimumEnabledRuleThreshold then
+                        minimumEnabledRuleThreshold = threshold
+                    end
+                end
+            end
+        end
+        if minimumEnabledRuleThreshold then
+            return math.max(0, math.floor(minimumEnabledRuleThreshold + 0.5))
+        end
+    end
+
     local value = tonumber(self.db and self.db.highlightThreshold) or self.DEFAULTS.highlightThreshold
     return math.max(0, math.floor(value + 0.5))
 end
@@ -423,8 +517,48 @@ function GoldTracker:GetHistoryRowsPerPage()
     return math.max(5, math.min(30, math.floor(value + 0.5)))
 end
 
+function GoldTracker:GetHistoryDetailsFontSize()
+    local value = tonumber(self.db and self.db.historyDetailsFontSize) or self.DEFAULTS.historyDetailsFontSize
+    return math.max(8, math.min(24, math.floor(value + 0.5)))
+end
+
 function GoldTracker:IsResumeSessionAfterReloadEnabled()
     return self.db and self.db.resumeSessionAfterReload == true
+end
+
+function GoldTracker:IsLootSourceTrackingEnabled()
+    if not self.db then
+        return true
+    end
+    return self.db.enableLootSourceTracking == true
+end
+
+function GoldTracker:IsIgnoreMailboxLootWhenMailOpenEnabled()
+    if not self.db then
+        return self.DEFAULTS.ignoreMailboxLootWhenMailOpen == true
+    end
+    return self.db.ignoreMailboxLootWhenMailOpen == true
+end
+
+function GoldTracker:IsMainWindowGoldPerHourEnabled()
+    if not self.db then
+        return self.DEFAULTS.showMainWindowGoldPerHour == true
+    end
+    return self.db.showMainWindowGoldPerHour == true
+end
+
+function GoldTracker:IsTotalWindowGoldPerHourEnabled()
+    if not self.db then
+        return self.DEFAULTS.showTotalWindowGoldPerHour == true
+    end
+    return self.db.showTotalWindowGoldPerHour == true
+end
+
+function GoldTracker:IsDiagnosticsPanelEnabled()
+    if not self.db then
+        return false
+    end
+    return self.db.enableDiagnosticsPanel == true
 end
 
 function GoldTracker:NormalizeHighlightThresholds()

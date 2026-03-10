@@ -592,6 +592,8 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         instanceMapID = self.session.instanceMapID,
         instanceType = self.session.instanceType,
         zoneName = self.session.zoneName,
+        locationKey = self.session.locationKey,
+        locationLabel = BuildSessionFallbackLocationLabel(self.session),
         mapID = self.session.mapID,
         mapName = self.session.mapName,
         mapPath = self.session.mapPath,
