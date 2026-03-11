@@ -12,7 +12,18 @@ function GoldTracker:ApplyMainWindowAlpha()
         return
     end
 
-    self.mainFrame:SetAlpha(self:GetConfiguredWindowAlpha())
+    local alpha = self:GetConfiguredWindowAlpha()
+
+    -- Keep text and interactive widgets fully opaque.
+    self.mainFrame:SetAlpha(1)
+
+    -- Apply opacity only to template background textures.
+    if self.mainFrame.Bg and self.mainFrame.Bg.SetAlpha then
+        self.mainFrame.Bg:SetAlpha(alpha)
+    end
+    if self.mainFrame.Inset and self.mainFrame.Inset.Bg and self.mainFrame.Inset.Bg.SetAlpha then
+        self.mainFrame.Inset.Bg:SetAlpha(alpha)
+    end
 end
 
 function GoldTracker:ApplyMainWindowGoldPerHourVisibility()

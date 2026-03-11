@@ -283,9 +283,11 @@ function GoldTracker:CreateOptionsPanel()
     local generalContent = tabs.General.content
     local trackingContent = tabs.Tracking.content
     local historyContent = tabs.History.content
+    local generalLeftColumnX = 12
+    local generalSecondColumnOffsetX = 320
 
     local sourceLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    sourceLabel:SetPoint("TOPLEFT", generalContent, "TOPLEFT", 12, -8)
+    sourceLabel:SetPoint("TOPLEFT", generalContent, "TOPLEFT", generalLeftColumnX, -8)
     sourceLabel:SetText("Item value source")
 
     local dropdown = CreateFrame("Frame", "GoldTrackerValueSourceDropdown", generalContent, "UIDropDownMenuTemplate")
@@ -312,7 +314,7 @@ function GoldTracker:CreateOptionsPanel()
     end)
 
     local fallbackSourceLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    fallbackSourceLabel:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -14)
+    fallbackSourceLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", generalSecondColumnOffsetX, 0)
     fallbackSourceLabel:SetText("Fallback value source")
 
     local fallbackDropdown = CreateFrame("Frame", "GoldTrackerFallbackValueSourceDropdown", generalContent, "UIDropDownMenuTemplate")
@@ -347,7 +349,7 @@ function GoldTracker:CreateOptionsPanel()
     end)
 
     local ignoreMailboxLootCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
-    ignoreMailboxLootCheckbox:SetPoint("TOPLEFT", fallbackDropdown, "BOTTOMLEFT", 0, -14)
+    ignoreMailboxLootCheckbox:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -22)
     ignoreMailboxLootCheckbox:SetScript("OnClick", function(button)
         addon.db.ignoreMailboxLootWhenMailOpen = button:GetChecked() and true or false
     end)
@@ -516,11 +518,11 @@ function GoldTracker:CreateOptionsPanel()
     hint:SetText("Use /gt to open the tracker. Auto-start on loot works only while the tracker window is open.")
 
     local transparencyLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    transparencyLabel:SetPoint("TOPLEFT", totalWindowGoldPerHourCheckbox, "BOTTOMLEFT", 4, -18)
-    transparencyLabel:SetText("Window transparency")
+    transparencyLabel:SetPoint("TOPLEFT", totalWindowGoldPerHourLabel, "BOTTOMLEFT", 0, -20)
+    transparencyLabel:SetText("Window background transparency")
 
     local transparencySlider = CreateFrame("Slider", "GoldTrackerTransparencySlider", generalContent, "OptionsSliderTemplate")
-    transparencySlider:SetPoint("TOPLEFT", transparencyLabel, "BOTTOMLEFT", 6, -10)
+    transparencySlider:SetPoint("TOPLEFT", transparencyLabel, "BOTTOMLEFT", -10, -10)
     transparencySlider:SetWidth(240)
     transparencySlider:SetMinMaxValues(0.20, 1.00)
     transparencySlider:SetValueStep(0.05)
@@ -542,7 +544,8 @@ function GoldTracker:CreateOptionsPanel()
     end
 
     local transparencyValueText = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    transparencyValueText:SetPoint("TOPLEFT", transparencySlider, "BOTTOMLEFT", 14, -2)
+    transparencyValueText:SetPoint("TOP", transparencySlider, "BOTTOM", 0, -18)
+    transparencyValueText:SetJustifyH("CENTER")
     transparencyValueText:SetText("")
 
     transparencySlider:SetScript("OnValueChanged", function(_, value)
