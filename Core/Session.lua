@@ -34,6 +34,7 @@ local function CloneReloadItemLoots(itemLoots)
             lootSourceName = entry.lootSourceName,
             lootSourceIsAoe = entry.lootSourceIsAoe == true,
             lootSourceText = entry.lootSourceText,
+            isCraftingReagent = entry.isCraftingReagent == true,
         }
     end
     return copied
@@ -83,6 +84,7 @@ local function BuildReloadSessionSnapshot(session)
         highHighlightItemCount = highlightCount,
         itemLoots = CloneReloadItemLoots(session.itemLoots),
         moneyLoots = CloneReloadMoneyLoots(session.moneyLoots),
+        activeDurationSeconds = tonumber(session.activeDurationSeconds) or 0,
         isInstanced = session.isInstanced == true,
         instanceName = session.instanceName,
         instanceMapID = session.instanceMapID,
@@ -162,6 +164,7 @@ function GoldTracker:TryRestorePendingReloadSession()
 
     session.itemLoots = CloneReloadItemLoots(snapshot.itemLoots)
     session.moneyLoots = CloneReloadMoneyLoots(snapshot.moneyLoots)
+    session.activeDurationSeconds = math.max(0, math.floor((tonumber(snapshot.activeDurationSeconds) or 0) + 0.5))
     session.isInstanced = snapshot.isInstanced == true
     session.instanceName = snapshot.instanceName
     session.instanceMapID = snapshot.instanceMapID
@@ -228,6 +231,7 @@ function GoldTracker:StartSession(forceNew, options)
     self.session.expansionID = nil
     self.session.expansionName = nil
     self.session.lastLootAt = self.session.startTime
+    self.session.activeDurationSeconds = 0
     self.tsmWarningShown = false
     if type(self.EnsureAlertRuntimeState) == "function" then
         local runtime = self:EnsureAlertRuntimeState()

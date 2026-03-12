@@ -34,6 +34,7 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             lootSourceName = entry.lootSourceName,
             lootSourceIsAoe = entry.lootSourceIsAoe == true,
             lootSourceText = entry.lootSourceText,
+            isCraftingReagent = entry.isCraftingReagent == true,
         }
     end
     return copied
@@ -261,6 +262,11 @@ local function NormalizeHistoryEntry(entry)
         end
         if type(loot.lootSourceName) ~= "string" or loot.lootSourceName == "" then
             loot.lootSourceName = nil
+        end
+        if loot.isCraftingReagent == nil and type(loot.itemLink) == "string" then
+            loot.isCraftingReagent = GoldTracker:IsCraftingReagentItem(loot.itemLink)
+        else
+            loot.isCraftingReagent = loot.isCraftingReagent == true
         end
         loot.lootSourceIsAoe = loot.lootSourceIsAoe == true
         if type(loot.lootSourceText) ~= "string" or loot.lootSourceText == "" then
@@ -577,6 +583,7 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         startTime = tonumber(self.session.startTime) or stopTime,
         stopTime = stopTime,
         duration = math.max(0, stopTime - (tonumber(self.session.startTime) or stopTime)),
+        activeDuration = math.max(0, math.floor((tonumber(self.session.activeDurationSeconds) or 0) + 0.5)),
         rawGold = rawGold,
         itemsValue = itemsValue,
         itemsRawGold = tonumber(self.session.itemVendorValue) or 0,
@@ -643,6 +650,111 @@ function GoldTracker:SaveCurrentSessionToHistory(saveReason)
     end
     if self.RefreshHistoryDetailsWindow then
         self:RefreshHistoryDetailsWindow()
+    end
+
+    return true
+end
+
+function GoldTracker:ResumeHistorySession(sessionID)
+    if not self:IsResumeHistorySessionEnabled() then
+        self:Print("Resuming from history is disabled in options.")
+        return false
+    end
+
+    local historySession = self:GetHistorySessionByID(sessionID)
+    if not historySession then
+        return false
+    end
+
+    local session = self.session or {}
+    self.session = session
+    local wasActive = session.active == true
+
+    local mergedItemLoots = CloneItemLootEntries(
+        historySession.itemLoots,
+        historySession.valueSourceID,
+        historySession.valueSourceLabel
+    )
+    local mergedMoneyLoots = CloneMoneyLootEntries(historySession.moneyLoots)
+
+    if not wasActive then
+        session.active = true
+        session.startTime = tonumber(historySession.startTime) or time()
+        session.stopTime = nil
+        session.goldLooted = tonumber(historySession.rawGold) or 0
+        session.itemValue = tonumber(historySession.itemsValue) or 0
+        session.itemVendorValue = tonumber(historySession.itemsRawGold) or 0
+        session.highlightItemCount = tonumber(historySession.highlightItemCount) or 0
+        session.lowHighlightItemCount = 0
+        session.highHighlightItemCount = session.highlightItemCount
+        session.itemLoots = mergedItemLoots
+        session.moneyLoots = mergedMoneyLoots
+        session.isInstanced = historySession.isInstanced == true
+        session.instanceName = historySession.instanceName
+        session.instanceMapID = historySession.instanceMapID
+        session.instanceType = historySession.instanceType
+        session.zoneName = historySession.zoneName
+        session.locationKey = historySession.locationKey
+        session.mapID = historySession.mapID
+        session.mapName = historySession.mapName
+        session.mapPath = historySession.mapPath
+        session.continentName = historySession.continentName
+        session.expansionID = historySession.expansionID
+        session.expansionName = historySession.expansionName
+        session.activeDurationSeconds = math.max(0, math.floor((tonumber(historySession.activeDuration) or tonumber(historySession.duration) or 0) + 0.5))
+    else
+        session.startTime = math.min(tonumber(session.startTime) or time(), tonumber(historySession.startTime) or time())
+        session.stopTime = nil
+        session.goldLooted = (tonumber(session.goldLooted) or 0) + (tonumber(historySession.rawGold) or 0)
+        session.itemValue = (tonumber(session.itemValue) or 0) + (tonumber(historySession.itemsValue) or 0)
+        session.itemVendorValue = (tonumber(session.itemVendorValue) or 0) + (tonumber(historySession.itemsRawGold) or 0)
+        session.highlightItemCount = (tonumber(session.highlightItemCount) or 0) + (tonumber(historySession.highlightItemCount) or 0)
+        session.lowHighlightItemCount = 0
+        session.highHighlightItemCount = session.highlightItemCount
+
+        if type(session.itemLoots) ~= "table" then
+            session.itemLoots = {}
+        end
+        if type(session.moneyLoots) ~= "table" then
+            session.moneyLoots = {}
+        end
+        for _, loot in ipairs(mergedItemLoots) do
+            session.itemLoots[#session.itemLoots + 1] = loot
+        end
+        for _, money in ipairs(mergedMoneyLoots) do
+            session.moneyLoots[#session.moneyLoots + 1] = money
+        end
+        session.activeDurationSeconds = (tonumber(session.activeDurationSeconds) or 0)
+            + math.max(0, math.floor((tonumber(historySession.activeDuration) or tonumber(historySession.duration) or 0) + 0.5))
+    end
+
+    if type(self.GetMostRecentSessionLootTimestamp) == "function" then
+        session.lastLootAt = self:GetMostRecentSessionLootTimestamp(session)
+    else
+        session.lastLootAt = time()
+    end
+
+    if type(self.EnsureAlertRuntimeState) == "function" then
+        local runtime = self:EnsureAlertRuntimeState()
+        runtime.sessionStartTime = tonumber(session.startTime) or 0
+        runtime.milestoneTriggeredByRule = {}
+        runtime.noLootTriggered = false
+    end
+
+    self.tsmWarningShown = false
+    self:UpdateSessionLocationContext()
+    self:AddLogMessage(
+        string.format("%s  Resumed history session: %s", date("%H:%M:%S"), historySession.name or tostring(historySession.id)),
+        0.35,
+        1,
+        0.7
+    )
+    self:UpdateMainWindow()
+
+    if wasActive then
+        self:Print("Merged selected history session into the active session.")
+    else
+        self:Print("Loaded selected history session as the active session.")
     end
 
     return true

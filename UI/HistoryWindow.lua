@@ -156,6 +156,15 @@ local function BuildVisibleHistoryItems(session, selectedLocationKey)
     return historyDataService:BuildVisibleHistoryItems(session, selectedLocationKey)
 end
 
+local function EscapeCSVValue(value)
+    local text = tostring(value or "")
+    text = text:gsub("\r", " "):gsub("\n", " ")
+    if text:find('[",]') then
+        text = '"' .. text:gsub('"', '""') .. '"'
+    end
+    return text
+end
+
 local function CompareHistorySessionsByRecency(a, b)
     return historyDataService:CompareHistorySessionsByRecency(a, b)
 end
@@ -642,6 +651,39 @@ function GoldTracker:CreateHistoryWindow()
     end)
     splitButton:Hide()
     frame.splitButton = splitButton
+
+    local exportButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    exportButton:SetSize(96, 22)
+    exportButton:SetPoint("LEFT", splitButton, "RIGHT", 8, 0)
+    exportButton:SetText("Export CSV")
+    exportButton:SetScript("OnClick", function()
+        if frame.selectedSessionID then
+            addon:OpenHistorySessionExport(frame.selectedSessionID)
+        end
+    end)
+    frame.exportButton = exportButton
+
+    local breakdownButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    breakdownButton:SetSize(122, 22)
+    breakdownButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
+    breakdownButton:SetText("Loot Breakdown")
+    breakdownButton:SetScript("OnClick", function()
+        if frame.selectedSessionID then
+            addon:OpenHistoryLootBreakdownWindow(frame.selectedSessionID)
+        end
+    end)
+    frame.breakdownButton = breakdownButton
+
+    local resumeSessionButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    resumeSessionButton:SetSize(132, 22)
+    resumeSessionButton:SetPoint("LEFT", breakdownButton, "RIGHT", 8, 0)
+    resumeSessionButton:SetText("Resume Session")
+    resumeSessionButton:SetScript("OnClick", function()
+        if frame.selectedSessionID then
+            addon:ResumeHistorySession(frame.selectedSessionID)
+        end
+    end)
+    frame.resumeSessionButton = resumeSessionButton
 
     local itemsHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     itemsHeader:SetPoint("TOPLEFT", summaryTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_SUMMARY_TO_ITEMS)
@@ -1555,6 +1597,11 @@ function GoldTracker:RefreshHistoryDetailsWindow()
     if frame.splitButton then
         frame.splitButton:SetShown(#locationOptions > 2)
     end
+    if frame.resumeSessionButton then
+        local enabled = self:IsResumeHistorySessionEnabled()
+        frame.resumeSessionButton:SetEnabled(enabled)
+        frame.resumeSessionButton:SetAlpha(enabled and 1 or 0.45)
+    end
 
     local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey)
 
@@ -1783,6 +1830,207 @@ function GoldTracker:RefreshHistoryDetailsWindow()
             frame.detailsLog:AddMessage(lineText, 0.9, 0.9, 1)
         end
     end
+end
+
+function GoldTracker:BuildHistorySessionCSV(sessionID)
+    local frame = self.historyFrame
+    local session = self:GetHistorySessionByID(sessionID)
+    if not session then
+        return nil
+    end
+
+    local selectedLocationKey = DETAILS_LOCATION_FILTER_ALL
+    if frame and frame.view == "details" and frame.selectedSessionID == sessionID then
+        selectedLocationKey = frame.detailsLocationFilterKey or DETAILS_LOCATION_FILTER_ALL
+    end
+
+    local summary = BuildHistoryDetailsSummary(session, selectedLocationKey)
+    local items = BuildVisibleHistoryItems(session, selectedLocationKey)
+    local rows = {
+        "section,key,value",
+        string.format("session,id,%s", EscapeCSVValue(session.id)),
+        string.format("session,name,%s", EscapeCSVValue(session.name or "Session")),
+        string.format("session,start_time,%s", EscapeCSVValue(date("%Y-%m-%d %H:%M:%S", tonumber(summary.startTime) or time()))),
+        string.format("session,stop_time,%s", EscapeCSVValue(date("%Y-%m-%d %H:%M:%S", tonumber(summary.stopTime) or time()))),
+        string.format("session,duration_seconds,%s", EscapeCSVValue(math.floor(tonumber(summary.duration) or 0))),
+        string.format("session,raw_gold_copper,%s", EscapeCSVValue(math.floor(tonumber(summary.rawGold) or 0))),
+        string.format("session,vendor_items_copper,%s", EscapeCSVValue(math.floor(tonumber(summary.itemsRawGold) or 0))),
+        string.format("session,ah_value_copper,%s", EscapeCSVValue(math.floor(tonumber(summary.itemsValue) or 0))),
+        string.format("session,total_value_copper,%s", EscapeCSVValue(math.floor(tonumber(summary.totalValue) or 0))),
+        "",
+        "items,item_link,quantity,total_value_copper,value_source,loot_source",
+    }
+
+    for _, item in ipairs(items or {}) do
+        rows[#rows + 1] = string.format(
+            "items,%s,%s,%s,%s,%s",
+            EscapeCSVValue(item.itemLink or ""),
+            EscapeCSVValue(math.floor(tonumber(item.quantity) or 0)),
+            EscapeCSVValue(math.floor(tonumber(item.totalValue) or 0)),
+            EscapeCSVValue(item.valueSourceLabel or ""),
+            EscapeCSVValue(item.lootSourceText or "")
+        )
+    end
+
+    return table.concat(rows, "\n")
+end
+
+function GoldTracker:CreateHistoryExportWindow()
+    if self.historyExportFrame then
+        return
+    end
+
+    local frame = CreateFrame("Frame", "GoldTrackerHistoryExportFrame", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(760, 480)
+    frame:SetPoint("CENTER")
+    frame:SetFrameStrata("DIALOG")
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:Hide()
+
+    if frame.TitleText then
+        frame.TitleText:SetText("Gold Tracker - History CSV Export")
+    end
+
+    local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    hint:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -32)
+    hint:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -16, -32)
+    hint:SetJustifyH("LEFT")
+    hint:SetText("Select all (Ctrl+A) and copy (Ctrl+C).")
+
+    local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -52)
+    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 14)
+
+    local editBox = CreateFrame("EditBox", nil, scroll)
+    editBox:SetMultiLine(true)
+    editBox:SetAutoFocus(false)
+    editBox:SetFontObject(GameFontHighlightSmall)
+    editBox:SetWidth(680)
+    editBox:SetScript("OnEscapePressed", function() frame:Hide() end)
+    scroll:SetScrollChild(editBox)
+
+    frame.exportEditBox = editBox
+    self.historyExportFrame = frame
+end
+
+function GoldTracker:OpenHistorySessionExport(sessionID)
+    local csvText = self:BuildHistorySessionCSV(sessionID)
+    if not csvText then
+        return
+    end
+
+    self:CreateHistoryExportWindow()
+    local frame = self.historyExportFrame
+    frame.exportEditBox:SetText(csvText)
+    frame.exportEditBox:HighlightText()
+    frame:Show()
+    frame:Raise()
+    frame.exportEditBox:SetFocus()
+end
+
+function GoldTracker:CreateHistoryLootBreakdownWindow()
+    if self.historyBreakdownFrame then
+        return
+    end
+
+    local frame = CreateFrame("Frame", "GoldTrackerHistoryBreakdownFrame", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(460, 380)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 220, 40)
+    frame:SetFrameStrata("DIALOG")
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:Hide()
+
+    if frame.TitleText then
+        frame.TitleText:SetText("Gold Tracker - Loot Breakdown")
+    end
+
+    local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    text:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -38)
+    text:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -16, 16)
+    text:SetJustifyH("LEFT")
+    text:SetJustifyV("TOP")
+    frame.breakdownText = text
+
+    self.historyBreakdownFrame = frame
+end
+
+function GoldTracker:OpenHistoryLootBreakdownWindow(sessionID)
+    local session = self:GetHistorySessionByID(sessionID)
+    if not session then
+        return
+    end
+
+    self:CreateHistoryLootBreakdownWindow()
+    local frame = self.historyBreakdownFrame
+    frame.selectedSessionID = sessionID
+
+    local selectedLocationKey = DETAILS_LOCATION_FILTER_ALL
+    if self.historyFrame and self.historyFrame.view == "details" and self.historyFrame.selectedSessionID == sessionID then
+        selectedLocationKey = self.historyFrame.detailsLocationFilterKey or DETAILS_LOCATION_FILTER_ALL
+    end
+
+    local model = NewHistorySessionModel(session)
+    local summary = BuildHistoryDetailsSummary(session, selectedLocationKey)
+    local data = {
+        ahTracked = 0,
+        soulbound = 0,
+        vendorOnly = 0,
+        craftingReagent = 0,
+        totalItems = 0,
+    }
+
+    for _, loot in ipairs(session.itemLoots or {}) do
+        if model:EntryMatchesLocation(loot, selectedLocationKey, session) then
+            local quantity = math.max(0, math.floor((tonumber(loot and loot.quantity) or 0) + 0.5))
+            data.totalItems = data.totalItems + quantity
+            if loot.isCraftingReagent == true then
+                data.craftingReagent = data.craftingReagent + quantity
+            end
+            if loot.isSoulbound == true then
+                data.soulbound = data.soulbound + quantity
+            elseif loot.ahTracked == true then
+                data.ahTracked = data.ahTracked + quantity
+            else
+                data.vendorOnly = data.vendorOnly + quantity
+            end
+        end
+    end
+
+    local locationLabel = "All"
+    if selectedLocationKey ~= DETAILS_LOCATION_FILTER_ALL and self.historyFrame and self.historyFrame.detailsLocationOptions then
+        for _, option in ipairs(self.historyFrame.detailsLocationOptions) do
+            if option.key == selectedLocationKey then
+                locationLabel = option.label
+                break
+            end
+        end
+    end
+
+    frame.breakdownText:SetText(string.format(
+        "Session: %s\nLocation: %s\n\nTotal value: %s\nRaw gold: %s\nAH value: %s\nVendor item value: %s\n\nTotal item quantity: %d\nAH-tracked item quantity: %d\nVendor-only item quantity: %d\nSoulbound item quantity: %d\nCrafting reagent quantity: %d",
+        session.name or "Session",
+        locationLabel,
+        self:FormatMoney(tonumber(summary.totalValue) or 0),
+        self:FormatMoney(tonumber(summary.rawGold) or 0),
+        self:FormatMoney(tonumber(summary.itemsValue) or 0),
+        self:FormatMoney(tonumber(summary.itemsRawGold) or 0),
+        data.totalItems,
+        data.ahTracked,
+        data.vendorOnly,
+        data.soulbound,
+        data.craftingReagent
+    ))
+
+    frame:Show()
+    frame:Raise()
 end
 
 function GoldTracker:OpenHistorySessionDetails(sessionID)

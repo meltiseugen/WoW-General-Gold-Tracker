@@ -109,7 +109,7 @@ function GoldTracker:UpdateMainWindow()
     frame.goldValue:SetText(self:FormatMoney(session.goldLooted))
     frame.itemValue:SetText(self:FormatMoney(session.itemValue))
     frame.itemVendorValue:SetText(self:FormatMoney(session.itemVendorValue))
-    local elapsedSeconds = self:GetSessionElapsedSeconds()
+    local elapsedSeconds = self:GetSessionRateDurationSeconds()
     local elapsedForRate = elapsedSeconds
     if session.active and elapsedForRate > 0 then
         elapsedForRate = math.max(60, elapsedForRate)
@@ -180,7 +180,7 @@ function GoldTracker:UpdateTotalWindow()
     if self.session and self.session.active then
         local sessionTotal = self:GetSessionTotalValue()
         local sessionTotalRaw = (tonumber(self.session.goldLooted) or 0) + (tonumber(self.session.itemVendorValue) or 0)
-        local elapsedSeconds = self:GetSessionElapsedSeconds()
+        local elapsedSeconds = self:GetSessionRateDurationSeconds()
         local elapsedForRate = elapsedSeconds
         if elapsedForRate > 0 then
             elapsedForRate = math.max(60, elapsedForRate)
