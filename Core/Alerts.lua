@@ -393,6 +393,17 @@ function GoldTracker:MarkSessionLootActivity(timestamp)
     if now <= 0 then
         now = time()
     end
+    local previousLootAt = tonumber(session.lastLootAt)
+    if previousLootAt and previousLootAt > 0 then
+        local delta = math.max(0, now - previousLootAt)
+        local idleWindow = 90
+        session.activeDurationSeconds = (tonumber(session.activeDurationSeconds) or 0) + math.min(delta, idleWindow)
+    elseif tonumber(session.startTime) and tonumber(session.startTime) > 0 then
+        local bootDuration = math.max(0, now - tonumber(session.startTime))
+        local idleWindow = 90
+        session.activeDurationSeconds = (tonumber(session.activeDurationSeconds) or 0) + math.min(bootDuration, idleWindow)
+    end
+
     session.lastLootAt = now
 
     local runtime = self:EnsureAlertRuntimeForCurrentSession()

@@ -49,6 +49,12 @@ function GoldTracker:RefreshOptionsControls()
     controls.ignoreMailboxLootCheckbox:SetChecked(self:IsIgnoreMailboxLootWhenMailOpenEnabled())
     controls.mainWindowGoldPerHourCheckbox:SetChecked(self:IsMainWindowGoldPerHourEnabled())
     controls.totalWindowGoldPerHourCheckbox:SetChecked(self:IsTotalWindowGoldPerHourEnabled())
+    if controls.activeTimeGoldPerHourCheckbox then
+        controls.activeTimeGoldPerHourCheckbox:SetChecked(self:IsActiveTimeForGoldPerHourEnabled())
+    end
+    if controls.resumeHistorySessionCheckbox then
+        controls.resumeHistorySessionCheckbox:SetChecked(self:IsResumeHistorySessionEnabled())
+    end
     controls.lootSourceTrackingCheckbox:SetChecked(self:IsLootSourceTrackingEnabled())
     if controls.diagnosticsPanelCheckbox then
         controls.diagnosticsPanelCheckbox:SetChecked(self:IsDiagnosticsPanelEnabled())
@@ -380,6 +386,30 @@ function GoldTracker:CreateOptionsPanel()
     totalWindowGoldPerHourLabel:SetPoint("LEFT", totalWindowGoldPerHourCheckbox, "RIGHT", 4, 1)
     totalWindowGoldPerHourLabel:SetText("Show gold per hour in /gtt total window")
 
+    local activeTimeGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
+    activeTimeGoldPerHourCheckbox:SetPoint("TOPLEFT", totalWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    activeTimeGoldPerHourCheckbox:SetScript("OnClick", function(button)
+        addon.db.useActiveTimeForGoldPerHour = button:GetChecked() and true or false
+        addon:UpdateMainWindow()
+    end)
+
+    local activeTimeGoldPerHourLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    activeTimeGoldPerHourLabel:SetPoint("LEFT", activeTimeGoldPerHourCheckbox, "RIGHT", 4, 1)
+    activeTimeGoldPerHourLabel:SetText("Use active loot time for gold per hour (ignores long idle gaps)")
+
+    local resumeHistorySessionCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
+    resumeHistorySessionCheckbox:SetPoint("TOPLEFT", activeTimeGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    resumeHistorySessionCheckbox:SetScript("OnClick", function(button)
+        addon.db.allowResumeHistorySession = button:GetChecked() and true or false
+        if addon.historyFrame and addon.historyFrame.view == "details" then
+            addon:RefreshHistoryDetailsWindow()
+        end
+    end)
+
+    local resumeHistorySessionLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    resumeHistorySessionLabel:SetPoint("LEFT", resumeHistorySessionCheckbox, "RIGHT", 4, 1)
+    resumeHistorySessionLabel:SetText("Allow loading saved history sessions into active tracker")
+
     local minimumQualityLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     minimumQualityLabel:SetPoint("TOPLEFT", trackingContent, "TOPLEFT", 12, -8)
     minimumQualityLabel:SetText("Min item quality for AH and loot log")
@@ -518,7 +548,7 @@ function GoldTracker:CreateOptionsPanel()
     hint:SetText("Use /gt to open the tracker. Auto-start on loot works only while the tracker window is open.")
 
     local transparencyLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    transparencyLabel:SetPoint("TOPLEFT", totalWindowGoldPerHourLabel, "BOTTOMLEFT", 0, -20)
+    transparencyLabel:SetPoint("TOPLEFT", resumeHistorySessionLabel, "BOTTOMLEFT", 0, -20)
     transparencyLabel:SetText("Window background transparency")
 
     local transparencySlider = CreateFrame("Slider", "GoldTrackerTransparencySlider", generalContent, "OptionsSliderTemplate")
@@ -921,6 +951,8 @@ function GoldTracker:CreateOptionsPanel()
         ignoreMailboxLootCheckbox = ignoreMailboxLootCheckbox,
         mainWindowGoldPerHourCheckbox = mainWindowGoldPerHourCheckbox,
         totalWindowGoldPerHourCheckbox = totalWindowGoldPerHourCheckbox,
+        activeTimeGoldPerHourCheckbox = activeTimeGoldPerHourCheckbox,
+        resumeHistorySessionCheckbox = resumeHistorySessionCheckbox,
         lootSourceTrackingCheckbox = lootSourceTrackingCheckbox,
         diagnosticsPanelCheckbox = diagnosticsPanelCheckbox,
         transparencySlider = transparencySlider,

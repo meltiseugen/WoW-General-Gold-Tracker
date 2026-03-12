@@ -274,6 +274,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     self:EndDiagnosticTimer("item_value_resolve", resolveStart)
     local vendorUnitValue = self:GetVendorItemValue(itemLink)
     local itemQuality = self:GetItemQualityFromLink(itemLink)
+    local isCraftingReagent = self:IsCraftingReagentItem(itemLink)
     local shouldTrackForAH = self:ShouldTrackItemForAH(itemQuality)
     local isSoulboundLoot = false
     if shouldTrackForAH then
@@ -354,6 +355,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         lootSourceName = lootSourceName,
         lootSourceIsAoe = lootSourceIsAoe,
         lootSourceText = lootSourceText,
+        isCraftingReagent = isCraftingReagent == true,
     }
 
     if type(self.MarkSessionLootActivity) == "function" then

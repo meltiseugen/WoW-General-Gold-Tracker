@@ -28,6 +28,8 @@ GoldTracker.DEFAULTS = {
     ignoreMailboxLootWhenMailOpen = true,
     showMainWindowGoldPerHour = true,
     showTotalWindowGoldPerHour = true,
+    useActiveTimeForGoldPerHour = false,
+    allowResumeHistorySession = true,
     enableLootSourceTracking = true,
     enableDiagnosticsPanel = false,
     minimapButtonAngle = 225,
@@ -118,6 +120,7 @@ GoldTracker.session = GoldTracker.session or {
     continentName = nil,
     expansionID = nil,
     expansionName = nil,
+    activeDurationSeconds = 0,
 }
 
 GoldTracker.tsmWarningShown = false
@@ -552,6 +555,46 @@ function GoldTracker:IsTotalWindowGoldPerHourEnabled()
         return self.DEFAULTS.showTotalWindowGoldPerHour == true
     end
     return self.db.showTotalWindowGoldPerHour == true
+end
+
+function GoldTracker:IsActiveTimeForGoldPerHourEnabled()
+    if not self.db then
+        return self.DEFAULTS.useActiveTimeForGoldPerHour == true
+    end
+    return self.db.useActiveTimeForGoldPerHour == true
+end
+
+function GoldTracker:IsResumeHistorySessionEnabled()
+    if not self.db then
+        return self.DEFAULTS.allowResumeHistorySession == true
+    end
+    return self.db.allowResumeHistorySession == true
+end
+
+function GoldTracker:GetSessionActiveDurationSeconds()
+    local session = self.session or {}
+    local trackedActive = tonumber(session.activeDurationSeconds) or 0
+    if trackedActive > 0 then
+        if session.active == true then
+            local lastLootAt = tonumber(session.lastLootAt)
+            if lastLootAt and lastLootAt > 0 then
+                local now = time()
+                local delta = math.max(0, now - lastLootAt)
+                local idleWindow = 90
+                return trackedActive + math.min(delta, idleWindow)
+            end
+        end
+        return trackedActive
+    end
+
+    return self:GetSessionElapsedSeconds()
+end
+
+function GoldTracker:GetSessionRateDurationSeconds()
+    if self:IsActiveTimeForGoldPerHourEnabled() then
+        return self:GetSessionActiveDurationSeconds()
+    end
+    return self:GetSessionElapsedSeconds()
 end
 
 function GoldTracker:IsDiagnosticsPanelEnabled()
