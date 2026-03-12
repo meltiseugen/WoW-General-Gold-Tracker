@@ -1,97 +1,142 @@
 # WoW General Gold Tracker
 
-Retail-only World of Warcraft addon for tracking session loot value.
+**WoW General Gold Tracker** is a lightweight **Retail WoW addon** that helps you see how much gold your current farming session is worth.
 
-It tracks:
-- Raw looted gold
-- Item value (TSM-based AH pricing)
-- Vendor value
-- Session highlights
-- Session history by location/time
+It combines:
+- 💰 Raw looted gold
+- 🛒 Auction House value (via TradeSkillMaster)
+- 🧾 Vendor value
+- 📈 Session summaries and highlights
+- 🗂️ Session history by date and location
 
-## Requirements
+---
 
-- WoW Retail (Mainline client)
-- Interface version: `120000+` (see `.toc`)
-- Optional: TradeSkillMaster (TSM) for item market values
+## ✅ Supported Version
 
-If TSM is missing, TSM-based item values will resolve to `0`.
+- **World of Warcraft Retail (Mainline)**
+- Interface: **120000+**
 
-## Installation
+> This addon is designed for Retail only.
 
-1. Download or clone this repository.
-2. Place the folder in:
+---
+
+## 📦 Installation (CurseForge-Friendly)
+
+### Option 1: CurseForge App (recommended)
+1. Open the **CurseForge** app.
+2. Go to **World of Warcraft → Retail**.
+3. Search for **WoW General Gold Tracker**.
+4. Click **Install**.
+
+### Option 2: Manual install (ZIP)
+1. Download the addon ZIP.
+2. Extract it.
+3. Move the folder into:
    `World of Warcraft/_retail_/Interface/AddOns/`
-3. Ensure folder name is:
+4. Confirm the folder name is:
    `WoW-General-Gold-Tracker`
-4. Restart WoW or `/reload`.
+5. Launch WoW (or type `/reload` in-game).
 
-## Slash Commands
+---
 
-- `/gt` - open main tracker window
-- `/gt start` - start session
-- `/gt new` - force new session
-- `/gt stop` - stop session
-- `/gt options` - open options
-- `/gt total` - toggle small total window
-- `/gt help` - command help
-- `/gtt` - toggle small total window
+## 🚀 Quick Start
 
-## Main Features
+1. Log into a character.
+2. Type `/gt start` to begin a session.
+3. Loot normally while farming.
+4. Type `/gt` to open the main tracker window.
+5. Use `/gt stop` when you’re done.
 
-- Session-based loot value tracking
-- Configurable TSM value source + fallback value source
-- Configurable minimum item quality for AH tracking/loot log filtering
-- Vendor value tracking (independent from AH quality filter)
-- Highlight threshold notifications
+If you enable auto-start in options, sessions can begin automatically.
+
+---
+
+## 🖼️ Screenshots (Placeholders)
+
+> Replace these with your CurseForge/GitHub image URLs when ready.
+
+### Main Window
+![Main Window Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Main+Window+Screenshot)
+
+### Session History
+![Session History Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Session+History+Screenshot)
+
+### Options Panel
+![Options Panel Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Options+Panel+Screenshot)
+
+### Minimap / Compact Total
+![Minimap and Compact Total Placeholder](https://via.placeholder.com/1000x560?text=Minimap+%2F+Compact+Total)
+
+## 🔧 Commands
+
+- `/gt` — Open main tracker window
+- `/gt start` — Start session
+- `/gt new` — Force a new session
+- `/gt stop` — Stop session
+- `/gt options` — Open options panel
+- `/gt total` — Toggle compact total window
+- `/gt help` — Show command help
+- `/gtt` — Toggle compact total window
+
+---
+
+## 🌟 Main Features
+
+- Session-based gold and loot value tracking
+- TSM value source + configurable fallback pricing source
+- Minimum item quality filter for AH-tracked loot
+- Vendor value tracking (separate from AH quality filter)
+- Highlight notifications once threshold is reached
 - Auto-start options:
   - On first loot
   - On world/instance entry
-  - Resume after `/reload`
+  - Resume active session after `/reload`
 - Optional loot source tracking (`From: Unit/Node/AOE`)
-- Session history:
+- Session history tools:
   - Date filtering
   - Sort by totals
   - Merge sessions
-  - Split merged/multi-location sessions by location
+  - Split merged sessions by location
   - Location-specific details
 
-## Options (General Tab)
+---
+
+## ⚙️ Options You Can Customize
 
 - Item value source (TSM)
 - Fallback value source
-- Min item quality for AH and loot log
+- Minimum item quality
 - Highlight threshold
-- Notifications toggle
-- Auto start on first loot
-- Auto start on world/instance entry and reload
-- Resume active session after reload
-- Enable session history
+- Notifications on/off
+- Auto-start behavior
+- Session history on/off
 - History rows per page
 - Show raw looted gold entries in log
-- Track loot source (From: unit/node/aoe)
+- Track loot source in log
 - Window transparency
 
-## Data / Saved Variables
+---
 
-Addon data is stored in:
+## 📚 TradeSkillMaster (Optional)
+
+TSM is optional, but recommended if you want Auction House pricing.
+
+- If TSM is installed: item values can use market data.
+- If TSM is not installed: TSM-based values return `0`, and fallback/vendor values are used where available.
+
+---
+
+## 💾 Saved Data
+
+SavedVariables table:
 - `WoWGeneralGoldTrackerDB`
 
-## Project Structure
+---
 
-- `Core/`
-  - `Namespace.lua` - core addon object, defaults, config helpers
-  - `Session.lua` - active session lifecycle
-  - `History.lua` - history persistence and transforms
-  - `Bootstrap.lua` - events and slash command wiring
-- `Tracking/`
-  - `Valuation.lua` - item/money valuation + session accounting
-  - `LootEvents.lua` - event-level loot orchestration
-  - `Loot/LootChatParser.lua` - loot/money chat parsing
-  - `Loot/LootSourceService.lua` - loot source detection/cache
-- `UI/`
-  - `MainWindow.lua` - primary tracker window
-  - `OptionsPanel.lua` - settings UI
-  - `HistoryWindow.lua` - history UI
-  - `History/*.lua` - history models/formatters/services
-- `WoW-General-Gold-Tracker.toc` - load order and addon metadata
+## 🛠️ For Issues / Feedback
+
+If you find a bug or want to request a feature, open an issue on the project page and include:
+- What happened
+- What you expected
+- Steps to reproduce
+- Any relevant addon settings
