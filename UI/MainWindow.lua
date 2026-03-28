@@ -1,6 +1,11 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
+local MAIN_LOOT_LOG_MAX_ENTRIES = 1200
+local MAIN_LOOT_LOG_ROW_SPACING = 2
+local MAIN_LOOT_LOG_VALUE_WIDTH = 110
+local MAIN_LOOT_LOG_SOURCE_WIDTH = 210
+
 function GoldTracker:GetConfiguredWindowAlpha()
     local alpha = (self.db and self.db.windowAlpha) or self.DEFAULTS.windowAlpha
     alpha = tonumber(alpha) or self.DEFAULTS.windowAlpha
@@ -80,18 +85,207 @@ function GoldTracker:RefreshHistoryButtonVisibility()
 end
 
 function GoldTracker:ClearLog()
-    if self.mainFrame and self.mainFrame.log then
-        self.mainFrame.log:Clear()
-    end
+    self.mainLootLogEntries = {}
+    self:RefreshMainLootLog(false)
 end
 
-function GoldTracker:AddLogMessage(text, r, g, b)
-    if not self.mainFrame or not self.mainFrame.log then
+function GoldTracker:GetMainLootLogEntries()
+    if type(self.mainLootLogEntries) ~= "table" then
+        self.mainLootLogEntries = {}
+    end
+    return self.mainLootLogEntries
+end
+
+function GoldTracker:GetMainLootLogRowHeight()
+    local baseSize = 12
+    if GameFontHighlightSmall and type(GameFontHighlightSmall.GetFont) == "function" then
+        local _, fontSize = GameFontHighlightSmall:GetFont()
+        baseSize = tonumber(fontSize) or baseSize
+    end
+    return math.max(18, math.floor(baseSize + 8))
+end
+
+function GoldTracker:GetMainLootLogRow(index)
+    local frame = self.mainFrame
+    if not frame or not frame.logContent then
+        return nil
+    end
+
+    frame.logRows = frame.logRows or {}
+    local row = frame.logRows[index]
+    if row then
+        return row
+    end
+
+    row = CreateFrame("Button", nil, frame.logContent)
+    row:EnableMouse(true)
+
+    local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    itemText:SetPoint("LEFT", row, "LEFT", 4, 0)
+    itemText:SetJustifyH("LEFT")
+    itemText:SetWordWrap(false)
+    row.itemText = itemText
+
+    local sourceText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sourceText:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    sourceText:SetWidth(MAIN_LOOT_LOG_SOURCE_WIDTH)
+    sourceText:SetJustifyH("LEFT")
+    sourceText:SetWordWrap(false)
+    row.sourceText = sourceText
+
+    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    valueText:SetPoint("RIGHT", sourceText, "LEFT", -12, 0)
+    valueText:SetWidth(MAIN_LOOT_LOG_VALUE_WIDTH)
+    valueText:SetJustifyH("RIGHT")
+    valueText:SetWordWrap(false)
+    row.valueText = valueText
+
+    itemText:SetPoint("RIGHT", valueText, "LEFT", -12, 0)
+
+    local divider = row:CreateTexture(nil, "ARTWORK")
+    divider:SetColorTexture(1, 0.82, 0, 0.18)
+    divider:SetHeight(1)
+    divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+    divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+    row.divider = divider
+
+    row:SetScript("OnEnter", function(self)
+        if type(self.itemLink) ~= "string" or self.itemLink == "" then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetHyperlink(self.itemLink)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    row:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" and HandleModifiedItemClick then
+            HandleModifiedItemClick(self.itemLink)
+        end
+    end)
+
+    frame.logRows[index] = row
+    return row
+end
+
+function GoldTracker:RefreshMainLootLog(scrollToBottom)
+    local frame = self.mainFrame
+    if not frame or not frame.logContent then
         return
     end
 
-    self.mainFrame.log:AddMessage(text, r or 1, g or 1, b or 1)
-    self.mainFrame.log:ScrollToBottom()
+    local entries = self:GetMainLootLogEntries()
+    local rowHeight = self:GetMainLootLogRowHeight()
+    local yOffset = 0
+
+    for index, entry in ipairs(entries) do
+        local row = self:GetMainLootLogRow(index)
+        if row then
+            row.itemLink = entry.itemLink
+            row.itemText:SetText(entry.itemText or "")
+            row.valueText:SetText(entry.valueText or "")
+            row.sourceText:SetText(entry.sourceText or "")
+
+            local r = tonumber(entry.r) or 1
+            local g = tonumber(entry.g) or 1
+            local b = tonumber(entry.b) or 1
+            row.itemText:SetTextColor(r, g, b)
+            row.valueText:SetTextColor(r, g, b)
+            row.sourceText:SetTextColor(r, g, b)
+
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.logContent, "TOPLEFT", 0, -yOffset)
+            row:SetPoint("TOPRIGHT", frame.logContent, "TOPRIGHT", 0, -yOffset)
+            row:SetHeight(rowHeight)
+            row.divider:SetShown(index < #entries)
+            row:Show()
+
+            yOffset = yOffset + rowHeight
+            if index < #entries then
+                yOffset = yOffset + MAIN_LOOT_LOG_ROW_SPACING
+            end
+        end
+    end
+
+    for index = (#entries + 1), #(frame.logRows or {}) do
+        if frame.logRows[index] then
+            frame.logRows[index]:Hide()
+        end
+    end
+
+    frame.logContent:SetHeight(math.max(1, yOffset))
+    if frame.logScrollFrame then
+        local contentWidth = (frame.logScrollFrame:GetWidth() or 0) - 6
+        frame.logContent:SetWidth(math.max(1, contentWidth))
+        if frame.logScrollFrame.UpdateScrollChildRect then
+            frame.logScrollFrame:UpdateScrollChildRect()
+        end
+        if scrollToBottom then
+            frame.logScrollFrame:SetVerticalScroll(frame.logScrollFrame:GetVerticalScrollRange() or 0)
+        elseif #entries == 0 then
+            frame.logScrollFrame:SetVerticalScroll(0)
+        end
+    end
+end
+
+function GoldTracker:AddLootLogEntry(entry)
+    if type(entry) ~= "table" then
+        return
+    end
+
+    local entries = self:GetMainLootLogEntries()
+    entries[#entries + 1] = {
+        itemText = tostring(entry.itemText or ""),
+        valueText = tostring(entry.valueText or ""),
+        sourceText = tostring(entry.sourceText or ""),
+        itemLink = entry.itemLink,
+        r = tonumber(entry.r) or 1,
+        g = tonumber(entry.g) or 1,
+        b = tonumber(entry.b) or 1,
+    }
+
+    while #entries > MAIN_LOOT_LOG_MAX_ENTRIES do
+        table.remove(entries, 1)
+    end
+
+    self:RefreshMainLootLog(true)
+end
+
+function GoldTracker:AddLootItemLogEntry(itemLink, quantity, totalValue, lootSourceText)
+    local normalizedQuantity = math.max(1, math.floor(tonumber(quantity) or 1))
+    self:AddLootLogEntry({
+        itemText = string.format("%s  %s x%d", date("%H:%M:%S"), itemLink or "Unknown item", normalizedQuantity),
+        valueText = self:FormatMoney(totalValue or 0),
+        sourceText = lootSourceText or "",
+        itemLink = itemLink,
+        r = 0.9,
+        g = 0.9,
+        b = 1,
+    })
+end
+
+function GoldTracker:AddLootMoneyLogEntry(amount)
+    self:AddLootLogEntry({
+        itemText = string.format("%s  |cffffd100Raw looted gold|r", date("%H:%M:%S")),
+        valueText = self:FormatMoney(amount or 0),
+        sourceText = "",
+        r = 1,
+        g = 0.85,
+        b = 0,
+    })
+end
+
+function GoldTracker:AddLogMessage(text, r, g, b)
+    self:AddLootLogEntry({
+        itemText = text,
+        valueText = "",
+        sourceText = "",
+        r = r or 1,
+        g = g or 1,
+        b = b or 1,
+    })
 end
 
 function GoldTracker:UpdateMainWindow()
@@ -335,10 +529,11 @@ function GoldTracker:CreateMainWindow()
         local clampedHeight = math.floor(math.max(minHeight, math.min(maxHeight, tonumber(height) or minHeight)) + 0.5)
         addon.db.windowWidth = clampedWidth
         addon.db.windowHeight = clampedHeight
+        addon:RefreshMainLootLog(false)
     end)
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker")
+        frame.TitleText:SetText("General Gold Tracker")
     end
 
     if frame.CloseButton then
@@ -507,38 +702,54 @@ function GoldTracker:CreateMainWindow()
     logLabel:SetJustifyH("CENTER")
     logLabel:SetText("Loot Log")
 
-    local log = CreateFrame("ScrollingMessageFrame", nil, frame)
-    log:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 7) - 18)
-    log:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 20)
-    log:SetFontObject(GameFontHighlightSmall)
-    log:SetJustifyH("LEFT")
-    if log.SetJustifyV then
-        log:SetJustifyV("TOP")
-    end
-    log:SetFading(false)
-    log:SetMaxLines(1200)
-    if log.SetInsertMode then
-        log:SetInsertMode("BOTTOM")
-    end
-    log:SetIndentedWordWrap(true)
-    log:SetHyperlinksEnabled(true)
-    log:EnableMouseWheel(true)
-    log:SetScript("OnMouseWheel", function(self, delta)
-        if delta > 0 then
-            self:ScrollUp()
-        else
-            self:ScrollDown()
+    local logItemHeader = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    logItemHeader:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX + 4, rowOneY + (rowStep * 7) - 20)
+    logItemHeader:SetText("Item")
+    frame.logItemHeaderText = logItemHeader
+
+    local logSourceHeader = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    logSourceHeader:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -20, rowOneY + (rowStep * 7) - 20)
+    logSourceHeader:SetWidth(MAIN_LOOT_LOG_SOURCE_WIDTH)
+    logSourceHeader:SetJustifyH("LEFT")
+    logSourceHeader:SetText("From")
+    frame.logSourceHeaderText = logSourceHeader
+
+    local logValueHeader = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    logValueHeader:SetPoint("RIGHT", logSourceHeader, "LEFT", -12, 0)
+    logValueHeader:SetWidth(MAIN_LOOT_LOG_VALUE_WIDTH)
+    logValueHeader:SetJustifyH("RIGHT")
+    logValueHeader:SetText("Value")
+    frame.logValueHeaderText = logValueHeader
+
+    local logHeaderUnderline = frame:CreateTexture(nil, "ARTWORK")
+    logHeaderUnderline:SetColorTexture(1, 0.82, 0, 0.35)
+    logHeaderUnderline:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 7) - 36)
+    logHeaderUnderline:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -20, rowOneY + (rowStep * 7) - 36)
+    logHeaderUnderline:SetHeight(1)
+    frame.logHeaderUnderline = logHeaderUnderline
+
+    local logScrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    logScrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", leftColumnX, rowOneY + (rowStep * 7) - 40)
+    logScrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 20)
+    logScrollFrame:EnableMouseWheel(true)
+    logScrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local step = math.max(18, math.floor(self:GetHeight() * 0.12))
+        local nextScroll = (tonumber(self:GetVerticalScroll()) or 0) - ((tonumber(delta) or 0) * step)
+        local maxScroll = tonumber(self:GetVerticalScrollRange()) or 0
+        if nextScroll < 0 then
+            nextScroll = 0
+        elseif nextScroll > maxScroll then
+            nextScroll = maxScroll
         end
+        self:SetVerticalScroll(nextScroll)
     end)
-    log:SetScript("OnHyperlinkEnter", function(_, _, link)
-        GameTooltip:SetOwner(frame, "ANCHOR_CURSOR")
-        GameTooltip:SetHyperlink(link)
-        GameTooltip:Show()
-    end)
-    log:SetScript("OnHyperlinkLeave", function()
-        GameTooltip:Hide()
-    end)
-    frame.log = log
+    frame.logScrollFrame = logScrollFrame
+
+    local logContent = CreateFrame("Frame", nil, logScrollFrame)
+    logContent:SetSize(1, 1)
+    logScrollFrame:SetScrollChild(logContent)
+    frame.logContent = logContent
+    frame.logRows = {}
 
     local resizeButton = CreateFrame("Button", nil, frame)
     resizeButton:SetSize(16, 16)
@@ -577,4 +788,5 @@ function GoldTracker:CreateMainWindow()
     self:ApplyMainWindowGoldPerHourVisibility()
     self:RefreshHistoryButtonVisibility()
     self:RefreshDiagnosisButtonVisibility()
+    self:RefreshMainLootLog(false)
 end

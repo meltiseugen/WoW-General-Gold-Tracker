@@ -50,7 +50,7 @@ function GoldTracker:UpdateDiagnosisWindow()
     local source = self:GetCurrentValueSource()
 
     local lines = {
-        "Gold Tracker Diagnosis (Experimental)",
+        "General Gold Tracker Diagnosis (Experimental)",
         "",
         string.format("Diagnostics enabled: %s", self:IsDiagnosticsPanelEnabled() and "Yes" or "No"),
         string.format("Addon uptime: %s", self:FormatDuration(addonUptimeSeconds)),
@@ -133,7 +133,7 @@ function GoldTracker:CreateDiagnosisWindow()
     frame:Hide()
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker - Diagnosis")
+        frame.TitleText:SetText("General Gold Tracker - Diagnosis")
     end
     if frame.CloseButton then
         frame.CloseButton:SetScript("OnClick", function()
@@ -233,4 +233,3 @@ function GoldTracker:ToggleDiagnosisWindow()
         self:UpdateDiagnosisWindow()
     end
 end
-

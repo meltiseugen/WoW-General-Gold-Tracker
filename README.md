@@ -1,6 +1,6 @@
-# WoW General Gold Tracker
+# General Gold Tracker
 
-**WoW General Gold Tracker** is a lightweight **Retail WoW addon** that helps you see how much gold your current farming session is worth.
+**General Gold Tracker** is a lightweight **Retail WoW addon** that helps you see how much gold your current farming session is worth.
 
 It combines:
 - 💰 Raw looted gold
@@ -25,7 +25,7 @@ It combines:
 ### Option 1: CurseForge App (recommended)
 1. Open the **CurseForge** app.
 2. Go to **World of Warcraft → Retail**.
-3. Search for **WoW General Gold Tracker**.
+3. Search for **General Gold Tracker**.
 4. Click **Install**.
 
 ### Option 2: Manual install (ZIP)

@@ -19,6 +19,9 @@ local LOCATION_TABLE_MAX_VISIBLE_ROWS = 3
 local DETAILS_GAP_LOCATION_TABLE_TO_FILTER = 10
 local DETAILS_GAP_FILTER_TO_SUMMARY = 12
 local DETAILS_GAP_SUMMARY_TO_ITEMS = 6
+local DETAILS_ITEMS_ROW_SPACING = 2
+local DETAILS_ITEMS_VALUE_WIDTH = 110
+local DETAILS_ITEMS_SOURCE_WIDTH = 220
 
 local historyDateFilter = HistoryDateFilter:New()
 local historyFormatter = HistoryFormatter:New(GoldTracker)
@@ -254,7 +257,7 @@ function GoldTracker:CreateHistoryWindow()
     frame:Hide()
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker - Session History")
+        frame.TitleText:SetText("General Gold Tracker - Session History")
     end
     if frame.CloseButton then
         frame.CloseButton:SetFrameLevel(frame:GetFrameLevel() + 20)
@@ -690,32 +693,63 @@ function GoldTracker:CreateHistoryWindow()
     itemsHeader:SetText("Items")
     frame.itemsHeaderText = itemsHeader
 
-    local log = CreateFrame("ScrollingMessageFrame", nil, detailsContainer)
-    log:SetPoint("TOPLEFT", itemsHeader, "BOTTOMLEFT", 0, -2)
-    log:SetPoint("BOTTOMRIGHT", detailsContainer, "BOTTOMRIGHT", -20, 20)
-    log:SetFontObject(GameFontHighlightSmall)
-    log:SetJustifyH("LEFT")
-    log:SetFading(false)
-    log:SetMaxLines(5000)
-    log:SetIndentedWordWrap(true)
-    log:SetHyperlinksEnabled(true)
-    log:EnableMouseWheel(true)
-    log:SetScript("OnMouseWheel", function(self, delta)
-        if delta > 0 then
-            self:ScrollUp()
-        else
-            self:ScrollDown()
+    local itemsItemHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    itemsItemHeader:SetPoint("TOPLEFT", itemsHeader, "BOTTOMLEFT", 0, -4)
+    itemsItemHeader:SetText("Item")
+    frame.itemsItemHeaderText = itemsItemHeader
+
+    local itemsSourceHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    itemsSourceHeader:SetPoint("TOP", itemsItemHeader, "TOP", 0, 0)
+    itemsSourceHeader:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
+    itemsSourceHeader:SetWidth(DETAILS_ITEMS_SOURCE_WIDTH)
+    itemsSourceHeader:SetJustifyH("LEFT")
+    itemsSourceHeader:SetText("From")
+    frame.itemsSourceHeaderText = itemsSourceHeader
+
+    local itemsValueHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    itemsValueHeader:SetPoint("RIGHT", itemsSourceHeader, "LEFT", -12, 0)
+    itemsValueHeader:SetWidth(DETAILS_ITEMS_VALUE_WIDTH)
+    itemsValueHeader:SetJustifyH("RIGHT")
+    itemsValueHeader:SetText("Value")
+    frame.itemsValueHeaderText = itemsValueHeader
+
+    local itemsUnderline = detailsContainer:CreateTexture(nil, "ARTWORK")
+    itemsUnderline:SetColorTexture(1, 0.82, 0, 0.35)
+    itemsUnderline:SetPoint("TOPLEFT", itemsItemHeader, "BOTTOMLEFT", 0, -4)
+    itemsUnderline:SetPoint("TOPRIGHT", itemsSourceHeader, "BOTTOMRIGHT", 0, -4)
+    itemsUnderline:SetHeight(1)
+    frame.itemsHeaderUnderline = itemsUnderline
+
+    local itemsScrollFrame = CreateFrame("ScrollFrame", nil, detailsContainer, "UIPanelScrollFrameTemplate")
+    itemsScrollFrame:SetPoint("TOPLEFT", itemsItemHeader, "BOTTOMLEFT", 0, -8)
+    itemsScrollFrame:SetPoint("BOTTOMRIGHT", detailsContainer, "BOTTOMRIGHT", -30, 20)
+    itemsScrollFrame:EnableMouseWheel(true)
+    itemsScrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local step = math.max(18, math.floor(self:GetHeight() * 0.12))
+        local nextScroll = (tonumber(self:GetVerticalScroll()) or 0) - ((tonumber(delta) or 0) * step)
+        local maxScroll = tonumber(self:GetVerticalScrollRange()) or 0
+        if nextScroll < 0 then
+            nextScroll = 0
+        elseif nextScroll > maxScroll then
+            nextScroll = maxScroll
         end
+        self:SetVerticalScroll(nextScroll)
     end)
-    log:SetScript("OnHyperlinkEnter", function(_, _, link)
-        GameTooltip:SetOwner(frame, "ANCHOR_CURSOR")
-        GameTooltip:SetHyperlink(link)
-        GameTooltip:Show()
-    end)
-    log:SetScript("OnHyperlinkLeave", function()
-        GameTooltip:Hide()
-    end)
-    frame.detailsLog = log
+    frame.detailsItemsScrollFrame = itemsScrollFrame
+
+    local itemsContent = CreateFrame("Frame", nil, itemsScrollFrame)
+    itemsContent:SetSize(1, 1)
+    itemsScrollFrame:SetScrollChild(itemsContent)
+    frame.detailsItemsContent = itemsContent
+    frame.detailsItemRows = {}
+
+    local itemsEmptyText = itemsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    itemsEmptyText:SetPoint("TOPLEFT", itemsContent, "TOPLEFT", 4, -4)
+    itemsEmptyText:SetPoint("TOPRIGHT", itemsContent, "TOPRIGHT", -4, -4)
+    itemsEmptyText:SetJustifyH("LEFT")
+    itemsEmptyText:SetText("No tradable items matched the current quality filter.")
+    itemsEmptyText:Hide()
+    frame.detailsItemsEmptyText = itemsEmptyText
 
     frame:SetScript("OnShow", function()
         if frame.view == "details" then
@@ -970,6 +1004,150 @@ function GoldTracker:GetHistoryDetailsSummaryRow(index)
 
     frame.summaryRows[index] = row
     return row
+end
+
+function GoldTracker:GetHistoryDetailsItemRow(index)
+    local frame = self.historyFrame
+    if not frame or not frame.detailsItemsContent then
+        return nil
+    end
+
+    frame.detailsItemRows = frame.detailsItemRows or {}
+    local row = frame.detailsItemRows[index]
+    if row then
+        return row
+    end
+
+    row = CreateFrame("Button", nil, frame.detailsItemsContent)
+    row:SetHeight(18)
+    row:EnableMouse(true)
+
+    local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    itemText:SetPoint("LEFT", row, "LEFT", 4, 0)
+    itemText:SetJustifyH("LEFT")
+    itemText:SetWordWrap(false)
+    row.itemText = itemText
+
+    local sourceText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sourceText:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    sourceText:SetWidth(DETAILS_ITEMS_SOURCE_WIDTH)
+    sourceText:SetJustifyH("LEFT")
+    sourceText:SetWordWrap(false)
+    row.sourceText = sourceText
+
+    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    valueText:SetPoint("RIGHT", sourceText, "LEFT", -12, 0)
+    valueText:SetWidth(DETAILS_ITEMS_VALUE_WIDTH)
+    valueText:SetJustifyH("RIGHT")
+    valueText:SetWordWrap(false)
+    row.valueText = valueText
+
+    itemText:SetPoint("RIGHT", valueText, "LEFT", -12, 0)
+
+    local divider = row:CreateTexture(nil, "ARTWORK")
+    divider:SetColorTexture(1, 0.82, 0, 0.18)
+    divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+    divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+    divider:SetHeight(1)
+    divider:Hide()
+    row.divider = divider
+
+    row:SetScript("OnEnter", function(self)
+        if type(self.itemLink) ~= "string" or self.itemLink == "" then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetHyperlink(self.itemLink)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    row:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" and HandleModifiedItemClick then
+            HandleModifiedItemClick(self.itemLink)
+        end
+    end)
+
+    frame.detailsItemRows[index] = row
+    return row
+end
+
+function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
+    local frame = self.historyFrame
+    if not frame or not frame.detailsItemsContent then
+        return
+    end
+
+    local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
+    baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
+    local rowHeight = math.max(18, baseSize + 8)
+    local yOffset = 0
+
+    if frame.detailsItemsEmptyText then
+        frame.detailsItemsEmptyText:SetShown(type(items) ~= "table" or #items == 0)
+    end
+
+    if type(items) ~= "table" or #items == 0 then
+        for _, row in ipairs(frame.detailsItemRows or {}) do
+            row:Hide()
+        end
+        frame.detailsItemsContent:SetHeight(1)
+        if frame.detailsItemsScrollFrame then
+            frame.detailsItemsContent:SetWidth(math.max(1, (frame.detailsItemsScrollFrame:GetWidth() or 0) - 6))
+            if frame.detailsItemsScrollFrame.UpdateScrollChildRect then
+                frame.detailsItemsScrollFrame:UpdateScrollChildRect()
+            end
+            frame.detailsItemsScrollFrame:SetVerticalScroll(0)
+        end
+        return
+    end
+
+    for index, item in ipairs(items) do
+        local row = self:GetHistoryDetailsItemRow(index)
+        if row then
+            local quantity = math.max(0, math.floor((tonumber(item and item.quantity) or 0) + 0.5))
+            local itemText = string.format("%s x%d", item and item.itemLink or "Unknown item", quantity)
+            if includeSourceLabel then
+                itemText = string.format("%s  [%s]", itemText, item.valueSourceLabel or "Unknown")
+            end
+
+            row.itemLink = item and item.itemLink or nil
+            row.itemText:SetText(itemText)
+            row.valueText:SetText(self:FormatMoney(tonumber(item and item.totalValue) or 0))
+            row.sourceText:SetText((type(item and item.lootSourceText) == "string" and item.lootSourceText ~= "") and item.lootSourceText or "")
+            row.itemText:SetTextColor(0.9, 0.9, 1)
+            row.valueText:SetTextColor(0.9, 0.9, 1)
+            row.sourceText:SetTextColor(0.9, 0.9, 1)
+
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.detailsItemsContent, "TOPLEFT", 0, -yOffset)
+            row:SetPoint("TOPRIGHT", frame.detailsItemsContent, "TOPRIGHT", 0, -yOffset)
+            row:SetHeight(rowHeight)
+            row.divider:SetShown(index < #items)
+            row:Show()
+
+            yOffset = yOffset + rowHeight
+            if index < #items then
+                yOffset = yOffset + DETAILS_ITEMS_ROW_SPACING
+            end
+        end
+    end
+
+    for index = (#items + 1), #(frame.detailsItemRows or {}) do
+        if frame.detailsItemRows[index] then
+            frame.detailsItemRows[index]:Hide()
+        end
+    end
+
+    frame.detailsItemsContent:SetHeight(math.max(1, yOffset))
+    if frame.detailsItemsScrollFrame then
+        frame.detailsItemsContent:SetWidth(math.max(1, (frame.detailsItemsScrollFrame:GetWidth() or 0) - 6))
+        if frame.detailsItemsScrollFrame.UpdateScrollChildRect then
+            frame.detailsItemsScrollFrame:UpdateScrollChildRect()
+        end
+        frame.detailsItemsScrollFrame:SetVerticalScroll(0)
+    end
 end
 
 function GoldTracker:GetSelectedHistorySessionIDsInOrder()
@@ -1234,7 +1412,7 @@ function GoldTracker:ShowHistoryListView()
     end
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker - Session History")
+        frame.TitleText:SetText("General Gold Tracker - Session History")
     end
 
     if frame.listContainer then
@@ -1270,7 +1448,7 @@ function GoldTracker:ShowHistoryDetailsView(sessionID)
     end
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker - Session Details")
+        frame.TitleText:SetText("General Gold Tracker - Session Details")
     end
 
     if frame.listContainer then
@@ -1534,16 +1712,16 @@ function GoldTracker:ApplyHistoryDetailsFontSize()
         ApplyFontSize(row.valueText, baseSize, GameFontHighlightSmall)
     end
     ApplyFontSize(frame.itemsHeaderText, baseSize, GameFontNormal)
-
-    if frame.detailsLog and type(frame.detailsLog.GetFont) == "function" and type(frame.detailsLog.SetFont) == "function" then
-        local fontPath, _, fontFlags = frame.detailsLog:GetFont()
-        if not fontPath and GameFontHighlightSmall and type(GameFontHighlightSmall.GetFont) == "function" then
-            fontPath, _, fontFlags = GameFontHighlightSmall:GetFont()
-        end
-        if not fontPath then
-            fontPath = "Fonts\\FRIZQT__.TTF"
-        end
-        frame.detailsLog:SetFont(fontPath, baseSize, fontFlags)
+    ApplyFontSize(frame.itemsItemHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    ApplyFontSize(frame.itemsValueHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    ApplyFontSize(frame.itemsSourceHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
+    if frame.detailsItemsEmptyText then
+        ApplyFontSize(frame.detailsItemsEmptyText, baseSize, GameFontHighlightSmall)
+    end
+    for _, row in ipairs(frame.detailsItemRows or {}) do
+        ApplyFontSize(row.itemText, baseSize, GameFontHighlightSmall)
+        ApplyFontSize(row.valueText, baseSize, GameFontHighlightSmall)
+        ApplyFontSize(row.sourceText, baseSize, GameFontHighlightSmall)
     end
 end
 
@@ -1811,25 +1989,8 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         frame.summaryTableFrame:Show()
     end
 
-    frame.detailsLog:Clear()
     local items, includeSourceLabel = BuildVisibleHistoryItems(session, selectedLocationKey)
-    if #items == 0 then
-        frame.detailsLog:AddMessage("No non-soulbound items matched the current quality filter.", 1, 0.35, 0.35)
-    else
-        for _, item in ipairs(items) do
-            local itemText = item.itemLink or "Unknown item"
-            local quantity = tonumber(item.quantity) or 0
-            local totalValue = tonumber(item.totalValue) or 0
-            local lineText = string.format("%s x%d  (%s)", itemText, quantity, self:FormatMoney(totalValue))
-            if includeSourceLabel then
-                lineText = string.format("%s  [%s]", lineText, item.valueSourceLabel or "Unknown")
-            end
-            if type(item.lootSourceText) == "string" and item.lootSourceText ~= "" then
-                lineText = string.format("%s  [From: %s]", lineText, item.lootSourceText)
-            end
-            frame.detailsLog:AddMessage(lineText, 0.9, 0.9, 1)
-        end
-    end
+    self:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
 end
 
 function GoldTracker:BuildHistorySessionCSV(sessionID)
@@ -1892,7 +2053,7 @@ function GoldTracker:CreateHistoryExportWindow()
     frame:Hide()
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker - History CSV Export")
+        frame.TitleText:SetText("General Gold Tracker - History CSV Export")
     end
 
     local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -1949,7 +2110,7 @@ function GoldTracker:CreateHistoryLootBreakdownWindow()
     frame:Hide()
 
     if frame.TitleText then
-        frame.TitleText:SetText("Gold Tracker - Loot Breakdown")
+        frame.TitleText:SetText("General Gold Tracker - Loot Breakdown")
     end
 
     local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -2015,7 +2176,7 @@ function GoldTracker:OpenHistoryLootBreakdownWindow(sessionID)
     end
 
     frame.breakdownText:SetText(string.format(
-        "Session: %s\nLocation: %s\n\nTotal value: %s\nRaw gold: %s\nAH value: %s\nVendor item value: %s\n\nTotal item quantity: %d\nAH-tracked item quantity: %d\nVendor-only item quantity: %d\nSoulbound item quantity: %d\nCrafting reagent quantity: %d",
+        "Session: %s\nLocation: %s\n\nTotal value: %s\nRaw gold: %s\nAH value: %s\nVendor item value: %s\n\nTotal item quantity: %d\nAH-tracked item quantity: %d\nVendor-only item quantity: %d\nBound item quantity: %d\nCrafting reagent quantity: %d",
         session.name or "Session",
         locationLabel,
         self:FormatMoney(tonumber(summary.totalValue) or 0),

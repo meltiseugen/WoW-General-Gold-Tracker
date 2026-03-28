@@ -4,7 +4,7 @@ local GoldTracker = NS.GoldTracker or CreateFrame("Frame")
 NS.GoldTracker = GoldTracker
 
 GoldTracker.ADDON_NAME = ADDON_NAME
-GoldTracker.PREFIX = "|cffffd200[Gold Tracker]|r"
+GoldTracker.PREFIX = "|cffffd200[General Gold Tracker]|r"
 GoldTracker.COPPER_PER_GOLD = 10000
 GoldTracker.MIN_INTERFACE = 120000
 GoldTracker.REQUIRED_PROJECT = WOW_PROJECT_MAINLINE
@@ -53,7 +53,7 @@ for _, source in ipairs(GoldTracker.VALUE_SOURCES) do
     GoldTracker.VALUE_SOURCE_BY_ID[source.id] = source
 end
 
-GoldTracker.MINIMUM_TRACKED_ITEM_QUALITIES = { 0, 2, 3, 4, 5 }
+GoldTracker.MINIMUM_TRACKED_ITEM_QUALITIES = { 0, 1, 2, 3, 4, 5 }
 GoldTracker.TRACKED_ITEM_QUALITY_OPTIONS = {}
 GoldTracker.TRACKED_ITEM_QUALITY_BY_ID = {}
 GoldTracker.ITEM_QUALITY_BY_LINK_COLOR = {}

@@ -37,6 +37,13 @@
         "PanelTemplates_DeselectTab",
         "PanelTemplates_SelectTab",
         "UIErrorsFrame",
-        "MailFrame"
+        "MailFrame",
+        "HandleModifiedItemClick",
+        "ITEM_BIND_TO_BNETACCOUNT",
+        "ITEM_BNETACCOUNTBOUND",
+        "ITEM_BIND_TO_ACCOUNT",
+        "ITEM_ACCOUNTBOUND",
+        "ITEM_ACCOUNTBOUND_UNTIL_EQUIP",
+        "ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP"
     ]
 }

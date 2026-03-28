@@ -165,7 +165,7 @@ function GoldTracker:CreateMinimapButton()
 
     button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Gold Tracker", 1, 0.82, 0)
+        GameTooltip:AddLine("General Gold Tracker", 1, 0.82, 0)
         GameTooltip:AddLine("Left-click: Open tracker window", 0.9, 0.9, 0.9)
         GameTooltip:AddLine("Right-click: Toggle total window", 0.9, 0.9, 0.9)
         GameTooltip:AddLine("Drag with left mouse button: Move button", 0.9, 0.9, 0.9)

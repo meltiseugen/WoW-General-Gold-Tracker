@@ -1,5 +1,5 @@
 ## Interface: 120001, 120000
-## Title: WoW General Gold Tracker
+## Title: General Gold Tracker
 ## Notes: Retail-only (Midnight+) session-based loot gold tracker.
 ## Author: Eugen
 ## Version: 0.1.0

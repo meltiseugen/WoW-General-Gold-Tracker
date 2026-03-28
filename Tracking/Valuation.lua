@@ -3,8 +3,20 @@ local GoldTracker = NS.GoldTracker
 
 local BIND_ON_ACQUIRE = LE_ITEM_BIND_ON_ACQUIRE or (Enum and Enum.ItemBind and Enum.ItemBind.OnAcquire)
 local BIND_QUEST = LE_ITEM_BIND_QUEST or (Enum and Enum.ItemBind and Enum.ItemBind.Quest)
+local ACCOUNT_BOUND_TOOLTIP_LINES = {
+    ITEM_BIND_TO_BNETACCOUNT,
+    ITEM_BNETACCOUNTBOUND,
+    ITEM_BIND_TO_ACCOUNT,
+    ITEM_ACCOUNTBOUND,
+    ITEM_ACCOUNTBOUND_UNTIL_EQUIP,
+    ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
+}
+local IGNORED_BINDING_KEYWORDS = {
+    "warband",
+    "warbound",
+}
 
-local function IsSoulboundTooltipLine(text)
+local function IsIgnoredBindingTooltipLine(text)
     if type(text) ~= "string" then
         return false
     end
@@ -17,6 +29,18 @@ local function IsSoulboundTooltipLine(text)
     end
     if ITEM_BIND_QUEST and text == ITEM_BIND_QUEST then
         return true
+    end
+    for _, bindingText in ipairs(ACCOUNT_BOUND_TOOLTIP_LINES) do
+        if bindingText and text == bindingText then
+            return true
+        end
+    end
+
+    local normalizedText = string.lower(text)
+    for _, keyword in ipairs(IGNORED_BINDING_KEYWORDS) do
+        if string.find(normalizedText, keyword, 1, true) then
+            return true
+        end
     end
 
     return false
@@ -43,21 +67,6 @@ local function BuildLocationLabel(session)
     end
 
     return baseName
-end
-
-local function ShouldDisplayLootSourceHint(addon, itemLink, itemQuality)
-    local quality = tonumber(itemQuality)
-    if quality then
-        quality = math.floor(quality + 0.5)
-    else
-        quality = addon:GetItemQualityFromLink(itemLink)
-    end
-
-    if type(quality) == "number" and quality >= 2 then
-        return true
-    end
-
-    return addon:IsCraftingReagentItem(itemLink)
 end
 
 function GoldTracker:GetCurrentSessionLootLocationData()
@@ -102,8 +111,10 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
     if type(bindType) == "number" then
         local isSoulboundByBindType =
             ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST))
-        self.soulboundLootTypeCache[cacheKey] = isSoulboundByBindType and true or false
-        return isSoulboundByBindType == true
+        if isSoulboundByBindType then
+            self.soulboundLootTypeCache[cacheKey] = true
+            return true
+        end
     end
 
     local sawTooltipTextLine = false
@@ -125,9 +136,9 @@ function GoldTracker:IsSoulboundLootItem(itemLink)
                         sawTooltipTextLine = true
                     end
 
-                    if IsSoulboundTooltipLine(leftText)
-                        or IsSoulboundTooltipLine(rightText)
-                        or IsSoulboundTooltipLine(lineText) then
+                    if IsIgnoredBindingTooltipLine(leftText)
+                        or IsIgnoredBindingTooltipLine(rightText)
+                        or IsIgnoredBindingTooltipLine(lineText) then
                         self.soulboundLootTypeCache[cacheKey] = true
                         return true
                     end
@@ -251,8 +262,8 @@ function GoldTracker:TrackLootMoney(amount)
     if type(self.ProcessSessionMilestoneAlerts) == "function" then
         self:ProcessSessionMilestoneAlerts(previousSessionTotal, self:GetSessionTotalValue())
     end
-    if self.db and self.db.showRawLootedGoldInLog then
-        self:AddLogMessage(string.format("%s  |cffffd100Raw looted gold|r +%s", date("%H:%M:%S"), self:FormatMoney(amount)), 1, 0.85, 0)
+    if self.db and self.db.showRawLootedGoldInLog and type(self.AddLootMoneyLogEntry) == "function" then
+        self:AddLootMoneyLogEntry(amount)
     end
     self:UpdateMainWindow()
     self:EndDiagnosticTimer("track_loot_money_total", trackMoneyStart)
@@ -366,22 +377,18 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     end
 
     if shouldTrackForAH and not isSoulboundLoot then
-        local sourceSuffix = ""
+        local displayedSourceText = nil
         if trackLootSource
             and type(lootSourceText) == "string"
-            and lootSourceText ~= ""
-            and (lootSourceIsAoe or lootSourceKind == "AOE" or ShouldDisplayLootSourceHint(self, itemLink, itemQuality)) then
-            sourceSuffix = string.format("  [From: %s]", lootSourceText)
+            and lootSourceText ~= "" then
+            displayedSourceText = lootSourceText
         elseif trackLootSource and lootSourceIsAoe then
-            sourceSuffix = "  [From: AOE loot]"
+            displayedSourceText = "AOE loot"
         end
 
-        self:AddLogMessage(
-            string.format("%s  %s x%d  (%s)%s", date("%H:%M:%S"), itemLink, quantity, self:FormatMoney(selectedTotalValue), sourceSuffix),
-            0.9,
-            0.9,
-            1
-        )
+        if type(self.AddLootItemLogEntry) == "function" then
+            self:AddLootItemLogEntry(itemLink, quantity, selectedTotalValue, displayedSourceText)
+        end
     end
 
     self:NotifyHighValueItem(itemLink, quantity, selectedTotalValue)

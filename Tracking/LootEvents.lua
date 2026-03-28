@@ -263,7 +263,7 @@ function GoldTracker:OnLootOpened()
 end
 
 function GoldTracker:OnLootClosed()
-    lootSourceService:ClearPendingLootSourceEntries()
+    lootSourceService:MarkPendingLootSourceEntriesClosed()
     SyncLegacyLootState(self)
 end
 

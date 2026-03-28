@@ -8,6 +8,10 @@ local GUID_TYPE_VEHICLE = "Vehicle"
 local LOOT_SOURCE_NAME_CACHE_TTL = 900
 local RECENT_GATHER_ACTION_WINDOW_SEC = 8
 local RECENT_SKINNING_ACTION_WINDOW_SEC = 4
+local PENDING_LOOT_SOURCE_CLOSE_GRACE_SEC = 2
+local MAX_DISPLAYED_SOURCE_NAMES = 3
+local MAX_UNIT_TOKEN_SCAN_SOURCES = 4
+local NAMEPLATE_SCAN_LIMIT = 40
 
 local GATHER_ACTION_BY_SPELL_ID = {
     [2575] = "Mining",
@@ -27,6 +31,7 @@ function LootSourceService:New(addon)
         lootSourceNameCacheNextCleanupAt = 0,
         pendingLootSourceEntries = {},
         pendingLootFallbackSourceInfo = nil,
+        pendingLootCloseExpireAt = nil,
         lastGatherAction = nil,
         gatherActionBySpellName = nil,
         localizedGatherActionBySpellName = nil,
@@ -179,6 +184,25 @@ function LootSourceService:GetItemTypeLabelFromGuidType(guidType)
     return "Unknown"
 end
 
+function LootSourceService:GetPluralKindLabel(kindLabel)
+    if kindLabel == "Unit" then
+        return "Units"
+    end
+    if kindLabel == "Player" then
+        return "Players"
+    end
+    if kindLabel == "Pet" then
+        return "Pets"
+    end
+    if kindLabel == "Vehicle" then
+        return "Vehicles"
+    end
+    if kindLabel == "Object/Node" then
+        return "Objects/Nodes"
+    end
+    return kindLabel
+end
+
 function LootSourceService:CleanupLootSourceNameCache()
     if type(self.lootSourceNameCache) ~= "table" then
         self.lootSourceNameCache = {}
@@ -322,6 +346,85 @@ function LootSourceService:BuildLootSourceDescriptor(kind, name, guid, sourceCou
     }
 end
 
+function LootSourceService:BuildSourceDisplayText(kindLabel, namesInOrder, sourceCount)
+    local normalizedKind = type(kindLabel) == "string" and kindLabel or "Unknown"
+    local normalizedCount = math.max(1, math.floor(tonumber(sourceCount) or 1))
+    local primaryName = namesInOrder and namesInOrder[1] or nil
+
+    if normalizedCount <= 1 then
+        if primaryName then
+            return string.format("%s: %s", normalizedKind, primaryName)
+        end
+        return normalizedKind
+    end
+
+    local pluralKind = self:GetPluralKindLabel(normalizedKind)
+    if type(namesInOrder) ~= "table" or #namesInOrder == 0 then
+        return string.format("%s (%d)", pluralKind, normalizedCount)
+    end
+
+    local shownNames = {}
+    local maxShown = math.min(MAX_DISPLAYED_SOURCE_NAMES, #namesInOrder)
+    for index = 1, maxShown do
+        shownNames[#shownNames + 1] = namesInOrder[index]
+    end
+
+    local displayText = string.format("%s (%d): %s", pluralKind, normalizedCount, table.concat(shownNames, ", "))
+    local remainingCount = math.max(0, normalizedCount - maxShown)
+    if remainingCount > 0 then
+        displayText = string.format("%s +%d", displayText, remainingCount)
+    end
+
+    return displayText
+end
+
+function LootSourceService:BuildAoeSourceListText(uniqueSourceGuids, uniqueSourceGuidCount)
+    if type(uniqueSourceGuids) ~= "table" then
+        return nil
+    end
+
+    local sourceNames = {}
+    local seenNames = {}
+    for guid in pairs(uniqueSourceGuids) do
+        local sourceName = self:GetLootSourceNameFromGUID(guid, false)
+        sourceName = self:NormalizeDisplayedSourceName(sourceName)
+        if sourceName and not seenNames[sourceName] then
+            seenNames[sourceName] = true
+            sourceNames[#sourceNames + 1] = sourceName
+        end
+    end
+    table.sort(sourceNames)
+
+    local totalCount = math.max(1, math.floor(tonumber(uniqueSourceGuidCount) or #sourceNames))
+    if #sourceNames == 0 then
+        return string.format("AOE sources (%d)", totalCount)
+    end
+
+    local shownNames = {}
+    local maxShown = math.min(MAX_DISPLAYED_SOURCE_NAMES, #sourceNames)
+    for index = 1, maxShown do
+        shownNames[#shownNames + 1] = sourceNames[index]
+    end
+
+    local displayText = string.format("AOE sources (%d): %s", totalCount, table.concat(shownNames, ", "))
+    local remainingCount = math.max(0, totalCount - maxShown)
+    if remainingCount > 0 then
+        displayText = string.format("%s +%d", displayText, remainingCount)
+    end
+
+    return displayText
+end
+
+function LootSourceService:CaptureNearbyLootSourceNames()
+    self:CaptureLootSourceNameFromUnit("target")
+    self:CaptureLootSourceNameFromUnit("mouseover")
+    self:CaptureLootSourceNameFromUnit("focus")
+
+    for index = 1, NAMEPLATE_SCAN_LIMIT do
+        self:CaptureLootSourceNameFromUnit(string.format("nameplate%d", index))
+    end
+end
+
 function LootSourceService:GetRecentGatherAction()
     local action = self.lastGatherAction
     if type(action) ~= "table" then
@@ -412,6 +515,14 @@ function LootSourceService:BuildLootSourceInfoForSlot(slotIndex, sourceArgsOverr
         return nil
     end
 
+    if totalSources <= MAX_UNIT_TOKEN_SCAN_SOURCES then
+        for _, entry in ipairs(entries) do
+            if not entry.name then
+                entry.name = self:GetLootSourceNameFromGUID(entry.guid, true)
+            end
+        end
+    end
+
     local uniqueKindCount = 0
     local dominantKind
     local dominantWeightedCount = 0
@@ -466,54 +577,7 @@ function LootSourceService:BuildLootSourceInfoForSlot(slotIndex, sourceArgsOverr
     end)
 
     local primaryName = namesInOrder[1]
-    local displayText
-    if normalizedKind == "Unit" then
-        if primaryName and dominantSourceCount <= 1 then
-            displayText = string.format("Unit: %s", primaryName)
-        elseif primaryName and #namesInOrder > 1 then
-            local shownNames = {}
-            local maxShown = math.min(3, #namesInOrder)
-            for i = 1, maxShown do
-                shownNames[#shownNames + 1] = namesInOrder[i]
-            end
-            displayText = string.format("Units: %s", table.concat(shownNames, ", "))
-            if #namesInOrder > maxShown then
-                displayText = string.format("%s +%d", displayText, #namesInOrder - maxShown)
-            end
-        elseif primaryName and dominantSourceCount > 1 then
-            displayText = string.format("Units: %s (x%d)", primaryName, dominantSourceCount)
-        elseif dominantSourceCount > 1 then
-            displayText = string.format("Units (x%d)", dominantSourceCount)
-        else
-            displayText = "Unit"
-        end
-    elseif normalizedKind == "Skinning" then
-        if primaryName and dominantSourceCount <= 1 then
-            displayText = string.format("Skinning: %s", primaryName)
-        elseif primaryName and #namesInOrder > 1 then
-            local shownNames = {}
-            local maxShown = math.min(3, #namesInOrder)
-            for i = 1, maxShown do
-                shownNames[#shownNames + 1] = namesInOrder[i]
-            end
-            displayText = string.format("Skinning: %s", table.concat(shownNames, ", "))
-            if #namesInOrder > maxShown then
-                displayText = string.format("%s +%d", displayText, #namesInOrder - maxShown)
-            end
-        elseif primaryName and dominantSourceCount > 1 then
-            displayText = string.format("Skinning: %s (x%d)", primaryName, dominantSourceCount)
-        else
-            displayText = "Skinning"
-        end
-    else
-        if primaryName and dominantSourceCount <= 1 then
-            displayText = string.format("%s: %s", normalizedKind, primaryName)
-        elseif dominantSourceCount > 1 then
-            displayText = string.format("%s (x%d)", normalizedKind, dominantSourceCount)
-        else
-            displayText = normalizedKind
-        end
-    end
+    local displayText = self:BuildSourceDisplayText(normalizedKind, namesInOrder, dominantSourceCount)
 
     local isAoe = totalSources > 1 or dominantSourceCount > 1
     local returnedKind = normalizedKind
@@ -541,10 +605,13 @@ end
 function LootSourceService:BuildPendingLootSourceEntries()
     self.pendingLootSourceEntries = {}
     self.pendingLootFallbackSourceInfo = nil
+    self.pendingLootCloseExpireAt = nil
 
     if type(GetNumLootItems) ~= "function" or type(GetLootSlotLink) ~= "function" or type(GetLootSlotInfo) ~= "function" then
         return
     end
+
+    self:CaptureNearbyLootSourceNames()
 
     local numLootItems = tonumber(GetNumLootItems()) or 0
     local hasAoeSources = false
@@ -592,6 +659,7 @@ function LootSourceService:BuildPendingLootSourceEntries()
 
     if uniqueSourceGuidCount > 1 then
         hasAoeSources = true
+        fallbackSourceText = self:BuildAoeSourceListText(uniqueSourceGuids, uniqueSourceGuidCount) or fallbackSourceText
 
         if type(fallbackSourceText) == "string"
             and fallbackSourceText ~= ""
@@ -625,10 +693,37 @@ function LootSourceService:BuildPendingLootSourceEntries()
     end
 end
 
+function LootSourceService:ExpirePendingLootSourceEntriesIfNeeded()
+    local expireAt = tonumber(self.pendingLootCloseExpireAt)
+    if not expireAt then
+        return
+    end
+
+    local now = (GetTimePreciseSec and GetTimePreciseSec()) or GetTime()
+    if now < expireAt then
+        return
+    end
+
+    self:ClearPendingLootSourceEntries()
+end
+
+function LootSourceService:MarkPendingLootSourceEntriesClosed()
+    local hasPendingEntries = type(self.pendingLootSourceEntries) == "table" and #self.pendingLootSourceEntries > 0
+    if not hasPendingEntries and self.pendingLootFallbackSourceInfo == nil then
+        self:ClearPendingLootSourceEntries()
+        return
+    end
+
+    local now = (GetTimePreciseSec and GetTimePreciseSec()) or GetTime()
+    self.pendingLootCloseExpireAt = now + PENDING_LOOT_SOURCE_CLOSE_GRACE_SEC
+end
+
 function LootSourceService:ConsumePendingLootSourceForItem(itemLink, quantity)
+    self:ExpirePendingLootSourceEntriesIfNeeded()
+
     local pending = self.pendingLootSourceEntries
     if type(pending) ~= "table" or #pending == 0 then
-        return nil
+        return self.pendingLootFallbackSourceInfo
     end
 
     local normalizedQuantity = math.max(1, math.floor(tonumber(quantity) or 1))
@@ -696,6 +791,7 @@ end
 function LootSourceService:ClearPendingLootSourceEntries()
     self.pendingLootSourceEntries = {}
     self.pendingLootFallbackSourceInfo = nil
+    self.pendingLootCloseExpireAt = nil
 end
 
 function LootSourceService:CaptureLootSourceNameFromUnit(unitToken)

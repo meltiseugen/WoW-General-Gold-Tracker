@@ -133,7 +133,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("Gold Tracker")
+    title:SetText("General Gold Tracker")
 
     local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
@@ -962,7 +962,7 @@ function GoldTracker:CreateOptionsPanel()
 
     self.optionsPanel = panel
 
-    local category = Settings.RegisterCanvasLayoutCategory(panel, "Gold Tracker")
+    local category = Settings.RegisterCanvasLayoutCategory(panel, "General Gold Tracker")
     Settings.RegisterAddOnCategory(category)
     self.optionsCategory = category
 
