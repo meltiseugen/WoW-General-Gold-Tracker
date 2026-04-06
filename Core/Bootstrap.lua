@@ -164,5 +164,5 @@ end
 
 SLASH_WOWGENERALGOLDTRACKERTOTAL1 = "/gtt"
 SlashCmdList.WOWGENERALGOLDTRACKERTOTAL = function()
-    GoldTracker:ToggleTotalWindow()
+    GoldTracker:OpenTotalWindow()
 end

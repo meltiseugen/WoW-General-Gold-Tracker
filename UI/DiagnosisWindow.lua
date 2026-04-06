@@ -1,6 +1,47 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
+local EVENT_COUNTERS = {
+    { key = "event_ADDON_LOADED", label = "ADDON_LOADED" },
+    { key = "event_CHAT_MSG_LOOT", label = "CHAT_MSG_LOOT" },
+    { key = "event_CHAT_MSG_MONEY", label = "CHAT_MSG_MONEY" },
+    { key = "event_LOOT_OPENED", label = "LOOT_OPENED" },
+    { key = "event_LOOT_CLOSED", label = "LOOT_CLOSED" },
+    { key = "event_UNIT_SPELLCAST_SUCCEEDED", label = "UNIT_SPELLCAST_SUCCEEDED" },
+    { key = "event_PLAYER_TARGET_CHANGED", label = "PLAYER_TARGET_CHANGED" },
+    { key = "event_UPDATE_MOUSEOVER_UNIT", label = "UPDATE_MOUSEOVER_UNIT" },
+    { key = "event_NAME_PLATE_UNIT_ADDED", label = "NAME_PLATE_UNIT_ADDED" },
+    { key = "event_PLAYER_FOCUS_CHANGED", label = "PLAYER_FOCUS_CHANGED" },
+    { key = "event_PLAYER_ENTERING_WORLD", label = "PLAYER_ENTERING_WORLD" },
+}
+
+local LOOT_COUNTERS = {
+    { key = "loot_chat_seen", label = "Loot chat seen" },
+    { key = "loot_chat_ignored", label = "Loot chat ignored" },
+    { key = "loot_chat_item_matches", label = "Loot chat item matches" },
+    { key = "loot_chat_money_matches", label = "Loot chat money matches" },
+    { key = "money_chat_seen", label = "Money chat seen" },
+    { key = "money_chat_ignored", label = "Money chat ignored" },
+    { key = "money_chat_amount_matches", label = "Money chat amount matches" },
+    { key = "session_ensure_failed", label = "Session ensure failed" },
+    { key = "item_entries_tracked", label = "Items tracked (entries)" },
+    { key = "item_quantity_tracked", label = "Items tracked (quantity)" },
+    { key = "money_entries_tracked", label = "Money tracked (entries)" },
+    { key = "money_copper_tracked", label = "Money tracked (copper)" },
+    { key = "item_filtered_quality", label = "AH filtered by quality" },
+    { key = "item_filtered_soulbound", label = "AH filtered soulbound" },
+    { key = "loot_source_attached", label = "Loot source attached" },
+}
+
+local TIMING_METRICS = {
+    { key = "parse_loot_chat", label = "Loot chat parse" },
+    { key = "parse_money_chat", label = "Money chat parse" },
+    { key = "loot_source_build_pending", label = "Pending source build" },
+    { key = "item_value_resolve", label = "Item value resolve" },
+    { key = "track_loot_item_total", label = "TrackLootItem total" },
+    { key = "track_loot_money_total", label = "TrackLootMoney total" },
+}
+
 local function FormatTimingBucket(bucket)
     if type(bucket) ~= "table" then
         return "n/a"
@@ -21,20 +62,24 @@ local function FormatTimingBucket(bucket)
     return string.format("avg %.2fms | max %.2fms | last %.2fms | n=%d", averageMs, maxMs, lastMs, count)
 end
 
-function GoldTracker:UpdateDiagnosisWindow()
-    local frame = self.diagnosisFrame
-    if not frame or not frame.bodyText then
-        return
+local function FormatTimestamp(timestamp)
+    local normalized = tonumber(timestamp)
+    if not normalized or normalized <= 0 then
+        return "Unknown"
+    end
+    return date("%Y-%m-%d %H:%M:%S", normalized)
+end
+
+function GoldTracker:BuildDiagnosisReportText(state, options)
+    options = options or {}
+    local snapshot = type(self.CloneDiagnosisSnapshot) == "function" and self:CloneDiagnosisSnapshot(state) or state
+    if type(snapshot) ~= "table" then
+        return options.emptyText or "No diagnosis data is available."
     end
 
-    if not self:IsDiagnosticsPanelEnabled() then
-        frame.bodyText:SetText("Diagnosis is disabled.\n\nEnable it in Options > Experimental.")
-        return
-    end
-
-    local state = self:EnsureDiagnosticsState()
-    local counters = state.counters or {}
-    local timing = state.timing or {}
+    local counters = snapshot.counters or {}
+    local timing = snapshot.timing or {}
+    local headerLines = options.headerLines or {}
 
     local function Counter(counterKey)
         return math.max(0, math.floor((tonumber(counters[counterKey]) or 0) + 0.5))
@@ -44,60 +89,145 @@ function GoldTracker:UpdateDiagnosisWindow()
         return FormatTimingBucket(timing[metricKey])
     end
 
+    local lines = {
+        options.title or "General Gold Tracker Diagnosis",
+        "",
+    }
+
+    for _, line in ipairs(headerLines) do
+        lines[#lines + 1] = line
+    end
+    if #headerLines > 0 then
+        lines[#lines + 1] = ""
+    end
+
+    lines[#lines + 1] = "Event Counters"
+    for _, spec in ipairs(EVENT_COUNTERS) do
+        lines[#lines + 1] = string.format("%s: %d", spec.label, Counter(spec.key))
+    end
+
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "Loot Pipeline"
+    for _, spec in ipairs(LOOT_COUNTERS) do
+        lines[#lines + 1] = string.format("%s: %d", spec.label, Counter(spec.key))
+    end
+
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "Timing"
+    for _, spec in ipairs(TIMING_METRICS) do
+        lines[#lines + 1] = string.format("%s: %s", spec.label, Timing(spec.key))
+    end
+
+    return table.concat(lines, "\n")
+end
+
+function GoldTracker:BuildLiveDiagnosisWindowText()
+    if not self:IsDiagnosticsPanelEnabled() then
+        return "Diagnosis is disabled.\n\nEnable it in Options > Experimental."
+    end
+
+    local state = self:EnsureDiagnosticsState()
     local addonUptimeSeconds = math.max(0, time() - (tonumber(state.startedAt) or time()))
     local sessionElapsed = self:GetSessionElapsedSeconds()
     local sessionActive = self.session and self.session.active == true
     local source = self:GetCurrentValueSource()
 
-    local lines = {
-        "General Gold Tracker Diagnosis (Experimental)",
-        "",
-        string.format("Diagnostics enabled: %s", self:IsDiagnosticsPanelEnabled() and "Yes" or "No"),
-        string.format("Addon uptime: %s", self:FormatDuration(addonUptimeSeconds)),
-        string.format("Session active: %s", sessionActive and "Yes" or "No"),
-        string.format("Session elapsed: %s", self:FormatDuration(sessionElapsed)),
-        string.format("Value source: %s", source and source.label or "Unknown"),
-        "",
-        "Event Counters",
-        string.format("ADDON_LOADED: %d", Counter("event_ADDON_LOADED")),
-        string.format("CHAT_MSG_LOOT: %d", Counter("event_CHAT_MSG_LOOT")),
-        string.format("CHAT_MSG_MONEY: %d", Counter("event_CHAT_MSG_MONEY")),
-        string.format("LOOT_OPENED: %d", Counter("event_LOOT_OPENED")),
-        string.format("LOOT_CLOSED: %d", Counter("event_LOOT_CLOSED")),
-        string.format("UNIT_SPELLCAST_SUCCEEDED: %d", Counter("event_UNIT_SPELLCAST_SUCCEEDED")),
-        string.format("PLAYER_TARGET_CHANGED: %d", Counter("event_PLAYER_TARGET_CHANGED")),
-        string.format("UPDATE_MOUSEOVER_UNIT: %d", Counter("event_UPDATE_MOUSEOVER_UNIT")),
-        string.format("NAME_PLATE_UNIT_ADDED: %d", Counter("event_NAME_PLATE_UNIT_ADDED")),
-        string.format("PLAYER_FOCUS_CHANGED: %d", Counter("event_PLAYER_FOCUS_CHANGED")),
-        string.format("PLAYER_ENTERING_WORLD: %d", Counter("event_PLAYER_ENTERING_WORLD")),
-        "",
-        "Loot Pipeline",
-        string.format("Loot chat seen: %d", Counter("loot_chat_seen")),
-        string.format("Loot chat ignored: %d", Counter("loot_chat_ignored")),
-        string.format("Loot chat item matches: %d", Counter("loot_chat_item_matches")),
-        string.format("Loot chat money matches: %d", Counter("loot_chat_money_matches")),
-        string.format("Money chat seen: %d", Counter("money_chat_seen")),
-        string.format("Money chat ignored: %d", Counter("money_chat_ignored")),
-        string.format("Money chat amount matches: %d", Counter("money_chat_amount_matches")),
-        string.format("Session ensure failed: %d", Counter("session_ensure_failed")),
-        string.format("Items tracked (entries): %d", Counter("item_entries_tracked")),
-        string.format("Items tracked (quantity): %d", Counter("item_quantity_tracked")),
-        string.format("Money tracked (entries): %d", Counter("money_entries_tracked")),
-        string.format("Money tracked (copper): %d", Counter("money_copper_tracked")),
-        string.format("AH filtered by quality: %d", Counter("item_filtered_quality")),
-        string.format("AH filtered soulbound: %d", Counter("item_filtered_soulbound")),
-        string.format("Loot source attached: %d", Counter("loot_source_attached")),
-        "",
-        "Timing",
-        string.format("Loot chat parse: %s", Timing("parse_loot_chat")),
-        string.format("Money chat parse: %s", Timing("parse_money_chat")),
-        string.format("Pending source build: %s", Timing("loot_source_build_pending")),
-        string.format("Item value resolve: %s", Timing("item_value_resolve")),
-        string.format("TrackLootItem total: %s", Timing("track_loot_item_total")),
-        string.format("TrackLootMoney total: %s", Timing("track_loot_money_total")),
+    return self:BuildDiagnosisReportText(state, {
+        title = "General Gold Tracker Diagnosis (Experimental)",
+        headerLines = {
+            string.format("Diagnostics enabled: %s", self:IsDiagnosticsPanelEnabled() and "Yes" or "No"),
+            string.format("Addon uptime: %s", self:FormatDuration(addonUptimeSeconds)),
+            string.format("Session active: %s", sessionActive and "Yes" or "No"),
+            string.format("Session elapsed: %s", self:FormatDuration(sessionElapsed)),
+            string.format("Value source: %s", source and source.label or "Unknown"),
+        },
+    })
+end
+
+function GoldTracker:BuildHistoryDiagnosisWindowText(session)
+    if type(session) ~= "table" then
+        return "Saved session not found."
+    end
+
+    local snapshot = type(self.CloneDiagnosisSnapshot) == "function" and self:CloneDiagnosisSnapshot(session.diagnosisSnapshot) or session.diagnosisSnapshot
+    if type(snapshot) ~= "table" then
+        return "No diagnosis data was saved for this session."
+    end
+
+    local savedAt = tonumber(session.savedAt or session.stopTime) or time()
+    local sessionStart = tonumber(session.startTime) or savedAt
+    local sessionStop = tonumber(session.stopTime or session.savedAt) or savedAt
+    local sessionDuration = math.max(
+        0,
+        math.floor((tonumber(session.activeDuration) or tonumber(session.duration) or (sessionStop - sessionStart) or 0) + 0.5)
+    )
+
+    local scopeLine = "Scope: Whole saved session"
+    if session.saveReason == "split" then
+        scopeLine = "Scope: Source session snapshot (not location-filtered)"
+    end
+
+    local headerLines = {
+        scopeLine,
+        string.format("Session: %s", session.name or "Session"),
+        string.format("Saved at: %s", FormatTimestamp(savedAt)),
+        string.format("Session start: %s", FormatTimestamp(sessionStart)),
+        string.format("Session stop: %s", FormatTimestamp(sessionStop)),
+        string.format("Session duration: %s", self:FormatDuration(sessionDuration)),
+        string.format("Value source: %s", session.valueSourceLabel or "Unknown"),
     }
 
-    frame.bodyText:SetText(table.concat(lines, "\n"))
+    local captureStart = tonumber(snapshot.startedAt)
+    if captureStart and captureStart > 0 and captureStart ~= sessionStart then
+        headerLines[#headerLines + 1] = string.format("Diagnosis capture start: %s", FormatTimestamp(captureStart))
+    end
+
+    if session.saveReason == "split" then
+        headerLines[#headerLines + 1] = "Note: Diagnosis is session-wide and was copied from the source session during split."
+    end
+
+    return self:BuildDiagnosisReportText(snapshot, {
+        title = "Saved Session Diagnosis",
+        headerLines = headerLines,
+        emptyText = "No diagnosis data was saved for this session.",
+    })
+end
+
+function GoldTracker:UpdateDiagnosisWindow()
+    local frame = self.diagnosisFrame
+    if not frame or not frame.bodyText then
+        return
+    end
+
+    local bodyText = ""
+    if frame.mode == "history" then
+        if frame.TitleText then
+            frame.TitleText:SetText("General Gold Tracker - Saved Diagnosis")
+        end
+        if frame.resetButton then
+            frame.resetButton:Hide()
+        end
+        if frame.refreshButton then
+            frame.refreshButton:Hide()
+        end
+
+        local session = self:GetHistorySessionByID(frame.historySessionID)
+        bodyText = self:BuildHistoryDiagnosisWindowText(session)
+    else
+        if frame.TitleText then
+            frame.TitleText:SetText("General Gold Tracker - Diagnosis")
+        end
+        if frame.resetButton then
+            frame.resetButton:Show()
+        end
+        if frame.refreshButton then
+            frame.refreshButton:Show()
+        end
+
+        bodyText = self:BuildLiveDiagnosisWindowText()
+    end
+
+    frame.bodyText:SetText(bodyText)
 
     if frame.scrollContent and frame.scrollFrame then
         local contentHeight = math.max(1, math.floor((frame.bodyText:GetStringHeight() or 0) + 20))
@@ -131,6 +261,8 @@ function GoldTracker:CreateDiagnosisWindow()
     end)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
+    frame.mode = "runtime"
+    frame.historySessionID = nil
 
     if frame.TitleText then
         frame.TitleText:SetText("General Gold Tracker - Diagnosis")
@@ -199,6 +331,10 @@ function GoldTracker:CreateDiagnosisWindow()
 
     local elapsedAccumulator = 0
     frame:SetScript("OnUpdate", function(_, elapsed)
+        if frame.mode ~= "runtime" then
+            return
+        end
+
         elapsedAccumulator = elapsedAccumulator + elapsed
         if elapsedAccumulator < 1 then
             return
@@ -214,7 +350,7 @@ function GoldTracker:CreateDiagnosisWindow()
     self.diagnosisFrame = frame
 end
 
-function GoldTracker:ToggleDiagnosisWindow()
+function GoldTracker:OpenDiagnosisWindow()
     if not self:IsDiagnosticsPanelEnabled() then
         self:Print("Diagnosis is disabled. Enable it in Options > Experimental.")
         return
@@ -225,11 +361,41 @@ function GoldTracker:ToggleDiagnosisWindow()
         return
     end
 
-    if self.diagnosisFrame:IsShown() then
+    self.diagnosisFrame.mode = "runtime"
+    self.diagnosisFrame.historySessionID = nil
+    self.diagnosisFrame:Show()
+    self.diagnosisFrame:Raise()
+    self:UpdateDiagnosisWindow()
+end
+
+function GoldTracker:OpenHistoryDiagnosisWindow(sessionID)
+    local session = self:GetHistorySessionByID(sessionID)
+    if not session or type(session.diagnosisSnapshot) ~= "table" then
+        self:Print("No diagnosis data was saved for that session.")
+        return
+    end
+
+    self:CreateDiagnosisWindow()
+    if not self.diagnosisFrame then
+        return
+    end
+
+    self.diagnosisFrame.mode = "history"
+    self.diagnosisFrame.historySessionID = sessionID
+    self.diagnosisFrame:Show()
+    self.diagnosisFrame:Raise()
+    self:UpdateDiagnosisWindow()
+end
+
+function GoldTracker:ToggleDiagnosisWindow()
+    self:CreateDiagnosisWindow()
+    if not self.diagnosisFrame then
+        return
+    end
+
+    if self.diagnosisFrame:IsShown() and self.diagnosisFrame.mode == "runtime" then
         self.diagnosisFrame:Hide()
     else
-        self.diagnosisFrame:Show()
-        self.diagnosisFrame:Raise()
-        self:UpdateDiagnosisWindow()
+        self:OpenDiagnosisWindow()
     end
 end

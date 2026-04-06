@@ -84,6 +84,9 @@ local function BuildReloadSessionSnapshot(session)
         highHighlightItemCount = highlightCount,
         itemLoots = CloneReloadItemLoots(session.itemLoots),
         moneyLoots = CloneReloadMoneyLoots(session.moneyLoots),
+        diagnosisSnapshot = type(GoldTracker.CloneDiagnosisSnapshot) == "function"
+            and GoldTracker:CloneDiagnosisSnapshot(session.diagnosisSnapshot)
+            or nil,
         activeDurationSeconds = tonumber(session.activeDurationSeconds) or 0,
         isInstanced = session.isInstanced == true,
         instanceName = session.instanceName,
@@ -164,6 +167,11 @@ function GoldTracker:TryRestorePendingReloadSession()
 
     session.itemLoots = CloneReloadItemLoots(snapshot.itemLoots)
     session.moneyLoots = CloneReloadMoneyLoots(snapshot.moneyLoots)
+    if type(self.CloneDiagnosisSnapshot) == "function" then
+        session.diagnosisSnapshot = self:CloneDiagnosisSnapshot(snapshot.diagnosisSnapshot)
+    else
+        session.diagnosisSnapshot = snapshot.diagnosisSnapshot
+    end
     session.activeDurationSeconds = math.max(0, math.floor((tonumber(snapshot.activeDurationSeconds) or 0) + 0.5))
     session.isInstanced = snapshot.isInstanced == true
     session.instanceName = snapshot.instanceName
@@ -218,6 +226,7 @@ function GoldTracker:StartSession(forceNew, options)
     self.session.highHighlightItemCount = 0
     self.session.itemLoots = {}
     self.session.moneyLoots = {}
+    self.session.diagnosisSnapshot = nil
     self.session.isInstanced = false
     self.session.instanceName = nil
     self.session.instanceMapID = nil
@@ -233,6 +242,11 @@ function GoldTracker:StartSession(forceNew, options)
     self.session.lastLootAt = self.session.startTime
     self.session.activeDurationSeconds = 0
     self.tsmWarningShown = false
+    if self:IsDiagnosticsPanelEnabled() and type(self.CreateDiagnosisSnapshot) == "function" then
+        self.session.diagnosisSnapshot = self:CreateDiagnosisSnapshot(self.session.startTime, self.session.startTime)
+    elseif type(self.EnsureSessionDiagnosisSnapshot) == "function" and self:IsDiagnosticsPanelEnabled() then
+        self:EnsureSessionDiagnosisSnapshot()
+    end
     if type(self.EnsureAlertRuntimeState) == "function" then
         local runtime = self:EnsureAlertRuntimeState()
         runtime.sessionStartTime = tonumber(self.session.startTime) or 0

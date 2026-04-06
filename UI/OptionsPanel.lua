@@ -913,10 +913,16 @@ function GoldTracker:CreateOptionsPanel()
     diagnosticsPanelCheckbox:SetPoint("TOPLEFT", experimentalContent, "TOPLEFT", -2, -6)
     diagnosticsPanelCheckbox:SetScript("OnClick", function(button)
         addon.db.enableDiagnosticsPanel = button:GetChecked() and true or false
+        if addon.db.enableDiagnosticsPanel and addon.session and addon.session.active and type(addon.EnsureSessionDiagnosisSnapshot) == "function" then
+            addon:EnsureSessionDiagnosisSnapshot()
+        end
         if type(addon.RefreshDiagnosisButtonVisibility) == "function" then
             addon:RefreshDiagnosisButtonVisibility()
         end
-        if not addon.db.enableDiagnosticsPanel and addon.diagnosisFrame and addon.diagnosisFrame:IsShown() then
+        if not addon.db.enableDiagnosticsPanel
+            and addon.diagnosisFrame
+            and addon.diagnosisFrame:IsShown()
+            and addon.diagnosisFrame.mode ~= "history" then
             addon.diagnosisFrame:Hide()
         end
     end)

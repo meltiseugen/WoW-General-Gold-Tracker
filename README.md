@@ -76,7 +76,7 @@ If you enable auto-start in options, sessions can begin automatically.
 - `/gt options` — Open options panel
 - `/gt total` — Toggle compact total window
 - `/gt help` — Show command help
-- `/gtt` — Toggle compact total window
+- `/gtt` — Open compact total window
 
 ---
 

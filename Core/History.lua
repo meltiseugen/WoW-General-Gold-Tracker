@@ -62,6 +62,13 @@ local function CloneMoneyLootEntries(moneyLoots)
     return copied
 end
 
+local function CloneDiagnosisSnapshot(addon, snapshot)
+    if type(addon) == "table" and type(addon.CloneDiagnosisSnapshot) == "function" then
+        return addon:CloneDiagnosisSnapshot(snapshot)
+    end
+    return snapshot
+end
+
 local function BuildAggregatedItems(itemLoots)
     local byLink = {}
     for _, entry in ipairs(itemLoots or {}) do
@@ -227,6 +234,9 @@ local function NormalizeHistoryEntry(entry)
     end
     if type(entry.moneyLoots) ~= "table" then
         entry.moneyLoots = {}
+    end
+    if type(GoldTracker.NormalizeDiagnosisSnapshot) == "function" then
+        entry.diagnosisSnapshot = GoldTracker:NormalizeDiagnosisSnapshot(entry.diagnosisSnapshot)
     end
 
     local fallbackSourceID = entry.valueSourceID
@@ -609,6 +619,7 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         expansionName = self.session.expansionName,
         itemLoots = itemLoots,
         moneyLoots = moneyLoots,
+        diagnosisSnapshot = CloneDiagnosisSnapshot(self, self.session.diagnosisSnapshot),
         items = BuildAggregatedItems(itemLoots),
         pinned = false,
     }
@@ -676,6 +687,7 @@ function GoldTracker:ResumeHistorySession(sessionID)
         historySession.valueSourceLabel
     )
     local mergedMoneyLoots = CloneMoneyLootEntries(historySession.moneyLoots)
+    local mergedDiagnosisSnapshot = CloneDiagnosisSnapshot(self, historySession.diagnosisSnapshot)
 
     if not wasActive then
         session.active = true
@@ -689,6 +701,7 @@ function GoldTracker:ResumeHistorySession(sessionID)
         session.highHighlightItemCount = session.highlightItemCount
         session.itemLoots = mergedItemLoots
         session.moneyLoots = mergedMoneyLoots
+        session.diagnosisSnapshot = mergedDiagnosisSnapshot
         session.isInstanced = historySession.isInstanced == true
         session.instanceName = historySession.instanceName
         session.instanceMapID = historySession.instanceMapID
@@ -723,6 +736,11 @@ function GoldTracker:ResumeHistorySession(sessionID)
         end
         for _, money in ipairs(mergedMoneyLoots) do
             session.moneyLoots[#session.moneyLoots + 1] = money
+        end
+        if type(self.MergeDiagnosisSnapshots) == "function" then
+            session.diagnosisSnapshot = self:MergeDiagnosisSnapshots(session.diagnosisSnapshot, mergedDiagnosisSnapshot)
+        else
+            session.diagnosisSnapshot = mergedDiagnosisSnapshot or session.diagnosisSnapshot
         end
         session.activeDurationSeconds = (tonumber(session.activeDurationSeconds) or 0)
             + math.max(0, math.floor((tonumber(historySession.activeDuration) or tonumber(historySession.duration) or 0) + 0.5))
@@ -893,11 +911,15 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     local highlightItemCount = 0
     local startTime
     local stopTime
+    local mergedDiagnosisSnapshot = nil
 
     for _, session in ipairs(sessions) do
         local sessionSourceID = session.valueSourceID
         local sessionSourceLabel = GetSessionPrimarySourceLabel(session)
         local fallbackTimestamp = tonumber(session.stopTime or session.savedAt or time()) or time()
+        if type(self.MergeDiagnosisSnapshots) == "function" then
+            mergedDiagnosisSnapshot = self:MergeDiagnosisSnapshots(mergedDiagnosisSnapshot, session.diagnosisSnapshot)
+        end
 
         if type(session.valueSourceLabels) == "table" and #session.valueSourceLabels > 0 then
             for _, sourceLabel in ipairs(session.valueSourceLabels) do
@@ -1048,6 +1070,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         expansionName = firstSession.expansionName,
         itemLoots = mergedLoots,
         moneyLoots = mergedMoneyLoots,
+        diagnosisSnapshot = CloneDiagnosisSnapshot(self, mergedDiagnosisSnapshot),
         items = BuildAggregatedItems(mergedLoots),
         pinned = false,
         name = mergedName,
@@ -1421,6 +1444,7 @@ function GoldTracker:SplitHistorySessionByLocation(sessionID)
             locationLabel = bucket.locationLabel,
             itemLoots = bucket.itemLoots,
             moneyLoots = bucket.moneyLoots,
+            diagnosisSnapshot = CloneDiagnosisSnapshot(self, session.diagnosisSnapshot),
             items = BuildAggregatedItems(bucket.itemLoots),
             pinned = session.pinned == true,
             name = BuildSplitSessionName(bucket.locationLabel, startTime, stopTime),

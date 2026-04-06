@@ -108,6 +108,7 @@ GoldTracker.session = GoldTracker.session or {
     highlightItemCount = 0,
     itemLoots = {},
     moneyLoots = {},
+    diagnosisSnapshot = nil,
     isInstanced = false,
     instanceName = nil,
     instanceMapID = nil,

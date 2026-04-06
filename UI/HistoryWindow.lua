@@ -622,7 +622,7 @@ function GoldTracker:CreateHistoryWindow()
 
     local locationFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryLocationFilterDropdown", detailsContainer, "UIDropDownMenuTemplate")
     locationFilterDropdown:SetPoint("LEFT", locationFilterLabel, "RIGHT", -6, -1)
-    UIDropDownMenu_SetWidth(locationFilterDropdown, 280)
+    UIDropDownMenu_SetWidth(locationFilterDropdown, 210)
     UIDropDownMenu_Initialize(locationFilterDropdown, function(_, level)
         for _, option in ipairs(frame.detailsLocationOptions or {}) do
             local info = UIDropDownMenu_CreateInfo()
@@ -644,9 +644,9 @@ function GoldTracker:CreateHistoryWindow()
     frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
 
     local splitButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
-    splitButton:SetSize(130, 22)
+    splitButton:SetSize(92, 22)
     splitButton:SetPoint("LEFT", locationFilterDropdown, "RIGHT", 12, 2)
-    splitButton:SetText("Split by Location")
+    splitButton:SetText("Split")
     splitButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
             addon:PromptSplitHistorySession(frame.selectedSessionID)
@@ -656,9 +656,9 @@ function GoldTracker:CreateHistoryWindow()
     frame.splitButton = splitButton
 
     local exportButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
-    exportButton:SetSize(96, 22)
+    exportButton:SetSize(84, 22)
     exportButton:SetPoint("LEFT", splitButton, "RIGHT", 8, 0)
-    exportButton:SetText("Export CSV")
+    exportButton:SetText("Export")
     exportButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
             addon:OpenHistorySessionExport(frame.selectedSessionID)
@@ -667,9 +667,9 @@ function GoldTracker:CreateHistoryWindow()
     frame.exportButton = exportButton
 
     local breakdownButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
-    breakdownButton:SetSize(122, 22)
+    breakdownButton:SetSize(112, 22)
     breakdownButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
-    breakdownButton:SetText("Loot Breakdown")
+    breakdownButton:SetText("Breakdown")
     breakdownButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
             addon:OpenHistoryLootBreakdownWindow(frame.selectedSessionID)
@@ -677,10 +677,21 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.breakdownButton = breakdownButton
 
+    local diagnosisButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    diagnosisButton:SetSize(92, 22)
+    diagnosisButton:SetPoint("LEFT", breakdownButton, "RIGHT", 8, 0)
+    diagnosisButton:SetText("Diagnosis")
+    diagnosisButton:SetScript("OnClick", function()
+        if frame.selectedSessionID then
+            addon:OpenHistoryDiagnosisWindow(frame.selectedSessionID)
+        end
+    end)
+    frame.diagnosisSessionButton = diagnosisButton
+
     local resumeSessionButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
-    resumeSessionButton:SetSize(132, 22)
-    resumeSessionButton:SetPoint("LEFT", breakdownButton, "RIGHT", 8, 0)
-    resumeSessionButton:SetText("Resume Session")
+    resumeSessionButton:SetSize(112, 22)
+    resumeSessionButton:SetPoint("LEFT", diagnosisButton, "RIGHT", 8, 0)
+    resumeSessionButton:SetText("Resume")
     resumeSessionButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
             addon:ResumeHistorySession(frame.selectedSessionID)
@@ -1779,6 +1790,11 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         local enabled = self:IsResumeHistorySessionEnabled()
         frame.resumeSessionButton:SetEnabled(enabled)
         frame.resumeSessionButton:SetAlpha(enabled and 1 or 0.45)
+    end
+    if frame.diagnosisSessionButton then
+        local hasDiagnosisSnapshot = type(session.diagnosisSnapshot) == "table"
+        frame.diagnosisSessionButton:SetEnabled(hasDiagnosisSnapshot)
+        frame.diagnosisSessionButton:SetAlpha(hasDiagnosisSnapshot and 1 or 0.45)
     end
 
     local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey)

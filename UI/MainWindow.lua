@@ -187,6 +187,34 @@ local function ResolveLogEntryIcon(entry)
     return nil
 end
 
+local function ResolveItemLinkIcon(itemLink)
+    if type(itemLink) ~= "string" or itemLink == "" or type(GetItemInfoInstant) ~= "function" then
+        return nil
+    end
+
+    local _, _, _, _, icon = GetItemInfoInstant(itemLink)
+    return icon
+end
+
+local function BuildRecentHighlightDisplay(addon, entry)
+    if type(entry) ~= "table" then
+        return "No highlighted loot yet", string.format("Threshold: %s", addon:FormatMoney(addon:GetHighlightThreshold())), nil
+    end
+
+    local quantity = math.max(1, math.floor(tonumber(entry.quantity) or 1))
+    local itemText = type(entry.itemLink) == "string" and entry.itemLink ~= "" and entry.itemLink or "Unknown item"
+    if quantity > 1 then
+        itemText = string.format("%s x%d", itemText, quantity)
+    end
+
+    local details = addon:FormatMoney(tonumber(entry.totalValue) or 0)
+    if type(entry.lootSourceText) == "string" and entry.lootSourceText ~= "" then
+        details = string.format("%s  %s", details, entry.lootSourceText)
+    end
+
+    return itemText, details, entry.itemLink
+end
+
 function GoldTracker:GetConfiguredWindowAlpha()
     local alpha = (self.db and self.db.windowAlpha) or self.DEFAULTS.windowAlpha
     alpha = tonumber(alpha) or self.DEFAULTS.windowAlpha
@@ -340,7 +368,17 @@ function GoldTracker:ApplyTotalWindowGoldPerHourVisibility()
     if self.totalFrame.sessionRawPerHourText then
         self.totalFrame.sessionRawPerHourText:SetShown(shouldShow)
     end
-    self.totalFrame:SetHeight(shouldShow and 128 or 96)
+    if self.totalFrame.lastHighlightHeaderText then
+        self.totalFrame.lastHighlightHeaderText:ClearAllPoints()
+        if shouldShow and self.totalFrame.sessionRawPerHourText then
+            self.totalFrame.lastHighlightHeaderText:SetPoint("TOPLEFT", self.totalFrame.sessionRawPerHourText, "BOTTOMLEFT", 0, -10)
+            self.totalFrame.lastHighlightHeaderText:SetPoint("TOPRIGHT", self.totalFrame.sessionRawPerHourText, "BOTTOMRIGHT", 0, -10)
+        elseif self.totalFrame.sessionTotalRawText then
+            self.totalFrame.lastHighlightHeaderText:SetPoint("TOPLEFT", self.totalFrame.sessionTotalRawText, "BOTTOMLEFT", 0, -10)
+            self.totalFrame.lastHighlightHeaderText:SetPoint("TOPRIGHT", self.totalFrame.sessionTotalRawText, "BOTTOMRIGHT", 0, -10)
+        end
+    end
+    self.totalFrame:SetHeight(shouldShow and 176 or 144)
 end
 
 function GoldTracker:RefreshHistoryButtonVisibility()
@@ -725,6 +763,24 @@ function GoldTracker:ToggleMainWindow()
     end
 end
 
+function GoldTracker:GetMostRecentHighlightedLootEntry()
+    local session = self.session
+    if type(session) ~= "table" or type(session.itemLoots) ~= "table" then
+        return nil
+    end
+
+    local threshold = self:GetHighlightThreshold()
+    for index = #session.itemLoots, 1, -1 do
+        local entry = session.itemLoots[index]
+        local totalValue = tonumber(entry and entry.totalValue) or 0
+        if totalValue > 0 and totalValue >= threshold then
+            return entry
+        end
+    end
+
+    return nil
+end
+
 function GoldTracker:UpdateTotalWindow()
     if not self.totalFrame or not self.totalFrame.sessionTotalText or not self.totalFrame.sessionTotalRawText then
         return
@@ -759,6 +815,23 @@ function GoldTracker:UpdateTotalWindow()
             self.totalFrame.sessionRawPerHourText:SetText("Raw/h: ---")
         end
     end
+
+    if self.totalFrame.lastHighlightValueText and self.totalFrame.lastHighlightDetailText then
+        local itemText, detailText, itemLink = BuildRecentHighlightDisplay(self, self:GetMostRecentHighlightedLootEntry())
+        self.totalFrame.lastHighlightValueText:SetText(itemText)
+        self.totalFrame.lastHighlightDetailText:SetText(detailText)
+        self.totalFrame.lastHighlightItemLink = itemLink
+
+        if self.totalFrame.lastHighlightIcon then
+            local iconTexture = ResolveItemLinkIcon(itemLink)
+            if iconTexture then
+                self.totalFrame.lastHighlightIcon:SetTexture(iconTexture)
+                self.totalFrame.lastHighlightIcon:Show()
+            else
+                self.totalFrame.lastHighlightIcon:Hide()
+            end
+        end
+    end
 end
 
 function GoldTracker:CreateTotalWindow()
@@ -768,7 +841,7 @@ function GoldTracker:CreateTotalWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerTotalFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(300, 128)
+    frame:SetSize(320, 176)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -820,6 +893,61 @@ function GoldTracker:CreateTotalWindow()
     sessionRawPerHourText:SetText("Raw/h: ---")
     frame.sessionRawPerHourText = sessionRawPerHourText
 
+    local lastHighlightHeaderText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    lastHighlightHeaderText:SetPoint("TOPLEFT", sessionRawPerHourText, "BOTTOMLEFT", 0, -10)
+    lastHighlightHeaderText:SetPoint("TOPRIGHT", sessionRawPerHourText, "BOTTOMRIGHT", 0, -10)
+    lastHighlightHeaderText:SetJustifyH("CENTER")
+    lastHighlightHeaderText:SetText("Last Highlight")
+    frame.lastHighlightHeaderText = lastHighlightHeaderText
+
+    local lastHighlightIcon = frame:CreateTexture(nil, "ARTWORK")
+    lastHighlightIcon:SetSize(16, 16)
+    lastHighlightIcon:SetPoint("TOPLEFT", lastHighlightHeaderText, "BOTTOMLEFT", 14, -7)
+    lastHighlightIcon:Hide()
+    frame.lastHighlightIcon = lastHighlightIcon
+
+    local lastHighlightValueText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    lastHighlightValueText:SetPoint("TOPLEFT", lastHighlightHeaderText, "BOTTOMLEFT", 36, -6)
+    lastHighlightValueText:SetPoint("TOPRIGHT", lastHighlightHeaderText, "BOTTOMRIGHT", -14, -6)
+    lastHighlightValueText:SetJustifyH("LEFT")
+    if lastHighlightValueText.SetWordWrap then
+        lastHighlightValueText:SetWordWrap(false)
+    end
+    lastHighlightValueText:SetText("No highlighted loot yet")
+    frame.lastHighlightValueText = lastHighlightValueText
+
+    local lastHighlightDetailText = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    lastHighlightDetailText:SetPoint("TOPLEFT", lastHighlightValueText, "BOTTOMLEFT", 0, -4)
+    lastHighlightDetailText:SetPoint("TOPRIGHT", lastHighlightValueText, "BOTTOMRIGHT", 0, -4)
+    lastHighlightDetailText:SetJustifyH("LEFT")
+    if lastHighlightDetailText.SetWordWrap then
+        lastHighlightDetailText:SetWordWrap(false)
+    end
+    lastHighlightDetailText:SetText("")
+    frame.lastHighlightDetailText = lastHighlightDetailText
+
+    local highlightButton = CreateFrame("Button", nil, frame)
+    highlightButton:SetPoint("TOPLEFT", lastHighlightHeaderText, "BOTTOMLEFT", 10, -2)
+    highlightButton:SetPoint("BOTTOMRIGHT", lastHighlightDetailText, "BOTTOMRIGHT", 4, -4)
+    highlightButton:RegisterForClicks("LeftButtonUp")
+    highlightButton:SetScript("OnEnter", function(self)
+        if type(frame.lastHighlightItemLink) ~= "string" or frame.lastHighlightItemLink == "" then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetHyperlink(frame.lastHighlightItemLink)
+        GameTooltip:Show()
+    end)
+    highlightButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    highlightButton:SetScript("OnClick", function()
+        if type(frame.lastHighlightItemLink) == "string" and frame.lastHighlightItemLink ~= "" and HandleModifiedItemClick then
+            HandleModifiedItemClick(frame.lastHighlightItemLink)
+        end
+    end)
+    frame.lastHighlightButton = highlightButton
+
     frame:SetScript("OnShow", function()
         addon:UpdateTotalWindow()
     end)
@@ -841,6 +969,17 @@ function GoldTracker:ToggleTotalWindow()
         self.totalFrame:Raise()
         self:UpdateTotalWindow()
     end
+end
+
+function GoldTracker:OpenTotalWindow()
+    self:CreateTotalWindow()
+    if not self.totalFrame then
+        return
+    end
+
+    self.totalFrame:Show()
+    self.totalFrame:Raise()
+    self:UpdateTotalWindow()
 end
 
 function GoldTracker:CreateMainWindow()
