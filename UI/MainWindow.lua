@@ -118,11 +118,19 @@ local function CreateModernButton(parent, width, height, text, paletteKey)
     button:SetScript("OnEnter", function(self)
         self.isHovered = true
         UpdateModernButtonVisual(self)
+        if type(self.tooltipText) == "string" and self.tooltipText ~= "" then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(self.tooltipText, 1, 1, 1, true)
+            GameTooltip:Show()
+        end
     end)
     button:SetScript("OnLeave", function(self)
         self.isHovered = false
         self.isPressed = false
         UpdateModernButtonVisual(self)
+        if type(self.tooltipText) == "string" and self.tooltipText ~= "" then
+            GameTooltip:Hide()
+        end
     end)
     button:SetScript("OnMouseDown", function(self, mouseButton)
         if mouseButton == "LeftButton" then
@@ -272,6 +280,9 @@ function GoldTracker:RefreshMainWindowLayout()
     if frame.optionsButton then
         actionButtons[#actionButtons + 1] = frame.optionsButton
     end
+    if frame.inventoryButton then
+        actionButtons[#actionButtons + 1] = frame.inventoryButton
+    end
     if frame.historyButton and self.db and self.db.enableSessionHistory then
         actionButtons[#actionButtons + 1] = frame.historyButton
     end
@@ -280,16 +291,21 @@ function GoldTracker:RefreshMainWindowLayout()
     end
 
     if frame.utilityButtonRow then
-        local gap = 8
+        local gap = #actionButtons >= 4 and 4 or 8
         local rowWidth = math.max(1, math.floor(frame.utilityButtonRow:GetWidth() or 1))
         local buttonCount = #actionButtons
-        local sharedWidth = buttonCount > 0 and math.max(68, math.floor((rowWidth - (gap * math.max(0, buttonCount - 1))) / buttonCount)) or rowWidth
+        local minimumButtonWidth = buttonCount >= 4 and 44 or (buttonCount >= 3 and 56 or 68)
+        local sharedWidth = buttonCount > 0 and math.max(minimumButtonWidth, math.floor((rowWidth - (gap * math.max(0, buttonCount - 1))) / buttonCount)) or rowWidth
         local previousButton = nil
 
-        for _, button in ipairs({ frame.optionsButton, frame.historyButton, frame.diagnosisButton }) do
+        for _, button in ipairs({ frame.optionsButton, frame.inventoryButton, frame.historyButton, frame.diagnosisButton }) do
             if button then
                 button:ClearAllPoints()
             end
+        end
+
+        if frame.diagnosisButton then
+            frame.diagnosisButton:SetText(buttonCount >= 4 and "Diag" or "Diagnosis")
         end
 
         for index, button in ipairs(actionButtons) do
@@ -512,10 +528,16 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
     local entries = self:GetMainLootLogEntries()
     local rowHeight = self:GetMainLootLogRowHeight()
     local yOffset = 0
+    local trackedCount = 0
+    for _, entry in ipairs(entries) do
+        if entry.tracked == true then
+            trackedCount = trackedCount + 1
+        end
+    end
 
     if frame.logMetaText then
-        if #entries > 0 then
-            frame.logMetaText:SetText(string.format("%d tracked", #entries))
+        if trackedCount > 0 then
+            frame.logMetaText:SetText(string.format("%d tracked", trackedCount))
         else
             frame.logMetaText:SetText("Waiting for loot")
         end
@@ -623,6 +645,7 @@ function GoldTracker:AddLootLogEntry(entry)
         r = tonumber(entry.r) or 1,
         g = tonumber(entry.g) or 1,
         b = tonumber(entry.b) or 1,
+        tracked = entry.tracked == true,
     }
 
     while #entries > MAIN_LOOT_LOG_MAX_ENTRIES do
@@ -640,6 +663,7 @@ function GoldTracker:AddLootItemLogEntry(itemLink, quantity, totalValue, lootSou
         valueText = self:FormatMoney(totalValue or 0),
         sourceText = lootSourceText or "",
         itemLink = itemLink,
+        tracked = true,
         r = 0.9,
         g = 0.9,
         b = 1,
@@ -653,6 +677,7 @@ function GoldTracker:AddLootMoneyLogEntry(amount)
         valueText = self:FormatMoney(amount or 0),
         sourceText = "",
         icon = "Interface\\MoneyFrame\\UI-GoldIcon",
+        tracked = true,
         r = 1,
         g = 0.85,
         b = 0,
@@ -1223,6 +1248,16 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.optionsButton = optionsButton
 
+    local inventoryButton = CreateModernButton(utilityButtonRow, 90, 22, "Bags", "neutral")
+    inventoryButton:SetText("Bags")
+    inventoryButton.tooltipText = "Auctionable inventory"
+    inventoryButton:SetScript("OnClick", function()
+        if type(addon.OpenInventoryWindow) == "function" then
+            addon:OpenInventoryWindow()
+        end
+    end)
+    frame.inventoryButton = inventoryButton
+
     local historyButton = CreateModernButton(utilityButtonRow, 90, 22, "History", "neutral")
     historyButton:SetText("History")
     historyButton:SetScript("OnClick", function()
@@ -1232,6 +1267,7 @@ function GoldTracker:CreateMainWindow()
 
     local diagnosisButton = CreateModernButton(utilityButtonRow, 90, 22, "Diagnosis", "neutral")
     diagnosisButton:SetText("Diagnosis")
+    diagnosisButton.tooltipText = "Runtime diagnosis"
     diagnosisButton:SetScript("OnClick", function()
         if type(addon.ToggleDiagnosisWindow) == "function" then
             addon:ToggleDiagnosisWindow()

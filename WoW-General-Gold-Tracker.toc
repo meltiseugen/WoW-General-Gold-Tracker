@@ -13,6 +13,7 @@ Core/History.lua
 Core/Session.lua
 UI/MinimapButton.lua
 UI/MainWindow.lua
+UI/InventoryWindow.lua
 UI/DiagnosisWindow.lua
 UI/OptionsPanel.lua
 UI/History/HistoryConstants.lua

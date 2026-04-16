@@ -22,10 +22,295 @@ local DETAILS_GAP_SUMMARY_TO_ITEMS = 6
 local DETAILS_ITEMS_ROW_SPACING = 2
 local DETAILS_ITEMS_VALUE_WIDTH = 110
 local DETAILS_ITEMS_SOURCE_WIDTH = 220
+local HISTORY_ROW_TEXT_WIDTH = 260
+local HISTORY_SUBTITLE_FALLBACK_CHARS_PER_LINE = 38
+local HISTORY_WINDOW_BACKDROP = {
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    edgeFile = "Interface\\Buttons\\WHITE8X8",
+    edgeSize = 1,
+    insets = {
+        left = 1,
+        right = 1,
+        top = 1,
+        bottom = 1,
+    },
+}
+local HISTORY_BUTTON_PALETTES = {
+    primary = {
+        bg = { 0.18, 0.14, 0.08, 0.96 },
+        border = { 0.95, 0.74, 0.18, 0.26 },
+        hoverBg = { 0.24, 0.18, 0.08, 0.98 },
+        hoverBorder = { 1.0, 0.82, 0.24, 0.50 },
+        pressedBg = { 0.12, 0.09, 0.04, 0.98 },
+        pressedBorder = { 1.0, 0.82, 0.24, 0.32 },
+        text = { 1.0, 0.94, 0.72 },
+    },
+    neutral = {
+        bg = { 0.09, 0.10, 0.14, 0.94 },
+        border = { 1.0, 1.0, 1.0, 0.08 },
+        hoverBg = { 0.12, 0.13, 0.18, 0.98 },
+        hoverBorder = { 1.0, 1.0, 1.0, 0.16 },
+        pressedBg = { 0.06, 0.07, 0.10, 0.98 },
+        pressedBorder = { 1.0, 1.0, 1.0, 0.10 },
+        text = { 0.90, 0.92, 0.98 },
+    },
+    danger = {
+        bg = { 0.19, 0.09, 0.10, 0.96 },
+        border = { 1.0, 0.36, 0.38, 0.22 },
+        hoverBg = { 0.25, 0.10, 0.11, 0.98 },
+        hoverBorder = { 1.0, 0.44, 0.46, 0.40 },
+        pressedBg = { 0.12, 0.06, 0.06, 0.98 },
+        pressedBorder = { 1.0, 0.44, 0.46, 0.26 },
+        text = { 1.0, 0.87, 0.87 },
+    },
+}
 
 local historyDateFilter = HistoryDateFilter:New()
 local historyFormatter = HistoryFormatter:New(GoldTracker)
 local historyDataService = HistoryDataService:New(GoldTracker, DETAILS_LOCATION_FILTER_ALL)
+
+local function ApplyFlatBackdrop(frame, bg, border)
+    if not frame or type(frame.SetBackdrop) ~= "function" then
+        return
+    end
+
+    frame:SetBackdrop(HISTORY_WINDOW_BACKDROP)
+    if type(bg) == "table" then
+        frame:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
+    end
+    if type(border) == "table" then
+        frame:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
+    end
+end
+
+local function CreateHistoryPanel(parent, bg, border)
+    local panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    ApplyFlatBackdrop(panel, bg, border)
+    return panel
+end
+
+local function UpdateHistoryButtonVisual(button)
+    if not button or type(button.SetBackdropColor) ~= "function" then
+        return
+    end
+
+    local palette = button.palette or HISTORY_BUTTON_PALETTES.neutral
+    local bg = palette.bg
+    local border = palette.border
+    if button.isPressed then
+        bg = palette.pressedBg or bg
+        border = palette.pressedBorder or border
+    elseif button.isHovered then
+        bg = palette.hoverBg or bg
+        border = palette.hoverBorder or border
+    end
+
+    button:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
+    button:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
+    if button.label then
+        local textColor = palette.text or { 1, 1, 1 }
+        button.label:SetTextColor(textColor[1] or 1, textColor[2] or 1, textColor[3] or 1)
+    end
+end
+
+local function CreateHistoryButton(parent, width, height, text, paletteKey)
+    local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    button:SetSize(width, height)
+    button.palette = HISTORY_BUTTON_PALETTES[paletteKey] or HISTORY_BUTTON_PALETTES.neutral
+    button:SetBackdrop(HISTORY_WINDOW_BACKDROP)
+
+    local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    label:SetPoint("CENTER", button, "CENTER", 0, 0)
+    label:SetJustifyH("CENTER")
+    button.label = label
+
+    function button:SetText(value)
+        self.label:SetText(type(value) == "string" and value or "")
+    end
+
+    function button:SetPalette(key)
+        self.palette = HISTORY_BUTTON_PALETTES[key] or HISTORY_BUTTON_PALETTES.neutral
+        UpdateHistoryButtonVisual(self)
+    end
+
+    button:SetText(text)
+    button:SetScript("OnEnter", function(self)
+        self.isHovered = true
+        UpdateHistoryButtonVisual(self)
+    end)
+    button:SetScript("OnLeave", function(self)
+        self.isHovered = false
+        self.isPressed = false
+        UpdateHistoryButtonVisual(self)
+    end)
+    button:SetScript("OnMouseDown", function(self, mouseButton)
+        if mouseButton == "LeftButton" then
+            self.isPressed = true
+            UpdateHistoryButtonVisual(self)
+        end
+    end)
+    button:SetScript("OnMouseUp", function(self)
+        self.isPressed = false
+        UpdateHistoryButtonVisual(self)
+    end)
+    UpdateHistoryButtonVisual(button)
+
+    return button
+end
+
+local function GetHistoryFontLineHeight(fontString, fallback)
+    if fontString and type(fontString.GetFont) == "function" then
+        local _, fontSize = fontString:GetFont()
+        if fontSize and fontSize > 0 then
+            return math.ceil(fontSize + 2)
+        end
+    end
+
+    return fallback
+end
+
+local function GetHistoryMeasureFontString(frame, sourceFontString)
+    if not frame then
+        return nil
+    end
+
+    if not frame.historyMeasureText then
+        local measureText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        measureText:SetAlpha(0)
+        measureText:SetPoint("TOPLEFT", frame, "TOPLEFT", -10000, 10000)
+        if measureText.SetWordWrap then
+            measureText:SetWordWrap(false)
+        end
+        frame.historyMeasureText = measureText
+    end
+
+    local measureText = frame.historyMeasureText
+    if sourceFontString and type(sourceFontString.GetFont) == "function" and type(measureText.SetFont) == "function" then
+        local fontFile, fontSize, fontFlags = sourceFontString:GetFont()
+        if fontFile and fontSize then
+            measureText:SetFont(fontFile, fontSize, fontFlags)
+        end
+    end
+
+    return measureText
+end
+
+local function MeasureHistoryTextWidth(measureText, text, fallbackCharacterWidth)
+    if not measureText then
+        return (string.len(tostring(text or "")) * fallbackCharacterWidth)
+    end
+
+    measureText:SetText(tostring(text or ""))
+    local width = tonumber(measureText:GetStringWidth()) or 0
+    if width <= 0 then
+        width = string.len(tostring(text or "")) * fallbackCharacterWidth
+    end
+
+    return width
+end
+
+local function EstimateHistoryWrappedParagraphLines(measureText, paragraph, availableWidth, fallbackCharacterWidth)
+    paragraph = tostring(paragraph or "")
+    availableWidth = math.max(1, tonumber(availableWidth) or HISTORY_ROW_TEXT_WIDTH)
+
+    if paragraph == "" then
+        return 1
+    end
+
+    local lines = 1
+    local currentWidth = 0
+    local sawWord = false
+    local spaceWidth = MeasureHistoryTextWidth(measureText, " ", fallbackCharacterWidth)
+
+    for word in paragraph:gmatch("%S+") do
+        sawWord = true
+        local wordWidth = MeasureHistoryTextWidth(measureText, word, fallbackCharacterWidth)
+        if currentWidth <= 0 then
+            if wordWidth > availableWidth then
+                local wrappedWordLines = math.max(1, math.ceil(wordWidth / availableWidth))
+                lines = lines + wrappedWordLines - 1
+                currentWidth = wordWidth - (math.floor(wordWidth / availableWidth) * availableWidth)
+                if currentWidth <= 0 then
+                    currentWidth = availableWidth
+                end
+            else
+                currentWidth = wordWidth
+            end
+        elseif (currentWidth + spaceWidth + wordWidth) <= availableWidth then
+            currentWidth = currentWidth + spaceWidth + wordWidth
+        else
+            lines = lines + 1
+            if wordWidth > availableWidth then
+                local wrappedWordLines = math.max(1, math.ceil(wordWidth / availableWidth))
+                lines = lines + wrappedWordLines - 1
+                currentWidth = wordWidth - (math.floor(wordWidth / availableWidth) * availableWidth)
+                if currentWidth <= 0 then
+                    currentWidth = availableWidth
+                end
+            else
+                currentWidth = wordWidth
+            end
+        end
+    end
+
+    return sawWord and lines or 1
+end
+
+local function EstimateHistoryWrappedLineCount(frame, fontString, text, availableWidth)
+    text = tostring(text or "")
+    if text == "" then
+        return 0
+    end
+
+    local lineHeight = GetHistoryFontLineHeight(fontString, 12)
+    local fallbackCharacterWidth = math.max(5.5, lineHeight * 0.54)
+    local measureText = GetHistoryMeasureFontString(frame, fontString)
+    local measuredLines = 0
+    local startIndex = 1
+
+    text = text:gsub("\r\n", "\n"):gsub("\r", "\n")
+    while true do
+        local newlineStart = text:find("\n", startIndex, true)
+        local paragraph
+        if newlineStart then
+            paragraph = text:sub(startIndex, newlineStart - 1)
+            startIndex = newlineStart + 1
+        else
+            paragraph = text:sub(startIndex)
+        end
+
+        measuredLines = measuredLines + EstimateHistoryWrappedParagraphLines(
+            measureText,
+            paragraph,
+            availableWidth,
+            fallbackCharacterWidth
+        )
+
+        if not newlineStart then
+            break
+        end
+    end
+
+    local characterLines = math.ceil(string.len(text) / HISTORY_SUBTITLE_FALLBACK_CHARS_PER_LINE)
+    return math.max(1, measuredLines, characterLines)
+end
+
+local function CalculateHistoryListRowHeight(frame, row, subtitleText)
+    if type(subtitleText) ~= "string" or subtitleText == "" then
+        return ROW_HEIGHT
+    end
+
+    local nameLineHeight = GetHistoryFontLineHeight(row and row.nameText, 14)
+    local subtitleLineHeight = GetHistoryFontLineHeight(row and row.subtitleText, 12)
+    local subtitleLines = EstimateHistoryWrappedLineCount(
+        frame,
+        row and row.subtitleText,
+        subtitleText,
+        HISTORY_ROW_TEXT_WIDTH
+    )
+
+    return math.max(ROW_HEIGHT, math.ceil(4 + nameLineHeight + 2 + (subtitleLines * subtitleLineHeight) + 8))
+end
 
 local function NewHistorySessionModel(session)
     return HistorySessionModel:New(GoldTracker, session, DETAILS_LOCATION_FILTER_ALL)
@@ -237,6 +522,17 @@ function GoldTracker:CreateHistoryWindow()
         frame:SetToplevel(true)
     end
     frame:SetMovable(true)
+    frame:SetResizable(true)
+    if frame.SetResizeBounds then
+        frame:SetResizeBounds(760, 420, 1200, 900)
+    else
+        if frame.SetMinResize then
+            frame:SetMinResize(760, 420)
+        end
+        if frame.SetMaxResize then
+            frame:SetMaxResize(1200, 900)
+        end
+    end
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
     frame:EnableMouseWheel(true)
@@ -256,15 +552,60 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame:Hide()
 
+    if frame.NineSlice then
+        frame.NineSlice:Hide()
+    end
+    if frame.Bg then
+        frame.Bg:Hide()
+    end
+    if frame.Inset then
+        frame.Inset:Hide()
+    end
+    if frame.TitleBg then
+        frame.TitleBg:Hide()
+    end
+    if frame.TopTileStreaks then
+        frame.TopTileStreaks:Hide()
+    end
     if frame.TitleText then
-        frame.TitleText:SetText("General Gold Tracker - Session History")
+        frame.TitleText:Hide()
     end
     if frame.CloseButton then
-        frame.CloseButton:SetFrameLevel(frame:GetFrameLevel() + 20)
-        frame.CloseButton:SetScript("OnClick", function()
-            frame:Hide()
-        end)
+        frame.CloseButton:Hide()
     end
+
+    local chrome = CreateHistoryPanel(frame, { 0.03, 0.04, 0.06, 0.94 }, { 1.0, 1.0, 1.0, 0.08 })
+    chrome:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -6)
+    chrome:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
+    frame.chrome = chrome
+
+    local headerBar = CreateHistoryPanel(frame, { 0.06, 0.07, 0.10, 0.98 }, { 1.0, 1.0, 1.0, 0.03 })
+    headerBar:SetPoint("TOPLEFT", chrome, "TOPLEFT", 0, 0)
+    headerBar:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", 0, 0)
+    headerBar:SetHeight(42)
+    frame.headerBar = headerBar
+
+    local headerAccent = headerBar:CreateTexture(nil, "ARTWORK")
+    headerAccent:SetColorTexture(1.0, 0.82, 0.18, 0.68)
+    headerAccent:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 1, 0)
+    headerAccent:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", -1, 0)
+    headerAccent:SetHeight(2)
+    frame.headerAccent = headerAccent
+
+    local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    headerTitle:SetPoint("LEFT", headerBar, "LEFT", 14, 0)
+    headerTitle:SetPoint("RIGHT", headerBar, "RIGHT", -142, 0)
+    headerTitle:SetJustifyH("LEFT")
+    headerTitle:SetText("Session History")
+    frame.headerTitleText = headerTitle
+
+    local closeButton = CreateHistoryButton(headerBar, 22, 22, "X", "neutral")
+    closeButton:SetPoint("RIGHT", headerBar, "RIGHT", -10, 0)
+    closeButton:SetScript("OnClick", function()
+        frame:Hide()
+    end)
+    frame.historyCloseButton = closeButton
+
     if type(UISpecialFrames) == "table" then
         local alreadyRegistered = false
         for _, frameName in ipairs(UISpecialFrames) do
@@ -278,9 +619,9 @@ function GoldTracker:CreateHistoryWindow()
         end
     end
 
-    local backButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    local backButton = CreateHistoryButton(headerBar, 72, 22, "Back", "neutral")
     backButton:SetSize(80, 22)
-    backButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -34)
+    backButton:SetPoint("RIGHT", closeButton, "LEFT", -10, 0)
     backButton:SetText("Back")
     backButton:SetScript("OnClick", function()
         addon:ShowHistoryListView()
@@ -288,9 +629,9 @@ function GoldTracker:CreateHistoryWindow()
     backButton:Hide()
     frame.backButton = backButton
 
-    local listContainer = CreateFrame("Frame", nil, frame)
-    listContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -24)
-    listContainer:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    local listContainer = CreateHistoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
+    listContainer:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    listContainer:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
     listContainer:EnableMouseWheel(true)
     listContainer:SetScript("OnMouseWheel", function(_, delta)
         addon:HandleHistoryPageMouseWheel(delta)
@@ -302,7 +643,7 @@ function GoldTracker:CreateHistoryWindow()
     frame.sortAscending = frame.sortAscending == true
     frame.historyDateFilterKey = frame.historyDateFilterKey or HISTORY_DATE_FILTER_ALL
 
-    local mergeButton = CreateFrame("Button", nil, listContainer, "UIPanelButtonTemplate")
+    local mergeButton = CreateHistoryButton(listContainer, 120, 22, "Merge", "neutral")
     mergeButton:SetSize(120, 22)
     mergeButton:SetPoint("TOPRIGHT", listContainer, "TOPRIGHT", -154, -8)
     mergeButton:SetText("Merge")
@@ -322,7 +663,7 @@ function GoldTracker:CreateHistoryWindow()
     mergeButton:Hide()
     frame.mergeButton = mergeButton
 
-    local bulkDeleteButton = CreateFrame("Button", nil, listContainer, "UIPanelButtonTemplate")
+    local bulkDeleteButton = CreateHistoryButton(listContainer, 120, 22, "Bulk Delete", "danger")
     bulkDeleteButton:SetSize(120, 22)
     bulkDeleteButton:SetPoint("LEFT", mergeButton, "RIGHT", 8, 0)
     bulkDeleteButton:SetText("Bulk Delete")
@@ -344,6 +685,7 @@ function GoldTracker:CreateHistoryWindow()
 
     local historyDateFilterLabel = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     historyDateFilterLabel:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 24, -14)
+    historyDateFilterLabel:SetTextColor(0.62, 0.66, 0.74)
     historyDateFilterLabel:SetText("Filter")
     frame.historyDateFilterLabelText = historyDateFilterLabel
 
@@ -371,10 +713,12 @@ function GoldTracker:CreateHistoryWindow()
     local hint = listContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 20, -40)
     hint:SetText("Click a row for details. Use row checkboxes (or the header checkbox) for Merge/Bulk Delete, Pin to keep sessions on top, and Filter to limit by date.")
+    hint:Hide()
     frame.listHintText = hint
 
     local header = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     header:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 36, -56)
+    header:SetTextColor(1.0, 0.82, 0.18)
     header:SetText("Session name")
     frame.listHeaderText = header
 
@@ -389,6 +733,7 @@ function GoldTracker:CreateHistoryWindow()
 
     local summaryHeader = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     summaryHeader:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 302, -56)
+    summaryHeader:SetTextColor(1.0, 0.82, 0.18)
     summaryHeader:SetText("Highlights")
     frame.listSummaryHeaderText = summaryHeader
 
@@ -486,7 +831,7 @@ function GoldTracker:CreateHistoryWindow()
     pinnedDivider:Hide()
     frame.pinnedDivider = pinnedDivider
 
-    local prevPageButton = CreateFrame("Button", nil, listContainer, "UIPanelButtonTemplate")
+    local prevPageButton = CreateHistoryButton(listContainer, 34, 20, "<", "neutral")
     prevPageButton:SetSize(34, 20)
     prevPageButton:SetPoint("BOTTOMLEFT", listContainer, "BOTTOMLEFT", 20, 20)
     prevPageButton:SetText("<")
@@ -495,7 +840,7 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.prevPageButton = prevPageButton
 
-    local nextPageButton = CreateFrame("Button", nil, listContainer, "UIPanelButtonTemplate")
+    local nextPageButton = CreateHistoryButton(listContainer, 34, 20, ">", "neutral")
     nextPageButton:SetSize(34, 20)
     nextPageButton:SetPoint("LEFT", prevPageButton, "RIGHT", 6, 0)
     nextPageButton:SetText(">")
@@ -510,15 +855,15 @@ function GoldTracker:CreateHistoryWindow()
     pageText:SetText("Page 1 / 1")
     frame.pageText = pageText
 
-    local detailsContainer = CreateFrame("Frame", nil, frame)
-    detailsContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -24)
-    detailsContainer:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    local detailsContainer = CreateHistoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
+    detailsContainer:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    detailsContainer:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
     detailsContainer:Hide()
     frame.detailsContainer = detailsContainer
 
     local sessionName = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    sessionName:SetPoint("TOPLEFT", detailsContainer, "TOPLEFT", 20, -62)
-    sessionName:SetWidth(850)
+    sessionName:SetPoint("TOPLEFT", detailsContainer, "TOPLEFT", 16, -16)
+    sessionName:SetPoint("TOPRIGHT", detailsContainer, "TOPRIGHT", -16, -16)
     sessionName:SetJustifyH("LEFT")
     frame.sessionNameText = sessionName
 
@@ -643,7 +988,7 @@ function GoldTracker:CreateHistoryWindow()
     }
     frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
 
-    local splitButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    local splitButton = CreateHistoryButton(detailsContainer, 92, 22, "Split", "neutral")
     splitButton:SetSize(92, 22)
     splitButton:SetPoint("LEFT", locationFilterDropdown, "RIGHT", 12, 2)
     splitButton:SetText("Split")
@@ -655,7 +1000,7 @@ function GoldTracker:CreateHistoryWindow()
     splitButton:Hide()
     frame.splitButton = splitButton
 
-    local exportButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    local exportButton = CreateHistoryButton(detailsContainer, 84, 22, "Export", "neutral")
     exportButton:SetSize(84, 22)
     exportButton:SetPoint("LEFT", splitButton, "RIGHT", 8, 0)
     exportButton:SetText("Export")
@@ -666,7 +1011,7 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.exportButton = exportButton
 
-    local breakdownButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    local breakdownButton = CreateHistoryButton(detailsContainer, 112, 22, "Breakdown", "neutral")
     breakdownButton:SetSize(112, 22)
     breakdownButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
     breakdownButton:SetText("Breakdown")
@@ -677,7 +1022,7 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.breakdownButton = breakdownButton
 
-    local diagnosisButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    local diagnosisButton = CreateHistoryButton(detailsContainer, 92, 22, "Diagnosis", "neutral")
     diagnosisButton:SetSize(92, 22)
     diagnosisButton:SetPoint("LEFT", breakdownButton, "RIGHT", 8, 0)
     diagnosisButton:SetText("Diagnosis")
@@ -688,7 +1033,7 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.diagnosisSessionButton = diagnosisButton
 
-    local resumeSessionButton = CreateFrame("Button", nil, detailsContainer, "UIPanelButtonTemplate")
+    local resumeSessionButton = CreateHistoryButton(detailsContainer, 112, 22, "Resume", "primary")
     resumeSessionButton:SetSize(112, 22)
     resumeSessionButton:SetPoint("LEFT", diagnosisButton, "RIGHT", 8, 0)
     resumeSessionButton:SetText("Resume")
@@ -762,6 +1107,37 @@ function GoldTracker:CreateHistoryWindow()
     itemsEmptyText:Hide()
     frame.detailsItemsEmptyText = itemsEmptyText
 
+    local resizeButton = CreateFrame("Button", nil, frame)
+    resizeButton:SetSize(16, 16)
+    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
+    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    resizeButton:SetAlpha(0.7)
+    resizeButton:SetScript("OnMouseDown", function(_, button)
+        if button == "LeftButton" then
+            frame:StartSizing("BOTTOMRIGHT")
+        end
+    end)
+    resizeButton:SetScript("OnMouseUp", function()
+        frame:StopMovingOrSizing()
+    end)
+    resizeButton:SetScript("OnHide", function()
+        frame:StopMovingOrSizing()
+    end)
+    frame.resizeButton = resizeButton
+
+    frame:SetScript("OnSizeChanged", function()
+        if not addon.historyFrame or not frame:IsShown() then
+            return
+        end
+        if frame.view == "details" then
+            addon:RefreshHistoryDetailsWindow()
+        else
+            addon:RefreshHistoryWindow()
+        end
+    end)
+
     frame:SetScript("OnShow", function()
         if frame.view == "details" then
             addon:RefreshHistoryDetailsWindow()
@@ -793,12 +1169,20 @@ function GoldTracker:GetHistoryRow(index)
 
     local bg = row:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(true)
-    bg:SetColorTexture(0, 0, 0, 0.18)
+    bg:SetColorTexture(1, 1, 1, 0.025)
     row.bg = bg
 
     local hl = row:CreateTexture(nil, "HIGHLIGHT")
     hl:SetAllPoints(true)
-    hl:SetColorTexture(1, 1, 1, 0.08)
+    hl:SetColorTexture(1, 0.82, 0.18, 0.07)
+    row.highlight = hl
+
+    local divider = row:CreateTexture(nil, "ARTWORK")
+    divider:SetColorTexture(1, 0.82, 0.18, 0.10)
+    divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 6, 0)
+    divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -6, 0)
+    divider:SetHeight(1)
+    row.divider = divider
 
     local selectCheckbox = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
     selectCheckbox:SetSize(22, 22)
@@ -807,32 +1191,36 @@ function GoldTracker:GetHistoryRow(index)
 
     local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     nameText:SetPoint("TOPLEFT", selectCheckbox, "TOPRIGHT", 0, -2)
-    nameText:SetWidth(260)
+    nameText:SetWidth(HISTORY_ROW_TEXT_WIDTH)
     nameText:SetJustifyH("LEFT")
+    nameText:SetTextColor(0.92, 0.95, 1.0)
     row.nameText = nameText
 
     local subtitleText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -2)
-    subtitleText:SetWidth(260)
+    subtitleText:SetWidth(HISTORY_ROW_TEXT_WIDTH)
     subtitleText:SetJustifyH("LEFT")
-    subtitleText:SetTextColor(0.78, 0.78, 0.78)
+    subtitleText:SetTextColor(0.62, 0.66, 0.74)
+    if subtitleText.SetWordWrap then
+        subtitleText:SetWordWrap(true)
+    end
     subtitleText:SetText("")
     subtitleText:Hide()
     row.subtitleText = subtitleText
 
-    local pinButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    local pinButton = CreateHistoryButton(row, 52, 20, "Pin", "neutral")
     pinButton:SetSize(52, 20)
     pinButton:SetPoint("RIGHT", row, "RIGHT", -126, 0)
     pinButton:SetText("Pin")
     row.pinButton = pinButton
 
-    local renameButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    local renameButton = CreateHistoryButton(row, 62, 20, "Rename", "neutral")
     renameButton:SetSize(62, 20)
     renameButton:SetPoint("RIGHT", row, "RIGHT", -64, 0)
     renameButton:SetText("Rename")
     row.renameButton = renameButton
 
-    local deleteButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    local deleteButton = CreateHistoryButton(row, 56, 20, "Delete", "danger")
     deleteButton:SetSize(56, 20)
     deleteButton:SetPoint("RIGHT", row, "RIGHT", -4, 0)
     deleteButton:SetText("Delete")
@@ -842,24 +1230,28 @@ function GoldTracker:GetHistoryRow(index)
     summaryText:SetPoint("LEFT", row, "LEFT", 302, 0)
     summaryText:SetWidth(60)
     summaryText:SetJustifyH("LEFT")
+    summaryText:SetTextColor(1.0, 0.82, 0.40)
     row.summaryText = summaryText
 
     local totalText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     totalText:SetPoint("LEFT", row, "LEFT", 370, 0)
     totalText:SetPoint("RIGHT", row, "LEFT", 474, 0)
     totalText:SetJustifyH("LEFT")
+    totalText:SetTextColor(0.66, 0.96, 0.72)
     row.totalText = totalText
 
     local totalRawText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     totalRawText:SetPoint("LEFT", row, "LEFT", 482, 0)
     totalRawText:SetPoint("RIGHT", row, "LEFT", 588, 0)
     totalRawText:SetJustifyH("LEFT")
+    totalRawText:SetTextColor(0.96, 0.86, 0.54)
     row.totalRawText = totalRawText
 
     local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     durationText:SetPoint("LEFT", row, "LEFT", 596, 0)
     durationText:SetPoint("RIGHT", pinButton, "LEFT", -8, 0)
     durationText:SetJustifyH("LEFT")
+    durationText:SetTextColor(0.68, 0.86, 1.0)
     row.durationText = durationText
 
     frame.rows[index] = row
@@ -883,14 +1275,14 @@ function GoldTracker:GetHistoryTotalsRow()
 
     local bg = row:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(true)
-    bg:SetColorTexture(0.25, 0.20, 0.02, 0.38)
+    bg:SetColorTexture(0.18, 0.14, 0.08, 0.78)
     row.bg = bg
 
     local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     label:SetPoint("LEFT", row, "LEFT", 36, 0)
     label:SetPoint("RIGHT", row, "RIGHT", -10, 0)
     label:SetJustifyH("LEFT")
-    label:SetTextColor(1, 0.90, 0.30)
+    label:SetTextColor(1.0, 0.94, 0.72)
     label:SetText("")
     row.text = label
 
@@ -918,6 +1310,7 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     locationText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
     locationText:SetWidth(470)
     locationText:SetJustifyH("LEFT")
+    locationText:SetTextColor(0.92, 0.95, 1.0)
     if locationText.SetJustifyV then
         locationText:SetJustifyV("TOP")
     end
@@ -930,6 +1323,7 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     timeFrameText:SetPoint("TOPLEFT", row, "TOPLEFT", 476, 0)
     timeFrameText:SetWidth(210)
     timeFrameText:SetJustifyH("LEFT")
+    timeFrameText:SetTextColor(0.72, 0.76, 0.84)
     if timeFrameText.SetJustifyV then
         timeFrameText:SetJustifyV("TOP")
     end
@@ -942,6 +1336,7 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     highlightsText:SetPoint("TOPLEFT", row, "TOPLEFT", 692, 0)
     highlightsText:SetWidth(80)
     highlightsText:SetJustifyH("LEFT")
+    highlightsText:SetTextColor(1.0, 0.82, 0.40)
     if highlightsText.SetJustifyV then
         highlightsText:SetJustifyV("TOP")
     end
@@ -954,6 +1349,7 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     durationText:SetPoint("TOPLEFT", row, "TOPLEFT", 776, 0)
     durationText:SetWidth(56)
     durationText:SetJustifyH("LEFT")
+    durationText:SetTextColor(0.68, 0.86, 1.0)
     if durationText.SetJustifyV then
         durationText:SetJustifyV("TOP")
     end
@@ -993,6 +1389,7 @@ function GoldTracker:GetHistoryDetailsSummaryRow(index)
     labelText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
     labelText:SetWidth(230)
     labelText:SetJustifyH("LEFT")
+    labelText:SetTextColor(0.62, 0.66, 0.74)
     if labelText.SetJustifyV then
         labelText:SetJustifyV("TOP")
     end
@@ -1005,6 +1402,7 @@ function GoldTracker:GetHistoryDetailsSummaryRow(index)
     valueText:SetPoint("TOPLEFT", row, "TOPLEFT", 236, 0)
     valueText:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
     valueText:SetJustifyH("LEFT")
+    valueText:SetTextColor(0.92, 0.95, 1.0)
     if valueText.SetJustifyV then
         valueText:SetJustifyV("TOP")
     end
@@ -1032,6 +1430,16 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
     row = CreateFrame("Button", nil, frame.detailsItemsContent)
     row:SetHeight(18)
     row:EnableMouse(true)
+
+    local background = row:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints(row)
+    background:SetColorTexture(1, 1, 1, 0.022)
+    row.background = background
+
+    local hover = row:CreateTexture(nil, "HIGHLIGHT")
+    hover:SetAllPoints(row)
+    hover:SetColorTexture(1, 0.82, 0.18, 0.06)
+    row.hover = hover
 
     local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     itemText:SetPoint("LEFT", row, "LEFT", 4, 0)
@@ -1127,9 +1535,12 @@ function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
             row.itemText:SetText(itemText)
             row.valueText:SetText(self:FormatMoney(tonumber(item and item.totalValue) or 0))
             row.sourceText:SetText((type(item and item.lootSourceText) == "string" and item.lootSourceText ~= "") and item.lootSourceText or "")
-            row.itemText:SetTextColor(0.9, 0.9, 1)
-            row.valueText:SetTextColor(0.9, 0.9, 1)
-            row.sourceText:SetTextColor(0.9, 0.9, 1)
+            row.itemText:SetTextColor(0.92, 0.95, 1.0)
+            row.valueText:SetTextColor(0.68, 0.96, 0.72)
+            row.sourceText:SetTextColor(0.66, 0.84, 1.0)
+            if row.background then
+                row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.022)
+            end
 
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", frame.detailsItemsContent, "TOPLEFT", 0, -yOffset)
@@ -1425,6 +1836,9 @@ function GoldTracker:ShowHistoryListView()
     if frame.TitleText then
         frame.TitleText:SetText("General Gold Tracker - Session History")
     end
+    if frame.headerTitleText then
+        frame.headerTitleText:SetText("Session History")
+    end
 
     if frame.listContainer then
         frame.listContainer:Show()
@@ -1460,6 +1874,9 @@ function GoldTracker:ShowHistoryDetailsView(sessionID)
 
     if frame.TitleText then
         frame.TitleText:SetText("General Gold Tracker - Session Details")
+    end
+    if frame.headerTitleText then
+        frame.headerTitleText:SetText("Session Details")
     end
 
     if frame.listContainer then
@@ -1524,26 +1941,34 @@ function GoldTracker:RefreshHistoryWindow()
 
     local renderedRows = 0
     local visibleSessionIDs = {}
-    local dividerAfterRow = nil
+    local dividerY = nil
     local previousWasPinned = nil
+    local rowGap = math.max(2, (ROW_SPACING or 44) - (ROW_HEIGHT or 40))
+    local yOffset = 0
     for historyIndex = startIndex, endIndex do
         local session = history[historyIndex]
-        renderedRows = renderedRows + 1
         local currentIsPinned = session.pinned == true
-        if dividerAfterRow == nil and renderedRows > 1 and previousWasPinned and not currentIsPinned then
-            dividerAfterRow = renderedRows - 1
+        if dividerY == nil and renderedRows > 0 and previousWasPinned and not currentIsPinned then
+            dividerY = -math.max(0, yOffset - math.ceil(rowGap / 2))
         end
         previousWasPinned = currentIsPinned
+        renderedRows = renderedRows + 1
         local sessionID = session.id
         visibleSessionIDs[#visibleSessionIDs + 1] = sessionID
         local row = self:GetHistoryRow(renderedRows)
-        row:SetWidth(width)
+        local rowIndex = renderedRows
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -yOffset)
+        row:SetPoint("TOPRIGHT", frame.content, "TOPRIGHT", 0, -yOffset)
         if row.bg then
             if selectedMap[sessionID] then
-                row.bg:SetColorTexture(0.22, 0.22, 0, 0.25)
+                row.bg:SetColorTexture(0.18, 0.14, 0.08, 0.78)
             else
-                row.bg:SetColorTexture(0, 0, 0, 0.18)
+                row.bg:SetColorTexture(1, 1, 1, rowIndex % 2 == 0 and 0.045 or 0.022)
             end
+        end
+        if row.divider then
+            row.divider:SetShown(historyIndex < endIndex)
         end
         local rowTitleText, rowSubtitleText = BuildHistoryRowTitleAndSubtitle(session)
         row.nameText:SetText(TruncateSessionNameKeepingDate(self, rowTitleText, row.nameText))
@@ -1563,6 +1988,9 @@ function GoldTracker:RefreshHistoryWindow()
             row.durationText:SetText(FormatSessionDuration(session))
         end
 
+        local rowHeight = CalculateHistoryListRowHeight(frame, row, rowSubtitleText)
+        row:SetHeight(rowHeight)
+
         row.selectCheckbox:SetChecked(selectedMap[sessionID] == true)
         row.selectCheckbox:SetScript("OnClick", function(button)
             if button:GetChecked() then
@@ -1572,9 +2000,9 @@ function GoldTracker:RefreshHistoryWindow()
             end
             if row.bg then
                 if selectedMap[sessionID] then
-                    row.bg:SetColorTexture(0.22, 0.22, 0, 0.25)
+                    row.bg:SetColorTexture(0.18, 0.14, 0.08, 0.78)
                 else
-                    row.bg:SetColorTexture(0, 0, 0, 0.18)
+                    row.bg:SetColorTexture(1, 1, 1, rowIndex % 2 == 0 and 0.045 or 0.022)
                 end
             end
             self:UpdateHistoryActionButtons()
@@ -1595,6 +2023,11 @@ function GoldTracker:RefreshHistoryWindow()
             self:DeleteHistorySession(sessionID)
         end)
         row:Show()
+
+        yOffset = yOffset + rowHeight
+        if historyIndex < endIndex then
+            yOffset = yOffset + rowGap
+        end
     end
 
     frame.visibleSessionIDs = visibleSessionIDs
@@ -1604,7 +2037,6 @@ function GoldTracker:RefreshHistoryWindow()
     end
 
     local showTotalsRow = selectedFilterKey ~= HISTORY_DATE_FILTER_ALL
-    local renderedRowsWithTotals = renderedRows
     if showTotalsRow then
         local totalRawGold = 0
         local totalItemsValue = 0
@@ -1621,7 +2053,10 @@ function GoldTracker:RefreshHistoryWindow()
         if totalsRow then
             totalsRow:SetWidth(width)
             totalsRow:ClearAllPoints()
-            totalsRow:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -(renderedRows * ROW_SPACING))
+            if renderedRows > 0 then
+                yOffset = yOffset + rowGap
+            end
+            totalsRow:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -yOffset)
             totalsRow.text:SetText(string.format(
                 "Totals (%s): Sessions %d   Highlights %d   Raw %s   Items %s   Total %s",
                 selectedFilterLabel,
@@ -1631,18 +2066,21 @@ function GoldTracker:RefreshHistoryWindow()
                 self:FormatMoney(totalItemsValue),
                 self:FormatMoney(totalValue)
             ))
+            totalsRow:SetHeight(ROW_HEIGHT)
             totalsRow:Show()
-            renderedRowsWithTotals = renderedRows + 1
+            yOffset = yOffset + ROW_HEIGHT
         end
     elseif frame.totalsRow then
         frame.totalsRow:Hide()
     end
 
-    local contentHeight = math.max(1, renderedRowsWithTotals * ROW_SPACING)
+    local contentHeight = math.max(1, yOffset)
     frame.content:SetHeight(contentHeight)
+    if frame.scrollFrame and frame.scrollFrame.UpdateScrollChildRect then
+        frame.scrollFrame:UpdateScrollChildRect()
+    end
     if frame.pinnedDivider then
-        if dividerAfterRow and dividerAfterRow > 0 then
-            local dividerY = -((dividerAfterRow * ROW_SPACING) - 2)
+        if dividerY then
             frame.pinnedDivider:ClearAllPoints()
             frame.pinnedDivider:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 24, dividerY)
             frame.pinnedDivider:SetPoint("TOPRIGHT", frame.content, "TOPRIGHT", -42, dividerY)
@@ -1662,9 +2100,11 @@ function GoldTracker:RefreshHistoryWindow()
     end
     if frame.prevPageButton then
         frame.prevPageButton:SetEnabled(frame.currentPage > 1)
+        frame.prevPageButton:SetAlpha(frame.currentPage > 1 and 1 or 0.45)
     end
     if frame.nextPageButton then
         frame.nextPageButton:SetEnabled(frame.currentPage < totalPages)
+        frame.nextPageButton:SetAlpha(frame.currentPage < totalPages and 1 or 0.45)
     end
     if frame.pageText then
         local shownFrom = #history == 0 and 0 or startIndex

@@ -186,29 +186,32 @@ function GoldTracker:GetTSMItemValue(priceSource, itemLink)
     return 0
 end
 
-function GoldTracker:GetItemUnitValue(itemLink)
-    local function ResolveFromSource(source)
-        if not source then
-            return 0
-        end
-        if source.id == "VENDOR" then
-            return self:GetVendorItemValue(itemLink)
-        end
-        if source.tsmKey then
-            return self:GetTSMItemValue(source.tsmKey, itemLink)
-        end
-        return 0
+function GoldTracker:GetItemUnitValueFromSource(sourceID, itemLink)
+    local source = self.VALUE_SOURCE_BY_ID[sourceID] or self:GetCurrentValueSource()
+    if not source then
+        return 0, nil, "Unknown"
     end
 
+    local value = 0
+    if source.id == "VENDOR" then
+        value = self:GetVendorItemValue(itemLink)
+    elseif source.tsmKey then
+        value = self:GetTSMItemValue(source.tsmKey, itemLink)
+    end
+
+    return value, source.id, source.label
+end
+
+function GoldTracker:GetItemUnitValue(itemLink)
     local primarySource = self:GetCurrentValueSource()
-    local primaryValue = ResolveFromSource(primarySource)
+    local primaryValue = self:GetItemUnitValueFromSource(primarySource and primarySource.id, itemLink)
     if primaryValue > 0 then
         return primaryValue, primarySource.id, primarySource.label
     end
 
     local fallbackSource = self:GetFallbackValueSource()
     if fallbackSource then
-        local fallbackValue = ResolveFromSource(fallbackSource)
+        local fallbackValue = self:GetItemUnitValueFromSource(fallbackSource.id, itemLink)
         if fallbackValue > 0 then
             return fallbackValue, fallbackSource.id, fallbackSource.label
         end

@@ -258,9 +258,6 @@ function GoldTracker:StartSession(forceNew, options)
     if not options.keepLog then
         self:ClearLog()
     end
-    if not options.silentLog then
-        self:AddLogMessage(string.format("%s  Session started.", date("%H:%M:%S")), 0.35, 1, 0.35)
-    end
     self:UpdateMainWindow()
     if not options.silentChat then
         self:Print("Session started.")
@@ -285,9 +282,6 @@ function GoldTracker:StopSession(options)
     end
     self:SaveCurrentSessionToHistory(options.saveReason or "stop")
 
-    if not options.silentLog then
-        self:AddLogMessage(string.format("%s  Session stopped.", date("%H:%M:%S")), 1, 0.82, 0)
-    end
     self:UpdateMainWindow()
     if not options.silentChat then
         self:Print(string.format("Session stopped. Total value: %s", self:FormatMoney(self:GetSessionTotalValue())))
