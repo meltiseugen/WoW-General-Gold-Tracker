@@ -1,15 +1,24 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
+local Theme = NS.GoldTrackerTheme
+
+local function CreateOptionsPanelFrame(parent, bg, border)
+    return Theme:CreatePanel(parent, bg, border)
+end
+
+local function CreateOptionsButton(parent, width, height, text, paletteKey)
+    return Theme:CreateButton(parent, width, height, text, paletteKey)
+end
 
 function GoldTracker:OpenOptions()
-    if not self.optionsCategory then
+    self:CreateOptionsPanel()
+    if not self.optionsWindow then
         return
     end
 
-    local categoryID = self.optionsCategory:GetID()
-    if categoryID then
-        Settings.OpenToCategory(categoryID)
-    end
+    self.optionsWindow:Show()
+    self.optionsWindow:Raise()
+    self:RefreshOptionsControls()
 end
 
 function GoldTracker:RefreshOptionsControls()
@@ -43,8 +52,18 @@ function GoldTracker:RefreshOptionsControls()
     controls.autoStartOnEnterWorldCheckbox:SetChecked(self.db.autoStartSessionOnEnterWorld)
     controls.resumeAfterReloadCheckbox:SetChecked(self.db.resumeSessionAfterReload)
     controls.enableHistoryCheckbox:SetChecked(self.db.enableSessionHistory)
-    controls.historyRowsPerPageInput:SetText(tostring(self:GetHistoryRowsPerPage()))
-    controls.historyDetailsFontSizeInput:SetText(tostring(self:GetHistoryDetailsFontSize()))
+    if controls.historyRowsPerPageSlider then
+        controls.historyRowsPerPageSlider:SetValue(self:GetHistoryRowsPerPage())
+    end
+    if controls.historyRowsPerPageValueText then
+        controls.historyRowsPerPageValueText:SetText(string.format("%d rows", self:GetHistoryRowsPerPage()))
+    end
+    if controls.historyDetailsFontSizeSlider then
+        controls.historyDetailsFontSizeSlider:SetValue(self:GetHistoryDetailsFontSize())
+    end
+    if controls.historyDetailsFontSizeValueText then
+        controls.historyDetailsFontSizeValueText:SetText(string.format("%d px", self:GetHistoryDetailsFontSize()))
+    end
     controls.rawLootLogCheckbox:SetChecked(self.db.showRawLootedGoldInLog)
     controls.ignoreMailboxLootCheckbox:SetChecked(self:IsIgnoreMailboxLootWhenMailOpenEnabled())
     controls.mainWindowGoldPerHourCheckbox:SetChecked(self:IsMainWindowGoldPerHourEnabled())
@@ -124,12 +143,78 @@ function GoldTracker:SaveHistoryDetailsFontSizeInput(editBox)
 end
 
 function GoldTracker:CreateOptionsPanel()
-    if self.optionsPanel then
+    if self.optionsPanel and self.optionsWindow then
         return
     end
 
     local addon = self
-    local panel = CreateFrame("Frame", "GoldTrackerOptionsPanel", UIParent)
+    local settingsPanel = CreateFrame("Frame", "GoldTrackerOptionsPanel", UIParent)
+
+    local settingsTitle = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    settingsTitle:SetPoint("TOPLEFT", 16, -16)
+    settingsTitle:SetText("General Gold Tracker")
+
+    local settingsSubtitle = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    settingsSubtitle:SetPoint("TOPLEFT", settingsTitle, "BOTTOMLEFT", 0, -8)
+    settingsSubtitle:SetWidth(620)
+    settingsSubtitle:SetJustifyH("LEFT")
+    settingsSubtitle:SetText("Options are managed in a standalone addon window.")
+
+    local openWindowButton = CreateFrame("Button", nil, settingsPanel, "UIPanelButtonTemplate")
+    openWindowButton:SetSize(180, 24)
+    openWindowButton:SetPoint("TOPLEFT", settingsSubtitle, "BOTTOMLEFT", 0, -18)
+    openWindowButton:SetText("Open Options Window")
+    openWindowButton:SetScript("OnClick", function()
+        addon:OpenOptions()
+    end)
+
+    local settingsHint = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    settingsHint:SetPoint("TOPLEFT", openWindowButton, "BOTTOMLEFT", 0, -12)
+    settingsHint:SetWidth(620)
+    settingsHint:SetJustifyH("LEFT")
+    settingsHint:SetText("You can also open it from the tracker window or with /gt options.")
+
+    local window = CreateFrame("Frame", "GoldTrackerOptionsWindow", UIParent, "BasicFrameTemplateWithInset")
+    window:SetSize(860, 640)
+    window:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    window:SetFrameStrata("DIALOG")
+    if window.SetToplevel then
+        window:SetToplevel(true)
+    end
+    window:SetMovable(true)
+    window:SetResizable(true)
+    if window.SetResizeBounds then
+        window:SetResizeBounds(720, 500, 1180, 900)
+    else
+        if window.SetMinResize then
+            window:SetMinResize(720, 500)
+        end
+        if window.SetMaxResize then
+            window:SetMaxResize(1180, 900)
+        end
+    end
+    window:SetClampedToScreen(true)
+    window:EnableMouse(true)
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnMouseDown", function(self)
+        self:Raise()
+    end)
+    window:SetScript("OnDragStart", function(self)
+        self:Raise()
+        self:StartMoving()
+    end)
+    window:SetScript("OnDragStop", window.StopMovingOrSizing)
+    window:Hide()
+
+    local chrome = Theme:ApplyWindowChrome(window, "Options", {
+        closeButtonKey = "optionsCloseButton",
+    })
+    Theme:RegisterSpecialFrame("GoldTrackerOptionsWindow")
+
+    local panel = CreateOptionsPanelFrame(window, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
+    panel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    panel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
+    window.optionsContentPanel = panel
 
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
@@ -189,21 +274,9 @@ function GoldTracker:CreateOptionsPanel()
             return
         end
 
-        local buttonName = button:GetName()
-        local hasPanelRegions = (button.Left or (buttonName and _G[buttonName .. "Left"]))
-            and (button.Middle or (buttonName and _G[buttonName .. "Middle"]))
-            and (button.Right or (buttonName and _G[buttonName .. "Right"]))
-
-        if hasPanelRegions and PanelTemplates_SelectTab and PanelTemplates_DeselectTab then
-            local ok
-            if isSelected then
-                ok = pcall(PanelTemplates_SelectTab, button)
-            else
-                ok = pcall(PanelTemplates_DeselectTab, button)
-            end
-            if ok then
-                return
-            end
+        if type(button.SetSelected) == "function" then
+            button:SetSelected(isSelected == true)
+            return
         end
 
         button:SetEnabled(not isSelected)
@@ -217,8 +290,18 @@ function GoldTracker:CreateOptionsPanel()
             if tab and tab.container then
                 if isSelected then
                     tab.container:Show()
+                    if tab.content then
+                        local contentWidth = (tab.container:GetWidth() or 0) - 32
+                        if contentWidth <= 1 then
+                            contentWidth = (panel:GetWidth() or 0) - 74
+                        end
+                        tab.content:SetWidth(math.max(1, contentWidth))
+                    end
                     if tab.scrollFrame then
                         tab.scrollFrame:SetVerticalScroll(0)
+                        if tab.scrollFrame.UpdateScrollChildRect then
+                            tab.scrollFrame:UpdateScrollChildRect()
+                        end
                     end
                 else
                     tab.container:Hide()
@@ -239,38 +322,9 @@ function GoldTracker:CreateOptionsPanel()
     local previousTabButton
     for index, tabName in ipairs(tabOrder) do
         local tabKey = tabName
-        local tabButtonName = "GoldTrackerOptionsTab" .. index
-        local tabButton
-        local okCreate, createdButton = pcall(CreateFrame, "Button", tabButtonName, panel, "PanelTopTabButtonTemplate")
-        if okCreate and createdButton then
-            tabButton = createdButton
-        else
-            okCreate, createdButton = pcall(CreateFrame, "Button", tabButtonName, panel, "PanelTabButtonTemplate")
-            if okCreate and createdButton then
-                tabButton = createdButton
-            end
-        end
-
-        if not tabButton then
-            tabButton = CreateFrame("Button", tabButtonName, panel, "UIPanelButtonTemplate")
-            tabButton:SetSize(92, 22)
-        end
-
-        if not tabButton.Text then
-            tabButton.Text = _G[tabButtonName .. "Text"] or tabButton:GetFontString()
-            if not tabButton.Text then
-                local text = tabButton:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-                text:SetPoint("CENTER", tabButton, "CENTER", 0, 0)
-                tabButton:SetFontString(text)
-                tabButton.Text = text
-            end
-        end
-
+        local tabButton = CreateOptionsButton(panel, 106, 24, tabKey, "neutral")
         tabButton:SetID(index)
         tabButton:SetText(tabKey)
-        if PanelTemplates_TabResize and (tabButton.Left or _G[tabButtonName .. "Left"]) then
-            pcall(PanelTemplates_TabResize, tabButton, 12, nil, 70)
-        end
         tabButton:ClearAllPoints()
         if previousTabButton then
             tabButton:SetPoint("LEFT", previousTabButton, "RIGHT", 8, 0)
@@ -289,14 +343,73 @@ function GoldTracker:CreateOptionsPanel()
     local generalContent = tabs.General.content
     local trackingContent = tabs.Tracking.content
     local historyContent = tabs.History.content
-    local generalLeftColumnX = 12
-    local generalSecondColumnOffsetX = 320
+    local alertsContent = tabs.Alerts.content
+    local experimentalContent = tabs.Experimental.content
 
-    local sourceLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    sourceLabel:SetPoint("TOPLEFT", generalContent, "TOPLEFT", generalLeftColumnX, -8)
+    local function AnchorOptionsSection(section, previousSection)
+        if not section then
+            return
+        end
+
+        section:ClearAllPoints()
+        if previousSection then
+            section:SetPoint("TOPLEFT", previousSection, "BOTTOMLEFT", 0, -12)
+            section:SetPoint("TOPRIGHT", previousSection, "BOTTOMRIGHT", 0, -12)
+        else
+            section:SetPoint("TOPLEFT", section:GetParent(), "TOPLEFT", 4, -6)
+            section:SetPoint("TOPRIGHT", section:GetParent(), "TOPRIGHT", -12, -6)
+        end
+    end
+
+    local function CreateOptionsSection(parent, previousSection, titleText, descriptionText, height)
+        local section = CreateOptionsPanelFrame(parent, { 0.04, 0.05, 0.07, 0.82 }, { 1.0, 0.82, 0.18, 0.10 })
+        AnchorOptionsSection(section, previousSection)
+        section:SetHeight(height)
+        section.contentTopOffset = (type(descriptionText) == "string" and descriptionText ~= "") and -54 or -40
+
+        local sectionTitle = section:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sectionTitle:SetPoint("TOPLEFT", section, "TOPLEFT", 14, -12)
+        sectionTitle:SetPoint("TOPRIGHT", section, "TOPRIGHT", -14, -12)
+        sectionTitle:SetJustifyH("LEFT")
+        sectionTitle:SetText(titleText or "")
+        section.titleText = sectionTitle
+
+        if type(descriptionText) == "string" and descriptionText ~= "" then
+            local description = section:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            description:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", 0, -4)
+            description:SetPoint("TOPRIGHT", section, "TOPRIGHT", -14, 0)
+            description:SetJustifyH("LEFT")
+            description:SetTextColor(0.62, 0.66, 0.74)
+            description:SetText(descriptionText)
+            section.descriptionText = description
+        end
+
+        return section
+    end
+
+    local generalPricingSection = CreateOptionsSection(generalContent, nil, "Pricing", "Choose how item values are resolved.", 126)
+    local generalDisplaySection = CreateOptionsSection(generalContent, generalPricingSection, "Display", "Tune tracker totals and window presentation.", 178)
+    local generalLootSection = CreateOptionsSection(generalContent, generalDisplaySection, "Loot Behavior", "Small filters that affect what the tracker accepts.", 90)
+
+    local trackingQualitySection = CreateOptionsSection(trackingContent, nil, "Item Tracking", "Control item eligibility and valuation in loot views.", 128)
+    local trackingSessionSection = CreateOptionsSection(trackingContent, trackingQualitySection, "Session Startup", "Choose when tracking sessions begin or resume automatically.", 166)
+    local trackingLootSection = CreateOptionsSection(trackingContent, trackingSessionSection, "Loot Stream", "Controls for raw entries and source detection.", 148)
+
+    local historyCoreSection = CreateOptionsSection(historyContent, nil, "Session History", "Save, reopen, and resume finished sessions.", 144)
+    local historyDisplaySection = CreateOptionsSection(historyContent, historyCoreSection, "History Display", "Adjust list density and details text size.", 150)
+
+    local alertsCoreSection = CreateOptionsSection(alertsContent, nil, "Alert System", "Enable sound and display alerts for selected loot events.", 126)
+    local milestoneSection = CreateOptionsSection(alertsContent, alertsCoreSection, "Session Total Milestones", "Fire when the active session reaches a configured value.", 78)
+    local highValueSection = CreateOptionsSection(alertsContent, milestoneSection, "High-Value Drops", "Fire when a single tracked drop crosses a configured value.", 78)
+    local noLootSection = CreateOptionsSection(alertsContent, highValueSection, "No Loot Alert", "Fire once when no loot is tracked for the selected number of minutes.", 210)
+
+    local experimentalDiagnosticsSection = CreateOptionsSection(experimentalContent, nil, "Diagnostics", "Runtime counters and timing data for debugging.", 140)
+
+    local sourceLabel = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    sourceLabel:SetPoint("TOPLEFT", generalPricingSection, "TOPLEFT", 14, generalPricingSection.contentTopOffset)
     sourceLabel:SetText("Item value source")
 
-    local dropdown = CreateFrame("Frame", "GoldTrackerValueSourceDropdown", generalContent, "UIDropDownMenuTemplate")
+    local dropdown = CreateFrame("Frame", "GoldTrackerValueSourceDropdown", generalPricingSection, "UIDropDownMenuTemplate")
     dropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -6)
     UIDropDownMenu_SetWidth(dropdown, 240)
     UIDropDownMenu_Initialize(dropdown, function(_, level)
@@ -319,11 +432,11 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local fallbackSourceLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    fallbackSourceLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", generalSecondColumnOffsetX, 0)
+    local fallbackSourceLabel = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    fallbackSourceLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", 320, 0)
     fallbackSourceLabel:SetText("Fallback value source")
 
-    local fallbackDropdown = CreateFrame("Frame", "GoldTrackerFallbackValueSourceDropdown", generalContent, "UIDropDownMenuTemplate")
+    local fallbackDropdown = CreateFrame("Frame", "GoldTrackerFallbackValueSourceDropdown", generalPricingSection, "UIDropDownMenuTemplate")
     fallbackDropdown:SetPoint("TOPLEFT", fallbackSourceLabel, "BOTTOMLEFT", -16, -6)
     UIDropDownMenu_SetWidth(fallbackDropdown, 240)
     UIDropDownMenu_Initialize(fallbackDropdown, function(_, level)
@@ -354,51 +467,51 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local ignoreMailboxLootCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
-    ignoreMailboxLootCheckbox:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -22)
+    local ignoreMailboxLootCheckbox = CreateFrame("CheckButton", nil, generalLootSection, "UICheckButtonTemplate")
+    ignoreMailboxLootCheckbox:SetPoint("TOPLEFT", generalLootSection, "TOPLEFT", 10, generalLootSection.contentTopOffset + 4)
     ignoreMailboxLootCheckbox:SetScript("OnClick", function(button)
         addon.db.ignoreMailboxLootWhenMailOpen = button:GetChecked() and true or false
     end)
 
-    local ignoreMailboxLootLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local ignoreMailboxLootLabel = generalLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     ignoreMailboxLootLabel:SetPoint("LEFT", ignoreMailboxLootCheckbox, "RIGHT", 4, 1)
     ignoreMailboxLootLabel:SetText("Ignore mailbox loot while mail window is open")
 
-    local mainWindowGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
-    mainWindowGoldPerHourCheckbox:SetPoint("TOPLEFT", ignoreMailboxLootCheckbox, "BOTTOMLEFT", 0, -8)
+    local mainWindowGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
+    mainWindowGoldPerHourCheckbox:SetPoint("TOPLEFT", generalDisplaySection, "TOPLEFT", 10, generalDisplaySection.contentTopOffset + 4)
     mainWindowGoldPerHourCheckbox:SetScript("OnClick", function(button)
         addon.db.showMainWindowGoldPerHour = button:GetChecked() and true or false
         addon:UpdateMainWindow()
     end)
 
-    local mainWindowGoldPerHourLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local mainWindowGoldPerHourLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     mainWindowGoldPerHourLabel:SetPoint("LEFT", mainWindowGoldPerHourCheckbox, "RIGHT", 4, 1)
     mainWindowGoldPerHourLabel:SetText("Show gold per hour in main tracker window")
 
-    local totalWindowGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
+    local totalWindowGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
     totalWindowGoldPerHourCheckbox:SetPoint("TOPLEFT", mainWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
     totalWindowGoldPerHourCheckbox:SetScript("OnClick", function(button)
         addon.db.showTotalWindowGoldPerHour = button:GetChecked() and true or false
         addon:UpdateMainWindow()
     end)
 
-    local totalWindowGoldPerHourLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local totalWindowGoldPerHourLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     totalWindowGoldPerHourLabel:SetPoint("LEFT", totalWindowGoldPerHourCheckbox, "RIGHT", 4, 1)
     totalWindowGoldPerHourLabel:SetText("Show gold per hour in /gtt total window")
 
-    local activeTimeGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
+    local activeTimeGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
     activeTimeGoldPerHourCheckbox:SetPoint("TOPLEFT", totalWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
     activeTimeGoldPerHourCheckbox:SetScript("OnClick", function(button)
         addon.db.useActiveTimeForGoldPerHour = button:GetChecked() and true or false
         addon:UpdateMainWindow()
     end)
 
-    local activeTimeGoldPerHourLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local activeTimeGoldPerHourLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     activeTimeGoldPerHourLabel:SetPoint("LEFT", activeTimeGoldPerHourCheckbox, "RIGHT", 4, 1)
     activeTimeGoldPerHourLabel:SetText("Use active loot time for gold per hour (ignores long idle gaps)")
 
-    local resumeHistorySessionCheckbox = CreateFrame("CheckButton", nil, generalContent, "UICheckButtonTemplate")
-    resumeHistorySessionCheckbox:SetPoint("TOPLEFT", activeTimeGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    local resumeHistorySessionCheckbox = CreateFrame("CheckButton", nil, historyCoreSection, "UICheckButtonTemplate")
+    resumeHistorySessionCheckbox:SetPoint("TOPLEFT", historyCoreSection, "TOPLEFT", 10, historyCoreSection.contentTopOffset + 34)
     resumeHistorySessionCheckbox:SetScript("OnClick", function(button)
         addon.db.allowResumeHistorySession = button:GetChecked() and true or false
         if addon.historyFrame and addon.historyFrame.view == "details" then
@@ -406,15 +519,15 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local resumeHistorySessionLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local resumeHistorySessionLabel = historyCoreSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     resumeHistorySessionLabel:SetPoint("LEFT", resumeHistorySessionCheckbox, "RIGHT", 4, 1)
     resumeHistorySessionLabel:SetText("Allow loading saved history sessions into active tracker")
 
-    local minimumQualityLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    minimumQualityLabel:SetPoint("TOPLEFT", trackingContent, "TOPLEFT", 12, -8)
+    local minimumQualityLabel = trackingQualitySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    minimumQualityLabel:SetPoint("TOPLEFT", trackingQualitySection, "TOPLEFT", 14, trackingQualitySection.contentTopOffset)
     minimumQualityLabel:SetText("Min item quality for AH and loot log")
 
-    local minimumQualityDropdown = CreateFrame("Frame", "GoldTrackerMinimumQualityDropdown", trackingContent, "UIDropDownMenuTemplate")
+    local minimumQualityDropdown = CreateFrame("Frame", "GoldTrackerMinimumQualityDropdown", trackingQualitySection, "UIDropDownMenuTemplate")
     minimumQualityDropdown:SetPoint("TOPLEFT", minimumQualityLabel, "BOTTOMLEFT", -16, -6)
     UIDropDownMenu_SetWidth(minimumQualityDropdown, 240)
     UIDropDownMenu_Initialize(minimumQualityDropdown, function(_, level)
@@ -437,27 +550,27 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local autoStartOnLootCheckbox = CreateFrame("CheckButton", nil, trackingContent, "UICheckButtonTemplate")
-    autoStartOnLootCheckbox:SetPoint("TOPLEFT", minimumQualityDropdown, "BOTTOMLEFT", 0, -22)
+    local autoStartOnLootCheckbox = CreateFrame("CheckButton", nil, trackingSessionSection, "UICheckButtonTemplate")
+    autoStartOnLootCheckbox:SetPoint("TOPLEFT", trackingSessionSection, "TOPLEFT", 10, trackingSessionSection.contentTopOffset + 4)
     autoStartOnLootCheckbox:SetScript("OnClick", function(button)
         addon.db.autoStartSessionOnFirstLoot = button:GetChecked() and true or false
     end)
 
-    local autoStartOnLootLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local autoStartOnLootLabel = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     autoStartOnLootLabel:SetPoint("LEFT", autoStartOnLootCheckbox, "RIGHT", 4, 1)
     autoStartOnLootLabel:SetText("Auto start session on first loot")
 
-    local autoStartOnEnterWorldCheckbox = CreateFrame("CheckButton", nil, trackingContent, "UICheckButtonTemplate")
+    local autoStartOnEnterWorldCheckbox = CreateFrame("CheckButton", nil, trackingSessionSection, "UICheckButtonTemplate")
     autoStartOnEnterWorldCheckbox:SetPoint("TOPLEFT", autoStartOnLootCheckbox, "BOTTOMLEFT", 0, -8)
     autoStartOnEnterWorldCheckbox:SetScript("OnClick", function(button)
         addon.db.autoStartSessionOnEnterWorld = button:GetChecked() and true or false
     end)
 
-    local autoStartOnEnterWorldLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local autoStartOnEnterWorldLabel = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     autoStartOnEnterWorldLabel:SetPoint("LEFT", autoStartOnEnterWorldCheckbox, "RIGHT", 4, 1)
     autoStartOnEnterWorldLabel:SetText("Auto start session on world/instance entry and reload")
 
-    local resumeAfterReloadCheckbox = CreateFrame("CheckButton", nil, trackingContent, "UICheckButtonTemplate")
+    local resumeAfterReloadCheckbox = CreateFrame("CheckButton", nil, trackingSessionSection, "UICheckButtonTemplate")
     resumeAfterReloadCheckbox:SetPoint("TOPLEFT", autoStartOnEnterWorldCheckbox, "BOTTOMLEFT", 0, -8)
     resumeAfterReloadCheckbox:SetScript("OnClick", function(button)
         addon.db.resumeSessionAfterReload = button:GetChecked() and true or false
@@ -466,12 +579,12 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local resumeAfterReloadLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local resumeAfterReloadLabel = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     resumeAfterReloadLabel:SetPoint("LEFT", resumeAfterReloadCheckbox, "RIGHT", 4, 1)
     resumeAfterReloadLabel:SetText("Resume active session after /reload")
 
-    local enableHistoryCheckbox = CreateFrame("CheckButton", nil, historyContent, "UICheckButtonTemplate")
-    enableHistoryCheckbox:SetPoint("TOPLEFT", historyContent, "TOPLEFT", -2, -6)
+    local enableHistoryCheckbox = CreateFrame("CheckButton", nil, historyCoreSection, "UICheckButtonTemplate")
+    enableHistoryCheckbox:SetPoint("TOPLEFT", historyCoreSection, "TOPLEFT", 10, historyCoreSection.contentTopOffset + 4)
     enableHistoryCheckbox:SetScript("OnClick", function(button)
         addon.db.enableSessionHistory = button:GetChecked() and true or false
         addon:RefreshHistoryButtonVisibility()
@@ -480,55 +593,94 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local enableHistoryLabel = historyContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local enableHistoryLabel = historyCoreSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     enableHistoryLabel:SetPoint("LEFT", enableHistoryCheckbox, "RIGHT", 4, 1)
     enableHistoryLabel:SetText("Enable session history")
 
-    local historyRowsPerPageLabel = historyContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    historyRowsPerPageLabel:SetPoint("TOPLEFT", enableHistoryCheckbox, "BOTTOMLEFT", 4, -14)
+    resumeHistorySessionCheckbox:ClearAllPoints()
+    resumeHistorySessionCheckbox:SetPoint("TOPLEFT", enableHistoryCheckbox, "BOTTOMLEFT", 0, -8)
+
+    local historyRowsPerPageLabel = historyDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    historyRowsPerPageLabel:SetPoint("TOPLEFT", historyDisplaySection, "TOPLEFT", 14, historyDisplaySection.contentTopOffset)
     historyRowsPerPageLabel:SetText("History rows per page (5-30)")
 
-    local historyRowsPerPageInput = CreateFrame("EditBox", nil, historyContent, "InputBoxTemplate")
-    historyRowsPerPageInput:SetSize(60, 24)
-    historyRowsPerPageInput:SetPoint("TOPLEFT", historyRowsPerPageLabel, "BOTTOMLEFT", -4, -6)
-    historyRowsPerPageInput:SetAutoFocus(false)
-    historyRowsPerPageInput:SetNumeric(true)
-    historyRowsPerPageInput:SetScript("OnEnterPressed", function(editBox)
-        editBox:ClearFocus()
-        addon:SaveHistoryRowsPerPageInput(editBox)
-    end)
-    historyRowsPerPageInput:SetScript("OnEditFocusLost", function(editBox)
-        addon:SaveHistoryRowsPerPageInput(editBox)
+    local historyRowsPerPageSlider = CreateFrame("Slider", "GoldTrackerHistoryRowsPerPageSlider", historyDisplaySection, "OptionsSliderTemplate")
+    historyRowsPerPageSlider:SetPoint("TOPLEFT", historyRowsPerPageLabel, "BOTTOMLEFT", 6, -10)
+    historyRowsPerPageSlider:SetWidth(220)
+    historyRowsPerPageSlider:SetMinMaxValues(5, 30)
+    historyRowsPerPageSlider:SetValueStep(1)
+    if historyRowsPerPageSlider.SetObeyStepOnDrag then
+        historyRowsPerPageSlider:SetObeyStepOnDrag(true)
+    end
+
+    local rowsSliderLow = _G[historyRowsPerPageSlider:GetName() .. "Low"]
+    local rowsSliderHigh = _G[historyRowsPerPageSlider:GetName() .. "High"]
+    local rowsSliderText = _G[historyRowsPerPageSlider:GetName() .. "Text"]
+    if rowsSliderLow then
+        rowsSliderLow:SetText("5")
+    end
+    if rowsSliderHigh then
+        rowsSliderHigh:SetText("30")
+    end
+    if rowsSliderText then
+        rowsSliderText:SetText("")
+    end
+
+    local historyRowsPerPageValueText = historyDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    historyRowsPerPageValueText:SetPoint("TOP", historyRowsPerPageSlider, "BOTTOM", 0, -18)
+    historyRowsPerPageValueText:SetJustifyH("CENTER")
+    historyRowsPerPageValueText:SetText("10 rows")
+
+    historyRowsPerPageSlider:SetScript("OnValueChanged", function(_, value)
+        addon:SetHistoryRowsPerPageOption(value)
     end)
 
-    local historyDetailsFontSizeLabel = historyContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    historyDetailsFontSizeLabel:SetPoint("TOPLEFT", historyRowsPerPageInput, "BOTTOMLEFT", 4, -12)
+    local historyDetailsFontSizeLabel = historyDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    historyDetailsFontSizeLabel:SetPoint("TOPLEFT", historyRowsPerPageLabel, "TOPLEFT", 300, 0)
     historyDetailsFontSizeLabel:SetText("History details font size (8-24)")
 
-    local historyDetailsFontSizeInput = CreateFrame("EditBox", nil, historyContent, "InputBoxTemplate")
-    historyDetailsFontSizeInput:SetSize(60, 24)
-    historyDetailsFontSizeInput:SetPoint("TOPLEFT", historyDetailsFontSizeLabel, "BOTTOMLEFT", -4, -6)
-    historyDetailsFontSizeInput:SetAutoFocus(false)
-    historyDetailsFontSizeInput:SetNumeric(true)
-    historyDetailsFontSizeInput:SetScript("OnEnterPressed", function(editBox)
-        editBox:ClearFocus()
-        addon:SaveHistoryDetailsFontSizeInput(editBox)
-    end)
-    historyDetailsFontSizeInput:SetScript("OnEditFocusLost", function(editBox)
-        addon:SaveHistoryDetailsFontSizeInput(editBox)
+    local historyDetailsFontSizeSlider = CreateFrame("Slider", "GoldTrackerHistoryDetailsFontSizeSlider", historyDisplaySection, "OptionsSliderTemplate")
+    historyDetailsFontSizeSlider:SetPoint("TOPLEFT", historyDetailsFontSizeLabel, "BOTTOMLEFT", 6, -10)
+    historyDetailsFontSizeSlider:SetWidth(220)
+    historyDetailsFontSizeSlider:SetMinMaxValues(8, 24)
+    historyDetailsFontSizeSlider:SetValueStep(1)
+    if historyDetailsFontSizeSlider.SetObeyStepOnDrag then
+        historyDetailsFontSizeSlider:SetObeyStepOnDrag(true)
+    end
+
+    local detailsSliderLow = _G[historyDetailsFontSizeSlider:GetName() .. "Low"]
+    local detailsSliderHigh = _G[historyDetailsFontSizeSlider:GetName() .. "High"]
+    local detailsSliderText = _G[historyDetailsFontSizeSlider:GetName() .. "Text"]
+    if detailsSliderLow then
+        detailsSliderLow:SetText("8")
+    end
+    if detailsSliderHigh then
+        detailsSliderHigh:SetText("24")
+    end
+    if detailsSliderText then
+        detailsSliderText:SetText("")
+    end
+
+    local historyDetailsFontSizeValueText = historyDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    historyDetailsFontSizeValueText:SetPoint("TOP", historyDetailsFontSizeSlider, "BOTTOM", 0, -18)
+    historyDetailsFontSizeValueText:SetJustifyH("CENTER")
+    historyDetailsFontSizeValueText:SetText("14 px")
+
+    historyDetailsFontSizeSlider:SetScript("OnValueChanged", function(_, value)
+        addon:SetHistoryDetailsFontSizeOption(value)
     end)
 
-    local rawLootLogCheckbox = CreateFrame("CheckButton", nil, trackingContent, "UICheckButtonTemplate")
-    rawLootLogCheckbox:SetPoint("TOPLEFT", resumeAfterReloadCheckbox, "BOTTOMLEFT", 0, -10)
+    local rawLootLogCheckbox = CreateFrame("CheckButton", nil, trackingLootSection, "UICheckButtonTemplate")
+    rawLootLogCheckbox:SetPoint("TOPLEFT", trackingLootSection, "TOPLEFT", 10, trackingLootSection.contentTopOffset + 4)
     rawLootLogCheckbox:SetScript("OnClick", function(button)
         addon.db.showRawLootedGoldInLog = button:GetChecked() and true or false
     end)
 
-    local rawLootLogLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local rawLootLogLabel = trackingLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     rawLootLogLabel:SetPoint("LEFT", rawLootLogCheckbox, "RIGHT", 4, 1)
     rawLootLogLabel:SetText("Show raw looted gold entries in loot log")
 
-    local lootSourceTrackingCheckbox = CreateFrame("CheckButton", nil, trackingContent, "UICheckButtonTemplate")
+    local lootSourceTrackingCheckbox = CreateFrame("CheckButton", nil, trackingLootSection, "UICheckButtonTemplate")
     lootSourceTrackingCheckbox:SetPoint("TOPLEFT", rawLootLogCheckbox, "BOTTOMLEFT", 0, -8)
     lootSourceTrackingCheckbox:SetScript("OnClick", function(button)
         addon.db.enableLootSourceTracking = button:GetChecked() and true or false
@@ -537,21 +689,21 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local lootSourceTrackingLabel = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local lootSourceTrackingLabel = trackingLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     lootSourceTrackingLabel:SetPoint("LEFT", lootSourceTrackingCheckbox, "RIGHT", 4, 1)
     lootSourceTrackingLabel:SetText("Track loot source (From: unit/node/aoe)")
 
-    local hint = trackingContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    local hint = trackingLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", lootSourceTrackingCheckbox, "BOTTOMLEFT", 4, -10)
     hint:SetWidth(560)
     hint:SetJustifyH("LEFT")
     hint:SetText("Use /gt to open the tracker. Auto-start on loot works only while the tracker window is open.")
 
-    local transparencyLabel = generalContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    transparencyLabel:SetPoint("TOPLEFT", resumeHistorySessionLabel, "BOTTOMLEFT", 0, -20)
+    local transparencyLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    transparencyLabel:SetPoint("TOPLEFT", generalDisplaySection, "TOPLEFT", 430, generalDisplaySection.contentTopOffset)
     transparencyLabel:SetText("Window background transparency")
 
-    local transparencySlider = CreateFrame("Slider", "GoldTrackerTransparencySlider", generalContent, "OptionsSliderTemplate")
+    local transparencySlider = CreateFrame("Slider", "GoldTrackerTransparencySlider", generalDisplaySection, "OptionsSliderTemplate")
     transparencySlider:SetPoint("TOPLEFT", transparencyLabel, "BOTTOMLEFT", -10, -10)
     transparencySlider:SetWidth(240)
     transparencySlider:SetMinMaxValues(0.20, 1.00)
@@ -573,7 +725,7 @@ function GoldTracker:CreateOptionsPanel()
         sliderText:SetText("")
     end
 
-    local transparencyValueText = generalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    local transparencyValueText = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     transparencyValueText:SetPoint("TOP", transparencySlider, "BOTTOM", 0, -18)
     transparencyValueText:SetJustifyH("CENTER")
     transparencyValueText:SetText("")
@@ -586,24 +738,22 @@ function GoldTracker:CreateOptionsPanel()
         transparencyValueText:SetText(string.format("Current opacity: %d%%", math.floor((alpha * 100) + 0.5)))
     end)
 
-    generalContent:SetHeight(420)
-    trackingContent:SetHeight(560)
-    historyContent:SetHeight(320)
+    generalContent:SetHeight(436)
+    trackingContent:SetHeight(488)
+    historyContent:SetHeight(324)
 
-    local alertsContent = tabs.Alerts.content
-
-    local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsContent, "UICheckButtonTemplate")
-    alertsEnabledCheckbox:SetPoint("TOPLEFT", alertsContent, "TOPLEFT", -2, -6)
+    local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsCoreSection, "UICheckButtonTemplate")
+    alertsEnabledCheckbox:SetPoint("TOPLEFT", alertsCoreSection, "TOPLEFT", 10, alertsCoreSection.contentTopOffset + 4)
     alertsEnabledCheckbox:SetScript("OnClick", function(button)
         addon.db.notificationsEnabled = button:GetChecked() and true or false
         addon:RefreshOptionsControls()
     end)
 
-    local alertsEnabledLabel = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local alertsEnabledLabel = alertsCoreSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     alertsEnabledLabel:SetPoint("LEFT", alertsEnabledCheckbox, "RIGHT", 4, 1)
     alertsEnabledLabel:SetText("Enable alerts")
 
-    local alertsHint = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    local alertsHint = alertsCoreSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     alertsHint:SetPoint("TOPLEFT", alertsEnabledCheckbox, "BOTTOMLEFT", 4, -8)
     alertsHint:SetWidth(620)
     alertsHint:SetJustifyH("LEFT")
@@ -697,7 +847,7 @@ function GoldTracker:CreateOptionsPanel()
         end)
         row.displayDropdown = displayDropdown
 
-        local removeButton = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        local removeButton = CreateOptionsButton(row, 24, 20, "X", "danger")
         removeButton:SetSize(24, 20)
         removeButton:SetPoint("LEFT", displayDropdown, "RIGHT", 14, 0)
         removeButton:SetText("X")
@@ -748,49 +898,37 @@ function GoldTracker:CreateOptionsPanel()
         return contentHeight
     end
 
-    local milestonesHeader = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    milestonesHeader:SetPoint("TOPLEFT", alertsHint, "BOTTOMLEFT", -4, -18)
-    milestonesHeader:SetText("Session total milestone alerts")
-
-    local addMilestoneButton = CreateFrame("Button", nil, alertsContent, "UIPanelButtonTemplate")
+    local addMilestoneButton = CreateOptionsButton(milestoneSection, 120, 22, "Add milestone", "neutral")
     addMilestoneButton:SetSize(120, 22)
-    addMilestoneButton:SetPoint("LEFT", milestonesHeader, "RIGHT", 12, 0)
+    addMilestoneButton:SetPoint("TOPRIGHT", milestoneSection, "TOPRIGHT", -14, -12)
     addMilestoneButton:SetText("Add milestone")
 
-    local milestoneRowsContainer = CreateFrame("Frame", nil, alertsContent)
-    milestoneRowsContainer:SetPoint("TOPLEFT", milestonesHeader, "BOTTOMLEFT", 0, -8)
-    milestoneRowsContainer:SetPoint("RIGHT", alertsContent, "RIGHT", -4, 0)
+    local milestoneRowsContainer = CreateFrame("Frame", nil, milestoneSection)
+    milestoneRowsContainer:SetPoint("TOPLEFT", milestoneSection, "TOPLEFT", 14, milestoneSection.contentTopOffset + 6)
+    milestoneRowsContainer:SetPoint("TOPRIGHT", milestoneSection, "TOPRIGHT", -14, milestoneSection.contentTopOffset + 6)
     milestoneRowsContainer:SetHeight(1)
 
-    local highValueHeader = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    highValueHeader:SetPoint("TOPLEFT", milestoneRowsContainer, "BOTTOMLEFT", 0, -18)
-    highValueHeader:SetText("High-value drop alerts")
-
-    local addHighValueButton = CreateFrame("Button", nil, alertsContent, "UIPanelButtonTemplate")
+    local addHighValueButton = CreateOptionsButton(highValueSection, 120, 22, "Add drop rule", "neutral")
     addHighValueButton:SetSize(120, 22)
-    addHighValueButton:SetPoint("LEFT", highValueHeader, "RIGHT", 12, 0)
+    addHighValueButton:SetPoint("TOPRIGHT", highValueSection, "TOPRIGHT", -14, -12)
     addHighValueButton:SetText("Add drop rule")
 
-    local highValueRowsContainer = CreateFrame("Frame", nil, alertsContent)
-    highValueRowsContainer:SetPoint("TOPLEFT", highValueHeader, "BOTTOMLEFT", 0, -8)
-    highValueRowsContainer:SetPoint("RIGHT", alertsContent, "RIGHT", -4, 0)
+    local highValueRowsContainer = CreateFrame("Frame", nil, highValueSection)
+    highValueRowsContainer:SetPoint("TOPLEFT", highValueSection, "TOPLEFT", 14, highValueSection.contentTopOffset + 6)
+    highValueRowsContainer:SetPoint("TOPRIGHT", highValueSection, "TOPRIGHT", -14, highValueSection.contentTopOffset + 6)
     highValueRowsContainer:SetHeight(1)
 
-    local noLootHeader = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    noLootHeader:SetPoint("TOPLEFT", highValueRowsContainer, "BOTTOMLEFT", 0, -22)
-    noLootHeader:SetText("No loot alert")
-
-    local noLootEnabledCheckbox = CreateFrame("CheckButton", nil, alertsContent, "UICheckButtonTemplate")
-    noLootEnabledCheckbox:SetPoint("TOPLEFT", noLootHeader, "BOTTOMLEFT", -4, -8)
+    local noLootEnabledCheckbox = CreateFrame("CheckButton", nil, noLootSection, "UICheckButtonTemplate")
+    noLootEnabledCheckbox:SetPoint("TOPLEFT", noLootSection, "TOPLEFT", 10, noLootSection.contentTopOffset + 4)
     noLootEnabledCheckbox:SetScript("OnClick", function(button)
         addon.db.noLootAlertEnabled = button:GetChecked() and true or false
     end)
 
-    local noLootEnabledLabel = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local noLootEnabledLabel = noLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     noLootEnabledLabel:SetPoint("LEFT", noLootEnabledCheckbox, "RIGHT", 4, 1)
     noLootEnabledLabel:SetText("Alert when no loot is received for")
 
-    local noLootMinutesInput = CreateFrame("EditBox", nil, alertsContent, "InputBoxTemplate")
+    local noLootMinutesInput = CreateFrame("EditBox", nil, noLootSection, "InputBoxTemplate")
     noLootMinutesInput:SetSize(60, 22)
     noLootMinutesInput:SetPoint("LEFT", noLootEnabledLabel, "RIGHT", 8, 0)
     noLootMinutesInput:SetAutoFocus(false)
@@ -811,15 +949,15 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local noLootMinutesLabel = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local noLootMinutesLabel = noLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     noLootMinutesLabel:SetPoint("LEFT", noLootMinutesInput, "RIGHT", 6, 0)
     noLootMinutesLabel:SetText("minutes")
 
-    local noLootSoundLabel = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    local noLootSoundLabel = noLootSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     noLootSoundLabel:SetPoint("TOPLEFT", noLootEnabledCheckbox, "BOTTOMLEFT", 4, -12)
     noLootSoundLabel:SetText("Sound")
 
-    local noLootSoundDropdown = CreateFrame("Frame", nil, alertsContent, "UIDropDownMenuTemplate")
+    local noLootSoundDropdown = CreateFrame("Frame", nil, noLootSection, "UIDropDownMenuTemplate")
     noLootSoundDropdown:SetPoint("TOPLEFT", noLootSoundLabel, "BOTTOMLEFT", -16, -4)
     UIDropDownMenu_SetWidth(noLootSoundDropdown, 170)
     UIDropDownMenu_Initialize(noLootSoundDropdown, function(_, level)
@@ -836,11 +974,11 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local noLootDisplayLabel = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    noLootDisplayLabel:SetPoint("TOPLEFT", noLootSoundDropdown, "TOPRIGHT", 16, 0)
+    local noLootDisplayLabel = noLootSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    noLootDisplayLabel:SetPoint("TOPLEFT", noLootSoundLabel, "TOPLEFT", 220, 0)
     noLootDisplayLabel:SetText("Display")
 
-    local noLootDisplayDropdown = CreateFrame("Frame", nil, alertsContent, "UIDropDownMenuTemplate")
+    local noLootDisplayDropdown = CreateFrame("Frame", nil, noLootSection, "UIDropDownMenuTemplate")
     noLootDisplayDropdown:SetPoint("TOPLEFT", noLootDisplayLabel, "BOTTOMLEFT", -16, -4)
     UIDropDownMenu_SetWidth(noLootDisplayDropdown, 200)
     UIDropDownMenu_Initialize(noLootDisplayDropdown, function(_, level)
@@ -857,7 +995,7 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local noLootHint = alertsContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    local noLootHint = noLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     noLootHint:SetPoint("TOPLEFT", noLootSoundDropdown, "BOTTOMLEFT", 16, -6)
     noLootHint:SetWidth(620)
     noLootHint:SetJustifyH("LEFT")
@@ -888,8 +1026,15 @@ function GoldTracker:CreateOptionsPanel()
         UIDropDownMenu_SetSelectedValue(noLootDisplayDropdown, addon.db.noLootAlertDisplayID)
         UIDropDownMenu_SetText(noLootDisplayDropdown, BuildDisplayDropdownText(addon.db.noLootAlertDisplayID))
 
-        local baseHeight = 360
-        alertsContent:SetHeight(baseHeight + milestoneHeight + highValueHeight)
+        local milestoneSectionHeight = math.max(78, 64 + milestoneHeight)
+        local highValueSectionHeight = math.max(78, 64 + highValueHeight)
+        milestoneSection:SetHeight(milestoneSectionHeight)
+        highValueSection:SetHeight(highValueSectionHeight)
+        noLootSection:SetHeight(210)
+        alertsContent:SetHeight(126 + 12 + milestoneSectionHeight + 12 + highValueSectionHeight + 12 + 210 + 18)
+        if tabs.Alerts and tabs.Alerts.scrollFrame and tabs.Alerts.scrollFrame.UpdateScrollChildRect then
+            tabs.Alerts.scrollFrame:UpdateScrollChildRect()
+        end
     end
 
     addMilestoneButton:SetScript("OnClick", function()
@@ -908,9 +1053,8 @@ function GoldTracker:CreateOptionsPanel()
 
     RefreshAlertsControls()
 
-    local experimentalContent = tabs.Experimental.content
-    local diagnosticsPanelCheckbox = CreateFrame("CheckButton", nil, experimentalContent, "UICheckButtonTemplate")
-    diagnosticsPanelCheckbox:SetPoint("TOPLEFT", experimentalContent, "TOPLEFT", -2, -6)
+    local diagnosticsPanelCheckbox = CreateFrame("CheckButton", nil, experimentalDiagnosticsSection, "UICheckButtonTemplate")
+    diagnosticsPanelCheckbox:SetPoint("TOPLEFT", experimentalDiagnosticsSection, "TOPLEFT", 10, experimentalDiagnosticsSection.contentTopOffset + 4)
     diagnosticsPanelCheckbox:SetScript("OnClick", function(button)
         addon.db.enableDiagnosticsPanel = button:GetChecked() and true or false
         if addon.db.enableDiagnosticsPanel and addon.session and addon.session.active and type(addon.EnsureSessionDiagnosisSnapshot) == "function" then
@@ -927,18 +1071,38 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local diagnosticsPanelLabel = experimentalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    local diagnosticsPanelLabel = experimentalDiagnosticsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     diagnosticsPanelLabel:SetPoint("LEFT", diagnosticsPanelCheckbox, "RIGHT", 4, 1)
     diagnosticsPanelLabel:SetText("Enable diagnosis panel button and runtime diagnostics")
 
-    local experimentalHint = experimentalContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    local experimentalHint = experimentalDiagnosticsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     experimentalHint:SetPoint("TOPLEFT", diagnosticsPanelCheckbox, "BOTTOMLEFT", 4, -10)
     experimentalHint:SetWidth(620)
     experimentalHint:SetJustifyH("LEFT")
     experimentalHint:SetText("When enabled, a Diagnosis button appears next to History in the tracker window and shows event/timing counters for QA/debug.")
-    experimentalContent:SetHeight(220)
+    experimentalContent:SetHeight(166)
 
-    panel:SetScript("OnShow", function()
+    local resizeButton = CreateFrame("Button", nil, window)
+    resizeButton:SetSize(16, 16)
+    resizeButton:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", -8, 8)
+    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    resizeButton:SetAlpha(0.7)
+    resizeButton:SetScript("OnMouseDown", function(_, button)
+        if button == "LeftButton" then
+            window:StartSizing("BOTTOMRIGHT")
+        end
+    end)
+    resizeButton:SetScript("OnMouseUp", function()
+        window:StopMovingOrSizing()
+    end)
+    resizeButton:SetScript("OnHide", function()
+        window:StopMovingOrSizing()
+    end)
+    window.resizeButton = resizeButton
+
+    window:SetScript("OnShow", function()
         addon:RefreshOptionsControls()
         SelectTab(selectedTab)
     end)
@@ -951,8 +1115,10 @@ function GoldTracker:CreateOptionsPanel()
         autoStartOnEnterWorldCheckbox = autoStartOnEnterWorldCheckbox,
         resumeAfterReloadCheckbox = resumeAfterReloadCheckbox,
         enableHistoryCheckbox = enableHistoryCheckbox,
-        historyRowsPerPageInput = historyRowsPerPageInput,
-        historyDetailsFontSizeInput = historyDetailsFontSizeInput,
+        historyRowsPerPageSlider = historyRowsPerPageSlider,
+        historyRowsPerPageValueText = historyRowsPerPageValueText,
+        historyDetailsFontSizeSlider = historyDetailsFontSizeSlider,
+        historyDetailsFontSizeValueText = historyDetailsFontSizeValueText,
         rawLootLogCheckbox = rawLootLogCheckbox,
         ignoreMailboxLootCheckbox = ignoreMailboxLootCheckbox,
         mainWindowGoldPerHourCheckbox = mainWindowGoldPerHourCheckbox,
@@ -966,11 +1132,51 @@ function GoldTracker:CreateOptionsPanel()
         alertsRefresh = RefreshAlertsControls,
     }
 
-    self.optionsPanel = panel
+    self.optionsPanel = settingsPanel
+    self.optionsWindow = window
+    self.optionsContentPanel = panel
 
-    local category = Settings.RegisterCanvasLayoutCategory(panel, "General Gold Tracker")
-    Settings.RegisterAddOnCategory(category)
-    self.optionsCategory = category
+    if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
+        local category = Settings.RegisterCanvasLayoutCategory(settingsPanel, "General Gold Tracker")
+        Settings.RegisterAddOnCategory(category)
+        self.optionsCategory = category
+    end
 
     SelectTab("General")
+end
+
+function GoldTracker:SetHistoryRowsPerPageOption(value)
+    local rows = math.floor((tonumber(value) or self:GetHistoryRowsPerPage()) + 0.5)
+    rows = math.max(5, math.min(30, rows))
+    if self.db then
+        self.db.historyRowsPerPage = rows
+    end
+
+    if self.optionsControls and self.optionsControls.historyRowsPerPageValueText then
+        self.optionsControls.historyRowsPerPageValueText:SetText(string.format("%d rows", rows))
+    end
+
+    if self.historyFrame and self.historyFrame:IsShown() and self.historyFrame.view == "list" then
+        self.historyFrame.currentPage = 1
+        self:RefreshHistoryWindow()
+    end
+end
+
+function GoldTracker:SetHistoryDetailsFontSizeOption(value)
+    local size = math.floor((tonumber(value) or self:GetHistoryDetailsFontSize()) + 0.5)
+    size = math.max(8, math.min(24, size))
+    if self.db then
+        self.db.historyDetailsFontSize = size
+    end
+
+    if self.optionsControls and self.optionsControls.historyDetailsFontSizeValueText then
+        self.optionsControls.historyDetailsFontSizeValueText:SetText(string.format("%d px", size))
+    end
+
+    if self.ApplyHistoryDetailsFontSize then
+        self:ApplyHistoryDetailsFontSize()
+    end
+    if self.historyFrame and self.historyFrame:IsShown() and self.historyFrame.view == "details" then
+        self:RefreshHistoryDetailsWindow()
+    end
 end

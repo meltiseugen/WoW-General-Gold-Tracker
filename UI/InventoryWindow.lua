@@ -1,17 +1,7 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
+local Theme = NS.GoldTrackerTheme
 
-local INVENTORY_WINDOW_BACKDROP = {
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    edgeFile = "Interface\\Buttons\\WHITE8X8",
-    edgeSize = 1,
-    insets = {
-        left = 1,
-        right = 1,
-        top = 1,
-        bottom = 1,
-    },
-}
 local INVENTORY_ROW_HEIGHT = 24
 local INVENTORY_ROW_SPACING = 2
 local INVENTORY_ICON_SIZE = 18
@@ -35,18 +25,12 @@ local BOUND_TOOLTIP_KEYWORDS = {
     "warbound",
 }
 
-local function ApplyFlatBackdrop(frame, bg, border)
-    if not frame or type(frame.SetBackdrop) ~= "function" then
-        return
-    end
+local function CreateInventoryPanel(parent, bg, border)
+    return Theme:CreatePanel(parent, bg, border)
+end
 
-    frame:SetBackdrop(INVENTORY_WINDOW_BACKDROP)
-    if type(bg) == "table" then
-        frame:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
-    end
-    if type(border) == "table" then
-        frame:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
-    end
+local function CreateInventoryButton(parent, width, height, text, paletteKey)
+    return Theme:CreateButton(parent, width, height, text, paletteKey)
 end
 
 local function IsBoundTooltipLine(text)
@@ -627,20 +611,13 @@ function GoldTracker:CreateInventoryWindow()
     frame.minimumValueCopper = 0
     frame.inventoryRows = {}
 
-    if frame.TitleText then
-        frame.TitleText:SetText("Auctionable Inventory")
-    end
-    if frame.CloseButton then
-        frame.CloseButton:SetScript("OnClick", function()
-            frame:Hide()
-        end)
-    end
+    local chrome = Theme:ApplyWindowChrome(frame, "Auctionable Inventory")
+    Theme:RegisterSpecialFrame("GoldTrackerInventoryFrame")
 
-    local controlsPanel = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-    controlsPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -30)
-    controlsPanel:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -30)
+    local controlsPanel = CreateInventoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
+    controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    controlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -54)
     controlsPanel:SetHeight(74)
-    ApplyFlatBackdrop(controlsPanel, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     frame.controlsPanel = controlsPanel
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -717,19 +694,17 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.minimumValueInput = minimumValueInput
 
-    local refreshButton = CreateFrame("Button", nil, controlsPanel, "UIPanelButtonTemplate")
+    local refreshButton = CreateInventoryButton(controlsPanel, 86, 22, "Refresh", "neutral")
     refreshButton:SetSize(86, 22)
     refreshButton:SetPoint("RIGHT", controlsPanel, "RIGHT", -14, -10)
-    refreshButton:SetText("Refresh")
     refreshButton:SetScript("OnClick", function()
         addon:SaveInventoryMinimumValueInput()
     end)
     frame.refreshButton = refreshButton
 
-    local listPanel = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    local listPanel = CreateInventoryPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
     listPanel:SetPoint("TOPLEFT", controlsPanel, "BOTTOMLEFT", 0, -10)
-    listPanel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 38)
-    ApplyFlatBackdrop(listPanel, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
+    listPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 38)
     frame.listPanel = listPanel
 
     local itemHeader = listPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")

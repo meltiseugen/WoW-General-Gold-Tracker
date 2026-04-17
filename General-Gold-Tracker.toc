@@ -7,6 +7,7 @@
 ## OptionalDeps: TradeSkillMaster
 
 Core/Namespace.lua
+UI/Theme.lua
 Core/Diagnostics.lua
 Core/Alerts.lua
 Core/History.lua

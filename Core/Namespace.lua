@@ -23,7 +23,7 @@ GoldTracker.DEFAULTS = {
     resumeSessionAfterReload = false,
     enableSessionHistory = false,
     historyRowsPerPage = 10,
-    historyDetailsFontSize = 12,
+    historyDetailsFontSize = 14,
     showRawLootedGoldInLog = true,
     ignoreMailboxLootWhenMailOpen = true,
     showMainWindowGoldPerHour = true,
@@ -299,6 +299,12 @@ function GoldTracker:InitializeDatabase()
     local historyDetailsFontSize = tonumber(self.db.historyDetailsFontSize)
     if not historyDetailsFontSize then
         historyDetailsFontSize = self.DEFAULTS.historyDetailsFontSize
+    end
+    if self.db.historyDetailsFontSizeDefaultVersion ~= 2 then
+        if historyDetailsFontSize == 12 then
+            historyDetailsFontSize = self.DEFAULTS.historyDetailsFontSize
+        end
+        self.db.historyDetailsFontSizeDefaultVersion = 2
     end
     self.db.historyDetailsFontSize = math.floor(math.max(8, math.min(24, historyDetailsFontSize)) + 0.5)
 

@@ -36,7 +36,12 @@ function HistoryFormatter:FormatSessionSummary(session)
 end
 
 function HistoryFormatter:FormatSessionTotal(session)
-    local text = self:FormatMoney(tonumber(session and session.totalValue) or 0)
+    local totalValue = math.max(0, tonumber(session and session.totalValue) or 0)
+    local copperPerGold = tonumber(self.addon and self.addon.COPPER_PER_GOLD) or 10000
+    if totalValue >= (100000 * copperPerGold) then
+        totalValue = math.floor(totalValue / copperPerGold) * copperPerGold
+    end
+    local text = self:FormatMoney(totalValue)
     return text:gsub("^[%s\194\160]+", "")
 end
 

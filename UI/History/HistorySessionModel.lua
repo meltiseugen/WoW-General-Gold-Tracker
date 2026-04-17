@@ -636,7 +636,16 @@ function HistorySessionModel:BuildRowTitleAndSubtitle(session)
             end
         end
         if #others > 0 then
-            subtitleText = string.format("Also: %s", table.concat(others, ", "))
+            local visibleOthers = {}
+            local maxVisibleOthers = 2
+            for index = 1, math.min(#others, maxVisibleOthers) do
+                visibleOthers[#visibleOthers + 1] = others[index]
+            end
+            local remainingCount = #others - #visibleOthers
+            if remainingCount > 0 then
+                visibleOthers[#visibleOthers + 1] = string.format("+ %d", remainingCount)
+            end
+            subtitleText = string.format("Also: %s", table.concat(visibleOthers, ", "))
         end
     end
 

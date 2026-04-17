@@ -1,129 +1,13 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
-
-local DIAGNOSIS_WINDOW_BACKDROP = {
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    edgeFile = "Interface\\Buttons\\WHITE8X8",
-    edgeSize = 1,
-    insets = {
-        left = 1,
-        right = 1,
-        top = 1,
-        bottom = 1,
-    },
-}
-local DIAGNOSIS_BUTTON_PALETTES = {
-    primary = {
-        bg = { 0.18, 0.14, 0.08, 0.96 },
-        border = { 0.95, 0.74, 0.18, 0.26 },
-        hoverBg = { 0.24, 0.18, 0.08, 0.98 },
-        hoverBorder = { 1.0, 0.82, 0.24, 0.50 },
-        pressedBg = { 0.12, 0.09, 0.04, 0.98 },
-        pressedBorder = { 1.0, 0.82, 0.24, 0.32 },
-        text = { 1.0, 0.94, 0.72 },
-    },
-    neutral = {
-        bg = { 0.09, 0.10, 0.14, 0.94 },
-        border = { 1.0, 1.0, 1.0, 0.08 },
-        hoverBg = { 0.12, 0.13, 0.18, 0.98 },
-        hoverBorder = { 1.0, 1.0, 1.0, 0.16 },
-        pressedBg = { 0.06, 0.07, 0.10, 0.98 },
-        pressedBorder = { 1.0, 1.0, 1.0, 0.10 },
-        text = { 0.90, 0.92, 0.98 },
-    },
-    danger = {
-        bg = { 0.19, 0.09, 0.10, 0.96 },
-        border = { 1.0, 0.36, 0.38, 0.22 },
-        hoverBg = { 0.25, 0.10, 0.11, 0.98 },
-        hoverBorder = { 1.0, 0.44, 0.46, 0.40 },
-        pressedBg = { 0.12, 0.06, 0.06, 0.98 },
-        pressedBorder = { 1.0, 0.44, 0.46, 0.26 },
-        text = { 1.0, 0.87, 0.87 },
-    },
-}
-
-local function ApplyDiagnosisBackdrop(frame, bg, border)
-    if not frame or type(frame.SetBackdrop) ~= "function" then
-        return
-    end
-
-    frame:SetBackdrop(DIAGNOSIS_WINDOW_BACKDROP)
-    if type(bg) == "table" then
-        frame:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
-    end
-    if type(border) == "table" then
-        frame:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
-    end
-end
+local Theme = NS.GoldTrackerTheme
 
 local function CreateDiagnosisPanel(parent, bg, border)
-    local panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    ApplyDiagnosisBackdrop(panel, bg, border)
-    return panel
-end
-
-local function UpdateDiagnosisButtonVisual(button)
-    if not button or type(button.SetBackdropColor) ~= "function" then
-        return
-    end
-
-    local palette = button.palette or DIAGNOSIS_BUTTON_PALETTES.neutral
-    local bg = palette.bg
-    local border = palette.border
-    if button.isPressed then
-        bg = palette.pressedBg or bg
-        border = palette.pressedBorder or border
-    elseif button.isHovered then
-        bg = palette.hoverBg or bg
-        border = palette.hoverBorder or border
-    end
-
-    button:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
-    button:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
-    if button.label then
-        local textColor = palette.text or { 1, 1, 1 }
-        button.label:SetTextColor(textColor[1] or 1, textColor[2] or 1, textColor[3] or 1)
-    end
+    return Theme:CreatePanel(parent, bg, border)
 end
 
 local function CreateDiagnosisButton(parent, width, height, text, paletteKey)
-    local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    button:SetSize(width, height)
-    button.palette = DIAGNOSIS_BUTTON_PALETTES[paletteKey] or DIAGNOSIS_BUTTON_PALETTES.neutral
-    button:SetBackdrop(DIAGNOSIS_WINDOW_BACKDROP)
-
-    local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    label:SetPoint("CENTER", button, "CENTER", 0, 0)
-    label:SetJustifyH("CENTER")
-    button.label = label
-
-    function button:SetText(value)
-        self.label:SetText(type(value) == "string" and value or "")
-    end
-
-    button:SetText(text)
-    button:SetScript("OnEnter", function(self)
-        self.isHovered = true
-        UpdateDiagnosisButtonVisual(self)
-    end)
-    button:SetScript("OnLeave", function(self)
-        self.isHovered = false
-        self.isPressed = false
-        UpdateDiagnosisButtonVisual(self)
-    end)
-    button:SetScript("OnMouseDown", function(self, mouseButton)
-        if mouseButton == "LeftButton" then
-            self.isPressed = true
-            UpdateDiagnosisButtonVisual(self)
-        end
-    end)
-    button:SetScript("OnMouseUp", function(self)
-        self.isPressed = false
-        UpdateDiagnosisButtonVisual(self)
-    end)
-    UpdateDiagnosisButtonVisual(button)
-
-    return button
+    return Theme:CreateButton(parent, width, height, text, paletteKey)
 end
 
 local EVENT_COUNTERS = {
@@ -326,9 +210,6 @@ function GoldTracker:UpdateDiagnosisWindow()
 
     local bodyText = ""
     if frame.mode == "history" then
-        if frame.TitleText then
-            frame.TitleText:SetText("General Gold Tracker - Saved Diagnosis")
-        end
         if frame.headerTitleText then
             frame.headerTitleText:SetText("Saved Diagnosis")
         end
@@ -345,9 +226,6 @@ function GoldTracker:UpdateDiagnosisWindow()
         local session = self:GetHistorySessionByID(frame.historySessionID)
         bodyText = self:BuildHistoryDiagnosisWindowText(session)
     else
-        if frame.TitleText then
-            frame.TitleText:SetText("General Gold Tracker - Diagnosis")
-        end
         if frame.headerTitleText then
             frame.headerTitleText:SetText("Diagnosis")
         end
@@ -412,59 +290,10 @@ function GoldTracker:CreateDiagnosisWindow()
     frame.mode = "runtime"
     frame.historySessionID = nil
 
-    if frame.NineSlice then
-        frame.NineSlice:Hide()
-    end
-    if frame.Bg then
-        frame.Bg:Hide()
-    end
-    if frame.Inset then
-        frame.Inset:Hide()
-    end
-    if frame.TitleBg then
-        frame.TitleBg:Hide()
-    end
-    if frame.TopTileStreaks then
-        frame.TopTileStreaks:Hide()
-    end
-    if frame.TitleText then
-        frame.TitleText:Hide()
-    end
-    if frame.CloseButton then
-        frame.CloseButton:Hide()
-    end
-
-    local chrome = CreateDiagnosisPanel(frame, { 0.03, 0.04, 0.06, 0.94 }, { 1.0, 1.0, 1.0, 0.08 })
-    chrome:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -6)
-    chrome:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
-    frame.chrome = chrome
-
-    local headerBar = CreateDiagnosisPanel(frame, { 0.06, 0.07, 0.10, 0.98 }, { 1.0, 1.0, 1.0, 0.03 })
-    headerBar:SetPoint("TOPLEFT", chrome, "TOPLEFT", 0, 0)
-    headerBar:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", 0, 0)
-    headerBar:SetHeight(42)
-    frame.headerBar = headerBar
-
-    local headerAccent = headerBar:CreateTexture(nil, "ARTWORK")
-    headerAccent:SetColorTexture(1.0, 0.82, 0.18, 0.68)
-    headerAccent:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 1, 0)
-    headerAccent:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", -1, 0)
-    headerAccent:SetHeight(2)
-    frame.headerAccent = headerAccent
-
-    local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    headerTitle:SetPoint("LEFT", headerBar, "LEFT", 14, 0)
-    headerTitle:SetPoint("RIGHT", headerBar, "RIGHT", -52, 0)
-    headerTitle:SetJustifyH("LEFT")
-    headerTitle:SetText("Diagnosis")
-    frame.headerTitleText = headerTitle
-
-    local closeButton = CreateDiagnosisButton(headerBar, 22, 22, "X", "neutral")
-    closeButton:SetPoint("RIGHT", headerBar, "RIGHT", -10, 0)
-    closeButton:SetScript("OnClick", function()
-        frame:Hide()
-    end)
-    frame.diagnosisCloseButton = closeButton
+    local chrome = Theme:ApplyWindowChrome(frame, "Diagnosis", {
+        closeButtonKey = "diagnosisCloseButton",
+    })
+    Theme:RegisterSpecialFrame("GoldTrackerDiagnosisFrame")
 
     local controlsPanel = CreateDiagnosisPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)

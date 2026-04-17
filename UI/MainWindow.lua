@@ -1,17 +1,7 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
+local Theme = NS.GoldTrackerTheme
 
-local MAIN_WINDOW_BACKDROP = {
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    edgeFile = "Interface\\Buttons\\WHITE8X8",
-    edgeSize = 1,
-    insets = {
-        left = 1,
-        right = 1,
-        top = 1,
-        bottom = 1,
-    },
-}
 local MAIN_LOOT_LOG_MAX_ENTRIES = 1200
 local MAIN_LOOT_LOG_ROW_SPACING = 2
 local MAIN_LOOT_LOG_TIME_WIDTH = 56
@@ -20,131 +10,12 @@ local MAIN_LOOT_LOG_VALUE_WIDTH = 108
 local MAIN_LOOT_LOG_SOURCE_WIDTH = 176
 local MAIN_SUMMARY_PANEL_MIN_WIDTH = 228
 local MAIN_SUMMARY_PANEL_MAX_WIDTH = 288
-local BUTTON_PALETTES = {
-    primary = {
-        bg = { 0.18, 0.14, 0.08, 0.96 },
-        border = { 0.95, 0.74, 0.18, 0.26 },
-        hoverBg = { 0.24, 0.18, 0.08, 0.98 },
-        hoverBorder = { 1.0, 0.82, 0.24, 0.50 },
-        pressedBg = { 0.12, 0.09, 0.04, 0.98 },
-        pressedBorder = { 1.0, 0.82, 0.24, 0.32 },
-        text = { 1.0, 0.94, 0.72 },
-    },
-    neutral = {
-        bg = { 0.09, 0.10, 0.14, 0.94 },
-        border = { 1.0, 1.0, 1.0, 0.08 },
-        hoverBg = { 0.12, 0.13, 0.18, 0.98 },
-        hoverBorder = { 1.0, 1.0, 1.0, 0.16 },
-        pressedBg = { 0.06, 0.07, 0.10, 0.98 },
-        pressedBorder = { 1.0, 1.0, 1.0, 0.10 },
-        text = { 0.90, 0.92, 0.98 },
-    },
-    danger = {
-        bg = { 0.19, 0.09, 0.10, 0.96 },
-        border = { 1.0, 0.36, 0.38, 0.22 },
-        hoverBg = { 0.25, 0.10, 0.11, 0.98 },
-        hoverBorder = { 1.0, 0.44, 0.46, 0.40 },
-        pressedBg = { 0.12, 0.06, 0.06, 0.98 },
-        pressedBorder = { 1.0, 0.44, 0.46, 0.26 },
-        text = { 1.0, 0.87, 0.87 },
-    },
-}
-
-local function ApplyFlatBackdrop(frame, bg, border)
-    if not frame or type(frame.SetBackdrop) ~= "function" then
-        return
-    end
-
-    frame:SetBackdrop(MAIN_WINDOW_BACKDROP)
-    if type(bg) == "table" then
-        frame:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
-    end
-    if type(border) == "table" then
-        frame:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
-    end
-end
-
 local function CreatePanel(parent, bg, border)
-    local panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    ApplyFlatBackdrop(panel, bg, border)
-    return panel
-end
-
-local function UpdateModernButtonVisual(button)
-    if not button or type(button.SetBackdropColor) ~= "function" then
-        return
-    end
-
-    local palette = button.palette or BUTTON_PALETTES.neutral
-    local bg = palette.bg
-    local border = palette.border
-    if button.isPressed then
-        bg = palette.pressedBg or bg
-        border = palette.pressedBorder or border
-    elseif button.isHovered then
-        bg = palette.hoverBg or bg
-        border = palette.hoverBorder or border
-    end
-
-    button:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
-    button:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
-    if button.label then
-        local textColor = palette.text or { 1, 1, 1 }
-        button.label:SetTextColor(textColor[1] or 1, textColor[2] or 1, textColor[3] or 1)
-    end
+    return Theme:CreatePanel(parent, bg, border)
 end
 
 local function CreateModernButton(parent, width, height, text, paletteKey)
-    local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    button:SetSize(width, height)
-    button.palette = BUTTON_PALETTES[paletteKey] or BUTTON_PALETTES.neutral
-    button:SetBackdrop(MAIN_WINDOW_BACKDROP)
-
-    local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    label:SetPoint("CENTER", button, "CENTER", 0, 0)
-    label:SetJustifyH("CENTER")
-    button.label = label
-
-    function button:SetText(value)
-        self.label:SetText(type(value) == "string" and value or "")
-    end
-
-    function button:SetPalette(key)
-        self.palette = BUTTON_PALETTES[key] or BUTTON_PALETTES.neutral
-        UpdateModernButtonVisual(self)
-    end
-
-    button:SetText(text)
-    button:SetScript("OnEnter", function(self)
-        self.isHovered = true
-        UpdateModernButtonVisual(self)
-        if type(self.tooltipText) == "string" and self.tooltipText ~= "" then
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(self.tooltipText, 1, 1, 1, true)
-            GameTooltip:Show()
-        end
-    end)
-    button:SetScript("OnLeave", function(self)
-        self.isHovered = false
-        self.isPressed = false
-        UpdateModernButtonVisual(self)
-        if type(self.tooltipText) == "string" and self.tooltipText ~= "" then
-            GameTooltip:Hide()
-        end
-    end)
-    button:SetScript("OnMouseDown", function(self, mouseButton)
-        if mouseButton == "LeftButton" then
-            self.isPressed = true
-            UpdateModernButtonVisual(self)
-        end
-    end)
-    button:SetScript("OnMouseUp", function(self)
-        self.isPressed = false
-        UpdateModernButtonVisual(self)
-    end)
-    UpdateModernButtonVisual(button)
-
-    return button
+    return Theme:CreateButton(parent, width, height, text, paletteKey)
 end
 
 local function CreateSummaryRow(parent, anchor, labelText)
@@ -866,7 +737,7 @@ function GoldTracker:CreateTotalWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerTotalFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(320, 176)
+    frame:SetSize(340, 220)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -885,53 +756,52 @@ function GoldTracker:CreateTotalWindow()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
 
-    if frame.TitleText then
-        frame.TitleText:SetText("Session Total")
-    end
-    if frame.CloseButton then
-        frame.CloseButton:SetScript("OnClick", function()
-            frame:Hide()
-        end)
-    end
+    local chrome = Theme:ApplyWindowChrome(frame, "Session Total")
+    Theme:RegisterSpecialFrame("GoldTrackerTotalFrame")
 
-    local sessionTotalText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    sessionTotalText:SetPoint("TOP", frame, "TOP", 0, -30)
+    local bodyPanel = CreatePanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
+    bodyPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    bodyPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
+    frame.bodyPanel = bodyPanel
+
+    local sessionTotalText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    sessionTotalText:SetPoint("TOP", bodyPanel, "TOP", 0, -14)
     sessionTotalText:SetJustifyH("CENTER")
     sessionTotalText:SetText("ST: ---")
     frame.sessionTotalText = sessionTotalText
 
-    local sessionTotalRawText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local sessionTotalRawText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     sessionTotalRawText:SetPoint("TOP", sessionTotalText, "BOTTOM", 0, -6)
     sessionTotalRawText:SetJustifyH("CENTER")
     sessionTotalRawText:SetText("Raw: ---")
     frame.sessionTotalRawText = sessionTotalRawText
 
-    local sessionPerHourText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local sessionPerHourText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     sessionPerHourText:SetPoint("TOP", sessionTotalRawText, "BOTTOM", 0, -4)
     sessionPerHourText:SetJustifyH("CENTER")
     sessionPerHourText:SetText("ST/h: ---")
     frame.sessionPerHourText = sessionPerHourText
 
-    local sessionRawPerHourText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local sessionRawPerHourText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     sessionRawPerHourText:SetPoint("TOP", sessionPerHourText, "BOTTOM", 0, -2)
     sessionRawPerHourText:SetJustifyH("CENTER")
     sessionRawPerHourText:SetText("Raw/h: ---")
     frame.sessionRawPerHourText = sessionRawPerHourText
 
-    local lastHighlightHeaderText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local lastHighlightHeaderText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     lastHighlightHeaderText:SetPoint("TOPLEFT", sessionRawPerHourText, "BOTTOMLEFT", 0, -10)
     lastHighlightHeaderText:SetPoint("TOPRIGHT", sessionRawPerHourText, "BOTTOMRIGHT", 0, -10)
     lastHighlightHeaderText:SetJustifyH("CENTER")
     lastHighlightHeaderText:SetText("Last Highlight")
     frame.lastHighlightHeaderText = lastHighlightHeaderText
 
-    local lastHighlightIcon = frame:CreateTexture(nil, "ARTWORK")
+    local lastHighlightIcon = bodyPanel:CreateTexture(nil, "ARTWORK")
     lastHighlightIcon:SetSize(16, 16)
     lastHighlightIcon:SetPoint("TOPLEFT", lastHighlightHeaderText, "BOTTOMLEFT", 14, -7)
     lastHighlightIcon:Hide()
     frame.lastHighlightIcon = lastHighlightIcon
 
-    local lastHighlightValueText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local lastHighlightValueText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     lastHighlightValueText:SetPoint("TOPLEFT", lastHighlightHeaderText, "BOTTOMLEFT", 36, -6)
     lastHighlightValueText:SetPoint("TOPRIGHT", lastHighlightHeaderText, "BOTTOMRIGHT", -14, -6)
     lastHighlightValueText:SetJustifyH("LEFT")
@@ -941,7 +811,7 @@ function GoldTracker:CreateTotalWindow()
     lastHighlightValueText:SetText("No highlighted loot yet")
     frame.lastHighlightValueText = lastHighlightValueText
 
-    local lastHighlightDetailText = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    local lastHighlightDetailText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     lastHighlightDetailText:SetPoint("TOPLEFT", lastHighlightValueText, "BOTTOMLEFT", 0, -4)
     lastHighlightDetailText:SetPoint("TOPRIGHT", lastHighlightValueText, "BOTTOMRIGHT", 0, -4)
     lastHighlightDetailText:SetJustifyH("LEFT")
@@ -951,7 +821,7 @@ function GoldTracker:CreateTotalWindow()
     lastHighlightDetailText:SetText("")
     frame.lastHighlightDetailText = lastHighlightDetailText
 
-    local highlightButton = CreateFrame("Button", nil, frame)
+    local highlightButton = CreateFrame("Button", nil, bodyPanel)
     highlightButton:SetPoint("TOPLEFT", lastHighlightHeaderText, "BOTTOMLEFT", 10, -2)
     highlightButton:SetPoint("BOTTOMRIGHT", lastHighlightDetailText, "BOTTOMRIGHT", 4, -4)
     highlightButton:RegisterForClicks("LeftButtonUp")
@@ -1059,27 +929,7 @@ function GoldTracker:CreateMainWindow()
         addon:RefreshMainWindowLayout()
     end)
 
-    if frame.NineSlice then
-        frame.NineSlice:Hide()
-    end
-    if frame.Bg then
-        frame.Bg:Hide()
-    end
-    if frame.Inset then
-        frame.Inset:Hide()
-    end
-    if frame.TitleBg then
-        frame.TitleBg:Hide()
-    end
-    if frame.TopTileStreaks then
-        frame.TopTileStreaks:Hide()
-    end
-    if frame.CloseButton then
-        frame.CloseButton:Hide()
-    end
-    if frame.TitleText then
-        frame.TitleText:Hide()
-    end
+    Theme:HideNativeChrome(frame)
 
     local chrome = CreatePanel(frame, { 0.03, 0.04, 0.06, 0.94 }, { 1.0, 1.0, 1.0, 0.08 })
     chrome:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -6)
@@ -1125,7 +975,7 @@ function GoldTracker:CreateMainWindow()
     local sessionStatusBadge = CreateFrame("Frame", nil, headerBar, "BackdropTemplate")
     sessionStatusBadge:SetSize(64, 20)
     sessionStatusBadge:SetPoint("RIGHT", closeButton, "LEFT", -10, 0)
-    ApplyFlatBackdrop(sessionStatusBadge, { 0.16, 0.10, 0.10, 0.96 }, { 1.0, 0.58, 0.58, 0.16 })
+    Theme:ApplyBackdrop(sessionStatusBadge, { 0.16, 0.10, 0.10, 0.96 }, { 1.0, 0.58, 0.58, 0.16 })
     frame.sessionStatusBadge = sessionStatusBadge
 
     local statusValue = sessionStatusBadge:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
