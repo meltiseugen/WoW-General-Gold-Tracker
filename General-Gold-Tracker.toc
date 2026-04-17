@@ -4,9 +4,10 @@
 ## Author: Eugen
 ## Version: 0.1.0
 ## SavedVariables: WoWGeneralGoldTrackerDB
-## OptionalDeps: TradeSkillMaster
+## OptionalDeps: TradeSkillMaster, JanisTheme-1.0
 
 Core/Namespace.lua
+Libs/JanisTheme-1.0/JanisTheme-1.0.lua
 UI/Theme.lua
 Core/Diagnostics.lua
 Core/Alerts.lua

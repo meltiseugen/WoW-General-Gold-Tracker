@@ -1,0 +1,7 @@
+## Interface: 120001, 120000
+## Title: Janis Theme
+## Notes: Reusable flat window and button theme library for World of Warcraft addons.
+## Author: Eugen
+## Version: 1.0.0
+
+JanisTheme-1.0.lua

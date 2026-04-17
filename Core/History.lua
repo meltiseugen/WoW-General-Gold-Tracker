@@ -761,6 +761,9 @@ function GoldTracker:ResumeHistorySession(sessionID)
 
     self.tsmWarningShown = false
     self:UpdateSessionLocationContext()
+    if type(self.ImportSessionLootsToMainLootLog) == "function" then
+        self:ImportSessionLootsToMainLootLog(mergedItemLoots, mergedMoneyLoots, not wasActive)
+    end
     self:AddLogMessage(
         string.format("%s  Resumed history session: %s", date("%H:%M:%S"), historySession.name or tostring(historySession.id)),
         0.35,

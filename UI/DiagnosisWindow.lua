@@ -1,6 +1,6 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
-local Theme = NS.GoldTrackerTheme
+local Theme = NS.JanisTheme
 
 local function CreateDiagnosisPanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)

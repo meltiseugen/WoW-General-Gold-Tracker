@@ -1,6 +1,6 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
-local Theme = NS.GoldTrackerTheme
+local Theme = NS.JanisTheme
 
 local INVENTORY_ROW_HEIGHT = 24
 local INVENTORY_ROW_SPACING = 2

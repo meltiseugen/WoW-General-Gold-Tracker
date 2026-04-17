@@ -5,7 +5,7 @@ local HistoryDateFilter = NS.HistoryDateFilter
 local HistorySessionModel = NS.HistorySessionModel
 local HistoryFormatter = NS.HistoryFormatter
 local HistoryDataService = NS.HistoryDataService
-local Theme = NS.GoldTrackerTheme
+local Theme = NS.JanisTheme
 
 local RENAME_DIALOG_KEY = "GOLDTRACKER_RENAME_HISTORY_SESSION"
 local SPLIT_DIALOG_KEY = "GOLDTRACKER_SPLIT_HISTORY_SESSION"

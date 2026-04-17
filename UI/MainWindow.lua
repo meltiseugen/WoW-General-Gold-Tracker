@@ -1,6 +1,6 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
-local Theme = NS.GoldTrackerTheme
+local Theme = NS.JanisTheme
 
 local MAIN_LOOT_LOG_MAX_ENTRIES = 1200
 local MAIN_LOOT_LOG_ROW_SPACING = 2
@@ -73,6 +73,40 @@ local function ResolveItemLinkIcon(itemLink)
 
     local _, _, _, _, icon = GetItemInfoInstant(itemLink)
     return icon
+end
+
+local function FormatLootLogTimestamp(timestamp)
+    local normalized = tonumber(timestamp) or 0
+    if normalized > 0 then
+        return date("%H:%M:%S", normalized)
+    end
+    return date("%H:%M:%S")
+end
+
+local function ResolveLootLogSourceText(addon, entry)
+    if type(addon) == "table"
+        and type(addon.IsLootSourceTrackingEnabled) == "function"
+        and addon:IsLootSourceTrackingEnabled() ~= true then
+        return ""
+    end
+
+    if type(entry and entry.lootSourceText) == "string" and entry.lootSourceText ~= "" then
+        return entry.lootSourceText
+    end
+    if entry and (entry.lootSourceType == "AOE" or entry.lootSourceIsAoe == true) then
+        return "AOE loot"
+    end
+    return ""
+end
+
+local function CompareImportedLootLogEntries(a, b)
+    local leftTimestamp = tonumber(a and a.sortTimestamp) or 0
+    local rightTimestamp = tonumber(b and b.sortTimestamp) or 0
+    if leftTimestamp ~= rightTimestamp then
+        return leftTimestamp < rightTimestamp
+    end
+
+    return (tonumber(a and a.sortIndex) or 0) < (tonumber(b and b.sortIndex) or 0)
 end
 
 local function BuildRecentHighlightDisplay(addon, entry)
@@ -564,6 +598,76 @@ function GoldTracker:AddLogMessage(text, r, g, b)
         g = g or 1,
         b = b or 1,
     })
+end
+
+function GoldTracker:ImportSessionLootsToMainLootLog(itemLoots, moneyLoots, replaceExisting)
+    local entries = replaceExisting and {} or self:GetMainLootLogEntries()
+    local importedEntries = {}
+    local sortIndex = 0
+
+    if self.db and self.db.showRawLootedGoldInLog and type(moneyLoots) == "table" then
+        for _, money in ipairs(moneyLoots) do
+            local amount = tonumber(money and money.amount) or 0
+            if amount > 0 then
+                sortIndex = sortIndex + 1
+                importedEntries[#importedEntries + 1] = {
+                    sortTimestamp = tonumber(money and money.timestamp) or 0,
+                    sortIndex = sortIndex,
+                    entry = {
+                        timeText = FormatLootLogTimestamp(money and money.timestamp),
+                        itemText = "|cffffd100Raw looted gold|r",
+                        valueText = self:FormatMoney(amount),
+                        sourceText = "",
+                        icon = "Interface\\MoneyFrame\\UI-GoldIcon",
+                        r = 1,
+                        g = 0.85,
+                        b = 0,
+                        tracked = true,
+                    },
+                }
+            end
+        end
+    end
+
+    if type(itemLoots) == "table" then
+        for _, loot in ipairs(itemLoots) do
+            if loot
+                and (loot.ahTracked == true or loot.ahTracked == nil)
+                and loot.isSoulbound ~= true
+                and type(loot.itemLink) == "string"
+                and loot.itemLink ~= "" then
+                local quantity = math.max(1, math.floor((tonumber(loot.quantity) or 1) + 0.5))
+                sortIndex = sortIndex + 1
+                importedEntries[#importedEntries + 1] = {
+                    sortTimestamp = tonumber(loot.timestamp) or 0,
+                    sortIndex = sortIndex,
+                    entry = {
+                        timeText = FormatLootLogTimestamp(loot.timestamp),
+                        itemText = string.format("%s x%d", loot.itemLink, quantity),
+                        valueText = self:FormatMoney(tonumber(loot.totalValue) or 0),
+                        sourceText = ResolveLootLogSourceText(self, loot),
+                        itemLink = loot.itemLink,
+                        r = 0.9,
+                        g = 0.9,
+                        b = 1,
+                        tracked = true,
+                    },
+                }
+            end
+        end
+    end
+
+    table.sort(importedEntries, CompareImportedLootLogEntries)
+    for _, imported in ipairs(importedEntries) do
+        entries[#entries + 1] = imported.entry
+    end
+
+    while #entries > MAIN_LOOT_LOG_MAX_ENTRIES do
+        table.remove(entries, 1)
+    end
+
+    self.mainLootLogEntries = entries
+    self:RefreshMainLootLog(true)
 end
 
 function GoldTracker:UpdateMainWindow()

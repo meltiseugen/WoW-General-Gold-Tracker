@@ -21,7 +21,7 @@ GoldTracker.DEFAULTS = {
     autoStartSessionOnFirstLoot = true,
     autoStartSessionOnEnterWorld = false,
     resumeSessionAfterReload = false,
-    enableSessionHistory = false,
+    enableSessionHistory = true,
     historyRowsPerPage = 10,
     historyDetailsFontSize = 14,
     showRawLootedGoldInLog = true,
@@ -284,6 +284,12 @@ function GoldTracker:InitializeDatabase()
 
     if type(self.db.enableSessionHistory) ~= "boolean" then
         self.db.enableSessionHistory = self.DEFAULTS.enableSessionHistory
+    end
+    if self.db.enableSessionHistoryDefaultVersion ~= 2 then
+        if self.db.enableSessionHistory == false then
+            self.db.enableSessionHistory = self.DEFAULTS.enableSessionHistory
+        end
+        self.db.enableSessionHistoryDefaultVersion = 2
     end
 
     if type(self.db.enableDiagnosticsPanel) ~= "boolean" then
