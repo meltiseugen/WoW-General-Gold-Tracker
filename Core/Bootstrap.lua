@@ -32,13 +32,17 @@ function GoldTracker:HandleSlashCommand(message)
         return
     end
 
-    if command == "total" then
+    if command == "total" and self:IsTotalWindowFeatureEnabled() then
         self:ToggleTotalWindow()
         return
     end
 
     if command == "help" then
-        self:Print("Commands: /gt, /gt start, /gt new, /gt stop, /gt options, /gt total, /gtt")
+        local commands = "Commands: /gt, /gt start, /gt new, /gt stop, /gt options"
+        if self:IsTotalWindowFeatureEnabled() then
+            commands = commands .. ", /gt total, /gtt"
+        end
+        self:Print(commands)
         return
     end
 
@@ -162,7 +166,9 @@ SlashCmdList.WOWGENERALGOLDTRACKER = function(message)
     GoldTracker:HandleSlashCommand(message)
 end
 
-SLASH_WOWGENERALGOLDTRACKERTOTAL1 = "/gtt"
-SlashCmdList.WOWGENERALGOLDTRACKERTOTAL = function()
-    GoldTracker:OpenTotalWindow()
+if GoldTracker:IsTotalWindowFeatureEnabled() then
+    SLASH_WOWGENERALGOLDTRACKERTOTAL1 = "/gtt"
+    SlashCmdList.WOWGENERALGOLDTRACKERTOTAL = function()
+        GoldTracker:OpenTotalWindow()
+    end
 end

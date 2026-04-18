@@ -64,8 +64,8 @@ If you enable auto-start in options, sessions can begin automatically.
 ### Options Panel
 ![Options Panel Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Options+Panel+Screenshot)
 
-### Minimap / Compact Total
-![Minimap and Compact Total Placeholder](https://via.placeholder.com/1000x560?text=Minimap+%2F+Compact+Total)
+### Minimap Button
+![Minimap Button Placeholder](https://via.placeholder.com/1000x560?text=Minimap+Button)
 
 ## 🔧 Commands
 
@@ -74,9 +74,7 @@ If you enable auto-start in options, sessions can begin automatically.
 - `/gt new` — Force a new session
 - `/gt stop` — Stop session
 - `/gt options` — Open options panel
-- `/gt total` — Toggle compact total window
 - `/gt help` — Show command help
-- `/gtt` — Open compact total window
 
 ---
 

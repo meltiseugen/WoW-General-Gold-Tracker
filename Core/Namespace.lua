@@ -11,6 +11,8 @@ GoldTracker.REQUIRED_PROJECT = WOW_PROJECT_MAINLINE
 GoldTracker.LEGACY_DEFAULT_WINDOW_WIDTH = 680
 GoldTracker.PREVIOUS_DEFAULT_WINDOW_WIDTH = 760
 GoldTracker.OLDER_DEFAULT_WINDOW_WIDTH = 790
+-- Code-only feature flag. This is intentionally not mirrored to saved variables or options.
+local ENABLE_TOTAL_WINDOW_FEATURE = false
 
 GoldTracker.DEFAULTS = {
     valueSource = "TSM_DBMARKET",
@@ -31,10 +33,13 @@ GoldTracker.DEFAULTS = {
     useActiveTimeForGoldPerHour = false,
     allowResumeHistorySession = true,
     enableLootSourceTracking = true,
+    showLootLogTimestamps = true,
+    mainLootStreamExpanded = false,
     enableDiagnosticsPanel = false,
     minimapButtonAngle = 225,
     windowAlpha = 0.90,
-    windowWidth = 720,
+    windowWidth = 780,
+    collapsedWindowWidth = 388,
     windowHeight = 460,
 }
 
@@ -329,6 +334,12 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.enableLootSourceTracking) ~= "boolean" then
         self.db.enableLootSourceTracking = self.DEFAULTS.enableLootSourceTracking
     end
+    if type(self.db.showLootLogTimestamps) ~= "boolean" then
+        self.db.showLootLogTimestamps = self.DEFAULTS.showLootLogTimestamps
+    end
+    if type(self.db.mainLootStreamExpanded) ~= "boolean" then
+        self.db.mainLootStreamExpanded = self.DEFAULTS.mainLootStreamExpanded
+    end
 
     if type(self.db.minimapButtonAngle) ~= "number" then
         self.db.minimapButtonAngle = self.DEFAULTS.minimapButtonAngle
@@ -361,12 +372,17 @@ function GoldTracker:InitializeDatabase()
             self.db.windowWidth = self.DEFAULTS.windowWidth
         end
     end
-    self.db.windowWidth = math.floor(math.max(480, math.min(1200, self.db.windowWidth)) + 0.5)
+    self.db.windowWidth = math.floor(math.max(780, math.min(1200, self.db.windowWidth)) + 0.5)
+
+    if type(self.db.collapsedWindowWidth) ~= "number" then
+        self.db.collapsedWindowWidth = self.DEFAULTS.collapsedWindowWidth
+    end
+    self.db.collapsedWindowWidth = math.floor(math.max(356, math.min(388, self.db.collapsedWindowWidth)) + 0.5)
 
     if type(self.db.windowHeight) ~= "number" then
         self.db.windowHeight = self.DEFAULTS.windowHeight
     end
-    self.db.windowHeight = math.floor(math.max(320, math.min(1000, self.db.windowHeight)) + 0.5)
+    self.db.windowHeight = math.floor(math.max(460, math.min(1000, self.db.windowHeight)) + 0.5)
 
     if not hadHighValueDropAlerts
         and type(self.db.highValueDropAlerts) == "table"
@@ -549,6 +565,20 @@ function GoldTracker:IsLootSourceTrackingEnabled()
     return self.db.enableLootSourceTracking == true
 end
 
+function GoldTracker:IsLootLogTimestampsEnabled()
+    if not self.db then
+        return self.DEFAULTS.showLootLogTimestamps == true
+    end
+    return self.db.showLootLogTimestamps == true
+end
+
+function GoldTracker:IsMainLootStreamExpanded()
+    if not self.db then
+        return self.DEFAULTS.mainLootStreamExpanded == true
+    end
+    return self.db.mainLootStreamExpanded == true
+end
+
 function GoldTracker:IsIgnoreMailboxLootWhenMailOpenEnabled()
     if not self.db then
         return self.DEFAULTS.ignoreMailboxLootWhenMailOpen == true
@@ -564,10 +594,17 @@ function GoldTracker:IsMainWindowGoldPerHourEnabled()
 end
 
 function GoldTracker:IsTotalWindowGoldPerHourEnabled()
+    if not self:IsTotalWindowFeatureEnabled() then
+        return false
+    end
     if not self.db then
         return self.DEFAULTS.showTotalWindowGoldPerHour == true
     end
     return self.db.showTotalWindowGoldPerHour == true
+end
+
+function GoldTracker:IsTotalWindowFeatureEnabled()
+    return ENABLE_TOTAL_WINDOW_FEATURE == true
 end
 
 function GoldTracker:IsActiveTimeForGoldPerHourEnabled()

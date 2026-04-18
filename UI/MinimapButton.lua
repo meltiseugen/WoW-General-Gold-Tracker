@@ -141,7 +141,7 @@ function GoldTracker:CreateMinimapButton()
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton == "LeftButton" then
             addon:HandleSlashCommand("")
-        elseif mouseButton == "RightButton" then
+        elseif mouseButton == "RightButton" and addon:IsTotalWindowFeatureEnabled() then
             addon:ToggleTotalWindow()
         end
     end)
@@ -167,7 +167,9 @@ function GoldTracker:CreateMinimapButton()
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("General Gold Tracker", 1, 0.82, 0)
         GameTooltip:AddLine("Left-click: Open tracker window", 0.9, 0.9, 0.9)
-        GameTooltip:AddLine("Right-click: Toggle total window", 0.9, 0.9, 0.9)
+        if addon:IsTotalWindowFeatureEnabled() then
+            GameTooltip:AddLine("Right-click: Toggle total window", 0.9, 0.9, 0.9)
+        end
         GameTooltip:AddLine("Drag with left mouse button: Move button", 0.9, 0.9, 0.9)
         GameTooltip:Show()
     end)

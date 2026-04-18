@@ -67,12 +67,22 @@ function GoldTracker:RefreshOptionsControls()
     controls.rawLootLogCheckbox:SetChecked(self.db.showRawLootedGoldInLog)
     controls.ignoreMailboxLootCheckbox:SetChecked(self:IsIgnoreMailboxLootWhenMailOpenEnabled())
     controls.mainWindowGoldPerHourCheckbox:SetChecked(self:IsMainWindowGoldPerHourEnabled())
-    controls.totalWindowGoldPerHourCheckbox:SetChecked(self:IsTotalWindowGoldPerHourEnabled())
+    if controls.totalWindowGoldPerHourCheckbox then
+        local totalWindowFeatureEnabled = self:IsTotalWindowFeatureEnabled()
+        controls.totalWindowGoldPerHourCheckbox:SetShown(totalWindowFeatureEnabled)
+        controls.totalWindowGoldPerHourCheckbox:SetChecked(self:IsTotalWindowGoldPerHourEnabled())
+        if controls.totalWindowGoldPerHourLabel then
+            controls.totalWindowGoldPerHourLabel:SetShown(totalWindowFeatureEnabled)
+        end
+    end
     if controls.activeTimeGoldPerHourCheckbox then
         controls.activeTimeGoldPerHourCheckbox:SetChecked(self:IsActiveTimeForGoldPerHourEnabled())
     end
     if controls.resumeHistorySessionCheckbox then
         controls.resumeHistorySessionCheckbox:SetChecked(self:IsResumeHistorySessionEnabled())
+    end
+    if controls.lootLogTimestampCheckbox then
+        controls.lootLogTimestampCheckbox:SetChecked(self:IsLootLogTimestampsEnabled())
     end
     controls.lootSourceTrackingCheckbox:SetChecked(self:IsLootSourceTrackingEnabled())
     if controls.diagnosticsPanelCheckbox then
@@ -393,7 +403,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local trackingQualitySection = CreateOptionsSection(trackingContent, nil, "Item Tracking", "Control item eligibility and valuation in loot views.", 128)
     local trackingSessionSection = CreateOptionsSection(trackingContent, trackingQualitySection, "Session Startup", "Choose when tracking sessions begin or resume automatically.", 166)
-    local trackingLootSection = CreateOptionsSection(trackingContent, trackingSessionSection, "Loot Stream", "Controls for raw entries and source detection.", 148)
+    local trackingLootSection = CreateOptionsSection(trackingContent, trackingSessionSection, "Loot Stream", "Controls for raw entries, timestamps, and source detection.", 208)
 
     local historyCoreSection = CreateOptionsSection(historyContent, nil, "Session History", "Save, reopen, and resume finished sessions.", 144)
     local historyDisplaySection = CreateOptionsSection(historyContent, historyCoreSection, "History Display", "Adjust list density and details text size.", 150)
@@ -488,19 +498,28 @@ function GoldTracker:CreateOptionsPanel()
     mainWindowGoldPerHourLabel:SetPoint("LEFT", mainWindowGoldPerHourCheckbox, "RIGHT", 4, 1)
     mainWindowGoldPerHourLabel:SetText("Show gold per hour in main tracker window")
 
-    local totalWindowGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
-    totalWindowGoldPerHourCheckbox:SetPoint("TOPLEFT", mainWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
-    totalWindowGoldPerHourCheckbox:SetScript("OnClick", function(button)
-        addon.db.showTotalWindowGoldPerHour = button:GetChecked() and true or false
-        addon:UpdateMainWindow()
-    end)
+    local totalWindowFeatureEnabled = addon:IsTotalWindowFeatureEnabled()
+    local totalWindowGoldPerHourCheckbox
+    local totalWindowGoldPerHourLabel
+    if totalWindowFeatureEnabled then
+        totalWindowGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
+        totalWindowGoldPerHourCheckbox:SetPoint("TOPLEFT", mainWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+        totalWindowGoldPerHourCheckbox:SetScript("OnClick", function(button)
+            addon.db.showTotalWindowGoldPerHour = button:GetChecked() and true or false
+            addon:UpdateMainWindow()
+        end)
 
-    local totalWindowGoldPerHourLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    totalWindowGoldPerHourLabel:SetPoint("LEFT", totalWindowGoldPerHourCheckbox, "RIGHT", 4, 1)
-    totalWindowGoldPerHourLabel:SetText("Show gold per hour in /gtt total window")
+        totalWindowGoldPerHourLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        totalWindowGoldPerHourLabel:SetPoint("LEFT", totalWindowGoldPerHourCheckbox, "RIGHT", 4, 1)
+        totalWindowGoldPerHourLabel:SetText("Show gold per hour in /gtt total window")
+    end
 
     local activeTimeGoldPerHourCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
-    activeTimeGoldPerHourCheckbox:SetPoint("TOPLEFT", totalWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    if totalWindowGoldPerHourCheckbox then
+        activeTimeGoldPerHourCheckbox:SetPoint("TOPLEFT", totalWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    else
+        activeTimeGoldPerHourCheckbox:SetPoint("TOPLEFT", mainWindowGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    end
     activeTimeGoldPerHourCheckbox:SetScript("OnClick", function(button)
         addon.db.useActiveTimeForGoldPerHour = button:GetChecked() and true or false
         addon:UpdateMainWindow()
@@ -680,8 +699,19 @@ function GoldTracker:CreateOptionsPanel()
     rawLootLogLabel:SetPoint("LEFT", rawLootLogCheckbox, "RIGHT", 4, 1)
     rawLootLogLabel:SetText("Show raw looted gold entries in loot log")
 
+    local lootLogTimestampCheckbox = CreateFrame("CheckButton", nil, trackingLootSection, "UICheckButtonTemplate")
+    lootLogTimestampCheckbox:SetPoint("TOPLEFT", rawLootLogCheckbox, "BOTTOMLEFT", 0, -8)
+    lootLogTimestampCheckbox:SetScript("OnClick", function(button)
+        addon.db.showLootLogTimestamps = button:GetChecked() and true or false
+        addon:RefreshMainWindowLayout()
+    end)
+
+    local lootLogTimestampLabel = trackingLootSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    lootLogTimestampLabel:SetPoint("LEFT", lootLogTimestampCheckbox, "RIGHT", 4, 1)
+    lootLogTimestampLabel:SetText("Show timestamps in loot stream")
+
     local lootSourceTrackingCheckbox = CreateFrame("CheckButton", nil, trackingLootSection, "UICheckButtonTemplate")
-    lootSourceTrackingCheckbox:SetPoint("TOPLEFT", rawLootLogCheckbox, "BOTTOMLEFT", 0, -8)
+    lootSourceTrackingCheckbox:SetPoint("TOPLEFT", lootLogTimestampCheckbox, "BOTTOMLEFT", 0, -8)
     lootSourceTrackingCheckbox:SetScript("OnClick", function(button)
         addon.db.enableLootSourceTracking = button:GetChecked() and true or false
         if not addon.db.enableLootSourceTracking then
@@ -739,7 +769,7 @@ function GoldTracker:CreateOptionsPanel()
     end)
 
     generalContent:SetHeight(436)
-    trackingContent:SetHeight(488)
+    trackingContent:SetHeight(548)
     historyContent:SetHeight(324)
 
     local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsCoreSection, "UICheckButtonTemplate")
@@ -1120,9 +1150,11 @@ function GoldTracker:CreateOptionsPanel()
         historyDetailsFontSizeSlider = historyDetailsFontSizeSlider,
         historyDetailsFontSizeValueText = historyDetailsFontSizeValueText,
         rawLootLogCheckbox = rawLootLogCheckbox,
+        lootLogTimestampCheckbox = lootLogTimestampCheckbox,
         ignoreMailboxLootCheckbox = ignoreMailboxLootCheckbox,
         mainWindowGoldPerHourCheckbox = mainWindowGoldPerHourCheckbox,
         totalWindowGoldPerHourCheckbox = totalWindowGoldPerHourCheckbox,
+        totalWindowGoldPerHourLabel = totalWindowGoldPerHourLabel,
         activeTimeGoldPerHourCheckbox = activeTimeGoldPerHourCheckbox,
         resumeHistorySessionCheckbox = resumeHistorySessionCheckbox,
         lootSourceTrackingCheckbox = lootSourceTrackingCheckbox,

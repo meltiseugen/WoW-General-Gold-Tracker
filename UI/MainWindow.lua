@@ -8,8 +8,25 @@ local MAIN_LOOT_LOG_TIME_WIDTH = 56
 local MAIN_LOOT_LOG_ICON_SIZE = 14
 local MAIN_LOOT_LOG_VALUE_WIDTH = 108
 local MAIN_LOOT_LOG_SOURCE_WIDTH = 176
-local MAIN_SUMMARY_PANEL_MIN_WIDTH = 228
+local MAIN_LOOT_LOG_MIN_ITEM_WIDTH = 104
+local MAIN_LOOT_LOG_MIN_VALUE_WIDTH = 78
+local MAIN_LOOT_LOG_MIN_SOURCE_WIDTH = 96
+local MAIN_LOOT_LOG_COLUMN_GAP = 12
+local MAIN_LOOT_LOG_ROW_RIGHT_INSET = 4
+local MAIN_LOOT_LOG_SCROLL_CONTENT_RIGHT_PADDING = 6
+local MAIN_LOOT_LOG_HEADER_SCROLL_TOP_OFFSET = 22
 local MAIN_SUMMARY_PANEL_MAX_WIDTH = 288
+local MAIN_PANEL_OUTER_INSET = 12
+local MAIN_PANEL_TOP_OFFSET = -54
+local MAIN_PANEL_BOTTOM_INSET = 12
+local MAIN_PANEL_GAP = 8
+local MAIN_LOOT_STREAM_TOGGLE_WIDTH = 24
+local MAIN_WINDOW_EXPANDED_MIN_WIDTH = 780
+local MAIN_WINDOW_COLLAPSED_MIN_WIDTH = 356
+local MAIN_WINDOW_COLLAPSED_MAX_WIDTH = 388
+local MAIN_WINDOW_MAX_WIDTH = 1200
+local MAIN_WINDOW_MIN_HEIGHT = 460
+local MAIN_WINDOW_MAX_HEIGHT = 1000
 local function CreatePanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)
 end
@@ -128,6 +145,127 @@ local function BuildRecentHighlightDisplay(addon, entry)
     return itemText, details, entry.itemLink
 end
 
+local function GetMainLootLogContentWidth(frame)
+    if not frame then
+        return 1
+    end
+
+    local width = 0
+    if frame.logScrollFrame then
+        width = (tonumber(frame.logScrollFrame:GetWidth()) or 0) - MAIN_LOOT_LOG_SCROLL_CONTENT_RIGHT_PADDING
+    elseif frame.logPanel then
+        width = (tonumber(frame.logPanel:GetWidth()) or 0) - 42
+    end
+
+    return math.max(1, math.floor(width + 0.5))
+end
+
+local function GetMainLootLogItemLeftReserve(showTimestamps)
+    if showTimestamps then
+        return 8 + MAIN_LOOT_LOG_TIME_WIDTH + 6 + MAIN_LOOT_LOG_ICON_SIZE + 6
+    end
+
+    return 8 + MAIN_LOOT_LOG_ICON_SIZE + 6
+end
+
+local function BuildMainLootLogLayoutMetrics(addon, frame)
+    local contentWidth = GetMainLootLogContentWidth(frame)
+    local valueWidth = math.max(
+        MAIN_LOOT_LOG_MIN_VALUE_WIDTH,
+        math.min(MAIN_LOOT_LOG_VALUE_WIDTH, math.floor(contentWidth * 0.22))
+    )
+    local sourceWidth = math.max(
+        MAIN_LOOT_LOG_MIN_SOURCE_WIDTH,
+        math.min(MAIN_LOOT_LOG_SOURCE_WIDTH, math.floor(contentWidth * 0.24))
+    )
+    local allowTimestamps = addon and type(addon.IsLootLogTimestampsEnabled) == "function" and addon:IsLootLogTimestampsEnabled()
+    local allowSource = addon and type(addon.IsLootSourceTrackingEnabled) == "function" and addon:IsLootSourceTrackingEnabled()
+
+    local function CanFit(showTimestamps, showSource)
+        local itemLeftReserve = GetMainLootLogItemLeftReserve(showTimestamps)
+        local rightReserve = MAIN_LOOT_LOG_ROW_RIGHT_INSET + valueWidth + MAIN_LOOT_LOG_COLUMN_GAP
+        if showSource then
+            rightReserve = rightReserve + sourceWidth + MAIN_LOOT_LOG_COLUMN_GAP
+        end
+
+        return (contentWidth - itemLeftReserve - rightReserve) >= MAIN_LOOT_LOG_MIN_ITEM_WIDTH
+    end
+
+    local showTimestamps = allowTimestamps == true
+    local showSource = allowSource == true and CanFit(showTimestamps, true)
+    if showTimestamps and not CanFit(showTimestamps, showSource) then
+        showTimestamps = false
+        showSource = allowSource == true and CanFit(showTimestamps, true)
+    end
+
+    return {
+        contentWidth = contentWidth,
+        valueWidth = valueWidth,
+        sourceWidth = sourceWidth,
+        showTimestamps = showTimestamps,
+        showSource = showSource,
+    }
+end
+
+local function ApplyMainLootLogRowColumnLayout(row, layout)
+    if not row or not layout then
+        return
+    end
+
+    if row.sourceText then
+        row.sourceText:ClearAllPoints()
+        row.sourceText:SetWidth(layout.sourceWidth)
+        row.sourceText:SetShown(layout.showSource)
+        if layout.showSource then
+            row.sourceText:SetPoint("RIGHT", row, "RIGHT", -MAIN_LOOT_LOG_ROW_RIGHT_INSET, 0)
+        else
+            row.sourceText:SetPoint("LEFT", row, "RIGHT", 0, 0)
+        end
+    end
+
+    if row.valueText then
+        row.valueText:ClearAllPoints()
+        row.valueText:SetWidth(layout.valueWidth)
+        row.valueText:SetJustifyH("RIGHT")
+        if layout.showSource and row.sourceText then
+            row.valueText:SetPoint("RIGHT", row.sourceText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+        else
+            row.valueText:SetPoint("RIGHT", row, "RIGHT", -MAIN_LOOT_LOG_ROW_RIGHT_INSET, 0)
+        end
+    end
+
+    if row.itemText and row.valueText then
+        row.itemText:SetPoint("RIGHT", row.valueText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+    end
+end
+
+local function ClampMainWindowWidth(addon, width, isExpanded)
+    local minWidth = isExpanded and MAIN_WINDOW_EXPANDED_MIN_WIDTH or MAIN_WINDOW_COLLAPSED_MIN_WIDTH
+    local maxWidth = isExpanded and MAIN_WINDOW_MAX_WIDTH or MAIN_WINDOW_COLLAPSED_MAX_WIDTH
+    local fallback = isExpanded and addon.DEFAULTS.windowWidth or addon.DEFAULTS.collapsedWindowWidth
+    return math.floor(math.max(minWidth, math.min(maxWidth, tonumber(width) or fallback)) + 0.5)
+end
+
+local function ApplyMainWindowResizeBounds(addon, frame)
+    if not frame then
+        return
+    end
+
+    local isExpanded = addon:IsMainLootStreamExpanded()
+    local minWidth = isExpanded and MAIN_WINDOW_EXPANDED_MIN_WIDTH or MAIN_WINDOW_COLLAPSED_MIN_WIDTH
+    local maxWidth = isExpanded and MAIN_WINDOW_MAX_WIDTH or MAIN_WINDOW_COLLAPSED_MAX_WIDTH
+    if frame.SetResizeBounds then
+        frame:SetResizeBounds(minWidth, MAIN_WINDOW_MIN_HEIGHT, maxWidth, MAIN_WINDOW_MAX_HEIGHT)
+    else
+        if frame.SetMinResize then
+            frame:SetMinResize(minWidth, MAIN_WINDOW_MIN_HEIGHT)
+        end
+        if frame.SetMaxResize then
+            frame:SetMaxResize(maxWidth, MAIN_WINDOW_MAX_HEIGHT)
+        end
+    end
+end
+
 function GoldTracker:GetConfiguredWindowAlpha()
     local alpha = (self.db and self.db.windowAlpha) or self.DEFAULTS.windowAlpha
     alpha = tonumber(alpha) or self.DEFAULTS.windowAlpha
@@ -171,15 +309,114 @@ function GoldTracker:ApplyMainWindowAlpha()
     end
 end
 
+function GoldTracker:SetMainLootStreamExpanded(isExpanded)
+    local shouldExpand = isExpanded == true
+    local frame = self.mainFrame
+    if frame and self.db then
+        local currentWidth = tonumber(frame:GetWidth()) or 0
+        if shouldExpand then
+            self.db.collapsedWindowWidth = ClampMainWindowWidth(self, currentWidth, false)
+        else
+            self.db.windowWidth = ClampMainWindowWidth(self, currentWidth, true)
+        end
+    end
+
+    if self.db then
+        self.db.mainLootStreamExpanded = shouldExpand
+    end
+
+    if frame then
+        ApplyMainWindowResizeBounds(self, frame)
+        local targetWidth = ClampMainWindowWidth(
+            self,
+            shouldExpand and (self.db and self.db.windowWidth) or (self.db and self.db.collapsedWindowWidth),
+            shouldExpand
+        )
+        local targetHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(frame:GetHeight()) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
+        frame:SetSize(targetWidth, targetHeight)
+    end
+
+    self:RefreshMainWindowLayout()
+end
+
+function GoldTracker:ToggleMainLootStream()
+    self:SetMainLootStreamExpanded(not self:IsMainLootStreamExpanded())
+end
+
+function GoldTracker:UpdateMainLastHighlight()
+    local frame = self.mainFrame
+    if not frame or not frame.mainLastHighlightContainer then
+        return
+    end
+
+    local entry = self:GetMostRecentHighlightedLootEntry()
+    local itemText, detailText, itemLink = BuildRecentHighlightDisplay(self, entry)
+    frame.mainLastHighlightItemLink = itemLink
+
+    if frame.mainLastHighlightItemText then
+        frame.mainLastHighlightItemText:SetText(itemText)
+    end
+    if frame.mainLastHighlightDetailText then
+        frame.mainLastHighlightDetailText:SetText(detailText)
+    end
+    if frame.mainLastHighlightIcon then
+        local iconTexture = ResolveItemLinkIcon(itemLink)
+        if iconTexture then
+            frame.mainLastHighlightIcon:SetTexture(iconTexture)
+            frame.mainLastHighlightIcon:Show()
+        else
+            frame.mainLastHighlightIcon:Hide()
+        end
+    end
+end
+
 function GoldTracker:RefreshMainWindowLayout()
     local frame = self.mainFrame
     if not frame or not frame.summaryPanel or not frame.logPanel then
         return
     end
 
-    local contentWidth = math.max(1, math.floor((frame.chrome and frame.chrome:GetWidth()) or frame:GetWidth() or 1))
-    local summaryWidth = math.max(MAIN_SUMMARY_PANEL_MIN_WIDTH, math.min(MAIN_SUMMARY_PANEL_MAX_WIDTH, math.floor(contentWidth * 0.34)))
+    local summaryWidth = MAIN_SUMMARY_PANEL_MAX_WIDTH
+    local isLootStreamExpanded = self:IsMainLootStreamExpanded()
+
+    frame.summaryPanel:ClearAllPoints()
+    frame.summaryPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", MAIN_PANEL_OUTER_INSET, MAIN_PANEL_TOP_OFFSET)
+    frame.summaryPanel:SetPoint("BOTTOMLEFT", frame.chrome, "BOTTOMLEFT", MAIN_PANEL_OUTER_INSET, MAIN_PANEL_BOTTOM_INSET)
     frame.summaryPanel:SetWidth(summaryWidth)
+
+    if frame.lootStreamToggleButton then
+        frame.lootStreamToggleButton:ClearAllPoints()
+        frame.lootStreamToggleButton:SetWidth(MAIN_LOOT_STREAM_TOGGLE_WIDTH)
+        frame.lootStreamToggleButton:SetPoint("TOPLEFT", frame.summaryPanel, "TOPRIGHT", MAIN_PANEL_GAP, 0)
+        frame.lootStreamToggleButton:SetPoint("BOTTOMLEFT", frame.summaryPanel, "BOTTOMRIGHT", MAIN_PANEL_GAP, 0)
+    end
+
+    frame.logPanel:ClearAllPoints()
+    if isLootStreamExpanded then
+        if frame.lootStreamToggleButton then
+            frame.lootStreamToggleButton:SetText("<")
+            frame.lootStreamToggleButton.tooltipText = "Hide loot stream"
+        end
+        frame.logPanel:SetPoint(
+            "TOPLEFT",
+            frame.summaryPanel,
+            "TOPRIGHT",
+            (MAIN_PANEL_GAP * 2) + MAIN_LOOT_STREAM_TOGGLE_WIDTH,
+            0
+        )
+        frame.logPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -MAIN_PANEL_OUTER_INSET, MAIN_PANEL_BOTTOM_INSET)
+        frame.logPanel:Show()
+    else
+        if frame.lootStreamToggleButton then
+            frame.lootStreamToggleButton:SetText(">")
+            frame.lootStreamToggleButton.tooltipText = "Show loot stream"
+        end
+        frame.logPanel:Hide()
+    end
+    if frame.mainLastHighlightContainer then
+        frame.mainLastHighlightContainer:SetShown(not isLootStreamExpanded)
+    end
+    self:UpdateMainLastHighlight()
 
     local actionButtons = {}
     if frame.optionsButton then
@@ -230,22 +467,54 @@ function GoldTracker:RefreshMainWindowLayout()
         end
     end
 
-    local logInnerWidth = math.max(1, math.floor((frame.logPanel:GetWidth() or 1) - 28))
-    local valueWidth = math.max(92, math.min(MAIN_LOOT_LOG_VALUE_WIDTH, math.floor(logInnerWidth * 0.18)))
-    local sourceWidth = math.max(110, math.min(MAIN_LOOT_LOG_SOURCE_WIDTH, math.floor(logInnerWidth * 0.25)))
+    local logLayout = BuildMainLootLogLayoutMetrics(self, frame)
     if frame.logValueHeaderText then
-        frame.logValueHeaderText:SetWidth(valueWidth)
+        frame.logValueHeaderText:SetWidth(logLayout.valueWidth)
     end
     if frame.logSourceHeaderText then
-        frame.logSourceHeaderText:SetWidth(sourceWidth)
+        frame.logSourceHeaderText:SetWidth(logLayout.sourceWidth)
+        frame.logSourceHeaderText:SetShown(logLayout.showSource)
+        if frame.logScrollFrame then
+            frame.logSourceHeaderText:ClearAllPoints()
+            frame.logSourceHeaderText:SetPoint(
+                "TOPRIGHT",
+                frame.logScrollFrame,
+                "TOPRIGHT",
+                -(MAIN_LOOT_LOG_SCROLL_CONTENT_RIGHT_PADDING + MAIN_LOOT_LOG_ROW_RIGHT_INSET),
+                MAIN_LOOT_LOG_HEADER_SCROLL_TOP_OFFSET
+            )
+        end
+    end
+    if frame.logValueHeaderText and frame.logSourceHeaderText then
+        frame.logValueHeaderText:ClearAllPoints()
+        if logLayout.showSource then
+            frame.logValueHeaderText:SetPoint("RIGHT", frame.logSourceHeaderText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+        elseif frame.logScrollFrame then
+            frame.logValueHeaderText:SetPoint(
+                "TOPRIGHT",
+                frame.logScrollFrame,
+                "TOPRIGHT",
+                -(MAIN_LOOT_LOG_SCROLL_CONTENT_RIGHT_PADDING + MAIN_LOOT_LOG_ROW_RIGHT_INSET),
+                MAIN_LOOT_LOG_HEADER_SCROLL_TOP_OFFSET
+            )
+        else
+            frame.logValueHeaderText:SetPoint("TOPRIGHT", frame.logPanel, "TOPRIGHT", -16, -42)
+        end
+        frame.logValueHeaderText:SetJustifyH("RIGHT")
+    end
+    if frame.logTimeHeaderText then
+        frame.logTimeHeaderText:SetShown(logLayout.showTimestamps)
+    end
+    if frame.logItemHeaderText then
+        frame.logItemHeaderText:ClearAllPoints()
+        if logLayout.showTimestamps and frame.logTimeHeaderText then
+            frame.logItemHeaderText:SetPoint("LEFT", frame.logTimeHeaderText, "RIGHT", MAIN_LOOT_LOG_ICON_SIZE + 12, 0)
+        else
+            frame.logItemHeaderText:SetPoint("TOPLEFT", frame.logPanel, "TOPLEFT", 24, -42)
+        end
     end
     for _, row in ipairs(frame.logRows or {}) do
-        if row.valueText then
-            row.valueText:SetWidth(valueWidth)
-        end
-        if row.sourceText then
-            row.sourceText:SetWidth(sourceWidth)
-        end
+        ApplyMainLootLogRowColumnLayout(row, logLayout)
     end
 
     self:RefreshMainLootLog(false)
@@ -278,7 +547,7 @@ function GoldTracker:ApplyMainWindowGoldPerHourVisibility()
 end
 
 function GoldTracker:ApplyTotalWindowGoldPerHourVisibility()
-    if not self.totalFrame then
+    if not self:IsTotalWindowFeatureEnabled() or not self.totalFrame then
         return
     end
 
@@ -387,21 +656,21 @@ function GoldTracker:GetMainLootLogRow(index)
     row.itemText = itemText
 
     local sourceText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sourceText:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    sourceText:SetPoint("RIGHT", row, "RIGHT", -MAIN_LOOT_LOG_ROW_RIGHT_INSET, 0)
     sourceText:SetWidth(MAIN_LOOT_LOG_SOURCE_WIDTH)
     sourceText:SetJustifyH("LEFT")
     sourceText:SetWordWrap(false)
     row.sourceText = sourceText
 
     local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    valueText:SetPoint("RIGHT", sourceText, "LEFT", -12, 0)
+    valueText:SetPoint("RIGHT", sourceText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
     valueText:SetWidth(MAIN_LOOT_LOG_VALUE_WIDTH)
     valueText:SetJustifyH("RIGHT")
     valueText:SetWordWrap(false)
     row.valueText = valueText
 
     itemText:SetPoint("LEFT", icon, "RIGHT", 6, 0)
-    itemText:SetPoint("RIGHT", valueText, "LEFT", -12, 0)
+    itemText:SetPoint("RIGHT", valueText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
 
     row:SetScript("OnEnter", function(self)
         if type(self.itemLink) ~= "string" or self.itemLink == "" then
@@ -433,19 +702,11 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
     local entries = self:GetMainLootLogEntries()
     local rowHeight = self:GetMainLootLogRowHeight()
     local yOffset = 0
-    local trackedCount = 0
-    for _, entry in ipairs(entries) do
-        if entry.tracked == true then
-            trackedCount = trackedCount + 1
-        end
-    end
+    local logLayout = BuildMainLootLogLayoutMetrics(self, frame)
+    local showTimestamps = logLayout.showTimestamps
 
     if frame.logMetaText then
-        if trackedCount > 0 then
-            frame.logMetaText:SetText(string.format("%d tracked", trackedCount))
-        else
-            frame.logMetaText:SetText("Waiting for loot")
-        end
+        frame.logMetaText:SetText("")
     end
     if frame.logEmptyText then
         frame.logEmptyText:SetShown(#entries == 0)
@@ -456,7 +717,8 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
         if row then
             local iconTexture = ResolveLogEntryIcon(entry)
             row.itemLink = entry.itemLink
-            row.timeText:SetText(entry.timeText or "")
+            row.timeText:SetShown(showTimestamps)
+            row.timeText:SetText(showTimestamps and (entry.timeText or "") or "")
             row.itemText:SetText(entry.itemText or "")
             row.valueText:SetText(entry.valueText or "")
             row.sourceText:SetText(entry.sourceText or "")
@@ -475,14 +737,24 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
             if iconTexture then
                 row.itemIcon:SetTexture(iconTexture)
                 row.itemIcon:Show()
+                row.itemIcon:ClearAllPoints()
+                if showTimestamps then
+                    row.itemIcon:SetPoint("LEFT", row.timeText, "RIGHT", 6, 0)
+                else
+                    row.itemIcon:SetPoint("LEFT", row, "LEFT", 8, 0)
+                end
                 row.itemText:ClearAllPoints()
                 row.itemText:SetPoint("LEFT", row.itemIcon, "RIGHT", 6, 0)
             else
                 row.itemIcon:Hide()
                 row.itemText:ClearAllPoints()
-                row.itemText:SetPoint("LEFT", row.timeText, "RIGHT", 10, 0)
+                if showTimestamps then
+                    row.itemText:SetPoint("LEFT", row.timeText, "RIGHT", 10, 0)
+                else
+                    row.itemText:SetPoint("LEFT", row, "LEFT", 8, 0)
+                end
             end
-            row.itemText:SetPoint("RIGHT", row.valueText, "LEFT", -12, 0)
+            ApplyMainLootLogRowColumnLayout(row, logLayout)
 
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", frame.logContent, "TOPLEFT", 0, -yOffset)
@@ -515,7 +787,7 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
 
     frame.logContent:SetHeight(math.max(1, yOffset))
     if frame.logScrollFrame then
-        local contentWidth = (frame.logScrollFrame:GetWidth() or 0) - 6
+        local contentWidth = (frame.logScrollFrame:GetWidth() or 0) - MAIN_LOOT_LOG_SCROLL_CONTENT_RIGHT_PADDING
         frame.logContent:SetWidth(math.max(1, contentWidth))
         if frame.logScrollFrame.UpdateScrollChildRect then
             frame.logScrollFrame:UpdateScrollChildRect()
@@ -725,13 +997,16 @@ function GoldTracker:UpdateMainWindow()
     if frame.sourceValue then
         frame.sourceValue:SetText(source.label)
     end
+    self:UpdateMainLastHighlight()
     frame.startStopButton:SetText(session.active and "Stop Session" or "Start Session")
     if frame.startStopButton and frame.startStopButton.SetPalette then
         frame.startStopButton:SetPalette(session.active and "danger" or "primary")
     end
     self:RefreshHistoryButtonVisibility()
     self:RefreshDiagnosisButtonVisibility()
-    self:UpdateTotalWindow()
+    if self:IsTotalWindowFeatureEnabled() then
+        self:UpdateTotalWindow()
+    end
     if type(self.UpdateDiagnosisWindow) == "function" then
         self:UpdateDiagnosisWindow()
     end
@@ -782,7 +1057,10 @@ function GoldTracker:GetMostRecentHighlightedLootEntry()
 end
 
 function GoldTracker:UpdateTotalWindow()
-    if not self.totalFrame or not self.totalFrame.sessionTotalText or not self.totalFrame.sessionTotalRawText then
+    if not self:IsTotalWindowFeatureEnabled()
+        or not self.totalFrame
+        or not self.totalFrame.sessionTotalText
+        or not self.totalFrame.sessionTotalRawText then
         return
     end
 
@@ -835,6 +1113,10 @@ function GoldTracker:UpdateTotalWindow()
 end
 
 function GoldTracker:CreateTotalWindow()
+    if not self:IsTotalWindowFeatureEnabled() then
+        return
+    end
+
     if self.totalFrame then
         return
     end
@@ -956,6 +1238,10 @@ function GoldTracker:CreateTotalWindow()
 end
 
 function GoldTracker:ToggleTotalWindow()
+    if not self:IsTotalWindowFeatureEnabled() then
+        return
+    end
+
     self:CreateTotalWindow()
     if not self.totalFrame then
         return
@@ -971,6 +1257,10 @@ function GoldTracker:ToggleTotalWindow()
 end
 
 function GoldTracker:OpenTotalWindow()
+    if not self:IsTotalWindowFeatureEnabled() then
+        return
+    end
+
     self:CreateTotalWindow()
     if not self.totalFrame then
         return
@@ -987,12 +1277,12 @@ function GoldTracker:CreateMainWindow()
     end
 
     local addon = self
-    local minWidth, minHeight = 620, 400
-    local maxWidth, maxHeight = 1200, 1000
     local configuredWidth = tonumber(self.db.windowWidth) or self.DEFAULTS.windowWidth
+    local configuredCollapsedWidth = tonumber(self.db.collapsedWindowWidth) or self.DEFAULTS.collapsedWindowWidth
     local configuredHeight = tonumber(self.db.windowHeight) or self.DEFAULTS.windowHeight
-    local initialWidth = math.floor(math.max(minWidth, math.min(maxWidth, configuredWidth)) + 0.5)
-    local initialHeight = math.floor(math.max(minHeight, math.min(maxHeight, configuredHeight)) + 0.5)
+    local isLootStreamExpanded = self:IsMainLootStreamExpanded()
+    local initialWidth = ClampMainWindowWidth(self, isLootStreamExpanded and configuredWidth or configuredCollapsedWidth, isLootStreamExpanded)
+    local initialHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, configuredHeight)) + 0.5)
     local frame = CreateFrame("Frame", "GoldTrackerMainFrame", UIParent, "BasicFrameTemplateWithInset")
     frame:SetSize(initialWidth, initialHeight)
     frame:SetPoint("CENTER")
@@ -1002,16 +1292,7 @@ function GoldTracker:CreateMainWindow()
     end
     frame:SetMovable(true)
     frame:SetResizable(true)
-    if frame.SetResizeBounds then
-        frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
-    else
-        if frame.SetMinResize then
-            frame:SetMinResize(minWidth, minHeight)
-        end
-        if frame.SetMaxResize then
-            frame:SetMaxResize(maxWidth, maxHeight)
-        end
-    end
+    ApplyMainWindowResizeBounds(self, frame)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnMouseDown", function(self)
@@ -1026,9 +1307,14 @@ function GoldTracker:CreateMainWindow()
     frame:SetClampedToScreen(true)
 
     frame:SetScript("OnSizeChanged", function(_, width, height)
-        local clampedWidth = math.floor(math.max(minWidth, math.min(maxWidth, tonumber(width) or minWidth)) + 0.5)
-        local clampedHeight = math.floor(math.max(minHeight, math.min(maxHeight, tonumber(height) or minHeight)) + 0.5)
-        addon.db.windowWidth = clampedWidth
+        local isExpanded = addon:IsMainLootStreamExpanded()
+        local clampedWidth = ClampMainWindowWidth(addon, width, isExpanded)
+        local clampedHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(height) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
+        if isExpanded then
+            addon.db.windowWidth = clampedWidth
+        else
+            addon.db.collapsedWindowWidth = clampedWidth
+        end
         addon.db.windowHeight = clampedHeight
         addon:RefreshMainWindowLayout()
     end)
@@ -1058,18 +1344,6 @@ function GoldTracker:CreateMainWindow()
     headerTitle:SetJustifyH("LEFT")
     headerTitle:SetText("General Gold Tracker")
 
-    local sourceLabel = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    sourceLabel:SetPoint("LEFT", headerTitle, "RIGHT", 16, 0)
-    sourceLabel:SetTextColor(0.62, 0.66, 0.74)
-    sourceLabel:SetText("AH Source")
-
-    local sourceValue = headerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sourceValue:SetPoint("LEFT", sourceLabel, "RIGHT", 6, 0)
-    sourceValue:SetPoint("RIGHT", headerBar, "RIGHT", -130, 0)
-    sourceValue:SetJustifyH("LEFT")
-    sourceValue:SetTextColor(0.92, 0.95, 1.0)
-    frame.sourceValue = sourceValue
-
     local closeButton = CreateModernButton(headerBar, 22, 22, "X", "neutral")
     closeButton:SetPoint("RIGHT", headerBar, "RIGHT", -10, 0)
     closeButton:SetScript("OnClick", function()
@@ -1088,8 +1362,8 @@ function GoldTracker:CreateMainWindow()
     frame.statusValue = statusValue
 
     local summaryPanel = CreatePanel(frame, { 0.06, 0.07, 0.09, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
-    summaryPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
-    summaryPanel:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", 12, 12)
+    summaryPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", MAIN_PANEL_OUTER_INSET, MAIN_PANEL_TOP_OFFSET)
+    summaryPanel:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", MAIN_PANEL_OUTER_INSET, MAIN_PANEL_BOTTOM_INSET)
     summaryPanel:SetWidth(252)
     frame.summaryPanel = summaryPanel
 
@@ -1101,8 +1375,8 @@ function GoldTracker:CreateMainWindow()
     frame.summaryAccent = summaryAccent
 
     local logPanel = CreatePanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
-    logPanel:SetPoint("TOPLEFT", summaryPanel, "TOPRIGHT", 12, 0)
-    logPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
+    logPanel:SetPoint("TOPLEFT", summaryPanel, "TOPRIGHT", MAIN_PANEL_GAP, 0)
+    logPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -MAIN_PANEL_OUTER_INSET, MAIN_PANEL_BOTTOM_INSET)
     frame.logPanel = logPanel
 
     local logAccent = logPanel:CreateTexture(nil, "ARTWORK")
@@ -1112,7 +1386,7 @@ function GoldTracker:CreateMainWindow()
     logAccent:SetHeight(2)
     frame.logAccent = logAccent
 
-    local summaryEyebrow = summaryPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local summaryEyebrow = summaryPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     summaryEyebrow:SetPoint("TOPLEFT", summaryPanel, "TOPLEFT", 16, -16)
     summaryEyebrow:SetTextColor(1.0, 0.82, 0.18)
     summaryEyebrow:SetText("Current Session")
@@ -1144,8 +1418,14 @@ function GoldTracker:CreateMainWindow()
     heroDivider:SetPoint("TOPRIGHT", summaryPanel, "TOPRIGHT", -16, -10)
     heroDivider:SetHeight(1)
 
+    local sourceRow
+    sourceRow, _, frame.sourceValue = CreateSummaryRow(summaryPanel, heroDivider, "AH Source")
+    if frame.sourceValue.SetWordWrap then
+        frame.sourceValue:SetWordWrap(false)
+    end
+
     local timeRow
-    timeRow, _, frame.timeValue = CreateSummaryRow(summaryPanel, heroDivider, "Elapsed")
+    timeRow, _, frame.timeValue = CreateSummaryRow(summaryPanel, sourceRow, "Elapsed")
     local goldRow
     goldRow, _, frame.goldValue = CreateSummaryRow(summaryPanel, timeRow, "Raw Gold")
     local ahRow
@@ -1162,6 +1442,7 @@ function GoldTracker:CreateMainWindow()
     highlightRow, _, frame.highlightValue = CreateSummaryRow(summaryPanel, rawPerHourRow, "Highlights")
 
     frame.timeValue:SetTextColor(0.92, 0.95, 1.0)
+    frame.sourceValue:SetTextColor(0.92, 0.95, 1.0)
     frame.goldValue:SetTextColor(1.0, 0.84, 0.26)
     frame.itemValue:SetTextColor(0.66, 0.96, 0.72)
     frame.itemVendorValue:SetTextColor(0.96, 0.86, 0.54)
@@ -1194,6 +1475,65 @@ function GoldTracker:CreateMainWindow()
         end
     end)
     frame.startStopButton = startStopButton
+
+    local mainLastHighlightContainer = CreateFrame("Frame", nil, summaryPanel)
+    mainLastHighlightContainer:SetPoint("BOTTOMLEFT", startStopButton, "TOPLEFT", 0, 8)
+    mainLastHighlightContainer:SetPoint("BOTTOMRIGHT", startStopButton, "TOPRIGHT", 0, 8)
+    mainLastHighlightContainer:SetHeight(40)
+    frame.mainLastHighlightContainer = mainLastHighlightContainer
+
+    local mainLastHighlightLabel = mainLastHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    mainLastHighlightLabel:SetPoint("TOPLEFT", mainLastHighlightContainer, "TOPLEFT", 0, 0)
+    mainLastHighlightLabel:SetTextColor(1.0, 0.82, 0.18)
+    mainLastHighlightLabel:SetText("Last Highlight")
+    frame.mainLastHighlightLabel = mainLastHighlightLabel
+
+    local mainLastHighlightIcon = mainLastHighlightContainer:CreateTexture(nil, "ARTWORK")
+    mainLastHighlightIcon:SetSize(16, 16)
+    mainLastHighlightIcon:SetPoint("TOPLEFT", mainLastHighlightLabel, "BOTTOMLEFT", 0, -5)
+    mainLastHighlightIcon:Hide()
+    frame.mainLastHighlightIcon = mainLastHighlightIcon
+
+    local mainLastHighlightItemText = mainLastHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    mainLastHighlightItemText:SetPoint("LEFT", mainLastHighlightIcon, "RIGHT", 6, 0)
+    mainLastHighlightItemText:SetPoint("RIGHT", mainLastHighlightContainer, "RIGHT", 0, 0)
+    mainLastHighlightItemText:SetJustifyH("LEFT")
+    if mainLastHighlightItemText.SetWordWrap then
+        mainLastHighlightItemText:SetWordWrap(false)
+    end
+    mainLastHighlightItemText:SetText("No highlighted loot yet")
+    frame.mainLastHighlightItemText = mainLastHighlightItemText
+
+    local mainLastHighlightDetailText = mainLastHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    mainLastHighlightDetailText:SetPoint("TOPLEFT", mainLastHighlightItemText, "BOTTOMLEFT", 0, -3)
+    mainLastHighlightDetailText:SetPoint("TOPRIGHT", mainLastHighlightItemText, "BOTTOMRIGHT", 0, -3)
+    mainLastHighlightDetailText:SetJustifyH("LEFT")
+    if mainLastHighlightDetailText.SetWordWrap then
+        mainLastHighlightDetailText:SetWordWrap(false)
+    end
+    mainLastHighlightDetailText:SetText("")
+    frame.mainLastHighlightDetailText = mainLastHighlightDetailText
+
+    local mainLastHighlightButton = CreateFrame("Button", nil, mainLastHighlightContainer)
+    mainLastHighlightButton:SetAllPoints(mainLastHighlightContainer)
+    mainLastHighlightButton:RegisterForClicks("LeftButtonUp")
+    mainLastHighlightButton:SetScript("OnEnter", function(self)
+        if type(frame.mainLastHighlightItemLink) ~= "string" or frame.mainLastHighlightItemLink == "" then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetHyperlink(frame.mainLastHighlightItemLink)
+        GameTooltip:Show()
+    end)
+    mainLastHighlightButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    mainLastHighlightButton:SetScript("OnClick", function()
+        if type(frame.mainLastHighlightItemLink) == "string" and frame.mainLastHighlightItemLink ~= "" and HandleModifiedItemClick then
+            HandleModifiedItemClick(frame.mainLastHighlightItemLink)
+        end
+    end)
+    frame.mainLastHighlightButton = mainLastHighlightButton
 
     local optionsButton = CreateModernButton(utilityButtonRow, 90, 22, "Options", "neutral")
     optionsButton:SetText("Options")
@@ -1229,6 +1569,13 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.diagnosisButton = diagnosisButton
 
+    local lootStreamToggleButton = CreateModernButton(frame, MAIN_LOOT_STREAM_TOGGLE_WIDTH, 120, ">", "neutral")
+    lootStreamToggleButton.tooltipText = "Show loot stream"
+    lootStreamToggleButton:SetScript("OnClick", function()
+        addon:ToggleMainLootStream()
+    end)
+    frame.lootStreamToggleButton = lootStreamToggleButton
+
     local logLabel = logPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     logLabel:SetPoint("TOPLEFT", logPanel, "TOPLEFT", 16, -16)
     logLabel:SetJustifyH("LEFT")
@@ -1238,7 +1585,7 @@ function GoldTracker:CreateMainWindow()
     logMetaText:SetPoint("RIGHT", logPanel, "RIGHT", -16, -16)
     logMetaText:SetJustifyH("RIGHT")
     logMetaText:SetTextColor(0.62, 0.66, 0.74)
-    logMetaText:SetText("Waiting for loot")
+    logMetaText:SetText("")
     frame.logMetaText = logMetaText
 
     local logTimeHeader = logPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -1246,10 +1593,12 @@ function GoldTracker:CreateMainWindow()
     logTimeHeader:SetWidth(MAIN_LOOT_LOG_TIME_WIDTH)
     logTimeHeader:SetJustifyH("LEFT")
     logTimeHeader:SetText("Time")
+    frame.logTimeHeaderText = logTimeHeader
 
     local logItemHeader = logPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     logItemHeader:SetPoint("LEFT", logTimeHeader, "RIGHT", MAIN_LOOT_LOG_ICON_SIZE + 12, 0)
     logItemHeader:SetText("Item")
+    frame.logItemHeaderText = logItemHeader
 
     local logSourceHeader = logPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     logSourceHeader:SetPoint("TOPRIGHT", logPanel, "TOPRIGHT", -16, -42)
@@ -1259,7 +1608,7 @@ function GoldTracker:CreateMainWindow()
     frame.logSourceHeaderText = logSourceHeader
 
     local logValueHeader = logPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    logValueHeader:SetPoint("RIGHT", logSourceHeader, "LEFT", -12, 0)
+    logValueHeader:SetPoint("RIGHT", logSourceHeader, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
     logValueHeader:SetWidth(MAIN_LOOT_LOG_VALUE_WIDTH)
     logValueHeader:SetJustifyH("RIGHT")
     logValueHeader:SetText("Value")
@@ -1311,6 +1660,7 @@ function GoldTracker:CreateMainWindow()
     resizeButton:SetAlpha(0.7)
     resizeButton:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" then
+            ApplyMainWindowResizeBounds(addon, frame)
             frame:StartSizing("BOTTOMRIGHT")
         end
     end)
