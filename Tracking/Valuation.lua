@@ -186,6 +186,33 @@ function GoldTracker:GetTSMItemValue(priceSource, itemLink)
     return 0
 end
 
+function GoldTracker:GetTSMRawCustomValue(priceSource, itemLink)
+    if type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
+        return nil
+    end
+
+    local itemString
+    if type(TSM_API.ToItemString) == "function" then
+        local ok, resolvedItemString = pcall(TSM_API.ToItemString, itemLink)
+        if ok then
+            itemString = resolvedItemString
+        end
+    end
+    if not itemString then
+        itemString = self:GetTSMItemStringFromLink(itemLink)
+    end
+    if not itemString then
+        return nil
+    end
+
+    local ok, value = pcall(TSM_API.GetCustomPriceValue, priceSource, itemString)
+    if ok and type(value) == "number" and value > 0 then
+        return value
+    end
+
+    return nil
+end
+
 function GoldTracker:GetItemUnitValueFromSource(sourceID, itemLink)
     local source = self.VALUE_SOURCE_BY_ID[sourceID] or self:GetCurrentValueSource()
     if not source then

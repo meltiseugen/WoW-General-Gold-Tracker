@@ -6,8 +6,21 @@ local INVENTORY_ROW_HEIGHT = 24
 local INVENTORY_ROW_SPACING = 2
 local INVENTORY_ICON_SIZE = 18
 local INVENTORY_QUANTITY_WIDTH = 56
+local INVENTORY_DEMAND_WIDTH = 82
+local INVENTORY_TREND_WIDTH = 64
 local INVENTORY_UNIT_VALUE_WIDTH = 116
 local INVENTORY_TOTAL_VALUE_WIDTH = 126
+local INVENTORY_SORT_ICON_SIZE = 10
+local INVENTORY_DEFAULT_SORT_KEY = "demand"
+local INVENTORY_DEFAULT_SORT_ASCENDING = false
+local INVENTORY_SORT_KEYS = {
+    demand = true,
+    itemName = true,
+    quantity = true,
+    marketTrend = true,
+    unitValue = true,
+    totalValue = true,
+}
 
 local BOUND_TOOLTIP_LINES = {
     ITEM_SOULBOUND,
@@ -31,6 +44,31 @@ end
 
 local function CreateInventoryButton(parent, width, height, text, paletteKey)
     return Theme:CreateButton(parent, width, height, text, paletteKey)
+end
+
+local function CreateInventoryHeaderButton(parent, label, width, justifyH)
+    local button = CreateFrame("Button", nil, parent)
+    button:SetHeight(18)
+    if width then
+        button:SetWidth(width)
+    end
+    button:RegisterForClicks("LeftButtonUp")
+
+    local text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    text:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -14, 0)
+    text:SetJustifyH(justifyH or "LEFT")
+    text:SetWordWrap(false)
+    text:SetText(label)
+    button.text = text
+
+    local sortIcon = button:CreateTexture(nil, "ARTWORK")
+    sortIcon:SetSize(INVENTORY_SORT_ICON_SIZE, INVENTORY_SORT_ICON_SIZE)
+    sortIcon:SetPoint("RIGHT", button, "RIGHT", 0, 0)
+    sortIcon:Hide()
+    button.sortIcon = sortIcon
+
+    return button
 end
 
 local function IsBoundTooltipLine(text)
@@ -275,13 +313,218 @@ local function AddInventoryItem(itemsByLink, itemOrder, item)
     itemOrder[#itemOrder + 1] = item
 end
 
-function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper)
+local function FormatInventoryDecimalValue(value, precision)
+    local numberValue = tonumber(value)
+    if not numberValue or numberValue <= 0 then
+        return nil
+    end
+    return string.format("%." .. tostring(precision or 2) .. "f", numberValue)
+end
+
+local function GetInventoryDemandTier(regionSoldPerDay)
+    local soldPerDay = tonumber(regionSoldPerDay)
+    if not soldPerDay or soldPerDay <= 0 then
+        return "unknown", "Unknown", 0.62, 0.66, 0.74
+    end
+    if soldPerDay >= 50 then
+        return "hot", "Hot", 0.52, 1.00, 0.56
+    end
+    if soldPerDay >= 10 then
+        return "fast", "Fast", 0.68, 0.96, 0.72
+    end
+    if soldPerDay >= 2 then
+        return "steady", "Steady", 0.72, 0.86, 1.0
+    end
+    return "slow", "Slow", 1.0, 0.82, 0.18
+end
+
+local function FormatInventorySoldPerDay(regionSoldPerDay)
+    local soldPerDay = tonumber(regionSoldPerDay)
+    if not soldPerDay or soldPerDay <= 0 then
+        return "--"
+    end
+    if soldPerDay >= 1000 then
+        return "999+/d"
+    end
+    if soldPerDay >= 100 then
+        return string.format("%d/d", math.floor(soldPerDay + 0.5))
+    end
+    if soldPerDay >= 10 then
+        return string.format("%.1f/d", soldPerDay)
+    end
+    return string.format("%.2f/d", soldPerDay)
+end
+
+local function FormatInventoryTrendPercent(marketTrendPercent)
+    local trend = tonumber(marketTrendPercent)
+    if not trend then
+        return "--"
+    end
+    if trend > 999 then
+        return "+999%"
+    end
+    if trend < -999 then
+        return "-999%"
+    end
+    if trend > 0 then
+        return string.format("+%d%%", trend)
+    end
+    return string.format("%d%%", trend)
+end
+
+local function GetInventoryTrendColor(marketTrendPercent)
+    local trend = tonumber(marketTrendPercent)
+    if not trend then
+        return 0.62, 0.66, 0.74
+    end
+    if trend > 0 then
+        return 0.52, 1.00, 0.56
+    end
+    if trend < 0 then
+        return 1.00, 0.45, 0.42
+    end
+    return 0.92, 0.95, 1.0
+end
+
+local function GetInventoryRegionalDemandData(addon, itemLink, demandCache)
+    if type(itemLink) ~= "string" or itemLink == "" then
+        return nil
+    end
+
+    local cacheKey = itemLink
+    if type(demandCache) == "table" and demandCache[cacheKey] then
+        return demandCache[cacheKey]
+    end
+
+    local regionSoldPerDay
+    local regionSaleRate
+    local marketValue
+    local historicalValue
+    if type(addon.GetTSMRawCustomValue) == "function" then
+        regionSoldPerDay = addon:GetTSMRawCustomValue("DBRegionSoldPerDay", itemLink)
+        regionSaleRate = addon:GetTSMRawCustomValue("DBRegionSaleRate", itemLink)
+        marketValue = addon:GetTSMRawCustomValue("DBMarket", itemLink)
+        historicalValue = addon:GetTSMRawCustomValue("DBHistorical", itemLink)
+    end
+
+    local tierKey, tierLabel, r, g, b = GetInventoryDemandTier(regionSoldPerDay)
+    local marketTrendPercent
+    if marketValue and historicalValue and historicalValue > 0 then
+        local rawTrend = ((marketValue - historicalValue) * 100) / historicalValue
+        if rawTrend >= 0 then
+            marketTrendPercent = math.floor(rawTrend + 0.5)
+        else
+            marketTrendPercent = math.ceil(rawTrend - 0.5)
+        end
+    end
+
+    local demandData = {
+        regionSoldPerDay = regionSoldPerDay,
+        regionSaleRate = regionSaleRate,
+        marketValue = marketValue,
+        historicalValue = historicalValue,
+        marketTrendPercent = marketTrendPercent,
+        demandTier = tierKey,
+        demandLabel = tierLabel,
+        demandColorR = r,
+        demandColorG = g,
+        demandColorB = b,
+    }
+    if type(demandCache) == "table" then
+        demandCache[cacheKey] = demandData
+    end
+    return demandData
+end
+
+local function NormalizeInventorySortKey(sortKey)
+    if INVENTORY_SORT_KEYS[sortKey] then
+        return sortKey
+    end
+    return INVENTORY_DEFAULT_SORT_KEY
+end
+
+local function GetInventoryItemNameSortValue(item)
+    return string.lower(tostring(item and (item.itemName or item.itemLink) or ""))
+end
+
+local function CompareInventoryItemsByName(left, right)
+    local leftName = GetInventoryItemNameSortValue(left)
+    local rightName = GetInventoryItemNameSortValue(right)
+    if leftName ~= rightName then
+        return leftName < rightName
+    end
+    return tostring(left and left.itemLink or "") < tostring(right and right.itemLink or "")
+end
+
+local function GetInventorySortValue(item, sortKey)
+    if sortKey == "itemName" then
+        return GetInventoryItemNameSortValue(item)
+    end
+    if sortKey == "demand" then
+        return tonumber(item and item.regionSoldPerDay) or 0
+    end
+    if sortKey == "quantity" then
+        return tonumber(item and item.quantity) or 0
+    end
+    if sortKey == "marketTrend" then
+        return tonumber(item and item.marketTrendPercent) or -1000000
+    end
+    if sortKey == "unitValue" then
+        return tonumber(item and item.unitValue) or 0
+    end
+    return tonumber(item and item.totalValue) or 0
+end
+
+local function SortInventoryItems(items, sortKey, sortAscending)
+    local normalizedSortKey = NormalizeInventorySortKey(sortKey)
+    local ascending = sortAscending == true
+
+    table.sort(items, function(left, right)
+        local leftValue = GetInventorySortValue(left, normalizedSortKey)
+        local rightValue = GetInventorySortValue(right, normalizedSortKey)
+        if leftValue ~= rightValue then
+            if ascending then
+                return leftValue < rightValue
+            end
+            return leftValue > rightValue
+        end
+
+        if normalizedSortKey ~= "itemName" then
+            if normalizedSortKey == "demand" then
+                local leftRate = tonumber(left and left.regionSaleRate) or 0
+                local rightRate = tonumber(right and right.regionSaleRate) or 0
+                if leftRate ~= rightRate then
+                    return leftRate > rightRate
+                end
+
+                local leftTotal = tonumber(left and left.totalValue) or 0
+                local rightTotal = tonumber(right and right.totalValue) or 0
+                if leftTotal ~= rightTotal then
+                    return leftTotal > rightTotal
+                end
+            end
+
+            return CompareInventoryItemsByName(left, right)
+        end
+
+        local leftTotal = tonumber(left and left.totalValue) or 0
+        local rightTotal = tonumber(right and right.totalValue) or 0
+        if leftTotal ~= rightTotal then
+            return leftTotal > rightTotal
+        end
+
+        return tostring(left and left.itemLink or "") < tostring(right and right.itemLink or "")
+    end)
+end
+
+function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper, sortKey, sortAscending)
     local source = self.VALUE_SOURCE_BY_ID[valueSourceID] or self:GetCurrentValueSource()
     local sourceID = source and source.id
     local normalizedMinimumQuality = NormalizeMinimumQuality(self, minimumQuality)
     local normalizedMinimumValue = math.max(0, math.floor(tonumber(minimumValueCopper) or 0))
     local itemsByLink = {}
     local candidateItems = {}
+    local demandCache = {}
     local scannedStacks = 0
     local matchedStacks = 0
     local totalValue = 0
@@ -303,6 +546,7 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
                         local quantity = math.max(1, math.floor(tonumber(slotInfo and slotInfo.stackCount) or 1))
                         local stackValue = math.max(0, math.floor((unitValue * quantity) + 0.5))
                         if unitValue > 0 then
+                            local demandData = GetInventoryRegionalDemandData(self, itemLink, demandCache) or {}
                             AddInventoryItem(itemsByLink, candidateItems, {
                                 itemLink = itemLink,
                                 itemName = itemName or itemLink,
@@ -312,6 +556,16 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
                                 unitValue = unitValue,
                                 totalValue = stackValue,
                                 stackCount = 1,
+                                regionSoldPerDay = demandData.regionSoldPerDay,
+                                regionSaleRate = demandData.regionSaleRate,
+                                marketValue = demandData.marketValue,
+                                historicalValue = demandData.historicalValue,
+                                marketTrendPercent = demandData.marketTrendPercent,
+                                demandTier = demandData.demandTier,
+                                demandLabel = demandData.demandLabel,
+                                demandColorR = demandData.demandColorR,
+                                demandColorG = demandData.demandColorG,
+                                demandColorB = demandData.demandColorB,
                             })
                         end
                     end
@@ -330,12 +584,7 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
         end
     end
 
-    table.sort(items, function(left, right)
-        if left.totalValue ~= right.totalValue then
-            return left.totalValue > right.totalValue
-        end
-        return tostring(left.itemName or left.itemLink) < tostring(right.itemName or right.itemLink)
-    end)
+    SortInventoryItems(items, sortKey, sortAscending)
 
     return items, totalValue, totalQuantity, scannedStacks, matchedStacks
 end
@@ -363,6 +612,59 @@ function GoldTracker:RefreshInventoryWindowControls()
     if frame.minimumValueInput and not frame.minimumValueInput:HasFocus() then
         frame.minimumValueInput:SetText(FormatGoldInput(self, minimumValueCopper))
     end
+end
+
+function GoldTracker:UpdateInventorySortHeaderState()
+    local frame = self.inventoryFrame
+    if not frame then
+        return
+    end
+
+    local sortKey = NormalizeInventorySortKey(frame.inventorySortKey)
+    local sortAscending = frame.inventorySortAscending == true
+    local headers = {
+        demand = { button = frame.demandHeaderButton, label = "Demand" },
+        itemName = { button = frame.itemHeaderButton, label = "Item" },
+        quantity = { button = frame.quantityHeaderButton, label = "Qty" },
+        marketTrend = { button = frame.trendHeaderButton, label = "Trend" },
+        unitValue = { button = frame.unitHeaderButton, label = "Unit value" },
+        totalValue = { button = frame.totalHeaderButton, label = "Stack value" },
+    }
+
+    for headerSortKey, header in pairs(headers) do
+        local button = header.button
+        if button and button.text then
+            button.text:SetText(header.label)
+            if headerSortKey == sortKey then
+                button.text:SetTextColor(1, 1, 1)
+                if button.sortIcon then
+                    Theme:SetTexture(button.sortIcon, sortAscending and "sortAscending" or "sortDescending")
+                    button.sortIcon:Show()
+                end
+            else
+                button.text:SetTextColor(1.0, 0.82, 0.18)
+                if button.sortIcon then
+                    button.sortIcon:Hide()
+                end
+            end
+        end
+    end
+end
+
+function GoldTracker:ToggleInventorySort(sortKey)
+    local frame = self.inventoryFrame
+    if not frame or not INVENTORY_SORT_KEYS[sortKey] then
+        return
+    end
+
+    if frame.inventorySortKey ~= sortKey then
+        frame.inventorySortKey = sortKey
+        frame.inventorySortAscending = sortKey == "itemName"
+    else
+        frame.inventorySortAscending = frame.inventorySortAscending ~= true
+    end
+
+    self:RefreshInventoryWindow(true)
 end
 
 function GoldTracker:GetInventoryWindowRow(index)
@@ -409,8 +711,22 @@ function GoldTracker:GetInventoryWindowRow(index)
     unitValueText:SetWordWrap(false)
     row.unitValueText = unitValueText
 
+    local trendText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    trendText:SetPoint("RIGHT", unitValueText, "LEFT", -12, 0)
+    trendText:SetWidth(INVENTORY_TREND_WIDTH)
+    trendText:SetJustifyH("RIGHT")
+    trendText:SetWordWrap(false)
+    row.trendText = trendText
+
+    local demandText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    demandText:SetPoint("RIGHT", trendText, "LEFT", -12, 0)
+    demandText:SetWidth(INVENTORY_DEMAND_WIDTH)
+    demandText:SetJustifyH("RIGHT")
+    demandText:SetWordWrap(false)
+    row.demandText = demandText
+
     local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    quantityText:SetPoint("RIGHT", unitValueText, "LEFT", -12, 0)
+    quantityText:SetPoint("RIGHT", demandText, "LEFT", -12, 0)
     quantityText:SetWidth(INVENTORY_QUANTITY_WIDTH)
     quantityText:SetJustifyH("RIGHT")
     quantityText:SetWordWrap(false)
@@ -436,6 +752,40 @@ function GoldTracker:GetInventoryWindowRow(index)
         end
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
         GameTooltip:SetHyperlink(self.itemLink)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("TSM regional demand", 1.0, 0.82, 0.18)
+        GameTooltip:AddDoubleLine(
+            "Region avg daily sold",
+            FormatInventoryDecimalValue(self.regionSoldPerDay, 2) or "Unknown",
+            0.72, 0.86, 1.0,
+            1, 1, 1
+        )
+        GameTooltip:AddDoubleLine(
+            "Region sale rate",
+            FormatInventoryDecimalValue(self.regionSaleRate, 3) or "Unknown",
+            0.72, 0.86, 1.0,
+            1, 1, 1
+        )
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("TSM market trend", 1.0, 0.82, 0.18)
+        GameTooltip:AddDoubleLine(
+            "Market trend",
+            FormatInventoryTrendPercent(self.marketTrendPercent),
+            0.72, 0.86, 1.0,
+            GetInventoryTrendColor(self.marketTrendPercent)
+        )
+        GameTooltip:AddDoubleLine(
+            "Market value",
+            self.marketValue and GoldTracker:FormatMoney(self.marketValue) or "Unknown",
+            0.72, 0.86, 1.0,
+            1, 1, 1
+        )
+        GameTooltip:AddDoubleLine(
+            "Historical price",
+            self.historicalValue and GoldTracker:FormatMoney(self.historicalValue) or "Unknown",
+            0.72, 0.86, 1.0,
+            1, 1, 1
+        )
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function()
@@ -474,11 +824,18 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
     local minimumQuality = NormalizeMinimumQuality(self, frame.minimumQuality)
     local minimumValueCopper = tonumber(frame.minimumValueCopper) or 0
     local items, totalValue, totalQuantity, scannedStacks, matchedStacks =
-        self:BuildInventoryAuctionItemList(source.id, minimumQuality, minimumValueCopper)
+        self:BuildInventoryAuctionItemList(
+            source.id,
+            minimumQuality,
+            minimumValueCopper,
+            frame.inventorySortKey,
+            frame.inventorySortAscending
+        )
     local rowHeight = INVENTORY_ROW_HEIGHT
     local yOffset = 0
 
     self:RefreshInventoryWindowControls()
+    self:UpdateInventorySortHeaderState()
 
     if frame.metaText then
         if #items > 0 then
@@ -503,12 +860,25 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
         local row = self:GetInventoryWindowRow(index)
         if row then
             row.itemLink = item.itemLink
+            row.regionSoldPerDay = item.regionSoldPerDay
+            row.regionSaleRate = item.regionSaleRate
+            row.marketValue = item.marketValue
+            row.historicalValue = item.historicalValue
+            row.marketTrendPercent = item.marketTrendPercent
             row.itemText:SetText(item.itemLink)
             row.quantityText:SetText(tostring(item.quantity or 0))
+            row.demandText:SetText(FormatInventorySoldPerDay(item.regionSoldPerDay))
+            row.trendText:SetText(FormatInventoryTrendPercent(item.marketTrendPercent))
             row.unitValueText:SetText(self:FormatMoney(item.unitValue or 0))
             row.totalValueText:SetText(self:FormatMoney(item.totalValue or 0))
             row.totalValueText:SetTextColor(0.68, 0.96, 0.72)
             row.unitValueText:SetTextColor(0.72, 0.86, 1.0)
+            row.trendText:SetTextColor(GetInventoryTrendColor(item.marketTrendPercent))
+            row.demandText:SetTextColor(
+                item.demandColorR or 0.62,
+                item.demandColorG or 0.66,
+                item.demandColorB or 0.74
+            )
             row.quantityText:SetTextColor(0.92, 0.95, 1.0)
 
             if item.icon then
@@ -583,10 +953,10 @@ function GoldTracker:CreateInventoryWindow()
     frame:SetMovable(true)
     frame:SetResizable(true)
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(600, 380, 1100, 820)
+        frame:SetResizeBounds(760, 380, 1100, 820)
     else
         if frame.SetMinResize then
-            frame:SetMinResize(600, 380)
+            frame:SetMinResize(760, 380)
         end
         if frame.SetMaxResize then
             frame:SetMaxResize(1100, 820)
@@ -610,6 +980,8 @@ function GoldTracker:CreateInventoryWindow()
     frame.minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     frame.minimumValueCopper = 0
     frame.inventoryRows = {}
+    frame.inventorySortKey = INVENTORY_DEFAULT_SORT_KEY
+    frame.inventorySortAscending = INVENTORY_DEFAULT_SORT_ASCENDING
 
     local chrome = Theme:ApplyWindowChrome(frame, "Auctionable Inventory")
     Theme:RegisterSpecialFrame("GoldTrackerInventoryFrame")
@@ -707,27 +1079,48 @@ function GoldTracker:CreateInventoryWindow()
     listPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 38)
     frame.listPanel = listPanel
 
-    local itemHeader = listPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemHeader:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 34, -12)
-    itemHeader:SetText("Item")
+    local totalHeaderButton = CreateInventoryHeaderButton(listPanel, "Stack value", INVENTORY_TOTAL_VALUE_WIDTH, "RIGHT")
+    totalHeaderButton:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -34, -12)
+    totalHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("totalValue")
+    end)
+    frame.totalHeaderButton = totalHeaderButton
 
-    local totalHeader = listPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    totalHeader:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -34, -12)
-    totalHeader:SetWidth(INVENTORY_TOTAL_VALUE_WIDTH)
-    totalHeader:SetJustifyH("RIGHT")
-    totalHeader:SetText("Stack value")
+    local unitHeaderButton = CreateInventoryHeaderButton(listPanel, "Unit value", INVENTORY_UNIT_VALUE_WIDTH, "RIGHT")
+    unitHeaderButton:SetPoint("RIGHT", totalHeaderButton, "LEFT", -12, 0)
+    unitHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("unitValue")
+    end)
+    frame.unitHeaderButton = unitHeaderButton
 
-    local unitHeader = listPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    unitHeader:SetPoint("RIGHT", totalHeader, "LEFT", -12, 0)
-    unitHeader:SetWidth(INVENTORY_UNIT_VALUE_WIDTH)
-    unitHeader:SetJustifyH("RIGHT")
-    unitHeader:SetText("Unit")
+    local trendHeaderButton = CreateInventoryHeaderButton(listPanel, "Trend", INVENTORY_TREND_WIDTH, "RIGHT")
+    trendHeaderButton:SetPoint("RIGHT", unitHeaderButton, "LEFT", -12, 0)
+    trendHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("marketTrend")
+    end)
+    frame.trendHeaderButton = trendHeaderButton
 
-    local quantityHeader = listPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    quantityHeader:SetPoint("RIGHT", unitHeader, "LEFT", -12, 0)
-    quantityHeader:SetWidth(INVENTORY_QUANTITY_WIDTH)
-    quantityHeader:SetJustifyH("RIGHT")
-    quantityHeader:SetText("Qty")
+    local demandHeaderButton = CreateInventoryHeaderButton(listPanel, "Demand", INVENTORY_DEMAND_WIDTH, "RIGHT")
+    demandHeaderButton:SetPoint("RIGHT", trendHeaderButton, "LEFT", -12, 0)
+    demandHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("demand")
+    end)
+    frame.demandHeaderButton = demandHeaderButton
+
+    local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
+    quantityHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -12, 0)
+    quantityHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("quantity")
+    end)
+    frame.quantityHeaderButton = quantityHeaderButton
+
+    local itemHeaderButton = CreateInventoryHeaderButton(listPanel, "Item", nil, "LEFT")
+    itemHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 34, -12)
+    itemHeaderButton:SetPoint("RIGHT", quantityHeaderButton, "LEFT", -12, 0)
+    itemHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("itemName")
+    end)
+    frame.itemHeaderButton = itemHeaderButton
 
     local headerUnderline = listPanel:CreateTexture(nil, "ARTWORK")
     headerUnderline:SetColorTexture(1, 0.82, 0.18, 0.18)

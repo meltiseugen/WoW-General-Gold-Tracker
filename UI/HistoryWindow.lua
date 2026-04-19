@@ -23,6 +23,7 @@ local DETAILS_GAP_SUMMARY_TO_ITEMS = 6
 local DETAILS_ITEMS_ROW_SPACING = 2
 local DETAILS_ITEMS_VALUE_WIDTH = 110
 local DETAILS_ITEMS_SOURCE_WIDTH = 220
+local HISTORY_SORT_ICON_SIZE = 10
 local historyDateFilter = HistoryDateFilter:New()
 local historyFormatter = HistoryFormatter:New(GoldTracker)
 local historyDataService = HistoryDataService:New(GoldTracker, DETAILS_LOCATION_FILTER_ALL)
@@ -33,6 +34,27 @@ end
 
 local function CreateHistoryButton(parent, width, height, text, paletteKey)
     return Theme:CreateButton(parent, width, height, text, paletteKey)
+end
+
+local function CreateHistorySortHeaderButton(parent, width, label, justifyH)
+    local button = CreateFrame("Button", nil, parent)
+    button:SetSize(width, 18)
+
+    local text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    text:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -14, 0)
+    text:SetJustifyH(justifyH or "LEFT")
+    text:SetWordWrap(false)
+    text:SetText(label or "")
+    button.text = text
+
+    local sortIcon = button:CreateTexture(nil, "ARTWORK")
+    sortIcon:SetSize(HISTORY_SORT_ICON_SIZE, HISTORY_SORT_ICON_SIZE)
+    sortIcon:SetPoint("RIGHT", button, "RIGHT", 0, 0)
+    sortIcon:Hide()
+    button.sortIcon = sortIcon
+
+    return button
 end
 
 local function RegisterHistoryPopupFrame(frameName)
@@ -415,46 +437,25 @@ function GoldTracker:CreateHistoryWindow()
     summaryHeader:SetText("Highlights")
     frame.listSummaryHeaderText = summaryHeader
 
-    local totalHeaderButton = CreateFrame("Button", nil, listContainer)
-    totalHeaderButton:SetSize(104, 18)
+    local totalHeaderButton = CreateHistorySortHeaderButton(listContainer, 104, "Session Total")
     totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 370, -56)
     totalHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("sessionTotal")
     end)
-    local totalHeaderText = totalHeaderButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    totalHeaderText:SetPoint("TOPLEFT", totalHeaderButton, "TOPLEFT", 0, 0)
-    totalHeaderText:SetWidth(104)
-    totalHeaderText:SetJustifyH("LEFT")
-    totalHeaderText:SetText("Session Total")
-    totalHeaderButton.text = totalHeaderText
     frame.totalHeaderButton = totalHeaderButton
 
-    local totalRawHeaderButton = CreateFrame("Button", nil, listContainer)
-    totalRawHeaderButton:SetSize(106, 18)
+    local totalRawHeaderButton = CreateHistorySortHeaderButton(listContainer, 106, "Raw Total")
     totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 482, -56)
     totalRawHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("sessionTotalRaw")
     end)
-    local totalRawHeaderText = totalRawHeaderButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    totalRawHeaderText:SetPoint("TOPLEFT", totalRawHeaderButton, "TOPLEFT", 0, 0)
-    totalRawHeaderText:SetWidth(106)
-    totalRawHeaderText:SetJustifyH("LEFT")
-    totalRawHeaderText:SetText("Raw Total")
-    totalRawHeaderButton.text = totalRawHeaderText
     frame.totalRawHeaderButton = totalRawHeaderButton
 
-    local durationHeaderButton = CreateFrame("Button", nil, listContainer)
-    durationHeaderButton:SetSize(64, 18)
+    local durationHeaderButton = CreateHistorySortHeaderButton(listContainer, 64, "Duration")
     durationHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 596, -56)
     durationHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("duration")
     end)
-    local durationHeaderText = durationHeaderButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    durationHeaderText:SetPoint("TOPLEFT", durationHeaderButton, "TOPLEFT", 0, 0)
-    durationHeaderText:SetWidth(64)
-    durationHeaderText:SetJustifyH("LEFT")
-    durationHeaderText:SetText("Duration")
-    durationHeaderButton.text = durationHeaderText
     frame.durationHeaderButton = durationHeaderButton
 
     local dividerColorR, dividerColorG, dividerColorB, dividerColorA = 1, 0.82, 0, 0.60
@@ -1414,40 +1415,29 @@ function GoldTracker:UpdateHistorySortHeaderState()
 
     local frame = self.historyFrame
     local sortKey = frame.sortKey
-    local totalLabel = "Session Total"
-    local totalRawLabel = "Raw Total"
-    local durationLabel = "Duration"
+    local sortAscending = frame.sortAscending == true
+    local headers = {
+        sessionTotal = { button = frame.totalHeaderButton, label = "Session Total" },
+        sessionTotalRaw = { button = frame.totalRawHeaderButton, label = "Raw Total" },
+        duration = { button = frame.durationHeaderButton, label = "Duration" },
+    }
 
-    if sortKey == "sessionTotal" then
-        totalLabel = frame.sortAscending and "Session Total \226\150\178" or "Session Total \226\150\188"
-    elseif sortKey == "sessionTotalRaw" then
-        totalRawLabel = frame.sortAscending and "Raw Total \226\150\178" or "Raw Total \226\150\188"
-    elseif sortKey == "duration" then
-        durationLabel = frame.sortAscending and "Duration \226\150\178" or "Duration \226\150\188"
-    end
-
-    if frame.totalHeaderButton and frame.totalHeaderButton.text then
-        frame.totalHeaderButton.text:SetText(totalLabel)
-        if sortKey == "sessionTotal" then
-            frame.totalHeaderButton.text:SetTextColor(1, 1, 1)
-        else
-            frame.totalHeaderButton.text:SetTextColor(1, 0.82, 0)
-        end
-    end
-    if frame.totalRawHeaderButton and frame.totalRawHeaderButton.text then
-        frame.totalRawHeaderButton.text:SetText(totalRawLabel)
-        if sortKey == "sessionTotalRaw" then
-            frame.totalRawHeaderButton.text:SetTextColor(1, 1, 1)
-        else
-            frame.totalRawHeaderButton.text:SetTextColor(1, 0.82, 0)
-        end
-    end
-    if frame.durationHeaderButton and frame.durationHeaderButton.text then
-        frame.durationHeaderButton.text:SetText(durationLabel)
-        if sortKey == "duration" then
-            frame.durationHeaderButton.text:SetTextColor(1, 1, 1)
-        else
-            frame.durationHeaderButton.text:SetTextColor(1, 0.82, 0)
+    for headerSortKey, header in pairs(headers) do
+        local button = header.button
+        if button and button.text then
+            button.text:SetText(header.label)
+            if sortKey == headerSortKey then
+                button.text:SetTextColor(1, 1, 1)
+                if button.sortIcon then
+                    Theme:SetTexture(button.sortIcon, sortAscending and "sortAscending" or "sortDescending")
+                    button.sortIcon:Show()
+                end
+            else
+                button.text:SetTextColor(1, 0.82, 0)
+                if button.sortIcon then
+                    button.sortIcon:Hide()
+                end
+            end
         end
     end
 end

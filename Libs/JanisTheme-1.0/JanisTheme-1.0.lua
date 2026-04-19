@@ -1,5 +1,5 @@
 local LIB_NAME = "JanisTheme-1.0"
-local LIB_VERSION = 1
+local LIB_VERSION = 2
 
 if type(_G.JanisTheme) == "table"
     and tonumber(_G.JanisTheme.version)
@@ -74,9 +74,29 @@ local DEFAULT_BUTTON_PALETTES = {
     },
 }
 
+local DEFAULT_ASSET_ROOT = "Interface\\AddOns\\JanisTheme-1.0\\Assets\\"
+local DEFAULT_ASSETS = {
+    sortAscending = "arrow_up.png",
+    sortDescending = "arrow_down.png",
+}
+
 JanisTheme.defaultBackdrop = DEFAULT_BACKDROP
 JanisTheme.defaultColors = DEFAULT_COLORS
 JanisTheme.defaultButtonPalettes = DEFAULT_BUTTON_PALETTES
+JanisTheme.defaultAssetRoot = DEFAULT_ASSET_ROOT
+JanisTheme.defaultAssets = DEFAULT_ASSETS
+
+local function CopyTable(source)
+    local copied = {}
+    for key, value in pairs(source or {}) do
+        if type(value) == "table" then
+            copied[key] = CopyTable(value)
+        else
+            copied[key] = value
+        end
+    end
+    return copied
+end
 
 function JanisTheme:New(options)
     options = type(options) == "table" and options or {}
@@ -86,9 +106,114 @@ function JanisTheme:New(options)
         backdrop = options.backdrop or self.defaultBackdrop,
         colors = options.colors or self.defaultColors,
         buttonPalettes = options.buttonPalettes or self.defaultButtonPalettes,
+        assetRoot = options.assetRoot or self.defaultAssetRoot,
+        assets = CopyTable(self.defaultAssets),
     }
 
+    for key, value in pairs(options.assets or {}) do
+        instance.assets[key] = value
+    end
+
     return setmetatable(instance, self)
+end
+
+function JanisTheme:RegisterAsset(assetKey, asset)
+    if type(assetKey) ~= "string" or assetKey == "" then
+        return false
+    end
+    self.assets = self.assets or {}
+    self.assets[assetKey] = asset
+    return true
+end
+
+function JanisTheme:GetAsset(assetKeyOrPath)
+    if type(assetKeyOrPath) == "number" then
+        return { path = assetKeyOrPath }
+    end
+    if type(assetKeyOrPath) ~= "string" or assetKeyOrPath == "" then
+        return nil
+    end
+
+    local asset = self.assets and self.assets[assetKeyOrPath] or nil
+    if asset == nil then
+        asset = assetKeyOrPath
+    end
+    if type(asset) == "number" then
+        return { path = asset }
+    end
+    if type(asset) == "string" then
+        asset = { path = asset }
+    elseif type(asset) ~= "table" then
+        return nil
+    end
+
+    local path = asset.path or asset.texture or asset.file
+    if type(path) == "string"
+        and path ~= ""
+        and not string.match(path, "^Interface\\")
+        and not string.match(path, "^Interface/") then
+        path = (self.assetRoot or "") .. path
+    end
+
+    return {
+        path = path,
+        texCoords = asset.texCoords,
+        vertexColor = asset.vertexColor,
+    }
+end
+
+function JanisTheme:GetAssetPath(assetKeyOrPath)
+    local asset = self:GetAsset(assetKeyOrPath)
+    return asset and asset.path or nil
+end
+
+function JanisTheme:SetTexture(texture, assetKeyOrPath)
+    if not texture or type(texture.SetTexture) ~= "function" then
+        return false
+    end
+
+    local asset = self:GetAsset(assetKeyOrPath)
+    if not asset or asset.path == nil then
+        texture:Hide()
+        return false
+    end
+
+    texture:SetTexture(asset.path)
+    if type(asset.texCoords) == "table" and type(texture.SetTexCoord) == "function" then
+        texture:SetTexCoord(
+            asset.texCoords[1] or 0,
+            asset.texCoords[2] or 1,
+            asset.texCoords[3] or 0,
+            asset.texCoords[4] or 1
+        )
+    elseif type(texture.SetTexCoord) == "function" then
+        texture:SetTexCoord(0, 1, 0, 1)
+    end
+    if type(asset.vertexColor) == "table" and type(texture.SetVertexColor) == "function" then
+        texture:SetVertexColor(
+            asset.vertexColor[1] or 1,
+            asset.vertexColor[2] or 1,
+            asset.vertexColor[3] or 1,
+            asset.vertexColor[4] or 1
+        )
+    elseif type(texture.SetVertexColor) == "function" then
+        texture:SetVertexColor(1, 1, 1, 1)
+    end
+    texture:Show()
+    return true
+end
+
+function JanisTheme:CreateTexture(parent, layer, assetKeyOrPath, width, height)
+    if not parent or type(parent.CreateTexture) ~= "function" then
+        return nil
+    end
+
+    local texture = parent:CreateTexture(nil, layer or "ARTWORK")
+    if width and height then
+        texture:SetSize(width, height)
+    end
+    self:SetTexture(texture, assetKeyOrPath)
+    return texture
 end
 
 function JanisTheme:GetColor(colorOrKey, fallback)

@@ -6,4 +6,7 @@ if type(JanisTheme) ~= "table" or type(JanisTheme.New) ~= "function" then
 end
 
 NS.JanisThemeClass = JanisTheme
-NS.JanisTheme = NS.JanisTheme or JanisTheme:New({ addon = NS.GoldTracker })
+NS.JanisTheme = NS.JanisTheme or JanisTheme:New({
+    addon = NS.GoldTracker,
+    assetRoot = "Interface\\AddOns\\General-Gold-Tracker\\Libs\\JanisTheme-1.0\\Assets\\",
+})
