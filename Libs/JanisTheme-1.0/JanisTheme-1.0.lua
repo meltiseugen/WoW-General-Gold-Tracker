@@ -320,7 +320,7 @@ function JanisTheme:CreateButton(parent, width, height, text, paletteKey)
         self.theme:UpdateButtonVisual(self)
         if type(self.tooltipText) == "string" and self.tooltipText ~= "" then
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(self.tooltipText, 1, 1, 1, true)
+            GameTooltip:SetText(self.tooltipText)
             GameTooltip:Show()
         end
     end)

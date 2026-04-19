@@ -1306,7 +1306,7 @@ function GoldTracker:CreateMainWindow()
     frame:Hide()
     frame:SetClampedToScreen(true)
 
-    frame:SetScript("OnSizeChanged", function(_, width, height)
+    local function HandleMainWindowSizeChanged(_, width, height)
         local isExpanded = addon:IsMainLootStreamExpanded()
         local clampedWidth = ClampMainWindowWidth(addon, width, isExpanded)
         local clampedHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(height) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
@@ -1316,8 +1316,12 @@ function GoldTracker:CreateMainWindow()
             addon.db.collapsedWindowWidth = clampedWidth
         end
         addon.db.windowHeight = clampedHeight
+        if frame.isManualResizing then
+            return
+        end
         addon:RefreshMainWindowLayout()
-    end)
+    end
+    frame:SetScript("OnSizeChanged", HandleMainWindowSizeChanged)
 
     Theme:HideNativeChrome(frame)
 
@@ -1651,26 +1655,21 @@ function GoldTracker:CreateMainWindow()
     logEmptyText:SetText("Looted items, raw gold, alerts, and session messages will appear here.")
     frame.logEmptyText = logEmptyText
 
-    local resizeButton = CreateFrame("Button", nil, frame)
-    resizeButton:SetSize(16, 16)
-    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
-    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-    resizeButton:SetAlpha(0.7)
-    resizeButton:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" then
+    Theme:CreateResizeButton(frame, {
+        getBounds = function()
+            local isExpanded = addon:IsMainLootStreamExpanded()
+            local minWidth = isExpanded and MAIN_WINDOW_EXPANDED_MIN_WIDTH or MAIN_WINDOW_COLLAPSED_MIN_WIDTH
+            local maxWidth = isExpanded and MAIN_WINDOW_MAX_WIDTH or MAIN_WINDOW_COLLAPSED_MAX_WIDTH
+            return minWidth, MAIN_WINDOW_MIN_HEIGHT, maxWidth, MAIN_WINDOW_MAX_HEIGHT
+        end,
+        onResizeStart = function()
             ApplyMainWindowResizeBounds(addon, frame)
-            frame:StartSizing("BOTTOMRIGHT")
-        end
-    end)
-    resizeButton:SetScript("OnMouseUp", function()
-        frame:StopMovingOrSizing()
-    end)
-    resizeButton:SetScript("OnHide", function()
-        frame:StopMovingOrSizing()
-    end)
-    frame.resizeButton = resizeButton
+        end,
+        onResizeStop = function()
+            local width, height = frame:GetSize()
+            HandleMainWindowSizeChanged(frame, width, height)
+        end,
+    })
 
     local elapsedAccumulator = 0
     frame:SetScript("OnUpdate", function(_, elapsed)

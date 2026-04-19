@@ -359,32 +359,29 @@ function GoldTracker:CreateDiagnosisWindow()
     bodyText:SetText("")
     frame.bodyText = bodyText
 
-    local resizeButton = CreateFrame("Button", nil, frame)
-    resizeButton:SetSize(16, 16)
-    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
-    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-    resizeButton:SetAlpha(0.7)
-    resizeButton:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" then
-            frame:StartSizing("BOTTOMRIGHT")
-        end
-    end)
-    resizeButton:SetScript("OnMouseUp", function()
-        frame:StopMovingOrSizing()
-    end)
-    resizeButton:SetScript("OnHide", function()
-        frame:StopMovingOrSizing()
-    end)
-    frame.resizeButton = resizeButton
-
-    frame:SetScript("OnSizeChanged", function()
+    local function RefreshDiagnosisAfterResize()
         local innerWidth = math.max(1, math.floor((scrollFrame:GetWidth() or 1) - 6))
         local innerHeight = math.max(1, math.floor(scrollFrame:GetHeight() or 1))
         scrollContent:SetWidth(innerWidth)
         scrollContent:SetHeight(innerHeight)
         addon:UpdateDiagnosisWindow()
+    end
+
+    Theme:CreateResizeButton(frame, {
+        minWidth = 520,
+        minHeight = 360,
+        maxWidth = 1000,
+        maxHeight = 820,
+        onResizeStop = function()
+            RefreshDiagnosisAfterResize()
+        end,
+    })
+
+    frame:SetScript("OnSizeChanged", function()
+        if frame.isManualResizing then
+            return
+        end
+        RefreshDiagnosisAfterResize()
     end)
 
     local elapsedAccumulator = 0

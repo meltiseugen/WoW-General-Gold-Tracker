@@ -786,27 +786,7 @@ function GoldTracker:CreateHistoryWindow()
     itemsEmptyText:Hide()
     frame.detailsItemsEmptyText = itemsEmptyText
 
-    local resizeButton = CreateFrame("Button", nil, frame)
-    resizeButton:SetSize(16, 16)
-    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
-    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-    resizeButton:SetAlpha(0.7)
-    resizeButton:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" then
-            frame:StartSizing("BOTTOMRIGHT")
-        end
-    end)
-    resizeButton:SetScript("OnMouseUp", function()
-        frame:StopMovingOrSizing()
-    end)
-    resizeButton:SetScript("OnHide", function()
-        frame:StopMovingOrSizing()
-    end)
-    frame.resizeButton = resizeButton
-
-    frame:SetScript("OnSizeChanged", function()
+    local function RefreshHistoryAfterResize()
         if not addon.historyFrame or not frame:IsShown() then
             return
         end
@@ -815,6 +795,23 @@ function GoldTracker:CreateHistoryWindow()
         else
             addon:RefreshHistoryWindow()
         end
+    end
+
+    Theme:CreateResizeButton(frame, {
+        minWidth = 760,
+        minHeight = 420,
+        maxWidth = 1200,
+        maxHeight = 900,
+        onResizeStop = function()
+            RefreshHistoryAfterResize()
+        end,
+    })
+
+    frame:SetScript("OnSizeChanged", function()
+        if frame.isManualResizing then
+            return
+        end
+        RefreshHistoryAfterResize()
     end)
 
     frame:SetScript("OnShow", function()

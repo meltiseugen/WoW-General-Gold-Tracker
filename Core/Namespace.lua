@@ -44,13 +44,17 @@ GoldTracker.DEFAULTS = {
 }
 
 GoldTracker.VALUE_SOURCES = {
-    { id = "TSM_DBMARKET", label = "TSM dbmarket", tsmKey = "dbmarket" },
-    { id = "TSM_DBREGIONMARKETAVG", label = "TSM dbregionmarketavg", tsmKey = "dbregionmarketavg" },
-    { id = "TSM_DBMINBUYOUT", label = "TSM dbminbuyout", tsmKey = "dbminbuyout" },
-    { id = "TSM_DBHISTORICAL", label = "TSM dbhistorical", tsmKey = "dbhistorical" },
-    { id = "TSM_DBREGIONHISTORICAL", label = "TSM dbregionhistorical", tsmKey = "dbregionhistorical" },
-    { id = "TSM_DBREGIONSALEAVG", label = "TSM dbregionsaleavg", tsmKey = "dbregionsaleavg" },
-    { id = "TSM_CRAFTING", label = "TSM crafting", tsmKey = "crafting" },
+    { id = "TSM_DBMARKET", label = "TSM market value", tsmKey = "DBMarket" },
+    { id = "TSM_DBRECENT", label = "TSM recent value", tsmKey = "DBRecent" },
+    { id = "TSM_DBREGIONMARKETAVG", label = "TSM region market value", tsmKey = "DBRegionMarketAvg" },
+    { id = "TSM_DBMINBUYOUT", label = "TSM min buyout", tsmKey = "DBMinBuyout" },
+    { id = "TSM_DBHISTORICAL", label = "TSM historical price", tsmKey = "DBHistorical" },
+    { id = "TSM_DBREGIONHISTORICAL", label = "TSM region historical price", tsmKey = "DBRegionHistorical" },
+    { id = "TSM_DBREGIONSALEAVG", label = "TSM region sale avg", tsmKey = "DBRegionSaleAvg" },
+    { id = "TSM_AUCTIONINGOPMIN", label = "TSM auctioning min", tsmKey = "AuctioningOpMin" },
+    { id = "TSM_AUCTIONINGOPNORMAL", label = "TSM auctioning normal", tsmKey = "AuctioningOpNormal" },
+    { id = "TSM_AUCTIONINGOPMAX", label = "TSM auctioning max", tsmKey = "AuctioningOpMax" },
+    { id = "TSM_CRAFTING", label = "TSM crafting", tsmKey = "Crafting" },
 }
 
 GoldTracker.VALUE_SOURCE_BY_ID = {}

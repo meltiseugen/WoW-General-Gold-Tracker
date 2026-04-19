@@ -1112,25 +1112,12 @@ function GoldTracker:CreateOptionsPanel()
     experimentalHint:SetText("When enabled, a Diagnosis button appears next to History in the tracker window and shows event/timing counters for QA/debug.")
     experimentalContent:SetHeight(166)
 
-    local resizeButton = CreateFrame("Button", nil, window)
-    resizeButton:SetSize(16, 16)
-    resizeButton:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", -8, 8)
-    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-    resizeButton:SetAlpha(0.7)
-    resizeButton:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" then
-            window:StartSizing("BOTTOMRIGHT")
-        end
-    end)
-    resizeButton:SetScript("OnMouseUp", function()
-        window:StopMovingOrSizing()
-    end)
-    resizeButton:SetScript("OnHide", function()
-        window:StopMovingOrSizing()
-    end)
-    window.resizeButton = resizeButton
+    Theme:CreateResizeButton(window, {
+        minWidth = 720,
+        minHeight = 500,
+        maxWidth = 1180,
+        maxHeight = 900,
+    })
 
     window:SetScript("OnShow", function()
         addon:RefreshOptionsControls()

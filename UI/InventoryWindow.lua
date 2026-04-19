@@ -34,6 +34,8 @@ local BOUND_TOOLTIP_LINES = {
     ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
 }
 local BOUND_TOOLTIP_KEYWORDS = {
+    "consume on pick-up",
+    "consume on pickup",
     "warband",
     "warbound",
 }
@@ -306,6 +308,10 @@ local function AddInventoryItem(itemsByLink, itemOrder, item)
         existingItem.quantity = existingItem.quantity + item.quantity
         existingItem.totalValue = existingItem.totalValue + item.totalValue
         existingItem.stackCount = existingItem.stackCount + 1
+        if not existingItem.bagID and item.bagID then
+            existingItem.bagID = item.bagID
+            existingItem.slotIndex = item.slotIndex
+        end
         return
     end
 
@@ -517,6 +523,160 @@ local function SortInventoryItems(items, sortKey, sortAscending)
     end)
 end
 
+local function CreateInventoryItemLocation(bagID, slotIndex)
+    if not ItemLocation or type(ItemLocation.CreateFromBagAndSlot) ~= "function" then
+        return nil
+    end
+
+    local ok, itemLocation = pcall(ItemLocation.CreateFromBagAndSlot, ItemLocation, bagID, slotIndex)
+    if ok and itemLocation then
+        return itemLocation
+    end
+
+    return nil
+end
+
+local function FindInventoryItemLocationForRow(row)
+    if type(row) ~= "table" or type(row.itemLink) ~= "string" or row.itemLink == "" then
+        return nil
+    end
+
+    local function MatchesRowItem(bagID, slotIndex)
+        local slotInfo = GetContainerSlotInfo(bagID, slotIndex)
+        local itemLink = GetContainerSlotLink(bagID, slotIndex, slotInfo)
+        if itemLink ~= row.itemLink then
+            return nil
+        end
+        if IsContainerItemBoundOrWarbound(bagID, slotIndex, itemLink, slotInfo) then
+            return nil
+        end
+
+        return CreateInventoryItemLocation(bagID, slotIndex)
+    end
+
+    if row.bagID and row.slotIndex then
+        local itemLocation = MatchesRowItem(row.bagID, row.slotIndex)
+        if itemLocation then
+            return itemLocation
+        end
+    end
+
+    for _, bagID in ipairs(BuildInventoryBagIDs()) do
+        local slotCount = GetContainerSlotCount(bagID)
+        for slotIndex = 1, slotCount do
+            local itemLocation = MatchesRowItem(bagID, slotIndex)
+            if itemLocation then
+                row.bagID = bagID
+                row.slotIndex = slotIndex
+                return itemLocation
+            end
+        end
+    end
+
+    return nil
+end
+
+local function GetAuctionHouseFrame()
+    return _G.AuctionHouseFrame
+end
+
+local function TryAuctionHouseMethod(owner, methodName, ...)
+    if not owner or type(owner[methodName]) ~= "function" then
+        return false
+    end
+
+    local ok, result = pcall(owner[methodName], owner, ...)
+    return ok and result ~= false
+end
+
+local function SetAuctionHouseDisplayMode(modeKey)
+    local auctionHouseFrame = GetAuctionHouseFrame()
+    local displayMode = _G.AuctionHouseFrameDisplayMode
+    if not auctionHouseFrame or not displayMode or not displayMode[modeKey] then
+        return
+    end
+
+    TryAuctionHouseMethod(auctionHouseFrame, "SetDisplayMode", displayMode[modeKey])
+end
+
+local function IsAuctionHouseCommodity(itemLocation)
+    if type(C_AuctionHouse) ~= "table" or type(C_AuctionHouse.GetItemCommodityStatus) ~= "function" then
+        return false
+    end
+
+    local ok, status = pcall(C_AuctionHouse.GetItemCommodityStatus, itemLocation)
+    if not ok then
+        return false
+    end
+
+    local commodityStatus = Enum and Enum.ItemCommodityStatus
+    if commodityStatus then
+        if status == commodityStatus.Commodity then
+            return true
+        end
+        if status == commodityStatus.Item then
+            return false
+        end
+    end
+
+    return status == 2
+end
+
+local function TryLoadAuctionHouseSellFrame(itemLocation, preferCommodity)
+    local auctionHouseFrame = GetAuctionHouseFrame()
+    if not auctionHouseFrame then
+        return false
+    end
+
+    if TryAuctionHouseMethod(auctionHouseFrame, "SetPostItem", itemLocation) then
+        return true
+    end
+
+    if preferCommodity then
+        SetAuctionHouseDisplayMode("CommoditiesSell")
+        if TryAuctionHouseMethod(auctionHouseFrame.CommoditiesSellFrame, "SetItem", itemLocation) then
+            return true
+        end
+
+        SetAuctionHouseDisplayMode("ItemSell")
+        return TryAuctionHouseMethod(auctionHouseFrame.ItemSellFrame, "SetItem", itemLocation)
+    end
+
+    SetAuctionHouseDisplayMode("ItemSell")
+    if TryAuctionHouseMethod(auctionHouseFrame.ItemSellFrame, "SetItem", itemLocation) then
+        return true
+    end
+
+    SetAuctionHouseDisplayMode("CommoditiesSell")
+    return TryAuctionHouseMethod(auctionHouseFrame.CommoditiesSellFrame, "SetItem", itemLocation)
+end
+
+function GoldTracker:LoadInventoryItemIntoAuctionHouse(row)
+    if type(row) ~= "table" then
+        return false
+    end
+
+    local auctionHouseFrame = GetAuctionHouseFrame()
+    if not auctionHouseFrame or (auctionHouseFrame.IsShown and not auctionHouseFrame:IsShown()) then
+        self:Print("Open the Auction House first, then right-click an auctionable inventory row.")
+        return false
+    end
+
+    local itemLocation = FindInventoryItemLocationForRow(row)
+    if not itemLocation then
+        self:Print("Could not find that item in your bags. Refresh the auctionable inventory and try again.")
+        return false
+    end
+
+    if TryLoadAuctionHouseSellFrame(itemLocation, IsAuctionHouseCommodity(itemLocation)) then
+        self:Print(string.format("Loaded %s into the Auction House sell tab.", tostring(row.itemLink or "item")))
+        return true
+    end
+
+    self:Print("Could not load that item into the Auction House. Try opening the Sell tab and right-clicking it again.")
+    return false
+end
+
 function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper, sortKey, sortAscending)
     local source = self.VALUE_SOURCE_BY_ID[valueSourceID] or self:GetCurrentValueSource()
     local sourceID = source and source.id
@@ -552,6 +712,8 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
                                 itemName = itemName or itemLink,
                                 itemQuality = itemQuality,
                                 icon = itemIcon,
+                                bagID = bagID,
+                                slotIndex = slotIndex,
                                 quantity = quantity,
                                 unitValue = unitValue,
                                 totalValue = stackValue,
@@ -681,6 +843,7 @@ function GoldTracker:GetInventoryWindowRow(index)
 
     row = CreateFrame("Button", nil, frame.inventoryContent)
     row:EnableMouse(true)
+    row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row:SetHeight(INVENTORY_ROW_HEIGHT)
 
     local background = row:CreateTexture(nil, "BACKGROUND")
@@ -786,6 +949,8 @@ function GoldTracker:GetInventoryWindowRow(index)
             0.72, 0.86, 1.0,
             1, 1, 1
         )
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("Right-click to load into the Auction House sell tab.", 0.72, 0.86, 1.0)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function()
@@ -794,6 +959,8 @@ function GoldTracker:GetInventoryWindowRow(index)
     row:SetScript("OnMouseUp", function(self, button)
         if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" and HandleModifiedItemClick then
             HandleModifiedItemClick(self.itemLink)
+        elseif button == "RightButton" then
+            GoldTracker:LoadInventoryItemIntoAuctionHouse(self)
         end
     end)
 
@@ -860,6 +1027,8 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
         local row = self:GetInventoryWindowRow(index)
         if row then
             row.itemLink = item.itemLink
+            row.bagID = item.bagID
+            row.slotIndex = item.slotIndex
             row.regionSoldPerDay = item.regionSoldPerDay
             row.regionSaleRate = item.regionSaleRate
             row.marketValue = item.marketValue
@@ -1166,25 +1335,15 @@ function GoldTracker:CreateInventoryWindow()
     metaText:SetText("")
     frame.metaText = metaText
 
-    local resizeButton = CreateFrame("Button", nil, frame)
-    resizeButton:SetSize(16, 16)
-    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
-    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-    resizeButton:SetAlpha(0.7)
-    resizeButton:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" then
-            frame:StartSizing("BOTTOMRIGHT")
-        end
-    end)
-    resizeButton:SetScript("OnMouseUp", function()
-        frame:StopMovingOrSizing()
-    end)
-    resizeButton:SetScript("OnHide", function()
-        frame:StopMovingOrSizing()
-    end)
-    frame.resizeButton = resizeButton
+    Theme:CreateResizeButton(frame, {
+        minWidth = 760,
+        minHeight = 380,
+        maxWidth = 1100,
+        maxHeight = 820,
+        onResizeStop = function()
+            addon:RefreshInventoryWindowLayout()
+        end,
+    })
 
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
@@ -1195,6 +1354,9 @@ function GoldTracker:CreateInventoryWindow()
         end
     end)
     frame:SetScript("OnSizeChanged", function()
+        if frame.isManualResizing then
+            return
+        end
         addon:RefreshInventoryWindowLayout()
     end)
     frame:SetScript("OnShow", function()

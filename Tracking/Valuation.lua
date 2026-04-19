@@ -12,6 +12,8 @@ local ACCOUNT_BOUND_TOOLTIP_LINES = {
     ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
 }
 local IGNORED_BINDING_KEYWORDS = {
+    "consume on pick-up",
+    "consume on pickup",
     "warband",
     "warbound",
 }
@@ -172,7 +174,16 @@ function GoldTracker:GetTSMItemValue(priceSource, itemLink)
         return 0
     end
 
-    local itemString = self:GetTSMItemStringFromLink(itemLink)
+    local itemString
+    if type(TSM_API.ToItemString) == "function" then
+        local ok, resolvedItemString = pcall(TSM_API.ToItemString, itemLink)
+        if ok and type(resolvedItemString) == "string" and resolvedItemString ~= "" then
+            itemString = resolvedItemString
+        end
+    end
+    if not itemString then
+        itemString = self:GetTSMItemStringFromLink(itemLink)
+    end
     if not itemString then
         return 0
     end
@@ -181,6 +192,15 @@ function GoldTracker:GetTSMItemValue(priceSource, itemLink)
     if ok and type(value) == "number" and value > 0 then
         self.tsmWarningShown = false
         return math.floor(value + 0.5)
+    end
+
+    local fallbackItemString = self:GetTSMItemStringFromLink(itemLink)
+    if fallbackItemString and fallbackItemString ~= itemString then
+        ok, value = pcall(TSM_API.GetCustomPriceValue, priceSource, fallbackItemString)
+        if ok and type(value) == "number" and value > 0 then
+            self.tsmWarningShown = false
+            return math.floor(value + 0.5)
+        end
     end
 
     return 0
