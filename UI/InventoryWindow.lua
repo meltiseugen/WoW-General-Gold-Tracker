@@ -2,10 +2,22 @@ local _, NS = ...
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
+local INVENTORY_WINDOW_MIN_WIDTH = 1080
+local INVENTORY_WINDOW_DEFAULT_HEIGHT = 620
+local INVENTORY_WINDOW_MIN_HEIGHT = 420
+local INVENTORY_WINDOW_MAX_WIDTH = 1200
+local INVENTORY_WINDOW_MAX_HEIGHT = 900
 local INVENTORY_ROW_HEIGHT = 24
 local INVENTORY_ROW_SPACING = 2
 local INVENTORY_ICON_SIZE = 18
+local INVENTORY_COLUMN_GAP = 12
+local INVENTORY_HEADER_LEFT_INSET = 12
+local INVENTORY_ROW_ICON_LEFT = 8
+local INVENTORY_ROW_ICON_GAP = 8
+local INVENTORY_ROW_RIGHT_PADDING = 6
+local INVENTORY_ITEM_MIN_WIDTH = 260
 local INVENTORY_QUANTITY_WIDTH = 56
+local INVENTORY_HISTORY_WIDTH = 46
 local INVENTORY_DEMAND_WIDTH = 82
 local INVENTORY_TREND_WIDTH = 64
 local INVENTORY_UNIT_VALUE_WIDTH = 116
@@ -13,14 +25,50 @@ local INVENTORY_TOTAL_VALUE_WIDTH = 126
 local INVENTORY_SORT_ICON_SIZE = 10
 local INVENTORY_DEFAULT_SORT_KEY = "demand"
 local INVENTORY_DEFAULT_SORT_ASCENDING = false
+local INVENTORY_FALLBACK_VALUE_SOURCE_ID = "TSM_AUCTIONINGOPNORMAL"
 local INVENTORY_SORT_KEYS = {
     demand = true,
+    historySamples = true,
     itemName = true,
     quantity = true,
     marketTrend = true,
     unitValue = true,
     totalValue = true,
 }
+local INVENTORY_DETAILS_WINDOW_WIDTH = 760
+local INVENTORY_DETAILS_WINDOW_HEIGHT = 560
+local INVENTORY_DETAILS_WINDOW_MIN_WIDTH = 640
+local INVENTORY_DETAILS_WINDOW_MIN_HEIGHT = 440
+local INVENTORY_DETAILS_SOURCE_DROPDOWN_WIDTH = 230
+local INVENTORY_DETAILS_GRAPH_LINE_THICKNESS = 2
+local INVENTORY_DETAILS_GRAPH_POINT_SIZE = 5
+local INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID = {
+    TSM_DBMARKET = "dbMarket",
+    TSM_DBRECENT = "dbRecent",
+    TSM_DBREGIONMARKETAVG = "dbRegionMarketAvg",
+    TSM_DBHISTORICAL = "dbHistorical",
+    TSM_DBREGIONHISTORICAL = "dbRegionHistorical",
+    TSM_DBREGIONSALEAVG = "dbRegionSaleAvg",
+    TSM_AUCTIONINGOPMIN = "auctioningMin",
+    TSM_AUCTIONINGOPNORMAL = "auctioningNormal",
+    TSM_AUCTIONINGOPMAX = "auctioningMax",
+}
+local INVENTORY_DETAILS_PRICE_SOURCES = {
+    { key = "selectedUnitValue", label = "Selected value", color = { 1.0, 0.82, 0.18 } },
+    { key = "dbMarket", label = "DBMarket", color = { 0.68, 0.96, 0.72 } },
+    { key = "dbRecent", label = "DBRecent", color = { 0.72, 0.86, 1.0 } },
+    { key = "dbHistorical", label = "DBHistorical", color = { 0.92, 0.74, 1.0 } },
+    { key = "dbRegionMarketAvg", label = "Region market avg", color = { 0.50, 0.88, 0.92 } },
+    { key = "dbRegionHistorical", label = "Region historical", color = { 0.82, 0.74, 1.0 } },
+    { key = "dbRegionSaleAvg", label = "Region sale avg", color = { 0.98, 0.70, 0.42 } },
+    { key = "auctioningMin", label = "Auctioning min", color = { 0.65, 0.95, 0.55 } },
+    { key = "auctioningNormal", label = "Auctioning normal", color = { 1.0, 0.88, 0.40 } },
+    { key = "auctioningMax", label = "Auctioning max", color = { 1.0, 0.58, 0.42 } },
+}
+local INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY = {}
+for _, source in ipairs(INVENTORY_DETAILS_PRICE_SOURCES) do
+    INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY[source.key] = source
+end
 
 local BOUND_TOOLTIP_LINES = {
     ITEM_SOULBOUND,
@@ -392,6 +440,159 @@ local function GetInventoryTrendColor(marketTrendPercent)
     return 0.92, 0.95, 1.0
 end
 
+local function FormatInventoryDetailsTimestamp(timestamp)
+    local normalizedTimestamp = tonumber(timestamp)
+    if not normalizedTimestamp or normalizedTimestamp <= 0 then
+        return "Unknown"
+    end
+    return date("%Y-%m-%d %H:%M", normalizedTimestamp)
+end
+
+local function FormatInventoryDetailsShortTimestamp(timestamp)
+    local normalizedTimestamp = tonumber(timestamp)
+    if not normalizedTimestamp or normalizedTimestamp <= 0 then
+        return "--"
+    end
+    return date("%m-%d %H:%M", normalizedTimestamp)
+end
+
+local function FormatInventoryDetailsPercentChange(changePercent)
+    local change = tonumber(changePercent)
+    if not change then
+        return "--"
+    end
+    if change > 999 then
+        return "+999%"
+    end
+    if change < -999 then
+        return "-999%"
+    end
+    if change > 0 then
+        return string.format("+%d%%", math.floor(change + 0.5))
+    end
+    return string.format("%d%%", math.ceil(change - 0.5))
+end
+
+local function GetInventoryDetailsSourceLabel(sourceKey)
+    local source = INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY[sourceKey]
+    return source and source.label or "Selected value"
+end
+
+local function GetInventoryDetailsSnapshotValue(snapshot, sourceKey)
+    if type(snapshot) ~= "table" or type(sourceKey) ~= "string" then
+        return nil
+    end
+
+    local value = tonumber(snapshot[sourceKey])
+    if value and value > 0 then
+        return value
+    end
+    return nil
+end
+
+local function BuildInventoryDetailsSamples(history, sourceKey)
+    local samples = {}
+    local snapshots = history and history.snapshots
+    if type(snapshots) ~= "table" then
+        return samples
+    end
+
+    for _, snapshot in ipairs(snapshots) do
+        local value = GetInventoryDetailsSnapshotValue(snapshot, sourceKey)
+        local timestamp = tonumber(snapshot and snapshot.timestamp) or 0
+        if value and timestamp > 0 then
+            samples[#samples + 1] = {
+                value = value,
+                timestamp = timestamp,
+                sourceID = snapshot.selectedSourceID,
+            }
+        end
+    end
+
+    table.sort(samples, function(left, right)
+        return (tonumber(left and left.timestamp) or 0) < (tonumber(right and right.timestamp) or 0)
+    end)
+
+    return samples
+end
+
+local function GetInventoryDetailsPreferredSourceKey(row, history)
+    local mappedSourceKey = INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID[row and row.valueSourceID]
+    if mappedSourceKey and #BuildInventoryDetailsSamples(history, mappedSourceKey) > 0 then
+        return mappedSourceKey
+    end
+
+    if #BuildInventoryDetailsSamples(history, "selectedUnitValue") > 0 then
+        return "selectedUnitValue"
+    end
+
+    for _, source in ipairs(INVENTORY_DETAILS_PRICE_SOURCES) do
+        if #BuildInventoryDetailsSamples(history, source.key) > 0 then
+            return source.key
+        end
+    end
+
+    return "selectedUnitValue"
+end
+
+local function BuildInventoryDetailsStats(samples)
+    local stats = {
+        count = #samples,
+        firstValue = nil,
+        lastValue = nil,
+        minValue = nil,
+        maxValue = nil,
+        averageValue = nil,
+        firstTimestamp = nil,
+        lastTimestamp = nil,
+        changePercent = nil,
+    }
+    if #samples == 0 then
+        return stats
+    end
+
+    local total = 0
+    for index, sample in ipairs(samples) do
+        local value = tonumber(sample.value) or 0
+        if index == 1 then
+            stats.firstValue = value
+            stats.firstTimestamp = sample.timestamp
+            stats.minValue = value
+            stats.maxValue = value
+        end
+        stats.lastValue = value
+        stats.lastTimestamp = sample.timestamp
+        stats.minValue = math.min(stats.minValue or value, value)
+        stats.maxValue = math.max(stats.maxValue or value, value)
+        total = total + value
+    end
+
+    stats.averageValue = total / #samples
+    if stats.firstValue and stats.firstValue > 0 and stats.lastValue then
+        stats.changePercent = ((stats.lastValue - stats.firstValue) * 100) / stats.firstValue
+    end
+
+    return stats
+end
+
+local function GetInventoryUnitValue(addon, primarySourceID, itemLink)
+    local unitValue, resolvedSourceID, resolvedSourceLabel = addon:GetItemUnitValueFromSource(primarySourceID, itemLink)
+    unitValue = tonumber(unitValue) or 0
+
+    if unitValue > 0 or primarySourceID == INVENTORY_FALLBACK_VALUE_SOURCE_ID then
+        return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel
+    end
+
+    local fallbackValue, fallbackSourceID, fallbackSourceLabel =
+        addon:GetItemUnitValueFromSource(INVENTORY_FALLBACK_VALUE_SOURCE_ID, itemLink)
+    fallbackValue = tonumber(fallbackValue) or 0
+    if fallbackValue > 0 then
+        return fallbackValue, fallbackSourceID or INVENTORY_FALLBACK_VALUE_SOURCE_ID, fallbackSourceLabel
+    end
+
+    return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel
+end
+
 local function GetInventoryRegionalDemandData(addon, itemLink, demandCache)
     if type(itemLink) ~= "string" or itemLink == "" then
         return nil
@@ -468,6 +669,9 @@ local function GetInventorySortValue(item, sortKey)
     end
     if sortKey == "demand" then
         return tonumber(item and item.regionSoldPerDay) or 0
+    end
+    if sortKey == "historySamples" then
+        return tonumber(item and item.marketHistorySampleCount) or 0
     end
     if sortKey == "quantity" then
         return tonumber(item and item.quantity) or 0
@@ -677,6 +881,488 @@ function GoldTracker:LoadInventoryItemIntoAuctionHouse(row)
     return false
 end
 
+local function HideInventoryDetailsGraphElement(element)
+    if element and type(element.Hide) == "function" then
+        element:Hide()
+    end
+end
+
+local function GetInventoryDetailsGraphPoint(canvas, index)
+    canvas.points = canvas.points or {}
+    local point = canvas.points[index]
+    if point then
+        return point
+    end
+
+    point = canvas:CreateTexture(nil, "OVERLAY")
+    point:SetSize(INVENTORY_DETAILS_GRAPH_POINT_SIZE, INVENTORY_DETAILS_GRAPH_POINT_SIZE)
+    canvas.points[index] = point
+    return point
+end
+
+local function GetInventoryDetailsGraphLine(canvas, index)
+    canvas.lines = canvas.lines or {}
+    local line = canvas.lines[index]
+    if line then
+        return line
+    end
+
+    if type(canvas.CreateLine) ~= "function" then
+        return nil
+    end
+
+    line = canvas:CreateLine(nil, "ARTWORK")
+    if line and line.SetThickness then
+        line:SetThickness(INVENTORY_DETAILS_GRAPH_LINE_THICKNESS)
+    end
+    canvas.lines[index] = line
+    return line
+end
+
+local function ColorInventoryDetailsGraphElement(element, color, alpha)
+    if not element then
+        return
+    end
+
+    local r = color and color[1] or 1.0
+    local g = color and color[2] or 0.82
+    local b = color and color[3] or 0.18
+    local a = alpha or 1
+    if type(element.SetColorTexture) == "function" then
+        element:SetColorTexture(r, g, b, a)
+    elseif type(element.SetVertexColor) == "function" then
+        element:SetVertexColor(r, g, b, a)
+    end
+end
+
+local function RefreshInventoryDetailsGraph(addon, frame, samples, source)
+    local canvas = frame and frame.graphCanvas
+    if not canvas then
+        return
+    end
+
+    samples = type(samples) == "table" and samples or {}
+    source = type(source) == "table" and source or INVENTORY_DETAILS_PRICE_SOURCES[1]
+    local width = math.max(1, math.floor(tonumber(canvas:GetWidth()) or 1))
+    local height = math.max(1, math.floor(tonumber(canvas:GetHeight()) or 1))
+
+    local minValue
+    local maxValue
+    for _, sample in ipairs(samples) do
+        local value = tonumber(sample and sample.value)
+        if value then
+            minValue = minValue and math.min(minValue, value) or value
+            maxValue = maxValue and math.max(maxValue, value) or value
+        end
+    end
+
+    local hasSamples = #samples > 0 and minValue ~= nil and maxValue ~= nil
+    if frame.graphEmptyText then
+        if hasSamples then
+            frame.graphEmptyText:Hide()
+        else
+            frame.graphEmptyText:SetText("No saved snapshots for " .. GetInventoryDetailsSourceLabel(source.key) .. ".")
+            frame.graphEmptyText:Show()
+        end
+    end
+
+    if frame.graphLowText then
+        frame.graphLowText:SetText(hasSamples and addon:FormatMoney(minValue) or "--")
+    end
+    if frame.graphMidText then
+        frame.graphMidText:SetText(hasSamples and addon:FormatMoney((minValue + maxValue) / 2) or "--")
+    end
+    if frame.graphHighText then
+        frame.graphHighText:SetText(hasSamples and addon:FormatMoney(maxValue) or "--")
+    end
+    if frame.graphStartText then
+        frame.graphStartText:SetText(hasSamples and FormatInventoryDetailsShortTimestamp(samples[1].timestamp) or "--")
+    end
+    if frame.graphEndText then
+        frame.graphEndText:SetText(hasSamples and FormatInventoryDetailsShortTimestamp(samples[#samples].timestamp) or "--")
+    end
+
+    for _, point in ipairs(canvas.points or {}) do
+        HideInventoryDetailsGraphElement(point)
+    end
+    for _, line in ipairs(canvas.lines or {}) do
+        HideInventoryDetailsGraphElement(line)
+    end
+
+    if not hasSamples then
+        return
+    end
+
+    local range = maxValue - minValue
+    if range <= 0 then
+        range = 1
+    end
+
+    local plottedPoints = {}
+    for index, sample in ipairs(samples) do
+        local value = tonumber(sample.value) or minValue
+        local x
+        if #samples == 1 then
+            x = width / 2
+        else
+            x = ((index - 1) / (#samples - 1)) * width
+        end
+        local y
+        if maxValue == minValue then
+            y = height / 2
+        else
+            y = ((value - minValue) / range) * height
+        end
+        x = math.max(0, math.min(width, x))
+        y = math.max(0, math.min(height, y))
+        plottedPoints[index] = { x = x, y = y }
+
+        local point = GetInventoryDetailsGraphPoint(canvas, index)
+        ColorInventoryDetailsGraphElement(point, source.color, 1)
+        point:ClearAllPoints()
+        point:SetPoint("CENTER", canvas, "BOTTOMLEFT", x, y)
+        point:Show()
+    end
+
+    for index = 2, #plottedPoints do
+        local previous = plottedPoints[index - 1]
+        local current = plottedPoints[index]
+        local line = GetInventoryDetailsGraphLine(canvas, index - 1)
+        if line and line.SetStartPoint and line.SetEndPoint then
+            ColorInventoryDetailsGraphElement(line, source.color, 0.92)
+            line:SetStartPoint("BOTTOMLEFT", canvas, previous.x, previous.y)
+            line:SetEndPoint("BOTTOMLEFT", canvas, current.x, current.y)
+            line:Show()
+        end
+    end
+end
+
+local function UpdateInventoryDetailsSourceDropdown(frame)
+    if not frame or not frame.sourceDropdown then
+        return
+    end
+    local sourceKey = frame.selectedSourceKey or "selectedUnitValue"
+    UIDropDownMenu_SetSelectedValue(frame.sourceDropdown, sourceKey)
+    UIDropDownMenu_SetText(frame.sourceDropdown, GetInventoryDetailsSourceLabel(sourceKey))
+end
+
+function GoldTracker:RefreshInventoryItemDetailsWindow()
+    local frame = self.inventoryItemDetailsFrame
+    if not frame or not frame.itemData then
+        return
+    end
+
+    local itemData = frame.itemData
+    local itemLink = itemData.itemLink
+    local itemKey, history
+    if type(self.GetMarketHistoryForItem) == "function" then
+        itemKey, history = self:GetMarketHistoryForItem(itemLink)
+    end
+    frame.marketHistoryItemKey = itemKey
+    frame.marketHistory = history
+
+    if not INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY[frame.selectedSourceKey] then
+        frame.selectedSourceKey = GetInventoryDetailsPreferredSourceKey(itemData, history)
+    end
+
+    local source = INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY[frame.selectedSourceKey] or INVENTORY_DETAILS_PRICE_SOURCES[1]
+    local samples = BuildInventoryDetailsSamples(history, source.key)
+    local stats = BuildInventoryDetailsStats(samples)
+    UpdateInventoryDetailsSourceDropdown(frame)
+
+    if frame.headerTitleText then
+        frame.headerTitleText:SetText("Item Market Details")
+    end
+    if frame.itemIcon then
+        if itemData.icon then
+            frame.itemIcon:SetTexture(itemData.icon)
+            frame.itemIcon:Show()
+        else
+            frame.itemIcon:Hide()
+        end
+    end
+    if frame.itemText then
+        frame.itemText:SetText(itemLink or itemData.itemName or "Unknown item")
+    end
+    if frame.metaText then
+        local historyCount = type(history and history.snapshots) == "table" and #history.snapshots or 0
+        frame.metaText:SetText(string.format(
+            "%d total snapshot%s saved%s",
+            historyCount,
+            historyCount == 1 and "" or "s",
+            itemKey and (" for " .. tostring(itemKey)) or ""
+        ))
+    end
+
+    local latestSourceLabel = source.label
+    if source.key == "selectedUnitValue"
+        and samples[#samples]
+        and type(samples[#samples].sourceID) == "string"
+        and self.VALUE_SOURCE_BY_ID[samples[#samples].sourceID] then
+        latestSourceLabel = latestSourceLabel .. " (" .. self.VALUE_SOURCE_BY_ID[samples[#samples].sourceID].label .. ")"
+    end
+
+    if frame.statsText then
+        if stats.count == 0 then
+            frame.statsText:SetText(string.format("Source: %s\nSnapshots: 0", latestSourceLabel))
+        else
+            frame.statsText:SetText(string.format(
+                "Source: %s\nSnapshots: %d\nFirst: %s at %s\nLatest: %s at %s\nMin / Max: %s / %s\nAverage: %s\nChange: %s",
+                latestSourceLabel,
+                stats.count,
+                self:FormatMoney(stats.firstValue or 0),
+                FormatInventoryDetailsTimestamp(stats.firstTimestamp),
+                self:FormatMoney(stats.lastValue or 0),
+                FormatInventoryDetailsTimestamp(stats.lastTimestamp),
+                self:FormatMoney(stats.minValue or 0),
+                self:FormatMoney(stats.maxValue or 0),
+                self:FormatMoney(stats.averageValue or 0),
+                FormatInventoryDetailsPercentChange(stats.changePercent)
+            ))
+        end
+    end
+
+    RefreshInventoryDetailsGraph(self, frame, samples, source)
+end
+
+function GoldTracker:CreateInventoryItemDetailsWindow()
+    if self.inventoryItemDetailsFrame then
+        return
+    end
+
+    local addon = self
+    local frame = CreateFrame("Frame", "GoldTrackerInventoryDetailsFrame", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(INVENTORY_DETAILS_WINDOW_WIDTH, INVENTORY_DETAILS_WINDOW_HEIGHT)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 40, 20)
+    frame:SetFrameStrata("DIALOG")
+    if frame.SetToplevel then
+        frame:SetToplevel(true)
+    end
+    frame:SetMovable(true)
+    frame:SetResizable(true)
+    if frame.SetResizeBounds then
+        frame:SetResizeBounds(INVENTORY_DETAILS_WINDOW_MIN_WIDTH, INVENTORY_DETAILS_WINDOW_MIN_HEIGHT, 1040, 820)
+    else
+        if frame.SetMinResize then
+            frame:SetMinResize(INVENTORY_DETAILS_WINDOW_MIN_WIDTH, INVENTORY_DETAILS_WINDOW_MIN_HEIGHT)
+        end
+        if frame.SetMaxResize then
+            frame:SetMaxResize(1040, 820)
+        end
+    end
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnMouseDown", function(self)
+        self:Raise()
+    end)
+    frame:SetScript("OnDragStart", function(self)
+        self:Raise()
+        self:StartMoving()
+    end)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetClampedToScreen(true)
+    frame:Hide()
+
+    local chrome = Theme:ApplyWindowChrome(frame, "Item Market Details")
+    Theme:RegisterSpecialFrame("GoldTrackerInventoryDetailsFrame")
+
+    local bodyPanel = CreateInventoryPanel(frame, { 0.04, 0.05, 0.07, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
+    bodyPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    bodyPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
+    frame.bodyPanel = bodyPanel
+
+    local itemIcon = bodyPanel:CreateTexture(nil, "ARTWORK")
+    itemIcon:SetSize(34, 34)
+    itemIcon:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -12)
+    frame.itemIcon = itemIcon
+
+    local itemText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    itemText:SetPoint("TOPLEFT", itemIcon, "TOPRIGHT", 10, -2)
+    itemText:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -300, -14)
+    itemText:SetJustifyH("LEFT")
+    itemText:SetWordWrap(false)
+    itemText:SetText("")
+    frame.itemText = itemText
+
+    local metaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    metaText:SetPoint("TOPLEFT", itemText, "BOTTOMLEFT", 0, -6)
+    metaText:SetPoint("TOPRIGHT", itemText, "BOTTOMRIGHT", 0, -6)
+    metaText:SetJustifyH("LEFT")
+    metaText:SetTextColor(0.62, 0.66, 0.74)
+    metaText:SetText("")
+    frame.metaText = metaText
+
+    local sourceLabel = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    sourceLabel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -238, -13)
+    sourceLabel:SetText("Data source")
+    frame.sourceLabel = sourceLabel
+
+    local sourceDropdown = CreateFrame("Frame", "GoldTrackerInventoryDetailsSourceDropdown", bodyPanel, "UIDropDownMenuTemplate")
+    sourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -18, -5)
+    UIDropDownMenu_SetWidth(sourceDropdown, INVENTORY_DETAILS_SOURCE_DROPDOWN_WIDTH)
+    UIDropDownMenu_Initialize(sourceDropdown, function(_, level)
+        for _, source in ipairs(INVENTORY_DETAILS_PRICE_SOURCES) do
+            local sourceKey = source.key
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = source.label
+            info.value = sourceKey
+            info.checked = frame.selectedSourceKey == sourceKey
+            info.func = function()
+                frame.selectedSourceKey = sourceKey
+                addon:RefreshInventoryItemDetailsWindow()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    frame.sourceDropdown = sourceDropdown
+
+    local graphPanel = CreateInventoryPanel(bodyPanel, { 0.03, 0.04, 0.06, 0.82 }, { 1.0, 0.82, 0.18, 0.10 })
+    graphPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -62)
+    graphPanel:SetPoint("BOTTOMRIGHT", bodyPanel, "BOTTOMRIGHT", -14, 134)
+    frame.graphPanel = graphPanel
+
+    local graphTitle = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    graphTitle:SetPoint("TOPLEFT", graphPanel, "TOPLEFT", 12, -10)
+    graphTitle:SetText("Price evolution")
+    frame.graphTitle = graphTitle
+
+    local graphCanvas = CreateFrame("Frame", nil, graphPanel)
+    graphCanvas:SetPoint("TOPLEFT", graphPanel, "TOPLEFT", 92, -28)
+    graphCanvas:SetPoint("BOTTOMRIGHT", graphPanel, "BOTTOMRIGHT", -18, 32)
+    frame.graphCanvas = graphCanvas
+
+    for index, anchorPoint in ipairs({ "TOP", "CENTER", "BOTTOM" }) do
+        local gridLine = graphCanvas:CreateTexture(nil, "BACKGROUND")
+        gridLine:SetColorTexture(1, 1, 1, index == 2 and 0.08 or 0.05)
+        gridLine:SetPoint("LEFT", graphCanvas, "LEFT", 0, 0)
+        gridLine:SetPoint("RIGHT", graphCanvas, "RIGHT", 0, 0)
+        gridLine:SetPoint(anchorPoint, graphCanvas, anchorPoint, 0, 0)
+        gridLine:SetHeight(1)
+    end
+
+    local graphHighText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphHighText:SetPoint("TOPRIGHT", graphCanvas, "TOPLEFT", -10, 2)
+    graphHighText:SetWidth(78)
+    graphHighText:SetJustifyH("RIGHT")
+    graphHighText:SetTextColor(0.72, 0.86, 1.0)
+    frame.graphHighText = graphHighText
+
+    local graphMidText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphMidText:SetPoint("RIGHT", graphCanvas, "LEFT", -10, 0)
+    graphMidText:SetWidth(78)
+    graphMidText:SetJustifyH("RIGHT")
+    graphMidText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphMidText = graphMidText
+
+    local graphLowText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphLowText:SetPoint("BOTTOMRIGHT", graphCanvas, "BOTTOMLEFT", -10, -2)
+    graphLowText:SetWidth(78)
+    graphLowText:SetJustifyH("RIGHT")
+    graphLowText:SetTextColor(0.72, 0.86, 1.0)
+    frame.graphLowText = graphLowText
+
+    local graphStartText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphStartText:SetPoint("TOPLEFT", graphCanvas, "BOTTOMLEFT", 0, -8)
+    graphStartText:SetWidth(120)
+    graphStartText:SetJustifyH("LEFT")
+    graphStartText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphStartText = graphStartText
+
+    local graphEndText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphEndText:SetPoint("TOPRIGHT", graphCanvas, "BOTTOMRIGHT", 0, -8)
+    graphEndText:SetWidth(120)
+    graphEndText:SetJustifyH("RIGHT")
+    graphEndText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphEndText = graphEndText
+
+    local graphEmptyText = graphCanvas:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphEmptyText:SetPoint("CENTER", graphCanvas, "CENTER", 0, 0)
+    graphEmptyText:SetJustifyH("CENTER")
+    graphEmptyText:SetTextColor(0.62, 0.66, 0.74)
+    graphEmptyText:SetText("")
+    frame.graphEmptyText = graphEmptyText
+
+    local statsPanel = CreateInventoryPanel(bodyPanel, { 0.05, 0.06, 0.08, 0.86 }, { 1.0, 0.82, 0.18, 0.10 })
+    statsPanel:SetPoint("BOTTOMLEFT", bodyPanel, "BOTTOMLEFT", 14, 14)
+    statsPanel:SetPoint("BOTTOMRIGHT", bodyPanel, "BOTTOMRIGHT", -14, 14)
+    statsPanel:SetHeight(108)
+    frame.statsPanel = statsPanel
+
+    local statsText = statsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    statsText:SetPoint("TOPLEFT", statsPanel, "TOPLEFT", 12, -10)
+    statsText:SetPoint("BOTTOMRIGHT", statsPanel, "BOTTOMRIGHT", -12, 10)
+    statsText:SetJustifyH("LEFT")
+    statsText:SetJustifyV("TOP")
+    statsText:SetTextColor(0.88, 0.92, 1.0)
+    statsText:SetText("")
+    frame.statsText = statsText
+
+    Theme:CreateResizeButton(frame, {
+        minWidth = INVENTORY_DETAILS_WINDOW_MIN_WIDTH,
+        minHeight = INVENTORY_DETAILS_WINDOW_MIN_HEIGHT,
+        maxWidth = 1040,
+        maxHeight = 820,
+        onResizeStop = function()
+            addon:RefreshInventoryItemDetailsWindow()
+        end,
+    })
+
+    frame:SetScript("OnSizeChanged", function()
+        if frame.isManualResizing then
+            return
+        end
+        addon:RefreshInventoryItemDetailsWindow()
+    end)
+    frame:SetScript("OnShow", function()
+        addon:RefreshInventoryItemDetailsWindow()
+    end)
+    frame:SetScript("OnHide", function()
+        GameTooltip:Hide()
+    end)
+
+    self.inventoryItemDetailsFrame = frame
+end
+
+function GoldTracker:OpenInventoryItemDetailsWindow(row)
+    if type(row) ~= "table" or type(row.itemLink) ~= "string" or row.itemLink == "" then
+        return
+    end
+
+    self:CreateInventoryItemDetailsWindow()
+    local frame = self.inventoryItemDetailsFrame
+    if not frame then
+        return
+    end
+
+    local itemKey, history
+    if type(self.GetMarketHistoryForItem) == "function" then
+        itemKey, history = self:GetMarketHistoryForItem(row.itemLink)
+    end
+
+    frame.itemData = {
+        itemLink = row.itemLink,
+        itemName = row.itemName,
+        itemQuality = row.itemQuality,
+        icon = row.iconTexture,
+        quantity = row.quantity,
+        unitValue = row.unitValue,
+        totalValue = row.totalValue,
+        valueSourceID = row.valueSourceID,
+        valueSourceLabel = row.valueSourceLabel,
+    }
+    frame.marketHistoryItemKey = itemKey
+    frame.marketHistory = history
+    frame.selectedSourceKey = GetInventoryDetailsPreferredSourceKey(frame.itemData, history)
+
+    frame:Show()
+    if type(Theme.BringToFront) == "function" then
+        Theme:BringToFront(frame, self.inventoryFrame)
+    else
+        frame:Raise()
+    end
+    self:RefreshInventoryItemDetailsWindow()
+end
+
 function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper, sortKey, sortAscending)
     local source = self.VALUE_SOURCE_BY_ID[valueSourceID] or self:GetCurrentValueSource()
     local sourceID = source and source.id
@@ -702,7 +1388,8 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
                     local itemName, infoQuality, itemIcon = GetItemDisplayData(itemLink, slotInfo)
                     local itemQuality = tonumber(slotInfo and slotInfo.quality) or tonumber(infoQuality) or self:GetItemQualityFromLink(itemLink)
                     if ItemPassesMinimumQuality(itemQuality, normalizedMinimumQuality) then
-                        local unitValue = self:GetItemUnitValueFromSource(sourceID, itemLink)
+                        local unitValue, resolvedSourceID, resolvedSourceLabel =
+                            GetInventoryUnitValue(self, sourceID, itemLink)
                         local quantity = math.max(1, math.floor(tonumber(slotInfo and slotInfo.stackCount) or 1))
                         local stackValue = math.max(0, math.floor((unitValue * quantity) + 0.5))
                         if unitValue > 0 then
@@ -716,6 +1403,9 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
                                 slotIndex = slotIndex,
                                 quantity = quantity,
                                 unitValue = unitValue,
+                                valueSourceID = resolvedSourceID or sourceID,
+                                valueSourceLabel = resolvedSourceLabel,
+                                valueSourceWasFallback = resolvedSourceID ~= sourceID,
                                 totalValue = stackValue,
                                 stackCount = 1,
                                 regionSoldPerDay = demandData.regionSoldPerDay,
@@ -739,6 +1429,11 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
     local items = {}
     for _, item in ipairs(candidateItems) do
         if item.totalValue > normalizedMinimumValue then
+            if type(self.GetMarketHistorySampleCount) == "function" then
+                item.marketHistorySampleCount = self:GetMarketHistorySampleCount(item.itemLink)
+            else
+                item.marketHistorySampleCount = 0
+            end
             matchedStacks = matchedStacks + item.stackCount
             totalValue = totalValue + item.totalValue
             totalQuantity = totalQuantity + item.quantity
@@ -786,6 +1481,7 @@ function GoldTracker:UpdateInventorySortHeaderState()
     local sortAscending = frame.inventorySortAscending == true
     local headers = {
         demand = { button = frame.demandHeaderButton, label = "Demand" },
+        historySamples = { button = frame.historyHeaderButton, label = "Hist" },
         itemName = { button = frame.itemHeaderButton, label = "Item" },
         quantity = { button = frame.quantityHeaderButton, label = "Qty" },
         marketTrend = { button = frame.trendHeaderButton, label = "Trend" },
@@ -827,6 +1523,84 @@ function GoldTracker:ToggleInventorySort(sortKey)
     end
 
     self:RefreshInventoryWindow(true)
+end
+
+local function GetInventoryTableAvailableWidth(frame)
+    if not frame then
+        return 0
+    end
+
+    local width = 0
+    if frame.inventoryScrollFrame then
+        width = tonumber(frame.inventoryScrollFrame:GetWidth()) or 0
+    end
+    if width <= 1 and frame.listPanel then
+        width = (tonumber(frame.listPanel:GetWidth()) or 0) - 38
+    end
+
+    return math.max(1, width - 6)
+end
+
+local function SetInventoryHeaderColumn(button, listPanel, leftOffset, width)
+    if not button or not listPanel then
+        return
+    end
+
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", listPanel, "TOPLEFT", leftOffset, -12)
+    button:SetWidth(math.max(1, width))
+end
+
+local function SetInventoryRowColumn(fontString, row, leftOffset, width)
+    if not fontString or not row then
+        return
+    end
+
+    fontString:ClearAllPoints()
+    fontString:SetPoint("LEFT", row, "LEFT", leftOffset, 0)
+    fontString:SetWidth(math.max(1, width))
+end
+
+local function ApplyInventoryTableColumnLayout(frame)
+    if not frame then
+        return
+    end
+
+    local availableWidth = GetInventoryTableAvailableWidth(frame)
+    if frame.inventoryContent then
+        frame.inventoryContent:SetWidth(availableWidth)
+    end
+
+    local itemX = INVENTORY_ROW_ICON_LEFT + INVENTORY_ICON_SIZE + INVENTORY_ROW_ICON_GAP
+    local rightEdge = availableWidth - INVENTORY_ROW_RIGHT_PADDING
+    local totalX = rightEdge - INVENTORY_TOTAL_VALUE_WIDTH
+    local unitX = totalX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
+    local trendX = unitX - INVENTORY_COLUMN_GAP - INVENTORY_TREND_WIDTH
+    local demandX = trendX - INVENTORY_COLUMN_GAP - INVENTORY_DEMAND_WIDTH
+    local historyX = demandX - INVENTORY_COLUMN_GAP - INVENTORY_HISTORY_WIDTH
+    local quantityX = historyX - INVENTORY_COLUMN_GAP - INVENTORY_QUANTITY_WIDTH
+    local itemWidth = math.max(INVENTORY_ITEM_MIN_WIDTH, quantityX - INVENTORY_COLUMN_GAP - itemX)
+
+    if frame.listPanel then
+        local headerX = INVENTORY_HEADER_LEFT_INSET
+        SetInventoryHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX, itemWidth)
+        SetInventoryHeaderColumn(frame.quantityHeaderButton, frame.listPanel, headerX + quantityX, INVENTORY_QUANTITY_WIDTH)
+        SetInventoryHeaderColumn(frame.historyHeaderButton, frame.listPanel, headerX + historyX, INVENTORY_HISTORY_WIDTH)
+        SetInventoryHeaderColumn(frame.demandHeaderButton, frame.listPanel, headerX + demandX, INVENTORY_DEMAND_WIDTH)
+        SetInventoryHeaderColumn(frame.trendHeaderButton, frame.listPanel, headerX + trendX, INVENTORY_TREND_WIDTH)
+        SetInventoryHeaderColumn(frame.unitHeaderButton, frame.listPanel, headerX + unitX, INVENTORY_UNIT_VALUE_WIDTH)
+        SetInventoryHeaderColumn(frame.totalHeaderButton, frame.listPanel, headerX + totalX, INVENTORY_TOTAL_VALUE_WIDTH)
+    end
+
+    for _, row in ipairs(frame.inventoryRows or {}) do
+        SetInventoryRowColumn(row.itemText, row, itemX, itemWidth)
+        SetInventoryRowColumn(row.quantityText, row, quantityX, INVENTORY_QUANTITY_WIDTH)
+        SetInventoryRowColumn(row.historySamplesText, row, historyX, INVENTORY_HISTORY_WIDTH)
+        SetInventoryRowColumn(row.demandText, row, demandX, INVENTORY_DEMAND_WIDTH)
+        SetInventoryRowColumn(row.trendText, row, trendX, INVENTORY_TREND_WIDTH)
+        SetInventoryRowColumn(row.unitValueText, row, unitX, INVENTORY_UNIT_VALUE_WIDTH)
+        SetInventoryRowColumn(row.totalValueText, row, totalX, INVENTORY_TOTAL_VALUE_WIDTH)
+    end
 end
 
 function GoldTracker:GetInventoryWindowRow(index)
@@ -888,8 +1662,15 @@ function GoldTracker:GetInventoryWindowRow(index)
     demandText:SetWordWrap(false)
     row.demandText = demandText
 
+    local historySamplesText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    historySamplesText:SetPoint("RIGHT", demandText, "LEFT", -12, 0)
+    historySamplesText:SetWidth(INVENTORY_HISTORY_WIDTH)
+    historySamplesText:SetJustifyH("RIGHT")
+    historySamplesText:SetWordWrap(false)
+    row.historySamplesText = historySamplesText
+
     local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    quantityText:SetPoint("RIGHT", demandText, "LEFT", -12, 0)
+    quantityText:SetPoint("RIGHT", historySamplesText, "LEFT", -12, 0)
     quantityText:SetWidth(INVENTORY_QUANTITY_WIDTH)
     quantityText:SetJustifyH("RIGHT")
     quantityText:SetWordWrap(false)
@@ -949,22 +1730,51 @@ function GoldTracker:GetInventoryWindowRow(index)
             0.72, 0.86, 1.0,
             1, 1, 1
         )
+        if type(self.valueSourceLabel) == "string" and self.valueSourceLabel ~= "" then
+            GameTooltip:AddDoubleLine(
+                "Inventory value source",
+                self.valueSourceWasFallback and (self.valueSourceLabel .. " fallback") or self.valueSourceLabel,
+                0.72, 0.86, 1.0,
+                1, 1, 1
+            )
+        end
+        if type(self.marketHistoryInsight) == "table" then
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("Local market history", 1.0, 0.82, 0.18)
+            GameTooltip:AddDoubleLine(
+                "Saved snapshots",
+                tostring(self.marketHistoryInsight.sampleCount or self.marketHistorySampleCount or 0),
+                0.72, 0.86, 1.0,
+                1, 1, 1
+            )
+            GameTooltip:AddLine(self.marketHistoryInsight.summary or "Collecting local market history.", 0.72, 0.86, 1.0)
+            if type(self.marketHistoryInsight.detail) == "string" and self.marketHistoryInsight.detail ~= "" then
+                GameTooltip:AddLine(self.marketHistoryInsight.detail, 0.62, 0.66, 0.74)
+            end
+        end
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Right-click to load into the Auction House sell tab.", 0.72, 0.86, 1.0)
+        GameTooltip:AddLine("Left-click for market details. Right-click to load into the Auction House sell tab.", 0.72, 0.86, 1.0)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
     row:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" and HandleModifiedItemClick then
-            HandleModifiedItemClick(self.itemLink)
+        if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" then
+            local hasModifier = (IsShiftKeyDown and IsShiftKeyDown())
+                or (IsControlKeyDown and IsControlKeyDown())
+                or (IsAltKeyDown and IsAltKeyDown())
+            if hasModifier and HandleModifiedItemClick and HandleModifiedItemClick(self.itemLink) then
+                return
+            end
+            GoldTracker:OpenInventoryItemDetailsWindow(self)
         elseif button == "RightButton" then
             GoldTracker:LoadInventoryItemIntoAuctionHouse(self)
         end
     end)
 
     frame.inventoryRows[index] = row
+    ApplyInventoryTableColumnLayout(frame)
     return row
 end
 
@@ -974,8 +1784,7 @@ function GoldTracker:RefreshInventoryWindowLayout()
         return
     end
 
-    local contentWidth = (frame.inventoryScrollFrame:GetWidth() or 0) - 6
-    frame.inventoryContent:SetWidth(math.max(1, contentWidth))
+    ApplyInventoryTableColumnLayout(frame)
     if frame.inventoryScrollFrame.UpdateScrollChildRect then
         frame.inventoryScrollFrame:UpdateScrollChildRect()
     end
@@ -1019,14 +1828,31 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
     end
 
     if frame.emptyText then
-        frame.emptyText:SetShown(#items == 0)
-        frame.emptyText:SetText("No matching auctionable inventory items. Check the source, quality, and value filters.")
+        frame.emptyText:SetText("")
+        frame.emptyText:Hide()
+    end
+
+    if type(self.RecordInventoryMarketSnapshots) == "function" then
+        self:RecordInventoryMarketSnapshots(items)
+    end
+    if frame.inventorySortKey == "historySamples" and type(self.GetMarketHistorySampleCount) == "function" then
+        for _, item in ipairs(items) do
+            item.marketHistorySampleCount = self:GetMarketHistorySampleCount(item.itemLink)
+        end
+        SortInventoryItems(items, frame.inventorySortKey, frame.inventorySortAscending)
     end
 
     for index, item in ipairs(items) do
         local row = self:GetInventoryWindowRow(index)
         if row then
             row.itemLink = item.itemLink
+            row.itemName = item.itemName
+            row.itemQuality = item.itemQuality
+            row.iconTexture = item.icon
+            row.quantity = item.quantity
+            row.unitValue = item.unitValue
+            row.totalValue = item.totalValue
+            row.valueSourceID = item.valueSourceID
             row.bagID = item.bagID
             row.slotIndex = item.slotIndex
             row.regionSoldPerDay = item.regionSoldPerDay
@@ -1034,9 +1860,18 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
             row.marketValue = item.marketValue
             row.historicalValue = item.historicalValue
             row.marketTrendPercent = item.marketTrendPercent
+            row.valueSourceLabel = item.valueSourceLabel
+            row.valueSourceWasFallback = item.valueSourceWasFallback == true
+            row.marketHistoryInsight = type(self.GetInventoryMarketInsight) == "function"
+                and self:GetInventoryMarketInsight(item)
+                or nil
+            row.marketHistorySampleCount = row.marketHistoryInsight and row.marketHistoryInsight.sampleCount
+                or item.marketHistorySampleCount
+                or 0
             row.itemText:SetText(item.itemLink)
             row.quantityText:SetText(tostring(item.quantity or 0))
             row.demandText:SetText(FormatInventorySoldPerDay(item.regionSoldPerDay))
+            row.historySamplesText:SetText(row.marketHistorySampleCount > 0 and tostring(row.marketHistorySampleCount) or "--")
             row.trendText:SetText(FormatInventoryTrendPercent(item.marketTrendPercent))
             row.unitValueText:SetText(self:FormatMoney(item.unitValue or 0))
             row.totalValueText:SetText(self:FormatMoney(item.totalValue or 0))
@@ -1048,6 +1883,13 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                 item.demandColorG or 0.66,
                 item.demandColorB or 0.74
             )
+            if row.marketHistorySampleCount >= 10 then
+                row.historySamplesText:SetTextColor(0.68, 0.96, 0.72)
+            elseif row.marketHistorySampleCount >= 3 then
+                row.historySamplesText:SetTextColor(0.72, 0.86, 1.0)
+            else
+                row.historySamplesText:SetTextColor(0.62, 0.66, 0.74)
+            end
             row.quantityText:SetTextColor(0.92, 0.95, 1.0)
 
             if item.icon then
@@ -1084,10 +1926,6 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
         end
     end
 
-    if frame.emptyText and #items == 0 then
-        yOffset = math.max(yOffset, 48)
-    end
-
     frame.inventoryContent:SetHeight(math.max(1, yOffset))
     self:RefreshInventoryWindowLayout()
     if scrollToTop and frame.inventoryScrollFrame then
@@ -1113,7 +1951,7 @@ function GoldTracker:CreateInventoryWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerInventoryFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(760, 500)
+    frame:SetSize(INVENTORY_WINDOW_MIN_WIDTH, INVENTORY_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -1122,13 +1960,18 @@ function GoldTracker:CreateInventoryWindow()
     frame:SetMovable(true)
     frame:SetResizable(true)
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(760, 380, 1100, 820)
+        frame:SetResizeBounds(
+            INVENTORY_WINDOW_MIN_WIDTH,
+            INVENTORY_WINDOW_MIN_HEIGHT,
+            INVENTORY_WINDOW_MAX_WIDTH,
+            INVENTORY_WINDOW_MAX_HEIGHT
+        )
     else
         if frame.SetMinResize then
-            frame:SetMinResize(760, 380)
+            frame:SetMinResize(INVENTORY_WINDOW_MIN_WIDTH, INVENTORY_WINDOW_MIN_HEIGHT)
         end
         if frame.SetMaxResize then
-            frame:SetMaxResize(1100, 820)
+            frame:SetMaxResize(INVENTORY_WINDOW_MAX_WIDTH, INVENTORY_WINDOW_MAX_HEIGHT)
         end
     end
     frame:EnableMouse(true)
@@ -1276,8 +2119,15 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.demandHeaderButton = demandHeaderButton
 
+    local historyHeaderButton = CreateInventoryHeaderButton(listPanel, "Hist", INVENTORY_HISTORY_WIDTH, "RIGHT")
+    historyHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -12, 0)
+    historyHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("historySamples")
+    end)
+    frame.historyHeaderButton = historyHeaderButton
+
     local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
-    quantityHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -12, 0)
+    quantityHeaderButton:SetPoint("RIGHT", historyHeaderButton, "LEFT", -12, 0)
     quantityHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("quantity")
     end)
@@ -1324,7 +2174,8 @@ function GoldTracker:CreateInventoryWindow()
     emptyText:SetPoint("TOPRIGHT", content, "TOPRIGHT", -10, -12)
     emptyText:SetJustifyH("LEFT")
     emptyText:SetTextColor(0.62, 0.66, 0.74)
-    emptyText:SetText("No matching auctionable inventory items.")
+    emptyText:SetText("")
+    emptyText:Hide()
     frame.emptyText = emptyText
 
     local metaText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -1336,10 +2187,10 @@ function GoldTracker:CreateInventoryWindow()
     frame.metaText = metaText
 
     Theme:CreateResizeButton(frame, {
-        minWidth = 760,
-        minHeight = 380,
-        maxWidth = 1100,
-        maxHeight = 820,
+        minWidth = INVENTORY_WINDOW_MIN_WIDTH,
+        minHeight = INVENTORY_WINDOW_MIN_HEIGHT,
+        maxWidth = INVENTORY_WINDOW_MAX_WIDTH,
+        maxHeight = INVENTORY_WINDOW_MAX_HEIGHT,
         onResizeStop = function()
             addon:RefreshInventoryWindowLayout()
         end,

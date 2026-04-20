@@ -255,6 +255,14 @@ function HistoryDataService:CompareHistorySessionsByRecency(a, b)
 end
 
 function HistoryDataService:GetHistorySortValue(session, sortKey)
+    if sortKey == "highlights" then
+        local highlightCount = tonumber(session and session.highlightItemCount)
+        if not highlightCount then
+            highlightCount = (tonumber(session and session.lowHighlightItemCount) or 0)
+                + (tonumber(session and session.highHighlightItemCount) or 0)
+        end
+        return highlightCount or 0
+    end
     if sortKey == "sessionTotal" then
         return tonumber(session and session.totalValue) or 0
     end

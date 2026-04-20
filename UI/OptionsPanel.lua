@@ -64,6 +64,15 @@ function GoldTracker:RefreshOptionsControls()
     if controls.historyDetailsFontSizeValueText then
         controls.historyDetailsFontSizeValueText:SetText(string.format("%d px", self:GetHistoryDetailsFontSize()))
     end
+    if controls.marketHistoryRetentionDaysInput and not controls.marketHistoryRetentionDaysInput:HasFocus() then
+        controls.marketHistoryRetentionDaysInput:SetText(tostring(self.db.marketHistoryRetentionDays))
+    end
+    if controls.marketHistoryMaxItemsInput and not controls.marketHistoryMaxItemsInput:HasFocus() then
+        controls.marketHistoryMaxItemsInput:SetText(tostring(self.db.marketHistoryMaxItems))
+    end
+    if controls.marketHistoryMaxSnapshotsPerItemInput and not controls.marketHistoryMaxSnapshotsPerItemInput:HasFocus() then
+        controls.marketHistoryMaxSnapshotsPerItemInput:SetText(tostring(self.db.marketHistoryMaxSnapshotsPerItem))
+    end
     controls.rawLootLogCheckbox:SetChecked(self.db.showRawLootedGoldInLog)
     controls.ignoreMailboxLootCheckbox:SetChecked(self:IsIgnoreMailboxLootWhenMailOpenEnabled())
     controls.mainWindowGoldPerHourCheckbox:SetChecked(self:IsMainWindowGoldPerHourEnabled())
@@ -150,6 +159,36 @@ function GoldTracker:SaveHistoryDetailsFontSizeInput(editBox)
     if self.historyFrame and self.historyFrame:IsShown() and self.historyFrame.view == "details" then
         self:RefreshHistoryDetailsWindow()
     end
+end
+
+function GoldTracker:SetMarketHistoryNumberOption(dbKey, value, minimumValue, maximumValue, defaultValue)
+    local numberValue = tonumber(value) or defaultValue
+    numberValue = math.floor((numberValue or minimumValue) + 0.5)
+    numberValue = math.max(minimumValue, math.min(maximumValue, numberValue))
+
+    if self.db then
+        self.db[dbKey] = numberValue
+    end
+    if type(self.PruneMarketHistory) == "function" then
+        self:PruneMarketHistory()
+    end
+    if self.inventoryFrame and self.inventoryFrame:IsShown() then
+        self:RefreshInventoryWindow(false)
+    end
+
+    return numberValue
+end
+
+function GoldTracker:SaveMarketHistoryNumberInput(editBox, dbKey, minimumValue, maximumValue, defaultValue)
+    local savedValue = self:SetMarketHistoryNumberOption(
+        dbKey,
+        editBox:GetText(),
+        minimumValue,
+        maximumValue,
+        defaultValue
+    )
+    editBox:SetText(tostring(savedValue))
+    self:RefreshOptionsControls()
 end
 
 function GoldTracker:CreateOptionsPanel()
@@ -407,6 +446,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local historyCoreSection = CreateOptionsSection(historyContent, nil, "Session History", "Save, reopen, and resume finished sessions.", 144)
     local historyDisplaySection = CreateOptionsSection(historyContent, historyCoreSection, "History Display", "Adjust list density and details text size.", 150)
+    local historyMarketSection = CreateOptionsSection(historyContent, historyDisplaySection, "Local Market History", "Save hourly TSM snapshots for auctionable bag items.", 126)
 
     local alertsCoreSection = CreateOptionsSection(alertsContent, nil, "Alert System", "Enable sound and display alerts for selected loot events.", 126)
     local milestoneSection = CreateOptionsSection(alertsContent, alertsCoreSection, "Session Total Milestones", "Fire when the active session reaches a configured value.", 78)
@@ -689,6 +729,82 @@ function GoldTracker:CreateOptionsPanel()
         addon:SetHistoryDetailsFontSizeOption(value)
     end)
 
+    local function CreateMarketHistoryNumberInput(parent, anchor, labelText, rangeText, dbKey, minValue, maxValue, defaultValue)
+        local label = parent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+        label:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
+        label:SetText(labelText)
+
+        local input = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+        input:SetSize(72, 22)
+        input:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -8)
+        input:SetAutoFocus(false)
+        input:SetNumeric(true)
+        input:SetScript("OnEnterPressed", function(editBox)
+            editBox:ClearFocus()
+            addon:SaveMarketHistoryNumberInput(editBox, dbKey, minValue, maxValue, defaultValue)
+        end)
+        input:SetScript("OnEditFocusLost", function(editBox)
+            addon:SaveMarketHistoryNumberInput(editBox, dbKey, minValue, maxValue, defaultValue)
+        end)
+
+        local range = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        range:SetPoint("LEFT", input, "RIGHT", 8, 0)
+        range:SetTextColor(0.62, 0.66, 0.74)
+        range:SetText(rangeText)
+
+        return input
+    end
+
+    local marketHistoryAnchor = CreateFrame("Frame", nil, historyMarketSection)
+    marketHistoryAnchor:SetPoint("TOPLEFT", historyMarketSection, "TOPLEFT", 14, historyMarketSection.contentTopOffset + 4)
+    marketHistoryAnchor:SetSize(1, 1)
+
+    local marketHistoryRetentionDaysInput = CreateMarketHistoryNumberInput(
+        historyMarketSection,
+        marketHistoryAnchor,
+        "Retention days",
+        "14-365",
+        "marketHistoryRetentionDays",
+        14,
+        365,
+        addon.DEFAULTS.marketHistoryRetentionDays
+    )
+
+    local marketHistoryMaxItemsAnchor = CreateFrame("Frame", nil, historyMarketSection)
+    marketHistoryMaxItemsAnchor:SetPoint("TOPLEFT", marketHistoryAnchor, "TOPLEFT", 220, 0)
+    marketHistoryMaxItemsAnchor:SetSize(1, 1)
+    local marketHistoryMaxItemsInput = CreateMarketHistoryNumberInput(
+        historyMarketSection,
+        marketHistoryMaxItemsAnchor,
+        "Max items",
+        "50-2000",
+        "marketHistoryMaxItems",
+        50,
+        2000,
+        addon.DEFAULTS.marketHistoryMaxItems
+    )
+
+    local marketHistoryMaxSnapshotsAnchor = CreateFrame("Frame", nil, historyMarketSection)
+    marketHistoryMaxSnapshotsAnchor:SetPoint("TOPLEFT", marketHistoryAnchor, "TOPLEFT", 440, 0)
+    marketHistoryMaxSnapshotsAnchor:SetSize(1, 1)
+    local marketHistoryMaxSnapshotsPerItemInput = CreateMarketHistoryNumberInput(
+        historyMarketSection,
+        marketHistoryMaxSnapshotsAnchor,
+        "Snapshots per item",
+        "24-1000",
+        "marketHistoryMaxSnapshotsPerItem",
+        24,
+        1000,
+        addon.DEFAULTS.marketHistoryMaxSnapshotsPerItem
+    )
+
+    local marketHistoryHint = historyMarketSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    marketHistoryHint:SetPoint("TOPLEFT", marketHistoryRetentionDaysInput, "BOTTOMLEFT", 0, -12)
+    marketHistoryHint:SetPoint("TOPRIGHT", historyMarketSection, "TOPRIGHT", -14, 0)
+    marketHistoryHint:SetJustifyH("LEFT")
+    marketHistoryHint:SetTextColor(0.62, 0.66, 0.74)
+    marketHistoryHint:SetText("Snapshots are recorded with the current day and hour when you log in or refresh Auctionable Inventory.")
+
     local rawLootLogCheckbox = CreateFrame("CheckButton", nil, trackingLootSection, "UICheckButtonTemplate")
     rawLootLogCheckbox:SetPoint("TOPLEFT", trackingLootSection, "TOPLEFT", 10, trackingLootSection.contentTopOffset + 4)
     rawLootLogCheckbox:SetScript("OnClick", function(button)
@@ -770,7 +886,7 @@ function GoldTracker:CreateOptionsPanel()
 
     generalContent:SetHeight(436)
     trackingContent:SetHeight(548)
-    historyContent:SetHeight(324)
+    historyContent:SetHeight(462)
 
     local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsCoreSection, "UICheckButtonTemplate")
     alertsEnabledCheckbox:SetPoint("TOPLEFT", alertsCoreSection, "TOPLEFT", 10, alertsCoreSection.contentTopOffset + 4)
@@ -1136,6 +1252,9 @@ function GoldTracker:CreateOptionsPanel()
         historyRowsPerPageValueText = historyRowsPerPageValueText,
         historyDetailsFontSizeSlider = historyDetailsFontSizeSlider,
         historyDetailsFontSizeValueText = historyDetailsFontSizeValueText,
+        marketHistoryRetentionDaysInput = marketHistoryRetentionDaysInput,
+        marketHistoryMaxItemsInput = marketHistoryMaxItemsInput,
+        marketHistoryMaxSnapshotsPerItemInput = marketHistoryMaxSnapshotsPerItemInput,
         rawLootLogCheckbox = rawLootLogCheckbox,
         lootLogTimestampCheckbox = lootLogTimestampCheckbox,
         ignoreMailboxLootCheckbox = ignoreMailboxLootCheckbox,

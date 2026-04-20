@@ -14,15 +14,25 @@ local ROW_SPACING = HistoryConstants.ROW_SPACING
 local DETAILS_LOCATION_FILTER_ALL = HistoryConstants.DETAILS_LOCATION_FILTER_ALL
 local HISTORY_DATE_FILTER_ALL = HistoryConstants.DATE_FILTER_ALL
 local HISTORY_DATE_FILTER_OPTIONS = HistoryConstants.DATE_FILTER_OPTIONS
+local HISTORY_WINDOW_MIN_WIDTH = 1080
 local HISTORY_WINDOW_DEFAULT_HEIGHT = 500
 local HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT = 620
-local LOCATION_TABLE_MAX_VISIBLE_ROWS = 3
+local HISTORY_WINDOW_VERTICAL_CHROME_INSET = 66
+local LOCATION_TABLE_MIN_VISIBLE_ROWS = 3
 local DETAILS_GAP_LOCATION_TABLE_TO_FILTER = 10
 local DETAILS_GAP_FILTER_TO_SUMMARY = 12
 local DETAILS_GAP_SUMMARY_TO_ITEMS = 6
+local DETAILS_LOCATION_COLUMN_GAP = 12
+local DETAILS_LOCATION_MIN_LOCATION_WIDTH = 260
+local DETAILS_LOCATION_TIME_MIN_WIDTH = 190
+local DETAILS_LOCATION_TIME_PREFERRED_WIDTH = 230
+local DETAILS_LOCATION_HIGHLIGHTS_WIDTH = 90
+local DETAILS_LOCATION_DURATION_WIDTH = 72
 local DETAILS_ITEMS_ROW_SPACING = 2
 local DETAILS_ITEMS_VALUE_WIDTH = 110
-local DETAILS_ITEMS_SOURCE_WIDTH = 220
+local DETAILS_ITEMS_SOURCE_MIN_WIDTH = 220
+local DETAILS_ITEMS_MIN_ITEM_WIDTH = 260
+local DETAILS_ITEMS_ROW_FIXED_WIDTH = 142
 local HISTORY_SORT_ICON_SIZE = 10
 local historyDateFilter = HistoryDateFilter:New()
 local historyFormatter = HistoryFormatter:New(GoldTracker)
@@ -213,6 +223,149 @@ local function EscapeCSVValue(value)
     return text
 end
 
+local function ClampHistoryValue(value, minValue, maxValue)
+    value = tonumber(value) or 0
+    minValue = tonumber(minValue) or value
+    maxValue = tonumber(maxValue) or value
+    if maxValue < minValue then
+        maxValue = minValue
+    end
+    if value < minValue then
+        return minValue
+    end
+    if value > maxValue then
+        return maxValue
+    end
+    return value
+end
+
+local function GetHistoryDetailsAvailableItemWidth(frame)
+    if not frame then
+        return 0
+    end
+    local width = 0
+    if frame.detailsItemsScrollFrame then
+        width = tonumber(frame.detailsItemsScrollFrame:GetWidth()) or 0
+    end
+    if width <= 1 and frame.detailsContainer then
+        width = (tonumber(frame.detailsContainer:GetWidth()) or 0) - 46
+    end
+    return math.max(1, width - 6)
+end
+
+local function GetHistoryDetailsSourceColumnWidth(frame, preferredItemWidth, preferredSourceWidth)
+    local availableWidth = GetHistoryDetailsAvailableItemWidth(frame)
+    local itemWidth = math.max(DETAILS_ITEMS_MIN_ITEM_WIDTH, tonumber(preferredItemWidth) or 0)
+    local sourceWidth = math.max(DETAILS_ITEMS_SOURCE_MIN_WIDTH, tonumber(preferredSourceWidth) or 0)
+    local maxSourceWidth = availableWidth - DETAILS_ITEMS_ROW_FIXED_WIDTH - itemWidth
+    if maxSourceWidth < DETAILS_ITEMS_SOURCE_MIN_WIDTH then
+        maxSourceWidth = DETAILS_ITEMS_SOURCE_MIN_WIDTH
+    end
+    return ClampHistoryValue(sourceWidth, DETAILS_ITEMS_SOURCE_MIN_WIDTH, maxSourceWidth)
+end
+
+local function GetHistoryDetailsPreferredItemColumnWidths(frame)
+    local preferredItemWidth = DETAILS_ITEMS_MIN_ITEM_WIDTH
+    local preferredSourceWidth = DETAILS_ITEMS_SOURCE_MIN_WIDTH
+    if not frame then
+        return preferredItemWidth, preferredSourceWidth
+    end
+
+    for _, row in ipairs(frame.detailsItemRows or {}) do
+        if row:IsShown() then
+            if row.itemText and type(row.itemText.GetStringWidth) == "function" then
+                preferredItemWidth = math.max(preferredItemWidth, math.ceil((row.itemText:GetStringWidth() or 0) + 8))
+            end
+            if row.sourceText and type(row.sourceText.GetStringWidth) == "function" then
+                preferredSourceWidth = math.max(preferredSourceWidth, math.ceil((row.sourceText:GetStringWidth() or 0) + 8))
+            end
+        end
+    end
+
+    return preferredItemWidth, preferredSourceWidth
+end
+
+local function ApplyHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredSourceWidth)
+    if not frame then
+        return
+    end
+
+    local sourceWidth = GetHistoryDetailsSourceColumnWidth(frame, preferredItemWidth, preferredSourceWidth)
+    if frame.itemsSourceHeaderText then
+        frame.itemsSourceHeaderText:SetWidth(sourceWidth)
+    end
+    for _, row in ipairs(frame.detailsItemRows or {}) do
+        if row.sourceText then
+            row.sourceText:SetWidth(sourceWidth)
+        end
+    end
+end
+
+local function GetHistoryDetailsAvailableLocationWidth(frame)
+    if not frame then
+        return 0
+    end
+
+    local width = 0
+    if frame.locationTableScrollFrame then
+        width = (tonumber(frame.locationTableScrollFrame:GetWidth()) or 0) - 6
+    end
+    if width <= 1 and frame.locationTableFrame then
+        width = (tonumber(frame.locationTableFrame:GetWidth()) or 0) - 33
+    end
+    return math.max(1, width)
+end
+
+local function ApplyHistoryLocationColumn(region, parent, leftOffset, width)
+    if not region or not parent then
+        return
+    end
+
+    region:ClearAllPoints()
+    region:SetPoint("TOPLEFT", parent, "TOPLEFT", leftOffset, 0)
+    region:SetWidth(width)
+end
+
+local function ApplyHistoryLocationTableColumnLayout(frame)
+    if not frame then
+        return
+    end
+
+    local availableWidth = GetHistoryDetailsAvailableLocationWidth(frame)
+    local fixedWidth = DETAILS_LOCATION_HIGHLIGHTS_WIDTH
+        + DETAILS_LOCATION_DURATION_WIDTH
+        + (DETAILS_LOCATION_COLUMN_GAP * 3)
+    local remainingWidth = math.max(1, availableWidth - fixedWidth)
+    local timeWidth = DETAILS_LOCATION_TIME_PREFERRED_WIDTH
+    if remainingWidth - timeWidth < DETAILS_LOCATION_MIN_LOCATION_WIDTH then
+        timeWidth = math.max(DETAILS_LOCATION_TIME_MIN_WIDTH, remainingWidth - DETAILS_LOCATION_MIN_LOCATION_WIDTH)
+    end
+    local locationWidth = math.max(1, remainingWidth - timeWidth)
+
+    local locationX = 0
+    local timeX = locationX + locationWidth + DETAILS_LOCATION_COLUMN_GAP
+    local highlightsX = timeX + timeWidth + DETAILS_LOCATION_COLUMN_GAP
+    local durationX = highlightsX + DETAILS_LOCATION_HIGHLIGHTS_WIDTH + DETAILS_LOCATION_COLUMN_GAP
+
+    if frame.locationTableContent then
+        frame.locationTableContent:SetWidth(math.max(1, availableWidth))
+    end
+
+    if frame.locationTableFrame then
+        ApplyHistoryLocationColumn(frame.locationHeaderText, frame.locationTableFrame, locationX, locationWidth)
+        ApplyHistoryLocationColumn(frame.timeFrameHeaderText, frame.locationTableFrame, timeX, timeWidth)
+        ApplyHistoryLocationColumn(frame.highlightsHeaderText, frame.locationTableFrame, highlightsX, DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
+        ApplyHistoryLocationColumn(frame.durationHeaderText, frame.locationTableFrame, durationX, DETAILS_LOCATION_DURATION_WIDTH)
+    end
+
+    for _, row in ipairs(frame.locationTableRows or {}) do
+        ApplyHistoryLocationColumn(row.locationText, row, locationX, locationWidth)
+        ApplyHistoryLocationColumn(row.timeFrameText, row, timeX, timeWidth)
+        ApplyHistoryLocationColumn(row.highlightsText, row, highlightsX, DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
+        ApplyHistoryLocationColumn(row.durationText, row, durationX, DETAILS_LOCATION_DURATION_WIDTH)
+    end
+end
+
 local function CompareHistorySessionsByRecency(a, b)
     return historyDataService:CompareHistorySessionsByRecency(a, b)
 end
@@ -275,7 +428,7 @@ function GoldTracker:CreateHistoryWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerHistoryFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(900, HISTORY_WINDOW_DEFAULT_HEIGHT)
+    frame:SetSize(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -284,10 +437,10 @@ function GoldTracker:CreateHistoryWindow()
     frame:SetMovable(true)
     frame:SetResizable(true)
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(760, 420, 1200, 900)
+        frame:SetResizeBounds(HISTORY_WINDOW_MIN_WIDTH, 420, 1200, 900)
     else
         if frame.SetMinResize then
-            frame:SetMinResize(760, 420)
+            frame:SetMinResize(HISTORY_WINDOW_MIN_WIDTH, 420)
         end
         if frame.SetMaxResize then
             frame:SetMaxResize(1200, 900)
@@ -416,11 +569,14 @@ function GoldTracker:CreateHistoryWindow()
     hint:Hide()
     frame.listHintText = hint
 
-    local header = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    header:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 36, -56)
-    header:SetTextColor(1.0, 0.82, 0.18)
-    header:SetText("Session name")
-    frame.listHeaderText = header
+    local headerButton = CreateHistorySortHeaderButton(listContainer, 260, "Session name")
+    headerButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 36, -56)
+    headerButton:EnableMouse(false)
+    if headerButton.sortIcon then
+        headerButton.sortIcon:Hide()
+    end
+    frame.listHeaderButton = headerButton
+    frame.listHeaderText = headerButton.text
 
     local selectPageCheckbox = CreateFrame("CheckButton", nil, listContainer, "UICheckButtonTemplate")
     selectPageCheckbox:SetSize(22, 22)
@@ -431,28 +587,30 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.selectPageCheckbox = selectPageCheckbox
 
-    local summaryHeader = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    summaryHeader:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 302, -56)
-    summaryHeader:SetTextColor(1.0, 0.82, 0.18)
-    summaryHeader:SetText("Highlights")
-    frame.listSummaryHeaderText = summaryHeader
+    local summaryHeaderButton = CreateHistorySortHeaderButton(listContainer, 96, "Highlights")
+    summaryHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 302, -56)
+    summaryHeaderButton:SetScript("OnClick", function()
+        addon:ToggleHistorySort("highlights")
+    end)
+    frame.summaryHeaderButton = summaryHeaderButton
+    frame.listSummaryHeaderText = summaryHeaderButton.text
 
     local totalHeaderButton = CreateHistorySortHeaderButton(listContainer, 104, "Session Total")
-    totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 370, -56)
+    totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 406, -56)
     totalHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("sessionTotal")
     end)
     frame.totalHeaderButton = totalHeaderButton
 
     local totalRawHeaderButton = CreateHistorySortHeaderButton(listContainer, 106, "Raw Total")
-    totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 482, -56)
+    totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 518, -56)
     totalRawHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("sessionTotalRaw")
     end)
     frame.totalRawHeaderButton = totalRawHeaderButton
 
     local durationHeaderButton = CreateHistorySortHeaderButton(listContainer, 64, "Duration")
-    durationHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 596, -56)
+    durationHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 632, -56)
     durationHeaderButton:SetScript("OnClick", function()
         addon:ToggleHistorySort("duration")
     end)
@@ -468,9 +626,9 @@ function GoldTracker:CreateHistoryWindow()
     end
 
     frame.headerDividerNameSummary = CreateHeaderDivider(294)
-    frame.headerDividerSummaryTotal = CreateHeaderDivider(364)
-    frame.headerDividerTotalRaw = CreateHeaderDivider(476)
-    frame.headerDividerRawDuration = CreateHeaderDivider(590)
+    frame.headerDividerSummaryTotal = CreateHeaderDivider(400)
+    frame.headerDividerTotalRaw = CreateHeaderDivider(512)
+    frame.headerDividerRawDuration = CreateHeaderDivider(626)
 
     local headerUnderline = listContainer:CreateTexture(nil, "ARTWORK")
     headerUnderline:SetColorTexture(1, 0.82, 0, 0.35)
@@ -555,7 +713,7 @@ function GoldTracker:CreateHistoryWindow()
 
     local locationColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     locationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, 0)
-    locationColumnHeader:SetWidth(470)
+    locationColumnHeader:SetWidth(DETAILS_LOCATION_MIN_LOCATION_WIDTH)
     locationColumnHeader:SetJustifyH("LEFT")
     if locationColumnHeader.SetWordWrap then
         locationColumnHeader:SetWordWrap(false)
@@ -564,8 +722,8 @@ function GoldTracker:CreateHistoryWindow()
     frame.locationHeaderText = locationColumnHeader
 
     local timeFrameColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    timeFrameColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 476, 0)
-    timeFrameColumnHeader:SetWidth(210)
+    timeFrameColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_COLUMN_GAP, 0)
+    timeFrameColumnHeader:SetWidth(DETAILS_LOCATION_TIME_PREFERRED_WIDTH)
     timeFrameColumnHeader:SetJustifyH("LEFT")
     if timeFrameColumnHeader.SetWordWrap then
         timeFrameColumnHeader:SetWordWrap(false)
@@ -574,8 +732,8 @@ function GoldTracker:CreateHistoryWindow()
     frame.timeFrameHeaderText = timeFrameColumnHeader
 
     local highlightsColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    highlightsColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 692, 0)
-    highlightsColumnHeader:SetWidth(80)
+    highlightsColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 2), 0)
+    highlightsColumnHeader:SetWidth(DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
     highlightsColumnHeader:SetJustifyH("LEFT")
     if highlightsColumnHeader.SetWordWrap then
         highlightsColumnHeader:SetWordWrap(false)
@@ -584,8 +742,8 @@ function GoldTracker:CreateHistoryWindow()
     frame.highlightsHeaderText = highlightsColumnHeader
 
     local durationColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    durationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 776, 0)
-    durationColumnHeader:SetWidth(56)
+    durationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + DETAILS_LOCATION_HIGHLIGHTS_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 3), 0)
+    durationColumnHeader:SetWidth(DETAILS_LOCATION_DURATION_WIDTH)
     durationColumnHeader:SetJustifyH("LEFT")
     if durationColumnHeader.SetWordWrap then
         durationColumnHeader:SetWordWrap(false)
@@ -736,7 +894,7 @@ function GoldTracker:CreateHistoryWindow()
     local itemsSourceHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     itemsSourceHeader:SetPoint("TOP", itemsItemHeader, "TOP", 0, 0)
     itemsSourceHeader:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
-    itemsSourceHeader:SetWidth(DETAILS_ITEMS_SOURCE_WIDTH)
+    itemsSourceHeader:SetWidth(DETAILS_ITEMS_SOURCE_MIN_WIDTH)
     itemsSourceHeader:SetJustifyH("LEFT")
     itemsSourceHeader:SetText("From")
     frame.itemsSourceHeaderText = itemsSourceHeader
@@ -798,7 +956,7 @@ function GoldTracker:CreateHistoryWindow()
     end
 
     Theme:CreateResizeButton(frame, {
-        minWidth = 760,
+        minWidth = HISTORY_WINDOW_MIN_WIDTH,
         minHeight = 420,
         maxWidth = 1200,
         maxHeight = 900,
@@ -904,27 +1062,27 @@ function GoldTracker:GetHistoryRow(index)
 
     local summaryText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     summaryText:SetPoint("LEFT", row, "LEFT", 302, 0)
-    summaryText:SetWidth(60)
+    summaryText:SetWidth(96)
     summaryText:SetJustifyH("LEFT")
     summaryText:SetTextColor(1.0, 0.82, 0.40)
     row.summaryText = summaryText
 
     local totalText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    totalText:SetPoint("LEFT", row, "LEFT", 370, 0)
-    totalText:SetPoint("RIGHT", row, "LEFT", 474, 0)
+    totalText:SetPoint("LEFT", row, "LEFT", 406, 0)
+    totalText:SetPoint("RIGHT", row, "LEFT", 510, 0)
     totalText:SetJustifyH("LEFT")
     totalText:SetTextColor(0.66, 0.96, 0.72)
     row.totalText = totalText
 
     local totalRawText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    totalRawText:SetPoint("LEFT", row, "LEFT", 482, 0)
-    totalRawText:SetPoint("RIGHT", row, "LEFT", 588, 0)
+    totalRawText:SetPoint("LEFT", row, "LEFT", 518, 0)
+    totalRawText:SetPoint("RIGHT", row, "LEFT", 624, 0)
     totalRawText:SetJustifyH("LEFT")
     totalRawText:SetTextColor(0.96, 0.86, 0.54)
     row.totalRawText = totalRawText
 
     local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    durationText:SetPoint("LEFT", row, "LEFT", 596, 0)
+    durationText:SetPoint("LEFT", row, "LEFT", 632, 0)
     durationText:SetPoint("RIGHT", pinButton, "LEFT", -8, 0)
     durationText:SetJustifyH("LEFT")
     durationText:SetTextColor(0.68, 0.86, 1.0)
@@ -984,7 +1142,7 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
 
     local locationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     locationText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    locationText:SetWidth(470)
+    locationText:SetWidth(DETAILS_LOCATION_MIN_LOCATION_WIDTH)
     locationText:SetJustifyH("LEFT")
     locationText:SetTextColor(0.92, 0.95, 1.0)
     if locationText.SetJustifyV then
@@ -996,8 +1154,8 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     row.locationText = locationText
 
     local timeFrameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    timeFrameText:SetPoint("TOPLEFT", row, "TOPLEFT", 476, 0)
-    timeFrameText:SetWidth(210)
+    timeFrameText:SetPoint("TOPLEFT", row, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_COLUMN_GAP, 0)
+    timeFrameText:SetWidth(DETAILS_LOCATION_TIME_PREFERRED_WIDTH)
     timeFrameText:SetJustifyH("LEFT")
     timeFrameText:SetTextColor(0.72, 0.76, 0.84)
     if timeFrameText.SetJustifyV then
@@ -1009,8 +1167,8 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     row.timeFrameText = timeFrameText
 
     local highlightsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    highlightsText:SetPoint("TOPLEFT", row, "TOPLEFT", 692, 0)
-    highlightsText:SetWidth(80)
+    highlightsText:SetPoint("TOPLEFT", row, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 2), 0)
+    highlightsText:SetWidth(DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
     highlightsText:SetJustifyH("LEFT")
     highlightsText:SetTextColor(1.0, 0.82, 0.40)
     if highlightsText.SetJustifyV then
@@ -1022,8 +1180,8 @@ function GoldTracker:GetHistoryLocationDetailsRow(index)
     row.highlightsText = highlightsText
 
     local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    durationText:SetPoint("TOPLEFT", row, "TOPLEFT", 776, 0)
-    durationText:SetWidth(56)
+    durationText:SetPoint("TOPLEFT", row, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + DETAILS_LOCATION_HIGHLIGHTS_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 3), 0)
+    durationText:SetWidth(DETAILS_LOCATION_DURATION_WIDTH)
     durationText:SetJustifyH("LEFT")
     durationText:SetTextColor(0.68, 0.86, 1.0)
     if durationText.SetJustifyV then
@@ -1125,7 +1283,7 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
 
     local sourceText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     sourceText:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-    sourceText:SetWidth(DETAILS_ITEMS_SOURCE_WIDTH)
+    sourceText:SetWidth(GetHistoryDetailsSourceColumnWidth(frame))
     sourceText:SetJustifyH("LEFT")
     sourceText:SetWordWrap(false)
     row.sourceText = sourceText
@@ -1148,11 +1306,22 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
     row.divider = divider
 
     row:SetScript("OnEnter", function(self)
-        if type(self.itemLink) ~= "string" or self.itemLink == "" then
+        local hasItemLink = type(self.itemLink) == "string" and self.itemLink ~= ""
+        local hasLootSourceText = type(self.lootSourceText) == "string" and self.lootSourceText ~= ""
+        if not hasItemLink and not hasLootSourceText then
             return
         end
+
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:SetHyperlink(self.itemLink)
+        GameTooltip:ClearLines()
+        if hasItemLink then
+            GameTooltip:SetHyperlink(self.itemLink)
+        end
+        if hasLootSourceText then
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("From", 1.0, 0.82, 0.18)
+            GameTooltip:AddLine(self.lootSourceText, 0.66, 0.84, 1.0, true)
+        end
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function()
@@ -1174,6 +1343,8 @@ function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
         return
     end
 
+    ApplyHistoryDetailsItemsColumnLayout(frame)
+
     local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
     baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
     local rowHeight = math.max(18, baseSize + 8)
@@ -1190,6 +1361,7 @@ function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
         frame.detailsItemsContent:SetHeight(1)
         if frame.detailsItemsScrollFrame then
             frame.detailsItemsContent:SetWidth(math.max(1, (frame.detailsItemsScrollFrame:GetWidth() or 0) - 6))
+            ApplyHistoryDetailsItemsColumnLayout(frame)
             if frame.detailsItemsScrollFrame.UpdateScrollChildRect then
                 frame.detailsItemsScrollFrame:UpdateScrollChildRect()
             end
@@ -1208,9 +1380,10 @@ function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
             end
 
             row.itemLink = item and item.itemLink or nil
+            row.lootSourceText = (type(item and item.lootSourceText) == "string" and item.lootSourceText ~= "") and item.lootSourceText or nil
             row.itemText:SetText(itemText)
             row.valueText:SetText(self:FormatMoney(tonumber(item and item.totalValue) or 0))
-            row.sourceText:SetText((type(item and item.lootSourceText) == "string" and item.lootSourceText ~= "") and item.lootSourceText or "")
+            row.sourceText:SetText(row.lootSourceText or "")
             row.itemText:SetTextColor(0.92, 0.95, 1.0)
             row.valueText:SetTextColor(0.68, 0.96, 0.72)
             row.sourceText:SetTextColor(0.66, 0.84, 1.0)
@@ -1241,6 +1414,7 @@ function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
     frame.detailsItemsContent:SetHeight(math.max(1, yOffset))
     if frame.detailsItemsScrollFrame then
         frame.detailsItemsContent:SetWidth(math.max(1, (frame.detailsItemsScrollFrame:GetWidth() or 0) - 6))
+        ApplyHistoryDetailsItemsColumnLayout(frame, GetHistoryDetailsPreferredItemColumnWidths(frame))
         if frame.detailsItemsScrollFrame.UpdateScrollChildRect then
             frame.detailsItemsScrollFrame:UpdateScrollChildRect()
         end
@@ -1388,7 +1562,7 @@ function GoldTracker:GetDisplaySortedSessionHistory()
             return aPinned and not bPinned
         end
 
-        if sortKey == "sessionTotal" or sortKey == "sessionTotalRaw" or sortKey == "duration" then
+        if sortKey == "highlights" or sortKey == "sessionTotal" or sortKey == "sessionTotalRaw" or sortKey == "duration" then
             local aValue = GetHistorySortValue(a, sortKey)
             local bValue = GetHistorySortValue(b, sortKey)
             if aValue ~= bValue then
@@ -1414,6 +1588,7 @@ function GoldTracker:UpdateHistorySortHeaderState()
     local sortKey = frame.sortKey
     local sortAscending = frame.sortAscending == true
     local headers = {
+        highlights = { button = frame.summaryHeaderButton, label = "Highlights" },
         sessionTotal = { button = frame.totalHeaderButton, label = "Session Total" },
         sessionTotalRaw = { button = frame.totalRawHeaderButton, label = "Raw Total" },
         duration = { button = frame.durationHeaderButton, label = "Duration" },
@@ -1445,7 +1620,7 @@ function GoldTracker:ToggleHistorySort(sortKey)
     end
 
     local frame = self.historyFrame
-    if sortKey ~= "sessionTotal" and sortKey ~= "sessionTotalRaw" and sortKey ~= "duration" then
+    if sortKey ~= "highlights" and sortKey ~= "sessionTotal" and sortKey ~= "sessionTotalRaw" and sortKey ~= "duration" then
         return
     end
 
@@ -1912,6 +2087,7 @@ function GoldTracker:RefreshHistoryDetailsWindow()
             self:GetHistoryLocationDetailsRow(index)
         end
         self:ApplyHistoryDetailsFontSize()
+        ApplyHistoryLocationTableColumnLayout(frame)
 
         local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
         baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
@@ -1919,7 +2095,7 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         local minRowHeight = math.max(12, baseSize + 3)
         local yOffset = 0
         local bodyHeight = 0
-        local visibleBodyHeight = 0
+        local minVisibleBodyHeight = 0
 
         for index, rowData in ipairs(locationRows) do
             local row = self:GetHistoryLocationDetailsRow(index)
@@ -1954,14 +2130,14 @@ function GoldTracker:RefreshHistoryDetailsWindow()
                 end
 
                 bodyHeight = bodyHeight + rowHeight
-                if index <= LOCATION_TABLE_MAX_VISIBLE_ROWS then
-                    visibleBodyHeight = visibleBodyHeight + rowHeight
+                if index <= LOCATION_TABLE_MIN_VISIBLE_ROWS then
+                    minVisibleBodyHeight = minVisibleBodyHeight + rowHeight
                 end
                 if index < #locationRows then
                     bodyHeight = bodyHeight + rowSpacing
                     yOffset = yOffset + rowHeight + rowSpacing
-                    if index < LOCATION_TABLE_MAX_VISIBLE_ROWS then
-                        visibleBodyHeight = visibleBodyHeight + rowSpacing
+                    if index < LOCATION_TABLE_MIN_VISIBLE_ROWS then
+                        minVisibleBodyHeight = minVisibleBodyHeight + rowSpacing
                     end
                 else
                     yOffset = yOffset + rowHeight
@@ -1979,20 +2155,41 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         end
 
         local scrollBodyHeight = bodyHeight
-        local maxVisibleBodyHeight = (visibleBodyHeight > 0) and visibleBodyHeight or bodyHeight
-        if #locationRows <= LOCATION_TABLE_MAX_VISIBLE_ROWS then
+        local maxVisibleBodyHeight = (minVisibleBodyHeight > 0) and minVisibleBodyHeight or bodyHeight
+        if #locationRows <= LOCATION_TABLE_MIN_VISIBLE_ROWS then
             maxVisibleBodyHeight = bodyHeight
+        else
+            local detailsHeight = tonumber(frame.detailsContainer and frame.detailsContainer:GetHeight()) or 0
+            local sessionNameHeight = tonumber(frame.sessionNameText and frame.sessionNameText:GetStringHeight()) or (baseSize + 2)
+            local locationBodyTopOffset = 16 + sessionNameHeight + 6 + 19
+            local summaryMinRowHeight = math.max(12, baseSize + 2)
+            local summaryBodyHeight = (#summaryRowsData * (summaryMinRowHeight + 1)) + math.max(0, #summaryRowsData - 1)
+            local minItemsScrollHeight = math.max(80, baseSize * 4)
+            local reservedBelowLocationBody = DETAILS_GAP_LOCATION_TABLE_TO_FILTER
+                + 22
+                + DETAILS_GAP_FILTER_TO_SUMMARY
+                + summaryBodyHeight
+                + DETAILS_GAP_SUMMARY_TO_ITEMS
+                + (baseSize + 8)
+                + 4
+                + (baseSize + 4)
+                + 8
+                + minItemsScrollHeight
+                + 20
+            local availableBodyHeight = detailsHeight - locationBodyTopOffset - reservedBelowLocationBody
+            local defaultDetailsHeight = HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT - HISTORY_WINDOW_VERTICAL_CHROME_INSET
+            local resizeExtraHeight = math.max(0, detailsHeight - defaultDetailsHeight)
+            local desiredBodyHeight = maxVisibleBodyHeight + resizeExtraHeight
+
+            maxVisibleBodyHeight = math.min(bodyHeight, math.max(maxVisibleBodyHeight, desiredBodyHeight))
+            if availableBodyHeight > 0 then
+                maxVisibleBodyHeight = math.min(maxVisibleBodyHeight, math.max(minVisibleBodyHeight, availableBodyHeight))
+            end
         end
 
         if frame.locationTableContent then
             frame.locationTableContent:SetHeight(math.max(1, scrollBodyHeight))
-            if frame.locationTableScrollFrame then
-                local scrollWidth = (frame.locationTableScrollFrame:GetWidth() or 0) - 6
-                if scrollWidth <= 1 and frame.locationTableFrame then
-                    scrollWidth = (frame.locationTableFrame:GetWidth() or 0) - 33
-                end
-                frame.locationTableContent:SetWidth(math.max(1, scrollWidth))
-            end
+            ApplyHistoryLocationTableColumnLayout(frame)
         end
         if frame.locationTableScrollFrame then
             frame.locationTableScrollFrame:SetHeight(math.max(1, maxVisibleBodyHeight))

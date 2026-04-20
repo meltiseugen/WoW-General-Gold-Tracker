@@ -12,6 +12,7 @@ UI/Theme.lua
 Core/Diagnostics.lua
 Core/Alerts.lua
 Core/History.lua
+Core/MarketHistory.lua
 Core/Session.lua
 UI/MinimapButton.lua
 UI/MainWindow.lua

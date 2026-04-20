@@ -2,7 +2,10 @@ local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
 function GoldTracker:HandleSlashCommand(message)
-    local command = self:Trim((message or ""):lower())
+    local rawMessage = self:Trim(message or "")
+    local command, commandArgs = string.match(rawMessage, "^(%S*)%s*(.-)%s*$")
+    command = string.lower(command or "")
+    commandArgs = commandArgs or ""
 
     if command == "" then
         if self.mainFrame then
@@ -37,8 +40,17 @@ function GoldTracker:HandleSlashCommand(message)
         return
     end
 
+    if command == "market" or command == "markethistory" then
+        if type(self.PrintMarketHistoryDebug) == "function" then
+            self:PrintMarketHistoryDebug(commandArgs)
+        else
+            self:Print("Market history is not loaded yet.")
+        end
+        return
+    end
+
     if command == "help" then
-        local commands = "Commands: /gt, /gt start, /gt new, /gt stop, /gt options"
+        local commands = "Commands: /gt, /gt start, /gt new, /gt stop, /gt options, /gt market <item>"
         if self:IsTotalWindowFeatureEnabled() then
             commands = commands .. ", /gt total, /gtt"
         end
@@ -78,8 +90,13 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self:RegisterEvent("PLAYER_FOCUS_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("BAG_UPDATE_DELAYED")
     self:RegisterEvent("PLAYER_LOGOUT")
     self:UnregisterEvent("ADDON_LOADED")
+
+    if type(self.QueueMarketHistoryBagSnapshot) == "function" then
+        self:QueueMarketHistoryBagSnapshot()
+    end
 
     self:Print("Loaded. Use /gt to open the tracker window.")
 end
@@ -104,6 +121,10 @@ end
 function GoldTracker:OnPlayerEnteringWorld(isInitialLogin, isReloadingUI)
     if not self.minimapButton then
         self:CreateMinimapButton()
+    end
+
+    if type(self.QueueMarketHistoryBagSnapshot) == "function" then
+        self:QueueMarketHistoryBagSnapshot()
     end
 
     self:TryRestorePendingReloadSession()
@@ -154,6 +175,10 @@ GoldTracker:SetScript("OnEvent", function(_, event, ...)
         GoldTracker:OnPlayerFocusChanged(...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         GoldTracker:OnPlayerEnteringWorld(...)
+    elseif event == "BAG_UPDATE_DELAYED" then
+        if type(GoldTracker.QueueMarketHistoryBagSnapshot) == "function" then
+            GoldTracker:QueueMarketHistoryBagSnapshot()
+        end
     elseif event == "PLAYER_LOGOUT" then
         GoldTracker:HandlePlayerLogout()
     end

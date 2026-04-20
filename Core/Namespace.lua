@@ -15,8 +15,8 @@ GoldTracker.OLDER_DEFAULT_WINDOW_WIDTH = 790
 local ENABLE_TOTAL_WINDOW_FEATURE = false
 
 GoldTracker.DEFAULTS = {
-    valueSource = "TSM_DBMARKET",
-    fallbackValueSource = "",
+    valueSource = "TSM_DBMINBUYOUT",
+    fallbackValueSource = "TSM_AUCTIONINGOPNORMAL",
     minimumTrackedItemQuality = 0,
     highlightThreshold = 100000,
     notificationsEnabled = true,
@@ -41,6 +41,9 @@ GoldTracker.DEFAULTS = {
     windowWidth = 780,
     collapsedWindowWidth = 388,
     windowHeight = 460,
+    marketHistoryRetentionDays = 120,
+    marketHistoryMaxItems = 500,
+    marketHistoryMaxSnapshotsPerItem = 240,
 }
 
 GoldTracker.VALUE_SOURCES = {
@@ -234,11 +237,21 @@ function GoldTracker:InitializeDatabase()
     local legacyHighThreshold = tonumber(self.db.highHighlightThreshold)
     local legacyNotificationThreshold = tonumber(self.db.notificationThreshold)
     local hadHighValueDropAlerts = self.db.highValueDropAlerts ~= nil
+    local hadPreviousPricingDefaults = self.db.valueSource == "TSM_DBMARKET"
+        and (self.db.fallbackValueSource == nil or self.db.fallbackValueSource == "")
 
     for key, value in pairs(self.DEFAULTS) do
         if self.db[key] == nil then
             self.db[key] = CloneDefaultValue(value)
         end
+    end
+
+    if self.db.pricingDefaultsVersion ~= 2 then
+        if hadPreviousPricingDefaults then
+            self.db.valueSource = self.DEFAULTS.valueSource
+            self.db.fallbackValueSource = self.DEFAULTS.fallbackValueSource
+        end
+        self.db.pricingDefaultsVersion = 2
     end
 
     if not self.VALUE_SOURCE_BY_ID[self.db.valueSource] then
@@ -252,7 +265,11 @@ function GoldTracker:InitializeDatabase()
         self.db.fallbackValueSource = self.DEFAULTS.fallbackValueSource
     end
     if self.db.fallbackValueSource == self.db.valueSource then
-        self.db.fallbackValueSource = self.DEFAULTS.fallbackValueSource
+        if self.DEFAULTS.fallbackValueSource ~= self.db.valueSource then
+            self.db.fallbackValueSource = self.DEFAULTS.fallbackValueSource
+        else
+            self.db.fallbackValueSource = ""
+        end
     end
 
     self:NormalizeMinimumTrackedItemQuality()
@@ -353,6 +370,30 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.sessionHistory) ~= "table" then
         self.db.sessionHistory = {}
     end
+    if type(self.db.marketHistory) ~= "table" then
+        self.db.marketHistory = {
+            items = {},
+        }
+    end
+    if type(self.db.marketHistory.items) ~= "table" then
+        self.db.marketHistory.items = {}
+    end
+    local marketHistoryRetentionDays = tonumber(self.db.marketHistoryRetentionDays)
+    if not marketHistoryRetentionDays then
+        marketHistoryRetentionDays = self.DEFAULTS.marketHistoryRetentionDays
+    end
+    self.db.marketHistoryRetentionDays = math.floor(math.max(14, math.min(365, marketHistoryRetentionDays)) + 0.5)
+    local marketHistoryMaxItems = tonumber(self.db.marketHistoryMaxItems)
+    if not marketHistoryMaxItems then
+        marketHistoryMaxItems = self.DEFAULTS.marketHistoryMaxItems
+    end
+    self.db.marketHistoryMaxItems = math.floor(math.max(50, math.min(2000, marketHistoryMaxItems)) + 0.5)
+    local marketHistoryMaxSnapshotsPerItem = tonumber(self.db.marketHistoryMaxSnapshotsPerItem)
+    if not marketHistoryMaxSnapshotsPerItem then
+        marketHistoryMaxSnapshotsPerItem = self.DEFAULTS.marketHistoryMaxSnapshotsPerItem
+    end
+    self.db.marketHistoryMaxSnapshotsPerItem =
+        math.floor(math.max(24, math.min(1000, marketHistoryMaxSnapshotsPerItem)) + 0.5)
     if type(self.db.pendingReloadSession) ~= "table" then
         self.db.pendingReloadSession = nil
     end
