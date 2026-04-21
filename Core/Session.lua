@@ -11,6 +11,8 @@ local function CloneReloadItemLoots(itemLoots)
             totalValue = tonumber(entry.totalValue) or 0,
             vendorUnitValue = tonumber(entry.vendorUnitValue) or 0,
             vendorTotalValue = tonumber(entry.vendorTotalValue) or 0,
+            isHighlighted = entry.isHighlighted == true,
+            highlightThreshold = tonumber(entry.highlightThreshold),
             itemQuality = tonumber(entry.itemQuality),
             isSoulbound = entry.isSoulbound == true,
             timestamp = tonumber(entry.timestamp) or 0,

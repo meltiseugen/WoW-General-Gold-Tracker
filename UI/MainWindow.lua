@@ -27,6 +27,11 @@ local MAIN_WINDOW_COLLAPSED_MAX_WIDTH = 388
 local MAIN_WINDOW_MAX_WIDTH = 1200
 local MAIN_WINDOW_MIN_HEIGHT = 460
 local MAIN_WINDOW_MAX_HEIGHT = 1000
+local MAIN_WINDOW_COMPACT_WIDTH = 360
+local MAIN_WINDOW_COMPACT_HEIGHT = 148
+local MAIN_WINDOW_COMPACT_HIGHLIGHT_HEIGHT = 184
+local MAIN_WINDOW_TINY_WIDTH = 300
+local MAIN_WINDOW_TINY_HEIGHT = 54
 local function CreatePanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)
 end
@@ -145,6 +150,20 @@ local function BuildRecentHighlightDisplay(addon, entry)
     return itemText, details, entry.itemLink
 end
 
+local function BuildRecentHighlightUnitValueDisplay(addon, entry)
+    if type(entry) ~= "table" then
+        return ""
+    end
+
+    local unitValue = tonumber(entry.unitValue)
+    if not unitValue or unitValue <= 0 then
+        local quantity = math.max(1, math.floor(tonumber(entry.quantity) or 1))
+        unitValue = math.floor(((tonumber(entry.totalValue) or 0) / quantity) + 0.5)
+    end
+
+    return addon:FormatMoney(unitValue or 0)
+end
+
 local function GetMainLootLogContentWidth(frame)
     if not frame then
         return 1
@@ -246,22 +265,53 @@ local function ClampMainWindowWidth(addon, width, isExpanded)
     return math.floor(math.max(minWidth, math.min(maxWidth, tonumber(width) or fallback)) + 0.5)
 end
 
+local function AnchorMainWindowTopLeft(frame)
+    if not frame or type(frame.GetLeft) ~= "function" or type(frame.GetTop) ~= "function" then
+        return
+    end
+
+    local left = frame:GetLeft()
+    local top = frame:GetTop()
+    if not left or not top then
+        return
+    end
+
+    local parent = frame:GetParent() or UIParent
+    local parentLeft = parent and parent.GetLeft and parent:GetLeft() or 0
+    local parentBottom = parent and parent.GetBottom and parent:GetBottom() or 0
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", left - parentLeft, top - parentBottom)
+end
+
 local function ApplyMainWindowResizeBounds(addon, frame)
     if not frame then
         return
     end
 
+    local isTiny = frame.isTinyMode == true
+    local isCompact = frame.isCompactMode == true
     local isExpanded = addon:IsMainLootStreamExpanded()
-    local minWidth = isExpanded and MAIN_WINDOW_EXPANDED_MIN_WIDTH or MAIN_WINDOW_COLLAPSED_MIN_WIDTH
-    local maxWidth = isExpanded and MAIN_WINDOW_MAX_WIDTH or MAIN_WINDOW_COLLAPSED_MAX_WIDTH
+    local minWidth = isTiny and MAIN_WINDOW_TINY_WIDTH
+        or (isCompact and MAIN_WINDOW_COMPACT_WIDTH)
+        or (isExpanded and MAIN_WINDOW_EXPANDED_MIN_WIDTH or MAIN_WINDOW_COLLAPSED_MIN_WIDTH)
+    local compactHeight = frame.compactTargetHeight or MAIN_WINDOW_COMPACT_HEIGHT
+    local minHeight = isTiny and MAIN_WINDOW_TINY_HEIGHT
+        or (isCompact and compactHeight)
+        or MAIN_WINDOW_MIN_HEIGHT
+    local maxWidth = isTiny and MAIN_WINDOW_TINY_WIDTH
+        or (isCompact and MAIN_WINDOW_COMPACT_WIDTH)
+        or (isExpanded and MAIN_WINDOW_MAX_WIDTH or MAIN_WINDOW_COLLAPSED_MAX_WIDTH)
+    local maxHeight = isTiny and MAIN_WINDOW_TINY_HEIGHT
+        or (isCompact and compactHeight)
+        or MAIN_WINDOW_MAX_HEIGHT
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(minWidth, MAIN_WINDOW_MIN_HEIGHT, maxWidth, MAIN_WINDOW_MAX_HEIGHT)
+        frame:SetResizeBounds(minWidth, minHeight, maxWidth, maxHeight)
     else
         if frame.SetMinResize then
-            frame:SetMinResize(minWidth, MAIN_WINDOW_MIN_HEIGHT)
+            frame:SetMinResize(minWidth, minHeight)
         end
         if frame.SetMaxResize then
-            frame:SetMaxResize(maxWidth, MAIN_WINDOW_MAX_HEIGHT)
+            frame:SetMaxResize(maxWidth, maxHeight)
         end
     end
 end
@@ -312,7 +362,7 @@ end
 function GoldTracker:SetMainLootStreamExpanded(isExpanded)
     local shouldExpand = isExpanded == true
     local frame = self.mainFrame
-    if frame and self.db then
+    if frame and self.db and frame.isCompactMode ~= true and frame.isTinyMode ~= true then
         local currentWidth = tonumber(frame:GetWidth()) or 0
         if shouldExpand then
             self.db.collapsedWindowWidth = ClampMainWindowWidth(self, currentWidth, false)
@@ -327,13 +377,15 @@ function GoldTracker:SetMainLootStreamExpanded(isExpanded)
 
     if frame then
         ApplyMainWindowResizeBounds(self, frame)
-        local targetWidth = ClampMainWindowWidth(
-            self,
-            shouldExpand and (self.db and self.db.windowWidth) or (self.db and self.db.collapsedWindowWidth),
-            shouldExpand
-        )
-        local targetHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(frame:GetHeight()) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
-        frame:SetSize(targetWidth, targetHeight)
+        if frame.isCompactMode ~= true and frame.isTinyMode ~= true then
+            local targetWidth = ClampMainWindowWidth(
+                self,
+                shouldExpand and (self.db and self.db.windowWidth) or (self.db and self.db.collapsedWindowWidth),
+                shouldExpand
+            )
+            local targetHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(frame:GetHeight()) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
+            frame:SetSize(targetWidth, targetHeight)
+        end
     end
 
     self:RefreshMainWindowLayout()
@@ -370,6 +422,200 @@ function GoldTracker:UpdateMainLastHighlight()
     end
 end
 
+function GoldTracker:UpdateMainCompactWindow()
+    local frame = self.mainFrame
+    if not frame or not frame.compactPanel then
+        return
+    end
+
+    local session = self.session or {}
+    local sessionTotal = self:GetSessionTotalValue()
+    local sessionTotalRaw = (tonumber(session.goldLooted) or 0) + (tonumber(session.itemVendorValue) or 0)
+
+    if frame.compactTotalValue then
+        frame.compactTotalValue:SetText(self:FormatMoney(sessionTotal))
+    end
+    if frame.tinyTotalValue then
+        frame.tinyTotalValue:SetText(self:FormatMoney(sessionTotal))
+    end
+    if frame.compactRawValue then
+        frame.compactRawValue:SetText(self:FormatMoney(sessionTotalRaw))
+    end
+    if frame.compactSessionPerHourValue then
+        local elapsedSeconds = self:GetSessionRateDurationSeconds()
+        if session.active and elapsedSeconds > 0 then
+            elapsedSeconds = math.max(60, elapsedSeconds)
+        end
+        frame.compactSessionPerHourValue:SetText(self:FormatMoneyPerHour(sessionTotal, elapsedSeconds))
+    end
+
+    local entry = self:GetMostRecentHighlightedLootEntry()
+    local compactTargetHeight = entry and MAIN_WINDOW_COMPACT_HIGHLIGHT_HEIGHT or MAIN_WINDOW_COMPACT_HEIGHT
+    if frame.isCompactMode == true and frame.compactTargetHeight ~= compactTargetHeight then
+        frame.compactTargetHeight = compactTargetHeight
+        ApplyMainWindowResizeBounds(self, frame)
+        frame:SetHeight(compactTargetHeight)
+    else
+        frame.compactTargetHeight = compactTargetHeight
+    end
+
+    if frame.compactDivider then
+        frame.compactDivider:SetShown(entry ~= nil)
+    end
+    if frame.compactHighlightContainer then
+        frame.compactHighlightContainer:SetShown(entry ~= nil)
+    end
+    if not entry then
+        frame.compactLastHighlightItemLink = nil
+        if frame.compactHighlightIcon then
+            frame.compactHighlightIcon:Hide()
+        end
+        return
+    end
+
+    local itemText, detailText, itemLink = BuildRecentHighlightDisplay(self, entry)
+    frame.compactLastHighlightItemLink = itemLink
+
+    if frame.compactHighlightItemText then
+        frame.compactHighlightItemText:SetText(itemText)
+    end
+    if frame.compactHighlightDetailText then
+        frame.compactHighlightDetailText:SetText(BuildRecentHighlightUnitValueDisplay(self, entry))
+    end
+    if frame.compactHighlightValueText then
+        frame.compactHighlightValueText:SetText(self:FormatMoney(tonumber(entry.totalValue) or 0))
+    end
+    if frame.compactHighlightIcon then
+        local iconTexture = ResolveItemLinkIcon(itemLink)
+        if iconTexture then
+            frame.compactHighlightIcon:SetTexture(iconTexture)
+            frame.compactHighlightIcon:Show()
+        else
+            frame.compactHighlightIcon:Hide()
+        end
+    end
+end
+
+function GoldTracker:SetMainWindowCompact(isCompact, forceLayout)
+    local frame = self.mainFrame
+    if not frame then
+        return
+    end
+
+    local shouldCompact = isCompact == true
+    if shouldCompact == (frame.isCompactMode == true) and frame.isTinyMode ~= true and forceLayout ~= true then
+        self:RefreshMainWindowLayout()
+        self:UpdateMainWindow()
+        frame:Show()
+        frame:Raise()
+        return
+    end
+
+    AnchorMainWindowTopLeft(frame)
+
+    if shouldCompact and self.db and frame.isTinyMode ~= true then
+        local currentWidth = tonumber(frame:GetWidth()) or 0
+        local currentHeight = tonumber(frame:GetHeight()) or 0
+        if self:IsMainLootStreamExpanded() then
+            self.db.windowWidth = ClampMainWindowWidth(self, currentWidth, true)
+        else
+            self.db.collapsedWindowWidth = ClampMainWindowWidth(self, currentWidth, false)
+        end
+        self.db.windowHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, currentHeight)) + 0.5)
+    end
+
+    frame.isCompactMode = shouldCompact
+    frame.isTinyMode = false
+    if frame.SetResizable then
+        frame:SetResizable(not shouldCompact)
+    end
+    ApplyMainWindowResizeBounds(self, frame)
+
+    if shouldCompact then
+        frame.compactTargetHeight = MAIN_WINDOW_COMPACT_HEIGHT
+        frame:SetSize(MAIN_WINDOW_COMPACT_WIDTH, MAIN_WINDOW_COMPACT_HEIGHT)
+    else
+        frame.compactTargetHeight = nil
+        local isLootStreamExpanded = self:IsMainLootStreamExpanded()
+        local targetWidth = ClampMainWindowWidth(
+            self,
+            isLootStreamExpanded and (self.db and self.db.windowWidth) or (self.db and self.db.collapsedWindowWidth),
+            isLootStreamExpanded
+        )
+        local targetHeight = math.floor(math.max(
+            MAIN_WINDOW_MIN_HEIGHT,
+            math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(self.db and self.db.windowHeight) or self.DEFAULTS.windowHeight)
+        ) + 0.5)
+        frame:SetSize(targetWidth, targetHeight)
+    end
+
+    self:RefreshMainWindowLayout()
+    self:UpdateMainWindow()
+    frame:Show()
+    frame:Raise()
+end
+
+function GoldTracker:ToggleMainWindowCompact()
+    local frame = self.mainFrame
+    self:SetMainWindowCompact(not (frame and frame.isCompactMode == true))
+end
+
+function GoldTracker:SetMainWindowTiny(isTiny, forceLayout)
+    local frame = self.mainFrame
+    if not frame then
+        return
+    end
+
+    local shouldTiny = isTiny == true
+    if shouldTiny == (frame.isTinyMode == true) and forceLayout ~= true then
+        self:RefreshMainWindowLayout()
+        self:UpdateMainWindow()
+        frame:Show()
+        frame:Raise()
+        return
+    end
+
+    AnchorMainWindowTopLeft(frame)
+
+    if shouldTiny and self.db and frame.isCompactMode ~= true then
+        local currentWidth = tonumber(frame:GetWidth()) or 0
+        local currentHeight = tonumber(frame:GetHeight()) or 0
+        if self:IsMainLootStreamExpanded() then
+            self.db.windowWidth = ClampMainWindowWidth(self, currentWidth, true)
+        else
+            self.db.collapsedWindowWidth = ClampMainWindowWidth(self, currentWidth, false)
+        end
+        self.db.windowHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, currentHeight)) + 0.5)
+    end
+
+    frame.isTinyMode = shouldTiny
+    if shouldTiny then
+        frame.isCompactMode = false
+        frame.compactTargetHeight = nil
+    end
+    if frame.SetResizable then
+        frame:SetResizable(not shouldTiny)
+    end
+    ApplyMainWindowResizeBounds(self, frame)
+
+    if shouldTiny then
+        frame:SetSize(MAIN_WINDOW_TINY_WIDTH, MAIN_WINDOW_TINY_HEIGHT)
+    end
+
+    self:RefreshMainWindowLayout()
+    self:UpdateMainWindow()
+    frame:Show()
+    frame:Raise()
+end
+
+function GoldTracker:OpenMainWindow()
+    if not self.mainFrame then
+        return
+    end
+
+    self:SetMainWindowCompact(false, true)
+end
+
 function GoldTracker:RefreshMainWindowLayout()
     local frame = self.mainFrame
     if not frame or not frame.summaryPanel or not frame.logPanel then
@@ -378,6 +624,137 @@ function GoldTracker:RefreshMainWindowLayout()
 
     local summaryWidth = MAIN_SUMMARY_PANEL_MAX_WIDTH
     local isLootStreamExpanded = self:IsMainLootStreamExpanded()
+    local isTinyMode = frame.isTinyMode == true
+    local isCompactMode = frame.isCompactMode == true
+
+    if frame.headerAccent then
+        frame.headerAccent:SetShown(not isTinyMode)
+    end
+    if frame.headerTitleText then
+        frame.headerTitleText:ClearAllPoints()
+        frame.headerTitleText:SetPoint("LEFT", frame.headerBar, "LEFT", 14, 0)
+        frame.headerTitleText:SetJustifyH("LEFT")
+        if frame.headerTitleText.SetWordWrap then
+            frame.headerTitleText:SetWordWrap(false)
+        end
+        frame.headerTitleText:SetShown(not isTinyMode)
+    end
+    if frame.tinyTotalValue then
+        frame.tinyTotalValue:ClearAllPoints()
+        frame.tinyTotalValue:SetPoint("LEFT", frame.headerBar, "LEFT", 14, 0)
+        frame.tinyTotalValue:SetShown(isTinyMode)
+    end
+    if frame.closeButton then
+        frame.closeButton:ClearAllPoints()
+        frame.closeButton:SetPoint("RIGHT", frame.headerBar, "RIGHT", -10, 0)
+        frame.closeButton:Show()
+    end
+    if frame.minimizeButton then
+        frame.minimizeButton:ClearAllPoints()
+        frame.minimizeButton:SetShown(not isCompactMode)
+    end
+    if frame.expandButton then
+        frame.expandButton:ClearAllPoints()
+        frame.expandButton:SetShown(isCompactMode or isTinyMode)
+    end
+    if frame.tinyButton then
+        frame.tinyButton:ClearAllPoints()
+        frame.tinyButton:SetShown(not isTinyMode)
+    end
+
+    if isTinyMode then
+        if frame.expandButton and frame.closeButton then
+            frame.expandButton:SetPoint("RIGHT", frame.closeButton, "LEFT", -6, 0)
+        end
+        if frame.minimizeButton and frame.expandButton then
+            frame.minimizeButton:SetPoint("RIGHT", frame.expandButton, "LEFT", -6, 0)
+        end
+        if frame.tinyTotalValue and frame.minimizeButton then
+            frame.tinyTotalValue:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -10, 0)
+        end
+    elseif isCompactMode then
+        if frame.expandButton and frame.closeButton then
+            frame.expandButton:SetPoint("RIGHT", frame.closeButton, "LEFT", -6, 0)
+        end
+        if frame.tinyButton and frame.expandButton then
+            frame.tinyButton:SetPoint("RIGHT", frame.expandButton, "LEFT", -6, 0)
+        end
+    else
+        if frame.minimizeButton and frame.closeButton then
+            frame.minimizeButton:SetPoint("RIGHT", frame.closeButton, "LEFT", -6, 0)
+        end
+        if frame.tinyButton and frame.minimizeButton then
+            frame.tinyButton:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -6, 0)
+        end
+    end
+    if frame.sessionStatusBadge then
+        frame.sessionStatusBadge:ClearAllPoints()
+        if frame.tinyButton and not isCompactMode and not isTinyMode then
+            frame.sessionStatusBadge:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
+        elseif frame.minimizeButton and not isCompactMode and not isTinyMode then
+            frame.sessionStatusBadge:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -10, 0)
+        elseif frame.closeButton then
+            frame.sessionStatusBadge:SetPoint("RIGHT", frame.closeButton, "LEFT", -10, 0)
+        end
+        frame.sessionStatusBadge:SetShown(not isCompactMode and not isTinyMode)
+    end
+    if frame.headerTitleText and not isTinyMode then
+        if isCompactMode and frame.tinyButton then
+            frame.headerTitleText:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
+        elseif isCompactMode and frame.expandButton then
+            frame.headerTitleText:SetPoint("RIGHT", frame.expandButton, "LEFT", -10, 0)
+        elseif frame.sessionStatusBadge then
+            frame.headerTitleText:SetPoint("RIGHT", frame.sessionStatusBadge, "LEFT", -10, 0)
+        elseif frame.tinyButton then
+            frame.headerTitleText:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
+        elseif frame.minimizeButton then
+            frame.headerTitleText:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -10, 0)
+        end
+    end
+
+    if frame.compactPanel then
+        frame.compactPanel:SetShown(isCompactMode)
+    end
+    if isTinyMode then
+        frame.summaryPanel:Hide()
+        frame.logPanel:Hide()
+        if frame.compactPanel then
+            frame.compactPanel:Hide()
+        end
+        if frame.lootStreamToggleButton then
+            frame.lootStreamToggleButton:Hide()
+        end
+        if frame.resizeButton then
+            frame.resizeButton:Hide()
+        end
+        self:UpdateMainCompactWindow()
+        return
+    end
+    if isCompactMode then
+        frame.summaryPanel:Hide()
+        frame.logPanel:Hide()
+        if frame.lootStreamToggleButton then
+            frame.lootStreamToggleButton:Hide()
+        end
+        if frame.resizeButton then
+            frame.resizeButton:Hide()
+        end
+        if frame.compactPanel then
+            frame.compactPanel:ClearAllPoints()
+            frame.compactPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", MAIN_PANEL_OUTER_INSET, -54)
+            frame.compactPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -MAIN_PANEL_OUTER_INSET, MAIN_PANEL_BOTTOM_INSET)
+        end
+        self:UpdateMainCompactWindow()
+        return
+    end
+
+    frame.summaryPanel:Show()
+    if frame.lootStreamToggleButton then
+        frame.lootStreamToggleButton:Show()
+    end
+    if frame.resizeButton then
+        frame.resizeButton:Show()
+    end
 
     frame.summaryPanel:ClearAllPoints()
     frame.summaryPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", MAIN_PANEL_OUTER_INSET, MAIN_PANEL_TOP_OFFSET)
@@ -431,6 +808,9 @@ function GoldTracker:RefreshMainWindowLayout()
     if frame.diagnosisButton and self:IsDiagnosticsPanelEnabled() then
         actionButtons[#actionButtons + 1] = frame.diagnosisButton
     end
+    if frame.helpButton then
+        actionButtons[#actionButtons + 1] = frame.helpButton
+    end
 
     if frame.utilityButtonRow then
         local gap = #actionButtons >= 4 and 4 or 8
@@ -440,7 +820,7 @@ function GoldTracker:RefreshMainWindowLayout()
         local sharedWidth = buttonCount > 0 and math.max(minimumButtonWidth, math.floor((rowWidth - (gap * math.max(0, buttonCount - 1))) / buttonCount)) or rowWidth
         local previousButton = nil
 
-        for _, button in ipairs({ frame.optionsButton, frame.inventoryButton, frame.historyButton, frame.diagnosisButton }) do
+        for _, button in ipairs({ frame.optionsButton, frame.inventoryButton, frame.historyButton, frame.diagnosisButton, frame.helpButton }) do
             if button then
                 button:ClearAllPoints()
             end
@@ -998,6 +1378,7 @@ function GoldTracker:UpdateMainWindow()
         frame.sourceValue:SetText(source.label)
     end
     self:UpdateMainLastHighlight()
+    self:UpdateMainCompactWindow()
     frame.startStopButton:SetText(session.active and "Stop Session" or "Start Session")
     if frame.startStopButton and frame.startStopButton.SetPalette then
         frame.startStopButton:SetPalette(session.active and "danger" or "primary")
@@ -1033,8 +1414,7 @@ function GoldTracker:ToggleMainWindow()
     if self.mainFrame:IsShown() then
         self.mainFrame:Hide()
     else
-        self.mainFrame:Show()
-        self.mainFrame:Raise()
+        self:OpenMainWindow()
     end
 end
 
@@ -1044,12 +1424,32 @@ function GoldTracker:GetMostRecentHighlightedLootEntry()
         return nil
     end
 
+    for index = #session.itemLoots, 1, -1 do
+        local entry = session.itemLoots[index]
+        if entry and entry.isHighlighted == true then
+            return entry
+        end
+    end
+
     local threshold = self:GetHighlightThreshold()
     for index = #session.itemLoots, 1, -1 do
         local entry = session.itemLoots[index]
         local totalValue = tonumber(entry and entry.totalValue) or 0
         if totalValue > 0 and totalValue >= threshold then
             return entry
+        end
+    end
+
+    local highlightCount = tonumber(session.highlightItemCount)
+    if not highlightCount then
+        highlightCount = (tonumber(session.lowHighlightItemCount) or 0) + (tonumber(session.highHighlightItemCount) or 0)
+    end
+    if (tonumber(highlightCount) or 0) > 0 then
+        for index = #session.itemLoots, 1, -1 do
+            local entry = session.itemLoots[index]
+            if entry and (tonumber(entry.totalValue) or 0) > 0 then
+                return entry
+            end
         end
     end
 
@@ -1307,6 +1707,14 @@ function GoldTracker:CreateMainWindow()
     frame:SetClampedToScreen(true)
 
     local function HandleMainWindowSizeChanged(_, width, height)
+        if frame.isCompactMode == true or frame.isTinyMode == true then
+            if frame.isManualResizing then
+                return
+            end
+            addon:RefreshMainWindowLayout()
+            return
+        end
+
         local isExpanded = addon:IsMainLootStreamExpanded()
         local clampedWidth = ClampMainWindowWidth(addon, width, isExpanded)
         local clampedHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(height) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
@@ -1347,16 +1755,61 @@ function GoldTracker:CreateMainWindow()
     headerTitle:SetPoint("LEFT", headerBar, "LEFT", 14, 0)
     headerTitle:SetJustifyH("LEFT")
     headerTitle:SetText("General Gold Tracker")
+    if headerTitle.SetWordWrap then
+        headerTitle:SetWordWrap(false)
+    end
+    frame.headerTitleText = headerTitle
+
+    local tinyTotalValue = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    tinyTotalValue:SetJustifyH("LEFT")
+    tinyTotalValue:SetTextColor(1.0, 0.93, 0.58)
+    tinyTotalValue:SetText("---")
+    if tinyTotalValue.SetWordWrap then
+        tinyTotalValue:SetWordWrap(false)
+    end
+    tinyTotalValue:Hide()
+    frame.tinyTotalValue = tinyTotalValue
 
     local closeButton = CreateModernButton(headerBar, 22, 22, "X", "neutral")
     closeButton:SetPoint("RIGHT", headerBar, "RIGHT", -10, 0)
+    closeButton.tooltipText = "Close"
     closeButton:SetScript("OnClick", function()
         frame:Hide()
     end)
+    frame.closeButton = closeButton
+
+    local minimizeButton = CreateModernButton(headerBar, 22, 22, "-", "neutral")
+    minimizeButton:SetPoint("RIGHT", closeButton, "LEFT", -6, 0)
+    minimizeButton.tooltipText = "Compact view"
+    minimizeButton:SetScript("OnClick", function()
+        addon:SetMainWindowCompact(true)
+    end)
+    frame.minimizeButton = minimizeButton
+
+    local expandButton = CreateModernButton(headerBar, 22, 22, "+", "neutral")
+    expandButton:SetPoint("RIGHT", closeButton, "LEFT", -6, 0)
+    expandButton.tooltipText = "Restore tracker"
+    expandButton:SetScript("OnClick", function()
+        if type(addon.OpenMainWindow) == "function" then
+            addon:OpenMainWindow()
+        else
+            addon:SetMainWindowCompact(false)
+        end
+    end)
+    expandButton:Hide()
+    frame.expandButton = expandButton
+
+    local tinyButton = CreateModernButton(headerBar, 22, 22, "_", "neutral")
+    tinyButton:SetPoint("RIGHT", minimizeButton, "LEFT", -6, 0)
+    tinyButton.tooltipText = "Total only"
+    tinyButton:SetScript("OnClick", function()
+        addon:SetMainWindowTiny(true)
+    end)
+    frame.tinyButton = tinyButton
 
     local sessionStatusBadge = CreateFrame("Frame", nil, headerBar, "BackdropTemplate")
     sessionStatusBadge:SetSize(64, 20)
-    sessionStatusBadge:SetPoint("RIGHT", closeButton, "LEFT", -10, 0)
+    sessionStatusBadge:SetPoint("RIGHT", tinyButton, "LEFT", -10, 0)
     Theme:ApplyBackdrop(sessionStatusBadge, { 0.16, 0.10, 0.10, 0.96 }, { 1.0, 0.58, 0.58, 0.16 })
     frame.sessionStatusBadge = sessionStatusBadge
 
@@ -1389,6 +1842,137 @@ function GoldTracker:CreateMainWindow()
     logAccent:SetPoint("TOPRIGHT", logPanel, "TOPRIGHT", -1, -1)
     logAccent:SetHeight(2)
     frame.logAccent = logAccent
+
+    local compactPanel = CreatePanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
+    compactPanel:Hide()
+    frame.compactPanel = compactPanel
+
+    local compactTotalLabel = compactPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    compactTotalLabel:SetPoint("TOPLEFT", compactPanel, "TOPLEFT", 14, -12)
+    compactTotalLabel:SetWidth(98)
+    compactTotalLabel:SetJustifyH("LEFT")
+    compactTotalLabel:SetTextColor(1.0, 0.82, 0.18)
+    compactTotalLabel:SetText("Session Total")
+
+    local compactTotalValue = compactPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    compactTotalValue:SetPoint("LEFT", compactTotalLabel, "RIGHT", 10, 0)
+    compactTotalValue:SetPoint("RIGHT", compactPanel, "RIGHT", -14, 0)
+    compactTotalValue:SetJustifyH("RIGHT")
+    compactTotalValue:SetTextColor(1.0, 0.93, 0.58)
+    compactTotalValue:SetText("---")
+    if compactTotalValue.SetWordWrap then
+        compactTotalValue:SetWordWrap(false)
+    end
+    frame.compactTotalValue = compactTotalValue
+
+    local compactRawLabel = compactPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    compactRawLabel:SetPoint("TOPLEFT", compactTotalLabel, "BOTTOMLEFT", 0, -6)
+    compactRawLabel:SetWidth(98)
+    compactRawLabel:SetJustifyH("LEFT")
+    compactRawLabel:SetTextColor(0.62, 0.66, 0.74)
+    compactRawLabel:SetText("Raw Total")
+
+    local compactRawValue = compactPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    compactRawValue:SetPoint("LEFT", compactRawLabel, "RIGHT", 10, 0)
+    compactRawValue:SetPoint("RIGHT", compactPanel, "RIGHT", -14, 0)
+    compactRawValue:SetJustifyH("RIGHT")
+    compactRawValue:SetTextColor(0.96, 0.86, 0.42)
+    compactRawValue:SetText("---")
+    if compactRawValue.SetWordWrap then
+        compactRawValue:SetWordWrap(false)
+    end
+    frame.compactRawValue = compactRawValue
+
+    local compactSessionPerHourLabel = compactPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    compactSessionPerHourLabel:SetPoint("TOPLEFT", compactRawLabel, "BOTTOMLEFT", 0, -6)
+    compactSessionPerHourLabel:SetWidth(98)
+    compactSessionPerHourLabel:SetJustifyH("LEFT")
+    compactSessionPerHourLabel:SetTextColor(0.62, 0.66, 0.74)
+    compactSessionPerHourLabel:SetText("Session / h")
+
+    local compactSessionPerHourValue = compactPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    compactSessionPerHourValue:SetPoint("LEFT", compactSessionPerHourLabel, "RIGHT", 10, 0)
+    compactSessionPerHourValue:SetPoint("RIGHT", compactPanel, "RIGHT", -14, 0)
+    compactSessionPerHourValue:SetJustifyH("RIGHT")
+    compactSessionPerHourValue:SetTextColor(0.68, 0.86, 1.0)
+    compactSessionPerHourValue:SetText("---")
+    if compactSessionPerHourValue.SetWordWrap then
+        compactSessionPerHourValue:SetWordWrap(false)
+    end
+    frame.compactSessionPerHourValue = compactSessionPerHourValue
+
+    local compactDivider = compactPanel:CreateTexture(nil, "ARTWORK")
+    compactDivider:SetColorTexture(1.0, 0.82, 0.18, 0.14)
+    compactDivider:SetPoint("TOPLEFT", compactSessionPerHourLabel, "BOTTOMLEFT", 0, -9)
+    compactDivider:SetPoint("TOPRIGHT", compactPanel, "TOPRIGHT", -14, -9)
+    compactDivider:SetHeight(1)
+    frame.compactDivider = compactDivider
+
+    local compactHighlightContainer = CreateFrame("Frame", nil, compactPanel)
+    compactHighlightContainer:SetPoint("TOPLEFT", compactDivider, "BOTTOMLEFT", 0, -7)
+    compactHighlightContainer:SetPoint("BOTTOMRIGHT", compactPanel, "BOTTOMRIGHT", -14, 8)
+    compactHighlightContainer:Hide()
+    frame.compactHighlightContainer = compactHighlightContainer
+
+    local compactHighlightIcon = compactHighlightContainer:CreateTexture(nil, "ARTWORK")
+    compactHighlightIcon:SetSize(16, 16)
+    compactHighlightIcon:SetPoint("TOPLEFT", compactHighlightContainer, "TOPLEFT", 0, 0)
+    compactHighlightIcon:Hide()
+    frame.compactHighlightIcon = compactHighlightIcon
+
+    local compactHighlightValueText = compactHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    compactHighlightValueText:SetPoint("TOPRIGHT", compactHighlightContainer, "TOPRIGHT", 0, 1)
+    compactHighlightValueText:SetWidth(118)
+    compactHighlightValueText:SetJustifyH("RIGHT")
+    compactHighlightValueText:SetTextColor(1.0, 0.84, 0.34)
+    if compactHighlightValueText.SetWordWrap then
+        compactHighlightValueText:SetWordWrap(false)
+    end
+    compactHighlightValueText:SetText("")
+    frame.compactHighlightValueText = compactHighlightValueText
+
+    local compactHighlightItemText = compactHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    compactHighlightItemText:SetPoint("LEFT", compactHighlightIcon, "RIGHT", 6, 0)
+    compactHighlightItemText:SetPoint("RIGHT", compactHighlightValueText, "LEFT", -8, 0)
+    compactHighlightItemText:SetJustifyH("LEFT")
+    if compactHighlightItemText.SetWordWrap then
+        compactHighlightItemText:SetWordWrap(false)
+    end
+    compactHighlightItemText:SetText("")
+    frame.compactHighlightItemText = compactHighlightItemText
+
+    local compactHighlightDetailText = compactHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    compactHighlightDetailText:SetPoint("TOPLEFT", compactHighlightItemText, "BOTTOMLEFT", 0, -3)
+    compactHighlightDetailText:SetPoint("TOPRIGHT", compactHighlightItemText, "BOTTOMRIGHT", 0, -3)
+    compactHighlightDetailText:SetJustifyH("LEFT")
+    if compactHighlightDetailText.SetWordWrap then
+        compactHighlightDetailText:SetWordWrap(false)
+    end
+    compactHighlightDetailText:SetText("")
+    frame.compactHighlightDetailText = compactHighlightDetailText
+
+    local compactHighlightButton = CreateFrame("Button", nil, compactHighlightContainer)
+    compactHighlightButton:SetAllPoints(compactHighlightContainer)
+    compactHighlightButton:RegisterForClicks("LeftButtonUp")
+    compactHighlightButton:SetScript("OnEnter", function(self)
+        if type(frame.compactLastHighlightItemLink) ~= "string" or frame.compactLastHighlightItemLink == "" then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetHyperlink(frame.compactLastHighlightItemLink)
+        GameTooltip:Show()
+    end)
+    compactHighlightButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    compactHighlightButton:SetScript("OnClick", function()
+        if type(frame.compactLastHighlightItemLink) == "string"
+            and frame.compactLastHighlightItemLink ~= ""
+            and HandleModifiedItemClick then
+            HandleModifiedItemClick(frame.compactLastHighlightItemLink)
+        end
+    end)
+    frame.compactHighlightButton = compactHighlightButton
 
     local summaryEyebrow = summaryPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     summaryEyebrow:SetPoint("TOPLEFT", summaryPanel, "TOPLEFT", 16, -16)
@@ -1572,6 +2156,16 @@ function GoldTracker:CreateMainWindow()
         end
     end)
     frame.diagnosisButton = diagnosisButton
+
+    local helpButton = CreateModernButton(utilityButtonRow, 32, 22, "?", "neutral")
+    helpButton:SetText("?")
+    helpButton.tooltipText = "Addon guide"
+    helpButton:SetScript("OnClick", function()
+        if type(addon.OpenHelpWindow) == "function" then
+            addon:OpenHelpWindow()
+        end
+    end)
+    frame.helpButton = helpButton
 
     local lootStreamToggleButton = CreateModernButton(frame, MAIN_LOOT_STREAM_TOGGLE_WIDTH, 120, ">", "neutral")
     lootStreamToggleButton.tooltipText = "Show loot stream"

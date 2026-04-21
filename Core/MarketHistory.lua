@@ -4,6 +4,7 @@ local GoldTracker = NS.GoldTracker
 local SNAPSHOT_SOURCES = {
     dbMarket = "DBMarket",
     dbRecent = "DBRecent",
+    dbMinBuyout = "DBMinBuyout",
     dbHistorical = "DBHistorical",
     dbRegionMarketAvg = "DBRegionMarketAvg",
     dbRegionHistorical = "DBRegionHistorical",
@@ -39,6 +40,7 @@ local function GetSnapshotPrice(snapshot)
     end
     return tonumber(snapshot.dbMarket)
         or tonumber(snapshot.dbRecent)
+        or tonumber(snapshot.dbMinBuyout)
         or tonumber(snapshot.selectedUnitValue)
         or tonumber(snapshot.dbRegionMarketAvg)
         or tonumber(snapshot.dbRegionSaleAvg)

@@ -2,6 +2,8 @@ local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
 local MAX_HISTORY_SESSIONS = 300
+local BuildSessionFallbackLocationKey
+local BuildSessionFallbackLocationLabel
 
 local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceLabel)
     local copied = {}
@@ -13,6 +15,8 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             totalValue = tonumber(entry.totalValue) or 0,
             vendorUnitValue = tonumber(entry.vendorUnitValue) or 0,
             vendorTotalValue = tonumber(entry.vendorTotalValue) or 0,
+            isHighlighted = entry.isHighlighted == true,
+            highlightThreshold = tonumber(entry.highlightThreshold),
             itemQuality = tonumber(entry.itemQuality),
             isSoulbound = entry.isSoulbound == true,
             timestamp = tonumber(entry.timestamp) or 0,
@@ -38,6 +42,74 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
         }
     end
     return copied
+end
+
+local function BuildLegacyItemLootsFromAggregatedItems(session, fallbackSourceID, fallbackSourceLabel)
+    local copied = {}
+    if type(session and session.items) ~= "table" then
+        return copied
+    end
+
+    local fallbackTimestamp = tonumber(session.stopTime or session.savedAt or session.startTime) or time()
+    local fallbackLocationKey = BuildSessionFallbackLocationKey(session)
+    local fallbackLocationLabel = BuildSessionFallbackLocationLabel(session)
+    for _, item in ipairs(session.items) do
+        local quantity = math.max(0, tonumber(item and item.quantity) or 0)
+        local totalValue = math.max(0, tonumber(item and item.totalValue) or 0)
+        local unitValue = quantity > 0 and math.floor((totalValue / quantity) + 0.5) or 0
+        copied[#copied + 1] = {
+            itemLink = item and item.itemLink or nil,
+            quantity = quantity,
+            unitValue = unitValue,
+            totalValue = totalValue,
+            vendorUnitValue = 0,
+            vendorTotalValue = 0,
+            itemQuality = tonumber(item and item.itemQuality),
+            isSoulbound = item and item.isSoulbound == true,
+            timestamp = fallbackTimestamp,
+            valueSourceID = fallbackSourceID,
+            valueSourceLabel = fallbackSourceLabel,
+            locationKey = fallbackLocationKey,
+            locationLabel = fallbackLocationLabel,
+            isInstanced = session.isInstanced == true,
+            instanceName = session.instanceName,
+            zoneName = session.zoneName,
+            mapID = tonumber(session.mapID),
+            mapName = session.mapName,
+            mapPath = session.mapPath,
+            continentName = session.continentName,
+            expansionID = tonumber(session.expansionID),
+            expansionName = session.expansionName,
+            ahTracked = true,
+        }
+    end
+
+    return copied
+end
+
+local function EnsureLegacyHighlightedLootFlags(itemLoots, highlightCount)
+    local normalizedCount = math.max(0, math.floor((tonumber(highlightCount) or 0) + 0.5))
+    if normalizedCount <= 0 or type(itemLoots) ~= "table" then
+        return
+    end
+
+    for _, entry in ipairs(itemLoots) do
+        if entry and entry.isHighlighted == true then
+            return
+        end
+    end
+
+    local remaining = normalizedCount
+    for index = #itemLoots, 1, -1 do
+        local entry = itemLoots[index]
+        if entry and (tonumber(entry.totalValue) or 0) > 0 then
+            entry.isHighlighted = true
+            remaining = remaining - 1
+            if remaining <= 0 then
+                return
+            end
+        end
+    end
 end
 
 local function CloneMoneyLootEntries(moneyLoots)
@@ -137,7 +209,7 @@ local function GetSessionPrimarySourceLabel(session)
     return "Unknown"
 end
 
-local function BuildSessionFallbackLocationKey(entry)
+BuildSessionFallbackLocationKey = function(entry)
     if type(entry.locationKey) == "string" and entry.locationKey ~= "" then
         return entry.locationKey
     end
@@ -147,7 +219,7 @@ local function BuildSessionFallbackLocationKey(entry)
     return string.format("zone:%s:%s", tostring(entry.zoneName or ""), tostring(entry.mapID or 0))
 end
 
-local function BuildSessionFallbackLocationLabel(entry)
+BuildSessionFallbackLocationLabel = function(entry)
     local label
     if entry.isInstanced == true then
         label = entry.instanceName or entry.zoneName or entry.mapName
@@ -680,12 +752,21 @@ function GoldTracker:ResumeHistorySession(sessionID)
     local session = self.session or {}
     self.session = session
     local wasActive = session.active == true
+    local historyHighlightCount = tonumber(historySession.highlightItemCount) or 0
 
     local mergedItemLoots = CloneItemLootEntries(
         historySession.itemLoots,
         historySession.valueSourceID,
         historySession.valueSourceLabel
     )
+    if #mergedItemLoots == 0 then
+        mergedItemLoots = BuildLegacyItemLootsFromAggregatedItems(
+            historySession,
+            historySession.valueSourceID,
+            historySession.valueSourceLabel
+        )
+    end
+    EnsureLegacyHighlightedLootFlags(mergedItemLoots, historyHighlightCount)
     local mergedMoneyLoots = CloneMoneyLootEntries(historySession.moneyLoots)
     local mergedDiagnosisSnapshot = CloneDiagnosisSnapshot(self, historySession.diagnosisSnapshot)
 
@@ -696,7 +777,7 @@ function GoldTracker:ResumeHistorySession(sessionID)
         session.goldLooted = tonumber(historySession.rawGold) or 0
         session.itemValue = tonumber(historySession.itemsValue) or 0
         session.itemVendorValue = tonumber(historySession.itemsRawGold) or 0
-        session.highlightItemCount = tonumber(historySession.highlightItemCount) or 0
+        session.highlightItemCount = historyHighlightCount
         session.lowHighlightItemCount = 0
         session.highHighlightItemCount = session.highlightItemCount
         session.itemLoots = mergedItemLoots
@@ -721,7 +802,7 @@ function GoldTracker:ResumeHistorySession(sessionID)
         session.goldLooted = (tonumber(session.goldLooted) or 0) + (tonumber(historySession.rawGold) or 0)
         session.itemValue = (tonumber(session.itemValue) or 0) + (tonumber(historySession.itemsValue) or 0)
         session.itemVendorValue = (tonumber(session.itemVendorValue) or 0) + (tonumber(historySession.itemsRawGold) or 0)
-        session.highlightItemCount = (tonumber(session.highlightItemCount) or 0) + (tonumber(historySession.highlightItemCount) or 0)
+        session.highlightItemCount = (tonumber(session.highlightItemCount) or 0) + historyHighlightCount
         session.lowHighlightItemCount = 0
         session.highHighlightItemCount = session.highlightItemCount
 

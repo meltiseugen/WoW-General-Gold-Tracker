@@ -42,9 +42,15 @@ local INVENTORY_DETAILS_WINDOW_MIN_HEIGHT = 440
 local INVENTORY_DETAILS_SOURCE_DROPDOWN_WIDTH = 230
 local INVENTORY_DETAILS_GRAPH_LINE_THICKNESS = 2
 local INVENTORY_DETAILS_GRAPH_POINT_SIZE = 5
+local INVENTORY_DETAILS_AXIS_TICK_COUNT = 5
+local INVENTORY_DETAILS_AXIS_LABEL_WIDTH = 86
+local INVENTORY_DETAILS_STATS_ROW_HEIGHT = 18
+local INVENTORY_DETAILS_STATS_LABEL_WIDTH = 72
+local INVENTORY_DETAILS_GRAPH_HOVER_SIZE = 16
 local INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID = {
     TSM_DBMARKET = "dbMarket",
     TSM_DBRECENT = "dbRecent",
+    TSM_DBMINBUYOUT = "dbMinBuyout",
     TSM_DBREGIONMARKETAVG = "dbRegionMarketAvg",
     TSM_DBHISTORICAL = "dbHistorical",
     TSM_DBREGIONHISTORICAL = "dbRegionHistorical",
@@ -53,10 +59,15 @@ local INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID = {
     TSM_AUCTIONINGOPNORMAL = "auctioningNormal",
     TSM_AUCTIONINGOPMAX = "auctioningMax",
 }
+local INVENTORY_DETAILS_VALUE_SOURCE_ID_BY_SOURCE_KEY = {}
+for sourceID, sourceKey in pairs(INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID) do
+    INVENTORY_DETAILS_VALUE_SOURCE_ID_BY_SOURCE_KEY[sourceKey] = sourceID
+end
 local INVENTORY_DETAILS_PRICE_SOURCES = {
     { key = "selectedUnitValue", label = "Selected value", color = { 1.0, 0.82, 0.18 } },
     { key = "dbMarket", label = "DBMarket", color = { 0.68, 0.96, 0.72 } },
     { key = "dbRecent", label = "DBRecent", color = { 0.72, 0.86, 1.0 } },
+    { key = "dbMinBuyout", label = "DBMinBuyout", color = { 0.84, 0.95, 0.55 } },
     { key = "dbHistorical", label = "DBHistorical", color = { 0.92, 0.74, 1.0 } },
     { key = "dbRegionMarketAvg", label = "Region market avg", color = { 0.50, 0.88, 0.92 } },
     { key = "dbRegionHistorical", label = "Region historical", color = { 0.82, 0.74, 1.0 } },
@@ -440,6 +451,22 @@ local function GetInventoryTrendColor(marketTrendPercent)
     return 0.92, 0.95, 1.0
 end
 
+local function FormatInventoryDetailsMoneyText(value, includeCopper)
+    local copper = tonumber(value)
+    if not copper or copper <= 0 then
+        return "--"
+    end
+
+    copper = math.floor(copper + 0.5)
+    if type(GetCoinTextureString) == "function" then
+        return GetCoinTextureString(copper, includeCopper and 12 or 10)
+    end
+    if type(GetMoneyString) == "function" then
+        return GetMoneyString(copper, true)
+    end
+    return tostring(copper)
+end
+
 local function FormatInventoryDetailsTimestamp(timestamp)
     local normalizedTimestamp = tonumber(timestamp)
     if not normalizedTimestamp or normalizedTimestamp <= 0 then
@@ -454,6 +481,14 @@ local function FormatInventoryDetailsShortTimestamp(timestamp)
         return "--"
     end
     return date("%m-%d %H:%M", normalizedTimestamp)
+end
+
+local function FormatInventoryDetailsWeekday(timestamp)
+    local normalizedTimestamp = tonumber(timestamp)
+    if not normalizedTimestamp or normalizedTimestamp <= 0 then
+        return "--"
+    end
+    return date("%A", normalizedTimestamp)
 end
 
 local function FormatInventoryDetailsPercentChange(changePercent)
@@ -486,6 +521,14 @@ local function GetInventoryDetailsSnapshotValue(snapshot, sourceKey)
     local value = tonumber(snapshot[sourceKey])
     if value and value > 0 then
         return value
+    end
+
+    local mappedSourceID = INVENTORY_DETAILS_VALUE_SOURCE_ID_BY_SOURCE_KEY[sourceKey]
+    if mappedSourceID and snapshot.selectedSourceID == mappedSourceID then
+        value = tonumber(snapshot.selectedUnitValue)
+        if value and value > 0 then
+            return value
+        end
     end
     return nil
 end
@@ -900,6 +943,37 @@ local function GetInventoryDetailsGraphPoint(canvas, index)
     return point
 end
 
+local function ShowInventoryDetailsGraphTooltip(target)
+    local data = target and target.tooltipData
+    if type(data) ~= "table" then
+        return
+    end
+
+    GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
+    GameTooltip:AddLine(FormatInventoryDetailsMoneyText(data.value, true), 0.88, 0.92, 1.0)
+    GameTooltip:AddLine(FormatInventoryDetailsTimestamp(data.timestamp), 0.72, 0.86, 1.0)
+    GameTooltip:Show()
+end
+
+local function GetInventoryDetailsGraphHitTarget(canvas, index)
+    canvas.hitTargets = canvas.hitTargets or {}
+    local target = canvas.hitTargets[index]
+    if target then
+        return target
+    end
+
+    target = CreateFrame("Frame", nil, canvas)
+    target:SetSize(INVENTORY_DETAILS_GRAPH_HOVER_SIZE, INVENTORY_DETAILS_GRAPH_HOVER_SIZE)
+    target:EnableMouse(true)
+    target:SetFrameLevel((canvas:GetFrameLevel() or 0) + 10)
+    target:SetScript("OnEnter", ShowInventoryDetailsGraphTooltip)
+    target:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    canvas.hitTargets[index] = target
+    return target
+end
+
 local function GetInventoryDetailsGraphLine(canvas, index)
     canvas.lines = canvas.lines or {}
     local line = canvas.lines[index]
@@ -966,24 +1040,55 @@ local function RefreshInventoryDetailsGraph(addon, frame, samples, source)
         end
     end
 
-    if frame.graphLowText then
-        frame.graphLowText:SetText(hasSamples and addon:FormatMoney(minValue) or "--")
-    end
-    if frame.graphMidText then
-        frame.graphMidText:SetText(hasSamples and addon:FormatMoney((minValue + maxValue) / 2) or "--")
-    end
-    if frame.graphHighText then
-        frame.graphHighText:SetText(hasSamples and addon:FormatMoney(maxValue) or "--")
+    for index = 1, INVENTORY_DETAILS_AXIS_TICK_COUNT do
+        local fraction = INVENTORY_DETAILS_AXIS_TICK_COUNT == 1 and 0 or ((index - 1) / (INVENTORY_DETAILS_AXIS_TICK_COUNT - 1))
+        local y = fraction * height
+        local labelY = math.max(7, math.min(height - 7, y))
+        local gridLine = frame.graphGridLines and frame.graphGridLines[index]
+        if gridLine then
+            gridLine:ClearAllPoints()
+            gridLine:SetPoint("LEFT", canvas, "BOTTOMLEFT", 0, y)
+            gridLine:SetPoint("RIGHT", canvas, "BOTTOMRIGHT", 0, y)
+            gridLine:Show()
+        end
+
+        local axisLabel = frame.graphAxisLabels and frame.graphAxisLabels[index]
+        if axisLabel then
+            local labelValue = "--"
+            if hasSamples then
+                labelValue = FormatInventoryDetailsMoneyText(minValue + ((maxValue - minValue) * fraction))
+            end
+            axisLabel:ClearAllPoints()
+            axisLabel:SetPoint("RIGHT", canvas, "BOTTOMLEFT", -10, labelY)
+            axisLabel:SetText(labelValue)
+            axisLabel:Show()
+        end
     end
     if frame.graphStartText then
         frame.graphStartText:SetText(hasSamples and FormatInventoryDetailsShortTimestamp(samples[1].timestamp) or "--")
     end
+    if frame.graphStartDayText then
+        frame.graphStartDayText:SetText(hasSamples and FormatInventoryDetailsWeekday(samples[1].timestamp) or "--")
+    end
+    if frame.graphMiddleText then
+        local middleSample = hasSamples and samples[math.max(1, math.floor((#samples + 1) / 2))] or nil
+        frame.graphMiddleText:SetText(middleSample and FormatInventoryDetailsShortTimestamp(middleSample.timestamp) or "--")
+        if frame.graphMiddleDayText then
+            frame.graphMiddleDayText:SetText(middleSample and FormatInventoryDetailsWeekday(middleSample.timestamp) or "--")
+        end
+    end
     if frame.graphEndText then
         frame.graphEndText:SetText(hasSamples and FormatInventoryDetailsShortTimestamp(samples[#samples].timestamp) or "--")
+    end
+    if frame.graphEndDayText then
+        frame.graphEndDayText:SetText(hasSamples and FormatInventoryDetailsWeekday(samples[#samples].timestamp) or "--")
     end
 
     for _, point in ipairs(canvas.points or {}) do
         HideInventoryDetailsGraphElement(point)
+    end
+    for _, target in ipairs(canvas.hitTargets or {}) do
+        HideInventoryDetailsGraphElement(target)
     end
     for _, line in ipairs(canvas.lines or {}) do
         HideInventoryDetailsGraphElement(line)
@@ -1022,6 +1127,15 @@ local function RefreshInventoryDetailsGraph(addon, frame, samples, source)
         point:ClearAllPoints()
         point:SetPoint("CENTER", canvas, "BOTTOMLEFT", x, y)
         point:Show()
+
+        local hitTarget = GetInventoryDetailsGraphHitTarget(canvas, index)
+        hitTarget.tooltipData = {
+            value = value,
+            timestamp = sample.timestamp,
+        }
+        hitTarget:ClearAllPoints()
+        hitTarget:SetPoint("CENTER", canvas, "BOTTOMLEFT", x, y)
+        hitTarget:Show()
     end
 
     for index = 2, #plottedPoints do
@@ -1044,6 +1158,48 @@ local function UpdateInventoryDetailsSourceDropdown(frame)
     local sourceKey = frame.selectedSourceKey or "selectedUnitValue"
     UIDropDownMenu_SetSelectedValue(frame.sourceDropdown, sourceKey)
     UIDropDownMenu_SetText(frame.sourceDropdown, GetInventoryDetailsSourceLabel(sourceKey))
+end
+
+local function SetInventoryDetailsStatField(frame, key, value, r, g, b)
+    local field = frame and frame.statsFields and frame.statsFields[key]
+    if not field or not field.valueText then
+        return
+    end
+
+    field.valueText:SetText(value or "--")
+    field.valueText:SetTextColor(r or 0.88, g or 0.92, b or 1.0)
+end
+
+local function UpdateInventoryDetailsStatsFields(frame, stats, sourceLabel)
+    if not frame or not frame.statsFields then
+        return false
+    end
+
+    stats = type(stats) == "table" and stats or {}
+    local count = tonumber(stats.count) or 0
+    local neutralR, neutralG, neutralB = 0.88, 0.92, 1.0
+    local mutedR, mutedG, mutedB = 0.62, 0.66, 0.74
+    SetInventoryDetailsStatField(frame, "source", sourceLabel or "Unknown", neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "snapshots", tostring(count), neutralR, neutralG, neutralB)
+
+    if count <= 0 then
+        for _, key in ipairs({ "firstValue", "firstSeen", "latestValue", "latestSeen", "lowest", "highest", "average", "change" }) do
+            SetInventoryDetailsStatField(frame, key, "--", mutedR, mutedG, mutedB)
+        end
+        return true
+    end
+
+    local changeText = FormatInventoryDetailsPercentChange(stats.changePercent)
+    local changeR, changeG, changeB = GetInventoryTrendColor(stats.changePercent)
+    SetInventoryDetailsStatField(frame, "firstValue", FormatInventoryDetailsMoneyText(stats.firstValue, true), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "firstSeen", FormatInventoryDetailsTimestamp(stats.firstTimestamp), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "latestValue", FormatInventoryDetailsMoneyText(stats.lastValue, true), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "latestSeen", FormatInventoryDetailsTimestamp(stats.lastTimestamp), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "lowest", FormatInventoryDetailsMoneyText(stats.minValue, true), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "highest", FormatInventoryDetailsMoneyText(stats.maxValue, true), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "average", FormatInventoryDetailsMoneyText(stats.averageValue, true), neutralR, neutralG, neutralB)
+    SetInventoryDetailsStatField(frame, "change", changeText, changeR, changeG, changeB)
+    return true
 end
 
 function GoldTracker:RefreshInventoryItemDetailsWindow()
@@ -1102,7 +1258,7 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
         latestSourceLabel = latestSourceLabel .. " (" .. self.VALUE_SOURCE_BY_ID[samples[#samples].sourceID].label .. ")"
     end
 
-    if frame.statsText then
+    if not UpdateInventoryDetailsStatsFields(frame, stats, latestSourceLabel) and frame.statsText then
         if stats.count == 0 then
             frame.statsText:SetText(string.format("Source: %s\nSnapshots: 0", latestSourceLabel))
         else
@@ -1123,6 +1279,40 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
     end
 
     RefreshInventoryDetailsGraph(self, frame, samples, source)
+end
+
+local function CreateInventoryDetailsStatField(parent, label, column, row)
+    local cell = CreateFrame("Frame", nil, parent)
+    local topOffset = -10 - ((row - 1) * INVENTORY_DETAILS_STATS_ROW_HEIGHT)
+    if column == 1 then
+        cell:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, topOffset)
+        cell:SetPoint("TOPRIGHT", parent, "TOP", -8, topOffset)
+    else
+        cell:SetPoint("TOPLEFT", parent, "TOP", 8, topOffset)
+        cell:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -12, topOffset)
+    end
+    cell:SetHeight(INVENTORY_DETAILS_STATS_ROW_HEIGHT)
+
+    local labelText = cell:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    labelText:SetPoint("LEFT", cell, "LEFT", 0, 0)
+    labelText:SetWidth(INVENTORY_DETAILS_STATS_LABEL_WIDTH)
+    labelText:SetJustifyH("LEFT")
+    labelText:SetTextColor(1.0, 0.82, 0.18)
+    labelText:SetText(label)
+
+    local valueText = cell:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    valueText:SetPoint("LEFT", labelText, "RIGHT", 4, 0)
+    valueText:SetPoint("RIGHT", cell, "RIGHT", 0, 0)
+    valueText:SetJustifyH("LEFT")
+    valueText:SetWordWrap(false)
+    valueText:SetTextColor(0.88, 0.92, 1.0)
+    valueText:SetText("--")
+
+    return {
+        cell = cell,
+        labelText = labelText,
+        valueText = valueText,
+    }
 end
 
 function GoldTracker:CreateInventoryItemDetailsWindow()
@@ -1228,38 +1418,26 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
 
     local graphCanvas = CreateFrame("Frame", nil, graphPanel)
     graphCanvas:SetPoint("TOPLEFT", graphPanel, "TOPLEFT", 92, -28)
-    graphCanvas:SetPoint("BOTTOMRIGHT", graphPanel, "BOTTOMRIGHT", -18, 32)
+    graphCanvas:SetPoint("BOTTOMRIGHT", graphPanel, "BOTTOMRIGHT", -18, 46)
     frame.graphCanvas = graphCanvas
 
-    for index, anchorPoint in ipairs({ "TOP", "CENTER", "BOTTOM" }) do
+    frame.graphGridLines = {}
+    frame.graphAxisLabels = {}
+    for index = 1, INVENTORY_DETAILS_AXIS_TICK_COUNT do
+        local isEdgeTick = index == 1 or index == INVENTORY_DETAILS_AXIS_TICK_COUNT
         local gridLine = graphCanvas:CreateTexture(nil, "BACKGROUND")
-        gridLine:SetColorTexture(1, 1, 1, index == 2 and 0.08 or 0.05)
-        gridLine:SetPoint("LEFT", graphCanvas, "LEFT", 0, 0)
-        gridLine:SetPoint("RIGHT", graphCanvas, "RIGHT", 0, 0)
-        gridLine:SetPoint(anchorPoint, graphCanvas, anchorPoint, 0, 0)
+        gridLine:SetColorTexture(1, 1, 1, isEdgeTick and 0.07 or 0.05)
         gridLine:SetHeight(1)
+        frame.graphGridLines[index] = gridLine
+
+        local axisLabel = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        axisLabel:SetWidth(INVENTORY_DETAILS_AXIS_LABEL_WIDTH)
+        axisLabel:SetHeight(14)
+        axisLabel:SetJustifyH("RIGHT")
+        axisLabel:SetTextColor(isEdgeTick and 0.72 or 0.62, isEdgeTick and 0.86 or 0.66, isEdgeTick and 1.0 or 0.74)
+        axisLabel:SetText("--")
+        frame.graphAxisLabels[index] = axisLabel
     end
-
-    local graphHighText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    graphHighText:SetPoint("TOPRIGHT", graphCanvas, "TOPLEFT", -10, 2)
-    graphHighText:SetWidth(78)
-    graphHighText:SetJustifyH("RIGHT")
-    graphHighText:SetTextColor(0.72, 0.86, 1.0)
-    frame.graphHighText = graphHighText
-
-    local graphMidText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    graphMidText:SetPoint("RIGHT", graphCanvas, "LEFT", -10, 0)
-    graphMidText:SetWidth(78)
-    graphMidText:SetJustifyH("RIGHT")
-    graphMidText:SetTextColor(0.62, 0.66, 0.74)
-    frame.graphMidText = graphMidText
-
-    local graphLowText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    graphLowText:SetPoint("BOTTOMRIGHT", graphCanvas, "BOTTOMLEFT", -10, -2)
-    graphLowText:SetWidth(78)
-    graphLowText:SetJustifyH("RIGHT")
-    graphLowText:SetTextColor(0.72, 0.86, 1.0)
-    frame.graphLowText = graphLowText
 
     local graphStartText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     graphStartText:SetPoint("TOPLEFT", graphCanvas, "BOTTOMLEFT", 0, -8)
@@ -1268,12 +1446,40 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     graphStartText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphStartText = graphStartText
 
+    local graphStartDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphStartDayText:SetPoint("TOPLEFT", graphStartText, "BOTTOMLEFT", 0, -2)
+    graphStartDayText:SetWidth(120)
+    graphStartDayText:SetJustifyH("LEFT")
+    graphStartDayText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphStartDayText = graphStartDayText
+
+    local graphMiddleText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphMiddleText:SetPoint("TOP", graphCanvas, "BOTTOM", 0, -8)
+    graphMiddleText:SetWidth(120)
+    graphMiddleText:SetJustifyH("CENTER")
+    graphMiddleText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphMiddleText = graphMiddleText
+
+    local graphMiddleDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphMiddleDayText:SetPoint("TOP", graphMiddleText, "BOTTOM", 0, -2)
+    graphMiddleDayText:SetWidth(120)
+    graphMiddleDayText:SetJustifyH("CENTER")
+    graphMiddleDayText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphMiddleDayText = graphMiddleDayText
+
     local graphEndText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     graphEndText:SetPoint("TOPRIGHT", graphCanvas, "BOTTOMRIGHT", 0, -8)
     graphEndText:SetWidth(120)
     graphEndText:SetJustifyH("RIGHT")
     graphEndText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphEndText = graphEndText
+
+    local graphEndDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    graphEndDayText:SetPoint("TOPRIGHT", graphEndText, "BOTTOMRIGHT", 0, -2)
+    graphEndDayText:SetWidth(120)
+    graphEndDayText:SetJustifyH("RIGHT")
+    graphEndDayText:SetTextColor(0.62, 0.66, 0.74)
+    frame.graphEndDayText = graphEndDayText
 
     local graphEmptyText = graphCanvas:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     graphEmptyText:SetPoint("CENTER", graphCanvas, "CENTER", 0, 0)
@@ -1288,14 +1494,18 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     statsPanel:SetHeight(108)
     frame.statsPanel = statsPanel
 
-    local statsText = statsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statsText:SetPoint("TOPLEFT", statsPanel, "TOPLEFT", 12, -10)
-    statsText:SetPoint("BOTTOMRIGHT", statsPanel, "BOTTOMRIGHT", -12, 10)
-    statsText:SetJustifyH("LEFT")
-    statsText:SetJustifyV("TOP")
-    statsText:SetTextColor(0.88, 0.92, 1.0)
-    statsText:SetText("")
-    frame.statsText = statsText
+    frame.statsFields = {
+        source = CreateInventoryDetailsStatField(statsPanel, "Source", 1, 1),
+        snapshots = CreateInventoryDetailsStatField(statsPanel, "Snapshots", 2, 1),
+        firstValue = CreateInventoryDetailsStatField(statsPanel, "First value", 1, 2),
+        firstSeen = CreateInventoryDetailsStatField(statsPanel, "First seen", 2, 2),
+        latestValue = CreateInventoryDetailsStatField(statsPanel, "Latest value", 1, 3),
+        latestSeen = CreateInventoryDetailsStatField(statsPanel, "Latest seen", 2, 3),
+        lowest = CreateInventoryDetailsStatField(statsPanel, "Lowest", 1, 4),
+        highest = CreateInventoryDetailsStatField(statsPanel, "Highest", 2, 4),
+        average = CreateInventoryDetailsStatField(statsPanel, "Average", 1, 5),
+        change = CreateInventoryDetailsStatField(statsPanel, "Change", 2, 5),
+    }
 
     Theme:CreateResizeButton(frame, {
         minWidth = INVENTORY_DETAILS_WINDOW_MIN_WIDTH,

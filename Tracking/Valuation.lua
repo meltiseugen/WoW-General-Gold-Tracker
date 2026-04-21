@@ -378,7 +378,8 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     if trackLootSource and type(lootSourceText) == "string" and lootSourceText ~= "" then
         self:IncrementDiagnosticCounter("loot_source_attached")
     end
-    if selectedTotalValue > 0 and selectedTotalValue >= highlightThreshold then
+    local isHighlightedLoot = selectedTotalValue > 0 and selectedTotalValue >= highlightThreshold
+    if isHighlightedLoot then
         self.session.highlightItemCount = (self.session.highlightItemCount or 0) + 1
     end
     -- Keep legacy counters synchronized for compatibility with previously saved sessions.
@@ -395,6 +396,8 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         totalValue = selectedTotalValue,
         vendorUnitValue = vendorUnitValue,
         vendorTotalValue = vendorTotalValue,
+        isHighlighted = isHighlightedLoot,
+        highlightThreshold = isHighlightedLoot and highlightThreshold or nil,
         itemQuality = itemQuality,
         isSoulbound = isSoulboundLoot,
         timestamp = lootTimestamp,

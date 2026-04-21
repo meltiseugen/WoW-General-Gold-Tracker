@@ -16,6 +16,7 @@ Core/MarketHistory.lua
 Core/Session.lua
 UI/MinimapButton.lua
 UI/MainWindow.lua
+UI/HelpWindow.lua
 UI/InventoryWindow.lua
 UI/DiagnosisWindow.lua
 UI/OptionsPanel.lua
