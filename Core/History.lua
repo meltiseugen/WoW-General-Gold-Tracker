@@ -21,7 +21,10 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             isSoulbound = entry.isSoulbound == true,
             timestamp = tonumber(entry.timestamp) or 0,
             valueSourceID = entry.valueSourceID or fallbackSourceID,
-            valueSourceLabel = entry.valueSourceLabel or fallbackSourceLabel,
+            valueSourceLabel = GoldTracker:GetValueSourceLabel(
+                entry.valueSourceID or fallbackSourceID,
+                entry.valueSourceLabel or fallbackSourceLabel
+            ),
             locationKey = entry.locationKey,
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
@@ -134,6 +137,66 @@ local function CloneMoneyLootEntries(moneyLoots)
     return copied
 end
 
+local function CloneNumberList(values)
+    local copied = {}
+    if type(values) ~= "table" then
+        return copied
+    end
+
+    for _, value in ipairs(values) do
+        local normalized = tonumber(value)
+        if normalized then
+            copied[#copied + 1] = normalized
+        end
+    end
+
+    return copied
+end
+
+local function CloneStringList(values)
+    local copied = {}
+    if type(values) ~= "table" then
+        return copied
+    end
+
+    for _, value in ipairs(values) do
+        if type(value) == "string" and value ~= "" then
+            copied[#copied + 1] = value
+        end
+    end
+
+    return copied
+end
+
+local function AddUniqueNumber(target, value)
+    local normalized = tonumber(value)
+    if not normalized then
+        return
+    end
+
+    for _, existing in ipairs(target) do
+        if tonumber(existing) == normalized then
+            return
+        end
+    end
+
+    target[#target + 1] = normalized
+end
+
+local function AddUniqueString(target, value)
+    if type(value) ~= "string" or value == "" then
+        return
+    end
+
+    for _, existing in ipairs(target) do
+        if existing == value then
+            return
+        end
+    end
+
+    target[#target + 1] = value
+end
+
 local function CloneDiagnosisSnapshot(addon, snapshot)
     if type(addon) == "table" and type(addon.CloneDiagnosisSnapshot) == "function" then
         return addon:CloneDiagnosisSnapshot(snapshot)
@@ -178,7 +241,7 @@ local function AddUniqueText(target, seen, value)
     if type(value) ~= "string" then
         return
     end
-    local trimmed = GoldTracker:Trim(value)
+    local trimmed = GoldTracker:NormalizeValueSourceLabel(value)
     if trimmed == "" or seen[trimmed] then
         return
     end
@@ -201,10 +264,10 @@ end
 
 local function GetSessionPrimarySourceLabel(session)
     if type(session.valueSourceLabel) == "string" and session.valueSourceLabel ~= "" then
-        return session.valueSourceLabel
+        return GoldTracker:NormalizeValueSourceLabel(session.valueSourceLabel)
     end
     if type(session.valueSourceLabels) == "table" and #session.valueSourceLabels > 0 then
-        return tostring(session.valueSourceLabels[1])
+        return GoldTracker:NormalizeValueSourceLabel(tostring(session.valueSourceLabels[1]))
     end
     return "Unknown"
 end
@@ -284,6 +347,33 @@ local function NormalizeLootLocationFields(target, fallbackKey, fallbackLabel, f
     end
 end
 
+local function NormalizeResumeMetadata(entry)
+    if type(entry) ~= "table" then
+        return
+    end
+
+    entry.wasResumed = entry.wasResumed == true
+    entry.resumeCount = math.max(0, math.floor((tonumber(entry.resumeCount) or 0) + 0.5))
+    entry.resumedAt = tonumber(entry.resumedAt)
+    if entry.resumedAt ~= nil and entry.resumedAt <= 0 then
+        entry.resumedAt = nil
+    end
+
+    entry.resumedFromHistorySessionIDs = CloneNumberList(entry.resumedFromHistorySessionIDs)
+    entry.resumedFromHistorySessionNames = CloneStringList(entry.resumedFromHistorySessionNames)
+    entry.resumedFromHistory = entry.resumedFromHistory == true
+        or #entry.resumedFromHistorySessionIDs > 0
+        or #entry.resumedFromHistorySessionNames > 0
+    entry.resumedFromHistoryAt = tonumber(entry.resumedFromHistoryAt)
+    if entry.resumedFromHistoryAt ~= nil and entry.resumedFromHistoryAt <= 0 then
+        entry.resumedFromHistoryAt = nil
+    end
+    entry.lastResumedFromHistoryAt = tonumber(entry.lastResumedFromHistoryAt)
+    if entry.lastResumedFromHistoryAt ~= nil and entry.lastResumedFromHistoryAt <= 0 then
+        entry.lastResumedFromHistoryAt = nil
+    end
+end
+
 local function NormalizeHistoryEntry(entry)
     if type(entry) ~= "table" then
         return
@@ -292,13 +382,23 @@ local function NormalizeHistoryEntry(entry)
     if type(entry.pinned) ~= "boolean" then
         entry.pinned = false
     end
+    NormalizeResumeMetadata(entry)
 
-    if type(entry.valueSourceLabel) ~= "string" or entry.valueSourceLabel == "" then
-        entry.valueSourceLabel = "Unknown"
-    end
+    entry.valueSourceLabel = GoldTracker:GetValueSourceLabel(entry.valueSourceID, entry.valueSourceLabel)
 
     if type(entry.valueSourceLabels) ~= "table" or #entry.valueSourceLabels == 0 then
         entry.valueSourceLabels = { entry.valueSourceLabel }
+    else
+        local normalizedLabels = {}
+        local seenLabels = {}
+        for index, sourceLabel in ipairs(entry.valueSourceLabels) do
+            local normalizedLabel = GoldTracker:NormalizeValueSourceLabel(sourceLabel)
+            if normalizedLabel ~= "" and not seenLabels[normalizedLabel] then
+                seenLabels[normalizedLabel] = true
+                normalizedLabels[#normalizedLabels + 1] = normalizedLabel
+            end
+        end
+        entry.valueSourceLabels = #normalizedLabels > 0 and normalizedLabels or { entry.valueSourceLabel }
     end
 
     if type(entry.itemLoots) ~= "table" then
@@ -359,7 +459,9 @@ local function NormalizeHistoryEntry(entry)
             end
         end
         if type(loot.valueSourceLabel) ~= "string" or loot.valueSourceLabel == "" then
-            loot.valueSourceLabel = fallbackSourceLabel
+            loot.valueSourceLabel = GoldTracker:GetValueSourceLabel(loot.valueSourceID, fallbackSourceLabel)
+        else
+            loot.valueSourceLabel = GoldTracker:GetValueSourceLabel(loot.valueSourceID, loot.valueSourceLabel)
         end
         if loot.valueSourceID == nil then
             loot.valueSourceID = fallbackSourceID
@@ -694,6 +796,14 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         diagnosisSnapshot = CloneDiagnosisSnapshot(self, self.session.diagnosisSnapshot),
         items = BuildAggregatedItems(itemLoots),
         pinned = false,
+        wasResumed = self.session.wasResumed == true,
+        resumeCount = math.max(0, math.floor((tonumber(self.session.resumeCount) or 0) + 0.5)),
+        resumedAt = tonumber(self.session.resumedAt),
+        resumedFromHistory = self.session.resumedFromHistory == true,
+        resumedFromHistoryAt = tonumber(self.session.resumedFromHistoryAt),
+        lastResumedFromHistoryAt = tonumber(self.session.lastResumedFromHistoryAt),
+        resumedFromHistorySessionIDs = CloneNumberList(self.session.resumedFromHistorySessionIDs),
+        resumedFromHistorySessionNames = CloneStringList(self.session.resumedFromHistorySessionNames),
     }
 
     entry.name = self:BuildHistorySessionName(stopTime, entry)
@@ -753,6 +863,7 @@ function GoldTracker:ResumeHistorySession(sessionID)
     self.session = session
     local wasActive = session.active == true
     local historyHighlightCount = tonumber(historySession.highlightItemCount) or 0
+    local resumedAt = time()
 
     local mergedItemLoots = CloneItemLootEntries(
         historySession.itemLoots,
@@ -827,6 +938,26 @@ function GoldTracker:ResumeHistorySession(sessionID)
             + math.max(0, math.floor((tonumber(historySession.activeDuration) or tonumber(historySession.duration) or 0) + 0.5))
     end
 
+    historySession.wasResumed = true
+    historySession.resumeCount = math.max(0, math.floor((tonumber(historySession.resumeCount) or 0) + 0.5)) + 1
+    historySession.resumedAt = resumedAt
+
+    session.resumedFromHistory = true
+    if not tonumber(session.resumedFromHistoryAt) then
+        session.resumedFromHistoryAt = resumedAt
+    end
+    session.lastResumedFromHistoryAt = resumedAt
+    session.resumedFromHistorySessionIDs = CloneNumberList(session.resumedFromHistorySessionIDs)
+    session.resumedFromHistorySessionNames = CloneStringList(session.resumedFromHistorySessionNames)
+    AddUniqueNumber(session.resumedFromHistorySessionIDs, historySession.id)
+    AddUniqueString(session.resumedFromHistorySessionNames, historySession.name or tostring(historySession.id))
+    for _, sourceID in ipairs(historySession.resumedFromHistorySessionIDs or {}) do
+        AddUniqueNumber(session.resumedFromHistorySessionIDs, sourceID)
+    end
+    for _, sourceName in ipairs(historySession.resumedFromHistorySessionNames or {}) do
+        AddUniqueString(session.resumedFromHistorySessionNames, sourceName)
+    end
+
     if type(self.GetMostRecentSessionLootTimestamp) == "function" then
         session.lastLootAt = self:GetMostRecentSessionLootTimestamp(session)
     else
@@ -852,6 +983,12 @@ function GoldTracker:ResumeHistorySession(sessionID)
         0.7
     )
     self:UpdateMainWindow()
+    if self.RefreshHistoryWindow then
+        self:RefreshHistoryWindow()
+    end
+    if self.RefreshHistoryDetailsWindow then
+        self:RefreshHistoryDetailsWindow()
+    end
 
     if wasActive then
         self:Print("Merged selected history session into the active session.")
@@ -996,6 +1133,14 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     local startTime
     local stopTime
     local mergedDiagnosisSnapshot = nil
+    local wasResumed = false
+    local resumeCount = 0
+    local resumedAt = nil
+    local resumedFromHistory = false
+    local resumedFromHistoryAt = nil
+    local lastResumedFromHistoryAt = nil
+    local resumedFromHistorySessionIDs = {}
+    local resumedFromHistorySessionNames = {}
 
     for _, session in ipairs(sessions) do
         local sessionSourceID = session.valueSourceID
@@ -1016,6 +1161,31 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         rawGold = rawGold + (tonumber(session.rawGold) or 0)
         itemsValue = itemsValue + (tonumber(session.itemsValue) or 0)
         itemsRawGold = itemsRawGold + (tonumber(session.itemsRawGold) or 0)
+        if session.wasResumed == true then
+            wasResumed = true
+        end
+        resumeCount = resumeCount + (tonumber(session.resumeCount) or 0)
+        local sessionResumedAt = tonumber(session.resumedAt)
+        if sessionResumedAt and sessionResumedAt > 0 and (not resumedAt or sessionResumedAt > resumedAt) then
+            resumedAt = sessionResumedAt
+        end
+        if session.resumedFromHistory == true then
+            resumedFromHistory = true
+        end
+        local sessionResumedFromAt = tonumber(session.resumedFromHistoryAt)
+        if sessionResumedFromAt and sessionResumedFromAt > 0 and (not resumedFromHistoryAt or sessionResumedFromAt < resumedFromHistoryAt) then
+            resumedFromHistoryAt = sessionResumedFromAt
+        end
+        local sessionLastResumedFromAt = tonumber(session.lastResumedFromHistoryAt)
+        if sessionLastResumedFromAt and sessionLastResumedFromAt > 0 and (not lastResumedFromHistoryAt or sessionLastResumedFromAt > lastResumedFromHistoryAt) then
+            lastResumedFromHistoryAt = sessionLastResumedFromAt
+        end
+        for _, sourceID in ipairs(session.resumedFromHistorySessionIDs or {}) do
+            AddUniqueNumber(resumedFromHistorySessionIDs, sourceID)
+        end
+        for _, sourceName in ipairs(session.resumedFromHistorySessionNames or {}) do
+            AddUniqueString(resumedFromHistorySessionNames, sourceName)
+        end
 
         local sessionHighlightCount = tonumber(session.highlightItemCount)
         if not sessionHighlightCount then
@@ -1159,6 +1329,14 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         pinned = false,
         name = mergedName,
         mergedFromSessionIDs = mergedFromIDs,
+        wasResumed = wasResumed,
+        resumeCount = resumeCount,
+        resumedAt = resumedAt,
+        resumedFromHistory = resumedFromHistory,
+        resumedFromHistoryAt = resumedFromHistoryAt,
+        lastResumedFromHistoryAt = lastResumedFromHistoryAt,
+        resumedFromHistorySessionIDs = resumedFromHistorySessionIDs,
+        resumedFromHistorySessionNames = resumedFromHistorySessionNames,
     }
 
     self.db.nextHistoryID = self.db.nextHistoryID + 1
@@ -1230,22 +1408,6 @@ local function GetPrimaryValueSourceID(itemLoots, fallbackSourceID)
         end
     end
     return fallbackSourceID
-end
-
-local function CloneNumberList(values)
-    local copied = {}
-    if type(values) ~= "table" then
-        return copied
-    end
-
-    for _, value in ipairs(values) do
-        local normalized = tonumber(value)
-        if normalized then
-            copied[#copied + 1] = normalized
-        end
-    end
-
-    return copied
 end
 
 local function FormatSessionTimeFrame(startTime, stopTime)
@@ -1532,6 +1694,14 @@ function GoldTracker:SplitHistorySessionByLocation(sessionID)
             items = BuildAggregatedItems(bucket.itemLoots),
             pinned = session.pinned == true,
             name = BuildSplitSessionName(bucket.locationLabel, startTime, stopTime),
+            wasResumed = session.wasResumed == true,
+            resumeCount = math.max(0, math.floor((tonumber(session.resumeCount) or 0) + 0.5)),
+            resumedAt = tonumber(session.resumedAt),
+            resumedFromHistory = session.resumedFromHistory == true,
+            resumedFromHistoryAt = tonumber(session.resumedFromHistoryAt),
+            lastResumedFromHistoryAt = tonumber(session.lastResumedFromHistoryAt),
+            resumedFromHistorySessionIDs = CloneNumberList(session.resumedFromHistorySessionIDs),
+            resumedFromHistorySessionNames = CloneStringList(session.resumedFromHistorySessionNames),
         }
 
         if #mergedFromIDs > 0 then

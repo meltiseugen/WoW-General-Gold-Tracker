@@ -23,6 +23,12 @@ function HistoryDataService:SessionHasMultipleValueSources(session)
     local count = 0
 
     local function Add(label)
+        if type(label) ~= "string" or label == "" then
+            return
+        end
+        if type(self.addon.NormalizeValueSourceLabel) == "function" then
+            label = self.addon:NormalizeValueSourceLabel(label)
+        end
         if type(label) ~= "string" or label == "" or labelsSeen[label] then
             return
         end

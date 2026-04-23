@@ -626,6 +626,9 @@ function HistorySessionModel:BuildRowTitleAndSubtitle(session)
 
     local startText = (startTimestamp > 0) and date("%Y-%m-%d %H:%M", startTimestamp) or "Unknown start"
     local titleText = string.format("%s - %s", primaryLocation, startText)
+    if resolvedSession.wasResumed == true or resolvedSession.resumedFromHistory == true then
+        titleText = string.format("[Resumed] %s", titleText)
+    end
 
     local subtitleText = nil
     if #locationLabels > 0 then

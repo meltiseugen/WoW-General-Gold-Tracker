@@ -28,8 +28,6 @@ function GoldTracker:RefreshOptionsControls()
 
     local controls = self.optionsControls
     local source = self:GetCurrentValueSource()
-    local alpha = self:GetConfiguredWindowAlpha()
-
     UIDropDownMenu_SetSelectedValue(controls.valueSourceDropdown, source.id)
     UIDropDownMenu_SetText(controls.valueSourceDropdown, source.label)
     local fallbackSource = self:GetFallbackValueSource()
@@ -39,6 +37,11 @@ function GoldTracker:RefreshOptionsControls()
     else
         UIDropDownMenu_SetSelectedValue(controls.fallbackValueSourceDropdown, "")
         UIDropDownMenu_SetText(controls.fallbackValueSourceDropdown, "None")
+    end
+    if controls.auctionableInventoryValueSourceDropdown then
+        local inventorySource = self:GetAuctionableInventoryValueSource()
+        UIDropDownMenu_SetSelectedValue(controls.auctionableInventoryValueSourceDropdown, inventorySource.id)
+        UIDropDownMenu_SetText(controls.auctionableInventoryValueSourceDropdown, inventorySource.label)
     end
     local minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     local minimumQualityOption = self.TRACKED_ITEM_QUALITY_BY_ID[minimumQuality]
@@ -76,6 +79,11 @@ function GoldTracker:RefreshOptionsControls()
     controls.rawLootLogCheckbox:SetChecked(self.db.showRawLootedGoldInLog)
     controls.ignoreMailboxLootCheckbox:SetChecked(self:IsIgnoreMailboxLootWhenMailOpenEnabled())
     controls.mainWindowGoldPerHourCheckbox:SetChecked(self:IsMainWindowGoldPerHourEnabled())
+    if controls.mainWindowSlashOpenModeDropdown then
+        local openMode = self:GetMainWindowSlashOpenMode()
+        UIDropDownMenu_SetSelectedValue(controls.mainWindowSlashOpenModeDropdown, openMode.id)
+        UIDropDownMenu_SetText(controls.mainWindowSlashOpenModeDropdown, openMode.label)
+    end
     if controls.totalWindowGoldPerHourCheckbox then
         local totalWindowFeatureEnabled = self:IsTotalWindowFeatureEnabled()
         controls.totalWindowGoldPerHourCheckbox:SetShown(totalWindowFeatureEnabled)
@@ -97,8 +105,6 @@ function GoldTracker:RefreshOptionsControls()
     if controls.diagnosticsPanelCheckbox then
         controls.diagnosticsPanelCheckbox:SetChecked(self:IsDiagnosticsPanelEnabled())
     end
-    controls.transparencySlider:SetValue(alpha)
-    controls.transparencyValueText:SetText(string.format("Current opacity: %d%%", math.floor((alpha * 100) + 0.5)))
     if controls.alertsRefresh then
         controls.alertsRefresh()
     end
@@ -273,7 +279,7 @@ function GoldTracker:CreateOptionsPanel()
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     subtitle:SetText("Session-based loot value tracking.")
 
-    local tabOrder = { "General", "Tracking", "History", "Alerts", "Experimental" }
+    local tabOrder = { "General", "Tracking", "Inventory", "History", "Alerts", "Experimental" }
     local tabs = {}
     local selectedTab = "General"
 
@@ -391,6 +397,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local generalContent = tabs.General.content
     local trackingContent = tabs.Tracking.content
+    local inventoryContent = tabs.Inventory.content
     local historyContent = tabs.History.content
     local alertsContent = tabs.Alerts.content
     local experimentalContent = tabs.Experimental.content
@@ -437,12 +444,14 @@ function GoldTracker:CreateOptionsPanel()
     end
 
     local generalPricingSection = CreateOptionsSection(generalContent, nil, "Pricing", "Choose how item values are resolved.", 126)
-    local generalDisplaySection = CreateOptionsSection(generalContent, generalPricingSection, "Display", "Tune tracker totals and window presentation.", 178)
+    local generalDisplaySection = CreateOptionsSection(generalContent, generalPricingSection, "Display", "Tune tracker totals and window presentation.", 218)
     local generalLootSection = CreateOptionsSection(generalContent, generalDisplaySection, "Loot Behavior", "Small filters that affect what the tracker accepts.", 90)
 
     local trackingQualitySection = CreateOptionsSection(trackingContent, nil, "Item Tracking", "Control item eligibility and valuation in loot views.", 128)
     local trackingSessionSection = CreateOptionsSection(trackingContent, trackingQualitySection, "Session Startup", "Choose when tracking sessions begin or resume automatically.", 166)
     local trackingLootSection = CreateOptionsSection(trackingContent, trackingSessionSection, "Loot Stream", "Controls for raw entries, timestamps, and source detection.", 208)
+
+    local inventoryDefaultsSection = CreateOptionsSection(inventoryContent, nil, "Auctionable Inventory", "Defaults used when opening the Bags auctionable inventory view.", 126)
 
     local historyCoreSection = CreateOptionsSection(historyContent, nil, "Session History", "Save, reopen, and resume finished sessions.", 144)
     local historyDisplaySection = CreateOptionsSection(historyContent, historyCoreSection, "History Display", "Adjust list density and details text size.", 150)
@@ -517,6 +526,43 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
+    local inventoryValueSourceLabel = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    inventoryValueSourceLabel:SetPoint("TOPLEFT", inventoryDefaultsSection, "TOPLEFT", 14, inventoryDefaultsSection.contentTopOffset)
+    inventoryValueSourceLabel:SetText("Default value source")
+
+    local inventoryValueSourceDropdown = CreateFrame(
+        "Frame",
+        "GoldTrackerAuctionableInventoryValueSourceDropdown",
+        inventoryDefaultsSection,
+        "UIDropDownMenuTemplate"
+    )
+    inventoryValueSourceDropdown:SetPoint("TOPLEFT", inventoryValueSourceLabel, "BOTTOMLEFT", -16, -6)
+    UIDropDownMenu_SetWidth(inventoryValueSourceDropdown, 240)
+    UIDropDownMenu_Initialize(inventoryValueSourceDropdown, function(_, level)
+        for _, source in ipairs(addon.VALUE_SOURCES) do
+            local info = UIDropDownMenu_CreateInfo()
+            local sourceID = source.id
+            info.text = source.label
+            info.value = sourceID
+            info.checked = addon:GetAuctionableInventoryValueSource().id == sourceID
+            info.func = function()
+                addon:SetAuctionableInventoryValueSource(sourceID)
+                addon:RefreshOptionsControls()
+                if addon.inventoryFrame and addon.inventoryFrame:IsShown() then
+                    addon:RefreshInventoryWindow(true)
+                end
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+
+    local inventoryDefaultsHint = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    inventoryDefaultsHint:SetPoint("TOPLEFT", inventoryValueSourceDropdown, "BOTTOMLEFT", 16, -8)
+    inventoryDefaultsHint:SetPoint("TOPRIGHT", inventoryDefaultsSection, "TOPRIGHT", -14, 0)
+    inventoryDefaultsHint:SetJustifyH("LEFT")
+    inventoryDefaultsHint:SetTextColor(0.62, 0.66, 0.74)
+    inventoryDefaultsHint:SetText("Used for Auctionable Inventory totals, market snapshots, and the Bags value source dropdown.")
+
     local ignoreMailboxLootCheckbox = CreateFrame("CheckButton", nil, generalLootSection, "UICheckButtonTemplate")
     ignoreMailboxLootCheckbox:SetPoint("TOPLEFT", generalLootSection, "TOPLEFT", 10, generalLootSection.contentTopOffset + 4)
     ignoreMailboxLootCheckbox:SetScript("OnClick", function(button)
@@ -568,6 +614,27 @@ function GoldTracker:CreateOptionsPanel()
     local activeTimeGoldPerHourLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     activeTimeGoldPerHourLabel:SetPoint("LEFT", activeTimeGoldPerHourCheckbox, "RIGHT", 4, 1)
     activeTimeGoldPerHourLabel:SetText("Use active loot time for gold per hour (ignores long idle gaps)")
+
+    local slashOpenModeLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    slashOpenModeLabel:SetPoint("TOPLEFT", activeTimeGoldPerHourCheckbox, "BOTTOMLEFT", 4, -12)
+    slashOpenModeLabel:SetText("/gt opens tracker as")
+
+    local slashOpenModeDropdown = CreateFrame("Frame", "GoldTrackerSlashOpenModeDropdown", generalDisplaySection, "UIDropDownMenuTemplate")
+    slashOpenModeDropdown:SetPoint("TOPLEFT", slashOpenModeLabel, "BOTTOMLEFT", -18, -6)
+    UIDropDownMenu_SetWidth(slashOpenModeDropdown, 170)
+    UIDropDownMenu_Initialize(slashOpenModeDropdown, function(_, level)
+        for _, openMode in ipairs(addon.MAIN_WINDOW_SLASH_OPEN_MODES) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = openMode.label
+            info.value = openMode.id
+            info.checked = addon:GetMainWindowSlashOpenMode().id == openMode.id
+            info.func = function()
+                addon.db.mainWindowSlashOpenMode = openMode.id
+                addon:RefreshOptionsControls()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
 
     local resumeHistorySessionCheckbox = CreateFrame("CheckButton", nil, historyCoreSection, "UICheckButtonTemplate")
     resumeHistorySessionCheckbox:SetPoint("TOPLEFT", historyCoreSection, "TOPLEFT", 10, historyCoreSection.contentTopOffset + 34)
@@ -845,47 +912,9 @@ function GoldTracker:CreateOptionsPanel()
     hint:SetJustifyH("LEFT")
     hint:SetText("Use /gt to open the tracker. Auto-start on loot works only while the tracker window is open.")
 
-    local transparencyLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    transparencyLabel:SetPoint("TOPLEFT", generalDisplaySection, "TOPLEFT", 430, generalDisplaySection.contentTopOffset)
-    transparencyLabel:SetText("Window background transparency")
-
-    local transparencySlider = CreateFrame("Slider", "GoldTrackerTransparencySlider", generalDisplaySection, "OptionsSliderTemplate")
-    transparencySlider:SetPoint("TOPLEFT", transparencyLabel, "BOTTOMLEFT", -10, -10)
-    transparencySlider:SetWidth(240)
-    transparencySlider:SetMinMaxValues(0.20, 1.00)
-    transparencySlider:SetValueStep(0.05)
-    if transparencySlider.SetObeyStepOnDrag then
-        transparencySlider:SetObeyStepOnDrag(true)
-    end
-
-    local sliderLow = _G[transparencySlider:GetName() .. "Low"]
-    local sliderHigh = _G[transparencySlider:GetName() .. "High"]
-    local sliderText = _G[transparencySlider:GetName() .. "Text"]
-    if sliderLow then
-        sliderLow:SetText("20%")
-    end
-    if sliderHigh then
-        sliderHigh:SetText("100%")
-    end
-    if sliderText then
-        sliderText:SetText("")
-    end
-
-    local transparencyValueText = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    transparencyValueText:SetPoint("TOP", transparencySlider, "BOTTOM", 0, -18)
-    transparencyValueText:SetJustifyH("CENTER")
-    transparencyValueText:SetText("")
-
-    transparencySlider:SetScript("OnValueChanged", function(_, value)
-        local alpha = math.floor((value * 100) + 0.5) / 100
-        alpha = math.max(0.20, math.min(1.00, alpha))
-        addon.db.windowAlpha = alpha
-        addon:ApplyMainWindowAlpha()
-        transparencyValueText:SetText(string.format("Current opacity: %d%%", math.floor((alpha * 100) + 0.5)))
-    end)
-
-    generalContent:SetHeight(436)
+    generalContent:SetHeight(476)
     trackingContent:SetHeight(548)
+    inventoryContent:SetHeight(144)
     historyContent:SetHeight(462)
 
     local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsCoreSection, "UICheckButtonTemplate")
@@ -1243,6 +1272,7 @@ function GoldTracker:CreateOptionsPanel()
     self.optionsControls = {
         valueSourceDropdown = dropdown,
         fallbackValueSourceDropdown = fallbackDropdown,
+        auctionableInventoryValueSourceDropdown = inventoryValueSourceDropdown,
         minimumTrackedQualityDropdown = minimumQualityDropdown,
         autoStartOnLootCheckbox = autoStartOnLootCheckbox,
         autoStartOnEnterWorldCheckbox = autoStartOnEnterWorldCheckbox,
@@ -1259,14 +1289,13 @@ function GoldTracker:CreateOptionsPanel()
         lootLogTimestampCheckbox = lootLogTimestampCheckbox,
         ignoreMailboxLootCheckbox = ignoreMailboxLootCheckbox,
         mainWindowGoldPerHourCheckbox = mainWindowGoldPerHourCheckbox,
+        mainWindowSlashOpenModeDropdown = slashOpenModeDropdown,
         totalWindowGoldPerHourCheckbox = totalWindowGoldPerHourCheckbox,
         totalWindowGoldPerHourLabel = totalWindowGoldPerHourLabel,
         activeTimeGoldPerHourCheckbox = activeTimeGoldPerHourCheckbox,
         resumeHistorySessionCheckbox = resumeHistorySessionCheckbox,
         lootSourceTrackingCheckbox = lootSourceTrackingCheckbox,
         diagnosticsPanelCheckbox = diagnosticsPanelCheckbox,
-        transparencySlider = transparencySlider,
-        transparencyValueText = transparencyValueText,
         alertsRefresh = RefreshAlertsControls,
     }
 

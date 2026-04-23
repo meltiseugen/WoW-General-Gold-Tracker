@@ -24,7 +24,7 @@ local VALUE_SOURCE_HELP = {
     TSM_DBRECENT = {
         meaning = "TSM's more recent local market value.",
         bestFor = "Reacting faster to current market movement.",
-        watchFor = "Usually more volatile than DBMarket or historical sources.",
+        watchFor = "Usually more volatile than Market Value or historical sources.",
     },
     TSM_DBREGIONMARKETAVG = {
         meaning = "TSM's region-wide market average.",
@@ -160,10 +160,10 @@ local function BuildSessionText()
     })
 
     AddSection(lines, "Window modes", {
-        "Normal: full session summary plus loot stream controls.",
-        "Compact: Session Total, Raw Total, Session / h, and the latest highlighted item when one exists.",
+        "Maximized: full session summary plus loot stream controls.",
+        "Minimized: Session Total, Raw Total, Session / h, and the latest highlighted item when one exists.",
         "Tiny: current session total plus the window controls only.",
-        "/gt: opens the main window in normal mode when the session window is hidden.",
+        "/gt: opens the tracker in the mode selected in Options.",
     })
 
     return table.concat(lines, "\n")
@@ -251,7 +251,7 @@ local function BuildValueSourcesText(addon)
 
     for _, source in ipairs(addon.VALUE_SOURCES or {}) do
         local help = VALUE_SOURCE_HELP[source.id] or {}
-        lines[#lines + 1] = source.label .. " (" .. source.tsmKey .. ")"
+        lines[#lines + 1] = source.label
         lines[#lines + 1] = "- Meaning: " .. (help.meaning or "TSM value source.")
         lines[#lines + 1] = "- Best for: " .. (help.bestFor or "When that TSM source matches how you want session loot valued.")
         lines[#lines + 1] = "- Watch for: " .. (help.watchFor or "Availability depends on TSM data for the item.")
@@ -259,12 +259,12 @@ local function BuildValueSourcesText(addon)
     end
 
     AddSection(lines, "Practical setup notes", {
-        "Use DBMinBuyout when you want the tracker to follow today's cheapest listing.",
-        "Use DBMarket or DBHistorical when you prefer smoother local market estimates.",
+        "Use Min Buyout when you want the tracker to follow today's cheapest listing.",
+        "Use Market Value or Historical Price when you prefer smoother local market estimates.",
         "Use region sources when local auctions are sparse or easy to manipulate.",
         "Use Auctioning operation sources when your TSM groups already encode your preferred sell price rules.",
-        "Use RegionSaleAvg when sale history matters more than listing price.",
-        "Use Crafting when crafting cost is the relevant value for your workflow.",
+        "Use Region Sale Avg when sale history matters more than listing price.",
+        "Use Crafting Cost when crafting cost is the relevant value for your workflow.",
     })
 
     return table.concat(lines, "\n")

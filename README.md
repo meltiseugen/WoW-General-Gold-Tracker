@@ -103,6 +103,7 @@ If you enable auto-start in options, sessions can begin automatically.
 
 - Item value source (TSM)
 - Fallback value source
+- Auctionable inventory default value source
 - Minimum item quality
 - Highlight threshold
 - Notifications on/off
@@ -111,7 +112,6 @@ If you enable auto-start in options, sessions can begin automatically.
 - History rows per page
 - Show raw looted gold entries in log
 - Track loot source in log
-- Window transparency
 
 ---
 

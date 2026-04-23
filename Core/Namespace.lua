@@ -17,6 +17,7 @@ local ENABLE_TOTAL_WINDOW_FEATURE = false
 GoldTracker.DEFAULTS = {
     valueSource = "TSM_DBMINBUYOUT",
     fallbackValueSource = "TSM_AUCTIONINGOPNORMAL",
+    auctionableInventoryValueSource = "TSM_DBMINBUYOUT",
     minimumTrackedItemQuality = 0,
     highlightThreshold = 100000,
     notificationsEnabled = true,
@@ -30,6 +31,7 @@ GoldTracker.DEFAULTS = {
     ignoreMailboxLootWhenMailOpen = true,
     showMainWindowGoldPerHour = true,
     showTotalWindowGoldPerHour = true,
+    mainWindowSlashOpenMode = "maximized",
     useActiveTimeForGoldPerHour = false,
     allowResumeHistorySession = true,
     enableLootSourceTracking = true,
@@ -37,7 +39,6 @@ GoldTracker.DEFAULTS = {
     mainLootStreamExpanded = false,
     enableDiagnosticsPanel = false,
     minimapButtonAngle = 225,
-    windowAlpha = 0.90,
     windowWidth = 780,
     collapsedWindowWidth = 388,
     windowHeight = 460,
@@ -47,22 +48,68 @@ GoldTracker.DEFAULTS = {
 }
 
 GoldTracker.VALUE_SOURCES = {
-    { id = "TSM_DBMARKET", label = "TSM market value", tsmKey = "DBMarket" },
-    { id = "TSM_DBRECENT", label = "TSM recent value", tsmKey = "DBRecent" },
-    { id = "TSM_DBREGIONMARKETAVG", label = "TSM region market value", tsmKey = "DBRegionMarketAvg" },
-    { id = "TSM_DBMINBUYOUT", label = "TSM min buyout", tsmKey = "DBMinBuyout" },
-    { id = "TSM_DBHISTORICAL", label = "TSM historical price", tsmKey = "DBHistorical" },
-    { id = "TSM_DBREGIONHISTORICAL", label = "TSM region historical price", tsmKey = "DBRegionHistorical" },
-    { id = "TSM_DBREGIONSALEAVG", label = "TSM region sale avg", tsmKey = "DBRegionSaleAvg" },
-    { id = "TSM_AUCTIONINGOPMIN", label = "TSM auctioning min", tsmKey = "AuctioningOpMin" },
-    { id = "TSM_AUCTIONINGOPNORMAL", label = "TSM auctioning normal", tsmKey = "AuctioningOpNormal" },
-    { id = "TSM_AUCTIONINGOPMAX", label = "TSM auctioning max", tsmKey = "AuctioningOpMax" },
-    { id = "TSM_CRAFTING", label = "TSM crafting", tsmKey = "Crafting" },
+    { id = "TSM_DBMARKET", label = "Market Value", tsmKey = "DBMarket" },
+    { id = "TSM_DBRECENT", label = "Recent Value", tsmKey = "DBRecent" },
+    { id = "TSM_DBREGIONMARKETAVG", label = "Region Market Avg", tsmKey = "DBRegionMarketAvg" },
+    { id = "TSM_DBMINBUYOUT", label = "Min Buyout", tsmKey = "DBMinBuyout" },
+    { id = "TSM_DBHISTORICAL", label = "Historical Price", tsmKey = "DBHistorical" },
+    { id = "TSM_DBREGIONHISTORICAL", label = "Region Historical Price", tsmKey = "DBRegionHistorical" },
+    { id = "TSM_DBREGIONSALEAVG", label = "Region Sale Avg", tsmKey = "DBRegionSaleAvg" },
+    { id = "TSM_AUCTIONINGOPMIN", label = "Auctioning Min", tsmKey = "AuctioningOpMin" },
+    { id = "TSM_AUCTIONINGOPNORMAL", label = "Auctioning Normal", tsmKey = "AuctioningOpNormal" },
+    { id = "TSM_AUCTIONINGOPMAX", label = "Auctioning Max", tsmKey = "AuctioningOpMax" },
+    { id = "TSM_CRAFTING", label = "Crafting Cost", tsmKey = "Crafting" },
 }
 
 GoldTracker.VALUE_SOURCE_BY_ID = {}
+GoldTracker.VALUE_SOURCE_BY_TSM_KEY = {}
 for _, source in ipairs(GoldTracker.VALUE_SOURCES) do
     GoldTracker.VALUE_SOURCE_BY_ID[source.id] = source
+    if type(source.tsmKey) == "string" then
+        GoldTracker.VALUE_SOURCE_BY_TSM_KEY[string.lower(source.tsmKey)] = source
+    end
+end
+
+GoldTracker.VALUE_SOURCE_LABEL_ALIASES = {
+    ["tsm market value"] = "Market Value",
+    ["tsm recent value"] = "Recent Value",
+    ["tsm region market value"] = "Region Market Avg",
+    ["tsm min buyout"] = "Min Buyout",
+    ["tsm historical price"] = "Historical Price",
+    ["tsm region historical price"] = "Region Historical Price",
+    ["tsm region sale avg"] = "Region Sale Avg",
+    ["tsm auctioning min"] = "Auctioning Min",
+    ["tsm auctioning normal"] = "Auctioning Normal",
+    ["tsm auctioning max"] = "Auctioning Max",
+    ["tsm crafting"] = "Crafting Cost",
+    ["dbmarket"] = "Market Value",
+    ["dbrecent"] = "Recent Value",
+    ["dbregionmarketavg"] = "Region Market Avg",
+    ["dbminbuyout"] = "Min Buyout",
+    ["dbhistorical"] = "Historical Price",
+    ["dbregionhistorical"] = "Region Historical Price",
+    ["dbregionsaleavg"] = "Region Sale Avg",
+    ["auctioningopmin"] = "Auctioning Min",
+    ["auctioningopnormal"] = "Auctioning Normal",
+    ["auctioningopmax"] = "Auctioning Max",
+    ["crafting"] = "Crafting Cost",
+    ["selected value"] = "Selected Value",
+    ["region market avg"] = "Region Market Avg",
+    ["region historical"] = "Region Historical Price",
+    ["region sale avg"] = "Region Sale Avg",
+    ["auctioning min"] = "Auctioning Min",
+    ["auctioning normal"] = "Auctioning Normal",
+    ["auctioning max"] = "Auctioning Max",
+}
+
+GoldTracker.MAIN_WINDOW_SLASH_OPEN_MODES = {
+    { id = "maximized", label = "Maximized" },
+    { id = "minimized", label = "Minimized" },
+    { id = "tiny", label = "Tiny" },
+}
+GoldTracker.MAIN_WINDOW_SLASH_OPEN_MODE_BY_ID = {}
+for _, openMode in ipairs(GoldTracker.MAIN_WINDOW_SLASH_OPEN_MODES) do
+    GoldTracker.MAIN_WINDOW_SLASH_OPEN_MODE_BY_ID[openMode.id] = openMode
 end
 
 GoldTracker.MINIMUM_TRACKED_ITEM_QUALITIES = { 0, 1, 2, 3, 4, 5 }
@@ -134,6 +181,14 @@ GoldTracker.session = GoldTracker.session or {
     expansionID = nil,
     expansionName = nil,
     activeDurationSeconds = 0,
+    wasResumed = false,
+    resumeCount = 0,
+    resumedAt = nil,
+    resumedFromHistory = false,
+    resumedFromHistoryAt = nil,
+    lastResumedFromHistoryAt = nil,
+    resumedFromHistorySessionIDs = nil,
+    resumedFromHistorySessionNames = nil,
 }
 
 GoldTracker.tsmWarningShown = false
@@ -143,6 +198,52 @@ function GoldTracker:Trim(text)
         return ""
     end
     return (text:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+function GoldTracker:NormalizeValueSourceLabel(label)
+    if type(label) ~= "string" or label == "" then
+        return "Unknown"
+    end
+
+    if string.find(label, ",", 1, true) then
+        local labels = {}
+        local seen = {}
+        for part in string.gmatch(label, "([^,]+)") do
+            local normalizedPart = self:NormalizeValueSourceLabel(part)
+            if normalizedPart ~= "" and not seen[normalizedPart] then
+                seen[normalizedPart] = true
+                labels[#labels + 1] = normalizedPart
+            end
+        end
+        return #labels > 0 and table.concat(labels, ", ") or "Unknown"
+    end
+
+    local trimmed = self:Trim(label)
+    if trimmed == "" then
+        return "Unknown"
+    end
+
+    local source = self.VALUE_SOURCE_BY_ID[trimmed]
+    if source then
+        return source.label
+    end
+
+    local key = string.lower(trimmed)
+    source = self.VALUE_SOURCE_BY_TSM_KEY[key]
+    if source then
+        return source.label
+    end
+
+    return self.VALUE_SOURCE_LABEL_ALIASES[key] or trimmed
+end
+
+function GoldTracker:GetValueSourceLabel(valueSourceID, fallbackLabel)
+    local source = type(valueSourceID) == "string" and self.VALUE_SOURCE_BY_ID[valueSourceID] or nil
+    if source then
+        return source.label
+    end
+
+    return self:NormalizeValueSourceLabel(fallbackLabel)
 end
 
 function GoldTracker:FormatMoney(copper)
@@ -239,6 +340,7 @@ function GoldTracker:InitializeDatabase()
     local hadHighValueDropAlerts = self.db.highValueDropAlerts ~= nil
     local hadPreviousPricingDefaults = self.db.valueSource == "TSM_DBMARKET"
         and (self.db.fallbackValueSource == nil or self.db.fallbackValueSource == "")
+    local hadAuctionableInventoryValueSource = self.db.auctionableInventoryValueSource ~= nil
 
     for key, value in pairs(self.DEFAULTS) do
         if self.db[key] == nil then
@@ -256,6 +358,13 @@ function GoldTracker:InitializeDatabase()
 
     if not self.VALUE_SOURCE_BY_ID[self.db.valueSource] then
         self.db.valueSource = self.DEFAULTS.valueSource
+    end
+
+    if not hadAuctionableInventoryValueSource then
+        self.db.auctionableInventoryValueSource = self.db.valueSource
+    end
+    if not self.VALUE_SOURCE_BY_ID[self.db.auctionableInventoryValueSource] then
+        self.db.auctionableInventoryValueSource = self.DEFAULTS.auctionableInventoryValueSource
     end
 
     if type(self.db.fallbackValueSource) ~= "string" then
@@ -352,6 +461,9 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.showTotalWindowGoldPerHour) ~= "boolean" then
         self.db.showTotalWindowGoldPerHour = self.DEFAULTS.showTotalWindowGoldPerHour
     end
+    if not self.MAIN_WINDOW_SLASH_OPEN_MODE_BY_ID[self.db.mainWindowSlashOpenMode] then
+        self.db.mainWindowSlashOpenMode = self.DEFAULTS.mainWindowSlashOpenMode
+    end
     if type(self.db.enableLootSourceTracking) ~= "boolean" then
         self.db.enableLootSourceTracking = self.DEFAULTS.enableLootSourceTracking
     end
@@ -402,10 +514,7 @@ function GoldTracker:InitializeDatabase()
         self.db.nextHistoryID = 1
     end
 
-    if type(self.db.windowAlpha) ~= "number" then
-        self.db.windowAlpha = self.DEFAULTS.windowAlpha
-    end
-    self.db.windowAlpha = math.max(0.20, math.min(1.00, self.db.windowAlpha))
+    self.db.windowAlpha = nil
 
     if type(self.db.windowWidth) ~= "number" then
         self.db.windowWidth = self.DEFAULTS.windowWidth
@@ -638,6 +747,13 @@ function GoldTracker:IsMainWindowGoldPerHourEnabled()
     return self.db.showMainWindowGoldPerHour == true
 end
 
+function GoldTracker:GetMainWindowSlashOpenMode()
+    local modeID = self.db and self.db.mainWindowSlashOpenMode
+    return self.MAIN_WINDOW_SLASH_OPEN_MODE_BY_ID[modeID]
+        or self.MAIN_WINDOW_SLASH_OPEN_MODE_BY_ID[self.DEFAULTS.mainWindowSlashOpenMode]
+        or self.MAIN_WINDOW_SLASH_OPEN_MODES[1]
+end
+
 function GoldTracker:IsTotalWindowGoldPerHourEnabled()
     if not self:IsTotalWindowFeatureEnabled() then
         return false
@@ -723,6 +839,32 @@ function GoldTracker:GetCurrentValueSource()
     end
 
     return self.VALUE_SOURCES[1]
+end
+
+function GoldTracker:GetAuctionableInventoryValueSource()
+    local configuredSource = self.db and self.VALUE_SOURCE_BY_ID[self.db.auctionableInventoryValueSource]
+    if configuredSource then
+        return configuredSource
+    end
+
+    local defaultSource = self.VALUE_SOURCE_BY_ID[self.DEFAULTS.auctionableInventoryValueSource]
+    if defaultSource then
+        return defaultSource
+    end
+
+    return self:GetCurrentValueSource()
+end
+
+function GoldTracker:SetAuctionableInventoryValueSource(sourceID)
+    local source = self.VALUE_SOURCE_BY_ID[sourceID] or self:GetAuctionableInventoryValueSource()
+    if self.db and source then
+        self.db.auctionableInventoryValueSource = source.id
+    end
+    if self.inventoryFrame and source then
+        self.inventoryFrame.valueSourceID = source.id
+    end
+    self.tsmWarningShown = false
+    return source
 end
 
 function GoldTracker:GetFallbackValueSource()

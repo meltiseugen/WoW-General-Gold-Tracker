@@ -8,7 +8,9 @@ function GoldTracker:HandleSlashCommand(message)
     commandArgs = commandArgs or ""
 
     if command == "" then
-        if type(self.OpenMainWindow) == "function" then
+        if type(self.OpenMainWindowFromSlash) == "function" then
+            self:OpenMainWindowFromSlash()
+        elseif type(self.OpenMainWindow) == "function" then
             self:OpenMainWindow()
         elseif self.mainFrame then
             self.mainFrame:Show()

@@ -2,7 +2,8 @@ local _, NS = ...
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
-local INVENTORY_WINDOW_MIN_WIDTH = 1080
+local INVENTORY_WINDOW_MIN_WIDTH = 820
+local INVENTORY_WINDOW_DEFAULT_WIDTH = 1080
 local INVENTORY_WINDOW_DEFAULT_HEIGHT = 620
 local INVENTORY_WINDOW_MIN_HEIGHT = 420
 local INVENTORY_WINDOW_MAX_WIDTH = 1200
@@ -15,7 +16,7 @@ local INVENTORY_HEADER_LEFT_INSET = 12
 local INVENTORY_ROW_ICON_LEFT = 8
 local INVENTORY_ROW_ICON_GAP = 8
 local INVENTORY_ROW_RIGHT_PADDING = 6
-local INVENTORY_ITEM_MIN_WIDTH = 260
+local INVENTORY_ITEM_MIN_WIDTH = 140
 local INVENTORY_QUANTITY_WIDTH = 56
 local INVENTORY_HISTORY_WIDTH = 46
 local INVENTORY_DEMAND_WIDTH = 82
@@ -64,17 +65,17 @@ for sourceID, sourceKey in pairs(INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID) do
     INVENTORY_DETAILS_VALUE_SOURCE_ID_BY_SOURCE_KEY[sourceKey] = sourceID
 end
 local INVENTORY_DETAILS_PRICE_SOURCES = {
-    { key = "selectedUnitValue", label = "Selected value", color = { 1.0, 0.82, 0.18 } },
-    { key = "dbMarket", label = "DBMarket", color = { 0.68, 0.96, 0.72 } },
-    { key = "dbRecent", label = "DBRecent", color = { 0.72, 0.86, 1.0 } },
-    { key = "dbMinBuyout", label = "DBMinBuyout", color = { 0.84, 0.95, 0.55 } },
-    { key = "dbHistorical", label = "DBHistorical", color = { 0.92, 0.74, 1.0 } },
-    { key = "dbRegionMarketAvg", label = "Region market avg", color = { 0.50, 0.88, 0.92 } },
-    { key = "dbRegionHistorical", label = "Region historical", color = { 0.82, 0.74, 1.0 } },
-    { key = "dbRegionSaleAvg", label = "Region sale avg", color = { 0.98, 0.70, 0.42 } },
-    { key = "auctioningMin", label = "Auctioning min", color = { 0.65, 0.95, 0.55 } },
-    { key = "auctioningNormal", label = "Auctioning normal", color = { 1.0, 0.88, 0.40 } },
-    { key = "auctioningMax", label = "Auctioning max", color = { 1.0, 0.58, 0.42 } },
+    { key = "selectedUnitValue", label = "Selected Value", color = { 1.0, 0.82, 0.18 } },
+    { key = "dbMarket", label = "Market Value", color = { 0.68, 0.96, 0.72 } },
+    { key = "dbRecent", label = "Recent Value", color = { 0.72, 0.86, 1.0 } },
+    { key = "dbMinBuyout", label = "Min Buyout", color = { 0.84, 0.95, 0.55 } },
+    { key = "dbHistorical", label = "Historical Price", color = { 0.92, 0.74, 1.0 } },
+    { key = "dbRegionMarketAvg", label = "Region Market Avg", color = { 0.50, 0.88, 0.92 } },
+    { key = "dbRegionHistorical", label = "Region Historical Price", color = { 0.82, 0.74, 1.0 } },
+    { key = "dbRegionSaleAvg", label = "Region Sale Avg", color = { 0.98, 0.70, 0.42 } },
+    { key = "auctioningMin", label = "Auctioning Min", color = { 0.65, 0.95, 0.55 } },
+    { key = "auctioningNormal", label = "Auctioning Normal", color = { 1.0, 0.88, 0.40 } },
+    { key = "auctioningMax", label = "Auctioning Max", color = { 1.0, 0.58, 0.42 } },
 }
 local INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY = {}
 for _, source in ipairs(INVENTORY_DETAILS_PRICE_SOURCES) do
@@ -358,7 +359,7 @@ local function ResolveInventoryWindowSource(addon, frame)
     if source then
         return source
     end
-    return addon:GetCurrentValueSource()
+    return addon:GetAuctionableInventoryValueSource()
 end
 
 local function AddInventoryItem(itemsByLink, itemOrder, item)
@@ -510,7 +511,7 @@ end
 
 local function GetInventoryDetailsSourceLabel(sourceKey)
     local source = INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY[sourceKey]
-    return source and source.label or "Selected value"
+    return source and source.label or "Selected Value"
 end
 
 local function GetInventoryDetailsSnapshotValue(snapshot, sourceKey)
@@ -1574,7 +1575,7 @@ function GoldTracker:OpenInventoryItemDetailsWindow(row)
 end
 
 function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper, sortKey, sortAscending)
-    local source = self.VALUE_SOURCE_BY_ID[valueSourceID] or self:GetCurrentValueSource()
+    local source = self.VALUE_SOURCE_BY_ID[valueSourceID] or self:GetAuctionableInventoryValueSource()
     local sourceID = source and source.id
     local normalizedMinimumQuality = NormalizeMinimumQuality(self, minimumQuality)
     local normalizedMinimumValue = math.max(0, math.floor(tonumber(minimumValueCopper) or 0))
@@ -2161,7 +2162,7 @@ function GoldTracker:CreateInventoryWindow()
 
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerInventoryFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(INVENTORY_WINDOW_MIN_WIDTH, INVENTORY_WINDOW_DEFAULT_HEIGHT)
+    frame:SetSize(INVENTORY_WINDOW_DEFAULT_WIDTH, INVENTORY_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -2197,7 +2198,7 @@ function GoldTracker:CreateInventoryWindow()
     frame:SetClampedToScreen(true)
     frame:Hide()
 
-    local initialSource = self:GetCurrentValueSource()
+    local initialSource = self:GetAuctionableInventoryValueSource()
     frame.valueSourceID = initialSource and initialSource.id
     frame.minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     frame.minimumValueCopper = 0
@@ -2229,8 +2230,8 @@ function GoldTracker:CreateInventoryWindow()
             info.value = sourceID
             info.checked = frame.valueSourceID == sourceID
             info.func = function()
-                frame.valueSourceID = sourceID
-                addon.tsmWarningShown = false
+                addon:SetAuctionableInventoryValueSource(sourceID)
+                addon:RefreshOptionsControls()
                 addon:RefreshInventoryWindow(true)
             end
             UIDropDownMenu_AddButton(info, level)

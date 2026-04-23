@@ -14,8 +14,10 @@ local ROW_SPACING = HistoryConstants.ROW_SPACING
 local DETAILS_LOCATION_FILTER_ALL = HistoryConstants.DETAILS_LOCATION_FILTER_ALL
 local HISTORY_DATE_FILTER_ALL = HistoryConstants.DATE_FILTER_ALL
 local HISTORY_DATE_FILTER_OPTIONS = HistoryConstants.DATE_FILTER_OPTIONS
-local HISTORY_WINDOW_MIN_WIDTH = 1080
-local HISTORY_WINDOW_DEFAULT_HEIGHT = 500
+local HISTORY_WINDOW_MIN_WIDTH = 920
+local HISTORY_WINDOW_MAX_WIDTH = 1600
+local HISTORY_WINDOW_MIN_HEIGHT = 610
+local HISTORY_WINDOW_DEFAULT_HEIGHT = 610
 local HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT = 620
 local HISTORY_WINDOW_VERTICAL_CHROME_INSET = 66
 local LOCATION_TABLE_MIN_VISIBLE_ROWS = 3
@@ -29,10 +31,11 @@ local DETAILS_LOCATION_TIME_PREFERRED_WIDTH = 230
 local DETAILS_LOCATION_HIGHLIGHTS_WIDTH = 90
 local DETAILS_LOCATION_DURATION_WIDTH = 72
 local DETAILS_ITEMS_ROW_SPACING = 2
-local DETAILS_ITEMS_VALUE_WIDTH = 110
-local DETAILS_ITEMS_SOURCE_MIN_WIDTH = 220
+local DETAILS_ITEMS_COLUMN_GAP = 12
+local DETAILS_ITEMS_VALUE_MIN_WIDTH = 170
+local DETAILS_ITEMS_VALUE_MAX_WIDTH = 280
+local DETAILS_ITEMS_SOURCE_MIN_WIDTH = 140
 local DETAILS_ITEMS_MIN_ITEM_WIDTH = 260
-local DETAILS_ITEMS_ROW_FIXED_WIDTH = 142
 local HISTORY_SORT_ICON_SIZE = 10
 local historyDateFilter = HistoryDateFilter:New()
 local historyFormatter = HistoryFormatter:New(GoldTracker)
@@ -164,6 +167,44 @@ local function FormatSessionDuration(session)
     return model:FormatDurationMinutesLabel(model:GetDurationSeconds(session))
 end
 
+local function FormatHistoryTimestamp(timestamp)
+    local normalized = tonumber(timestamp)
+    if not normalized or normalized <= 0 then
+        return nil
+    end
+
+    return date("%Y-%m-%d %H:%M", normalized)
+end
+
+local function BuildHistoryResumeSummaryRows(session)
+    local rows = {}
+    if type(session) ~= "table" then
+        return rows
+    end
+
+    if session.wasResumed == true then
+        local count = math.max(0, math.floor((tonumber(session.resumeCount) or 0) + 0.5))
+        local value = count > 1 and string.format("Yes, %d times", count) or "Yes"
+        local resumedAtText = FormatHistoryTimestamp(session.resumedAt)
+        if resumedAtText then
+            value = string.format("%s, last %s", value, resumedAtText)
+        end
+        rows[#rows + 1] = { label = "Resumed", value = value }
+    end
+
+    if session.resumedFromHistory == true then
+        local sourceCount = #(session.resumedFromHistorySessionIDs or {})
+        local value = sourceCount > 1 and string.format("Yes, %d source sessions", sourceCount) or "Yes"
+        local lastResumedAtText = FormatHistoryTimestamp(session.lastResumedFromHistoryAt or session.resumedFromHistoryAt)
+        if lastResumedAtText then
+            value = string.format("%s, last %s", value, lastResumedAtText)
+        end
+        rows[#rows + 1] = { label = "Resumed from history", value = value }
+    end
+
+    return rows
+end
+
 local function TruncateSessionNameKeepingDate(addon, fullName, nameFontString)
     return historyFormatter:TruncateSessionNameKeepingDate(fullName, nameFontString)
 end
@@ -253,22 +294,54 @@ local function GetHistoryDetailsAvailableItemWidth(frame)
     return math.max(1, width - 6)
 end
 
-local function GetHistoryDetailsSourceColumnWidth(frame, preferredItemWidth, preferredSourceWidth)
+local function GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
     local availableWidth = GetHistoryDetailsAvailableItemWidth(frame)
-    local itemWidth = math.max(DETAILS_ITEMS_MIN_ITEM_WIDTH, tonumber(preferredItemWidth) or 0)
-    local sourceWidth = math.max(DETAILS_ITEMS_SOURCE_MIN_WIDTH, tonumber(preferredSourceWidth) or 0)
-    local maxSourceWidth = availableWidth - DETAILS_ITEMS_ROW_FIXED_WIDTH - itemWidth
-    if maxSourceWidth < DETAILS_ITEMS_SOURCE_MIN_WIDTH then
-        maxSourceWidth = DETAILS_ITEMS_SOURCE_MIN_WIDTH
+    local textWidth = math.max(1, availableWidth - 8 - (DETAILS_ITEMS_COLUMN_GAP * 2))
+    local preferredItem = math.max(DETAILS_ITEMS_MIN_ITEM_WIDTH, tonumber(preferredItemWidth) or 0)
+    local preferredValue = math.max(DETAILS_ITEMS_VALUE_MIN_WIDTH, tonumber(preferredValueWidth) or 0)
+    local preferredSource = math.max(DETAILS_ITEMS_SOURCE_MIN_WIDTH, tonumber(preferredSourceWidth) or 0)
+
+    local valueWidth = ClampHistoryValue(
+        math.max(preferredValue, math.floor(textWidth * 0.18)),
+        DETAILS_ITEMS_VALUE_MIN_WIDTH,
+        DETAILS_ITEMS_VALUE_MAX_WIDTH
+    )
+    local sourceWidth = math.max(preferredSource, math.floor(textWidth * 0.30))
+    local itemWidth = math.max(preferredItem, textWidth - valueWidth - sourceWidth)
+
+    local totalWidth = itemWidth + valueWidth + sourceWidth
+    if totalWidth > textWidth then
+        local overflow = totalWidth - textWidth
+        local shrinkableItem = math.max(0, itemWidth - DETAILS_ITEMS_MIN_ITEM_WIDTH)
+        local itemShrink = math.min(shrinkableItem, overflow)
+        itemWidth = itemWidth - itemShrink
+        overflow = overflow - itemShrink
+
+        if overflow > 0 then
+            local shrinkableSource = math.max(0, sourceWidth - DETAILS_ITEMS_SOURCE_MIN_WIDTH)
+            local sourceShrink = math.min(shrinkableSource, overflow)
+            sourceWidth = sourceWidth - sourceShrink
+            overflow = overflow - sourceShrink
+        end
+
+        if overflow > 0 then
+            valueWidth = math.max(DETAILS_ITEMS_VALUE_MIN_WIDTH, valueWidth - overflow)
+        end
     end
-    return ClampHistoryValue(sourceWidth, DETAILS_ITEMS_SOURCE_MIN_WIDTH, maxSourceWidth)
+
+    return {
+        itemWidth = math.max(1, math.floor(itemWidth + 0.5)),
+        valueWidth = math.max(1, math.floor(valueWidth + 0.5)),
+        sourceWidth = math.max(1, math.floor(sourceWidth + 0.5)),
+    }
 end
 
 local function GetHistoryDetailsPreferredItemColumnWidths(frame)
     local preferredItemWidth = DETAILS_ITEMS_MIN_ITEM_WIDTH
+    local preferredValueWidth = DETAILS_ITEMS_VALUE_MIN_WIDTH
     local preferredSourceWidth = DETAILS_ITEMS_SOURCE_MIN_WIDTH
     if not frame then
-        return preferredItemWidth, preferredSourceWidth
+        return preferredItemWidth, preferredValueWidth, preferredSourceWidth
     end
 
     for _, row in ipairs(frame.detailsItemRows or {}) do
@@ -279,24 +352,66 @@ local function GetHistoryDetailsPreferredItemColumnWidths(frame)
             if row.sourceText and type(row.sourceText.GetStringWidth) == "function" then
                 preferredSourceWidth = math.max(preferredSourceWidth, math.ceil((row.sourceText:GetStringWidth() or 0) + 8))
             end
+            if row.valueText and type(row.valueText.GetStringWidth) == "function" then
+                preferredValueWidth = math.max(preferredValueWidth, math.ceil((row.valueText:GetStringWidth() or 0) + 10))
+            end
         end
     end
 
-    return preferredItemWidth, preferredSourceWidth
+    return preferredItemWidth, preferredValueWidth, preferredSourceWidth
 end
 
-local function ApplyHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredSourceWidth)
+local function ApplyHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
     if not frame then
         return
     end
 
-    local sourceWidth = GetHistoryDetailsSourceColumnWidth(frame, preferredItemWidth, preferredSourceWidth)
+    local layout = GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
+    if frame.itemsItemHeaderText and frame.itemsHeaderText then
+        frame.itemsItemHeaderText:ClearAllPoints()
+        frame.itemsItemHeaderText:SetPoint("TOPLEFT", frame.itemsHeaderText, "BOTTOMLEFT", 0, -4)
+        frame.itemsItemHeaderText:SetWidth(layout.itemWidth)
+    end
+    if frame.itemsValueHeaderText and frame.itemsItemHeaderText then
+        frame.itemsValueHeaderText:ClearAllPoints()
+        frame.itemsValueHeaderText:SetPoint("TOPLEFT", frame.itemsItemHeaderText, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
+        frame.itemsValueHeaderText:SetWidth(layout.valueWidth)
+    end
     if frame.itemsSourceHeaderText then
-        frame.itemsSourceHeaderText:SetWidth(sourceWidth)
+        frame.itemsSourceHeaderText:ClearAllPoints()
+        if frame.itemsValueHeaderText then
+            frame.itemsSourceHeaderText:SetPoint("TOPLEFT", frame.itemsValueHeaderText, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
+        elseif frame.itemsItemHeaderText then
+            frame.itemsSourceHeaderText:SetPoint("TOPLEFT", frame.itemsItemHeaderText, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
+        end
+        frame.itemsSourceHeaderText:SetWidth(layout.sourceWidth)
+    end
+    if frame.itemsHeaderUnderline and frame.itemsItemHeaderText and frame.itemsSourceHeaderText then
+        frame.itemsHeaderUnderline:ClearAllPoints()
+        frame.itemsHeaderUnderline:SetPoint("TOPLEFT", frame.itemsItemHeaderText, "BOTTOMLEFT", 0, -4)
+        frame.itemsHeaderUnderline:SetPoint("TOPRIGHT", frame.itemsSourceHeaderText, "BOTTOMRIGHT", 0, -4)
     end
     for _, row in ipairs(frame.detailsItemRows or {}) do
+        if row.itemText then
+            row.itemText:ClearAllPoints()
+            row.itemText:SetPoint("LEFT", row, "LEFT", 4, 0)
+            row.itemText:SetWidth(layout.itemWidth)
+        end
+        if row.valueText then
+            row.valueText:ClearAllPoints()
+            row.valueText:SetPoint("LEFT", row, "LEFT", 4 + layout.itemWidth + DETAILS_ITEMS_COLUMN_GAP, 0)
+            row.valueText:SetWidth(layout.valueWidth)
+        end
         if row.sourceText then
-            row.sourceText:SetWidth(sourceWidth)
+            row.sourceText:ClearAllPoints()
+            row.sourceText:SetPoint(
+                "LEFT",
+                row,
+                "LEFT",
+                4 + layout.itemWidth + DETAILS_ITEMS_COLUMN_GAP + layout.valueWidth + DETAILS_ITEMS_COLUMN_GAP,
+                0
+            )
+            row.sourceText:SetWidth(layout.sourceWidth)
         end
     end
 end
@@ -437,13 +552,13 @@ function GoldTracker:CreateHistoryWindow()
     frame:SetMovable(true)
     frame:SetResizable(true)
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(HISTORY_WINDOW_MIN_WIDTH, 420, 1200, 900)
+        frame:SetResizeBounds(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_MIN_HEIGHT, HISTORY_WINDOW_MAX_WIDTH, 900)
     else
         if frame.SetMinResize then
-            frame:SetMinResize(HISTORY_WINDOW_MIN_WIDTH, 420)
+            frame:SetMinResize(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_MIN_HEIGHT)
         end
         if frame.SetMaxResize then
-            frame:SetMaxResize(1200, 900)
+            frame:SetMaxResize(HISTORY_WINDOW_MAX_WIDTH, 900)
         end
     end
     frame:SetClampedToScreen(true)
@@ -892,16 +1007,15 @@ function GoldTracker:CreateHistoryWindow()
     frame.itemsItemHeaderText = itemsItemHeader
 
     local itemsSourceHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemsSourceHeader:SetPoint("TOP", itemsItemHeader, "TOP", 0, 0)
-    itemsSourceHeader:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
+    itemsSourceHeader:SetPoint("TOPLEFT", itemsItemHeader, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP + DETAILS_ITEMS_VALUE_MIN_WIDTH + DETAILS_ITEMS_COLUMN_GAP, 0)
     itemsSourceHeader:SetWidth(DETAILS_ITEMS_SOURCE_MIN_WIDTH)
     itemsSourceHeader:SetJustifyH("LEFT")
     itemsSourceHeader:SetText("From")
     frame.itemsSourceHeaderText = itemsSourceHeader
 
     local itemsValueHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemsValueHeader:SetPoint("RIGHT", itemsSourceHeader, "LEFT", -12, 0)
-    itemsValueHeader:SetWidth(DETAILS_ITEMS_VALUE_WIDTH)
+    itemsValueHeader:SetPoint("TOPLEFT", itemsItemHeader, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
+    itemsValueHeader:SetWidth(DETAILS_ITEMS_VALUE_MIN_WIDTH)
     itemsValueHeader:SetJustifyH("RIGHT")
     itemsValueHeader:SetText("Value")
     frame.itemsValueHeaderText = itemsValueHeader
@@ -957,8 +1071,8 @@ function GoldTracker:CreateHistoryWindow()
 
     Theme:CreateResizeButton(frame, {
         minWidth = HISTORY_WINDOW_MIN_WIDTH,
-        minHeight = 420,
-        maxWidth = 1200,
+        minHeight = HISTORY_WINDOW_MIN_HEIGHT,
+        maxWidth = HISTORY_WINDOW_MAX_WIDTH,
         maxHeight = 900,
         onResizeStop = function()
             RefreshHistoryAfterResize()
@@ -1282,20 +1396,18 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
     row.itemText = itemText
 
     local sourceText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sourceText:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-    sourceText:SetWidth(GetHistoryDetailsSourceColumnWidth(frame))
+    sourceText:SetPoint("LEFT", row, "LEFT", 4 + DETAILS_ITEMS_MIN_ITEM_WIDTH + DETAILS_ITEMS_COLUMN_GAP + DETAILS_ITEMS_VALUE_MIN_WIDTH + DETAILS_ITEMS_COLUMN_GAP, 0)
+    sourceText:SetWidth(DETAILS_ITEMS_SOURCE_MIN_WIDTH)
     sourceText:SetJustifyH("LEFT")
     sourceText:SetWordWrap(false)
     row.sourceText = sourceText
 
     local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    valueText:SetPoint("RIGHT", sourceText, "LEFT", -12, 0)
-    valueText:SetWidth(DETAILS_ITEMS_VALUE_WIDTH)
+    valueText:SetPoint("LEFT", row, "LEFT", 4 + DETAILS_ITEMS_MIN_ITEM_WIDTH + DETAILS_ITEMS_COLUMN_GAP, 0)
+    valueText:SetWidth(DETAILS_ITEMS_VALUE_MIN_WIDTH)
     valueText:SetJustifyH("RIGHT")
     valueText:SetWordWrap(false)
     row.valueText = valueText
-
-    itemText:SetPoint("RIGHT", valueText, "LEFT", -12, 0)
 
     local divider = row:CreateTexture(nil, "ARTWORK")
     divider:SetColorTexture(1, 0.82, 0, 0.18)
@@ -2060,23 +2172,30 @@ function GoldTracker:RefreshHistoryDetailsWindow()
 
     local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey)
 
-    frame.sessionNameText:SetText(session.name or "Session")
+    local sessionName = session.name or "Session"
+    if session.wasResumed == true or session.resumedFromHistory == true then
+        sessionName = string.format("[Resumed] %s", sessionName)
+    end
+    frame.sessionNameText:SetText(sessionName)
 
     local summaryDurationSeconds = tonumber(filteredSummary.duration) or 0
     local summaryRawTotal = (tonumber(filteredSummary.rawGold) or 0) + (tonumber(filteredSummary.itemsRawGold) or 0)
 
     local summaryRowsData = {
         { label = "Duration", value = self:FormatDuration(filteredSummary.duration or 0) },
-        { label = "Value source", value = session.valueSourceLabel or "Unknown" },
-        { label = "Raw gold", value = self:FormatMoney(filteredSummary.rawGold or 0) },
-        { label = "Vendor items gold", value = self:FormatMoney(filteredSummary.itemsRawGold or 0) },
-        { label = "AH value", value = self:FormatMoney(filteredSummary.itemsValue or 0) },
-        { label = "Raw session total", value = self:FormatMoney(summaryRawTotal) },
-        { label = "Session Total", value = self:FormatMoney(filteredSummary.totalValue or 0) },
-        { label = "Session / hour", value = self:FormatMoneyPerHour(filteredSummary.totalValue or 0, summaryDurationSeconds) },
-        { label = "AH / hour", value = self:FormatMoneyPerHour(filteredSummary.itemsValue or 0, summaryDurationSeconds) },
-        { label = "Raw / hour", value = self:FormatMoneyPerHour(summaryRawTotal, summaryDurationSeconds) },
     }
+    for _, row in ipairs(BuildHistoryResumeSummaryRows(session)) do
+        summaryRowsData[#summaryRowsData + 1] = row
+    end
+    summaryRowsData[#summaryRowsData + 1] = { label = "Value source", value = session.valueSourceLabel or "Unknown" }
+    summaryRowsData[#summaryRowsData + 1] = { label = "Raw gold", value = self:FormatMoney(filteredSummary.rawGold or 0) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "Vendor items gold", value = self:FormatMoney(filteredSummary.itemsRawGold or 0) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "AH value", value = self:FormatMoney(filteredSummary.itemsValue or 0) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "Raw session total", value = self:FormatMoney(summaryRawTotal) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "Session Total", value = self:FormatMoney(filteredSummary.totalValue or 0) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "Session / hour", value = self:FormatMoneyPerHour(filteredSummary.totalValue or 0, summaryDurationSeconds) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "AH / hour", value = self:FormatMoneyPerHour(filteredSummary.itemsValue or 0, summaryDurationSeconds) }
+    summaryRowsData[#summaryRowsData + 1] = { label = "Raw / hour", value = self:FormatMoneyPerHour(summaryRawTotal, summaryDurationSeconds) }
 
     -- Always show the complete per-location table; dropdown still filters summary and item list.
     local locationRows = BuildLocationDetailsRowsForSelection(session, DETAILS_LOCATION_FILTER_ALL)

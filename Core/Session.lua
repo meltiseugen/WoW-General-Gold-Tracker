@@ -17,7 +17,7 @@ local function CloneReloadItemLoots(itemLoots)
             isSoulbound = entry.isSoulbound == true,
             timestamp = tonumber(entry.timestamp) or 0,
             valueSourceID = entry.valueSourceID,
-            valueSourceLabel = entry.valueSourceLabel,
+            valueSourceLabel = GoldTracker:GetValueSourceLabel(entry.valueSourceID, entry.valueSourceLabel),
             locationKey = entry.locationKey,
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
@@ -102,6 +102,14 @@ local function BuildReloadSessionSnapshot(session)
         continentName = session.continentName,
         expansionID = session.expansionID,
         expansionName = session.expansionName,
+        wasResumed = session.wasResumed == true,
+        resumeCount = math.max(0, math.floor((tonumber(session.resumeCount) or 0) + 0.5)),
+        resumedAt = tonumber(session.resumedAt),
+        resumedFromHistory = session.resumedFromHistory == true,
+        resumedFromHistoryAt = tonumber(session.resumedFromHistoryAt),
+        lastResumedFromHistoryAt = tonumber(session.lastResumedFromHistoryAt),
+        resumedFromHistorySessionIDs = session.resumedFromHistorySessionIDs,
+        resumedFromHistorySessionNames = session.resumedFromHistorySessionNames,
         savedAt = time(),
     }
 end
@@ -187,6 +195,14 @@ function GoldTracker:TryRestorePendingReloadSession()
     session.continentName = snapshot.continentName
     session.expansionID = snapshot.expansionID
     session.expansionName = snapshot.expansionName
+    session.wasResumed = snapshot.wasResumed == true
+    session.resumeCount = math.max(0, math.floor((tonumber(snapshot.resumeCount) or 0) + 0.5))
+    session.resumedAt = tonumber(snapshot.resumedAt)
+    session.resumedFromHistory = snapshot.resumedFromHistory == true
+    session.resumedFromHistoryAt = tonumber(snapshot.resumedFromHistoryAt)
+    session.lastResumedFromHistoryAt = tonumber(snapshot.lastResumedFromHistoryAt)
+    session.resumedFromHistorySessionIDs = snapshot.resumedFromHistorySessionIDs
+    session.resumedFromHistorySessionNames = snapshot.resumedFromHistorySessionNames
     if type(self.GetMostRecentSessionLootTimestamp) == "function" then
         session.lastLootAt = self:GetMostRecentSessionLootTimestamp(session)
     else
@@ -243,6 +259,14 @@ function GoldTracker:StartSession(forceNew, options)
     self.session.expansionName = nil
     self.session.lastLootAt = self.session.startTime
     self.session.activeDurationSeconds = 0
+    self.session.wasResumed = false
+    self.session.resumeCount = 0
+    self.session.resumedAt = nil
+    self.session.resumedFromHistory = false
+    self.session.resumedFromHistoryAt = nil
+    self.session.lastResumedFromHistoryAt = nil
+    self.session.resumedFromHistorySessionIDs = nil
+    self.session.resumedFromHistorySessionNames = nil
     self.tsmWarningShown = false
     if self:IsDiagnosticsPanelEnabled() and type(self.CreateDiagnosisSnapshot) == "function" then
         self.session.diagnosisSnapshot = self:CreateDiagnosisSnapshot(self.session.startTime, self.session.startTime)

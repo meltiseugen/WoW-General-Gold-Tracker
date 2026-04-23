@@ -316,46 +316,39 @@ local function ApplyMainWindowResizeBounds(addon, frame)
     end
 end
 
-function GoldTracker:GetConfiguredWindowAlpha()
-    local alpha = (self.db and self.db.windowAlpha) or self.DEFAULTS.windowAlpha
-    alpha = tonumber(alpha) or self.DEFAULTS.windowAlpha
-    return math.max(0.20, math.min(1.00, alpha))
-end
-
 function GoldTracker:ApplyMainWindowAlpha()
     if not self.mainFrame then
         return
     end
 
     local frame = self.mainFrame
-    local alpha = self:GetConfiguredWindowAlpha()
 
     frame:SetAlpha(1)
 
     if frame.chrome then
-        frame.chrome:SetBackdropColor(0.03, 0.04, 0.06, math.max(0.72, alpha * 0.94))
+        frame.chrome:SetBackdropColor(0.03, 0.04, 0.06, 1)
         frame.chrome:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08)
     end
     if frame.headerBar then
-        frame.headerBar:SetBackdropColor(0.06, 0.07, 0.10, math.max(0.78, alpha))
+        frame.headerBar:SetBackdropColor(0.06, 0.07, 0.10, 1)
         frame.headerBar:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.03)
     end
     if frame.summaryPanel then
-        frame.summaryPanel:SetBackdropColor(0.06, 0.07, 0.09, math.max(0.76, alpha * 0.96))
+        frame.summaryPanel:SetBackdropColor(0.06, 0.07, 0.09, 1)
         frame.summaryPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.12)
     end
     if frame.logPanel then
-        frame.logPanel:SetBackdropColor(0.05, 0.06, 0.08, math.max(0.74, alpha * 0.94))
+        frame.logPanel:SetBackdropColor(0.05, 0.06, 0.08, 1)
         frame.logPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.10)
     end
     if frame.headerAccent then
-        frame.headerAccent:SetAlpha(math.max(0.45, alpha))
+        frame.headerAccent:SetAlpha(1)
     end
     if frame.summaryAccent then
-        frame.summaryAccent:SetAlpha(math.max(0.35, alpha * 0.85))
+        frame.summaryAccent:SetAlpha(1)
     end
     if frame.logAccent then
-        frame.logAccent:SetAlpha(math.max(0.35, alpha * 0.85))
+        frame.logAccent:SetAlpha(1)
     end
 end
 
@@ -614,6 +607,22 @@ function GoldTracker:OpenMainWindow()
     end
 
     self:SetMainWindowCompact(false, true)
+end
+
+function GoldTracker:OpenMainWindowFromSlash()
+    if not self.mainFrame then
+        return
+    end
+
+    local openMode = self:GetMainWindowSlashOpenMode()
+    local modeID = openMode and openMode.id or "maximized"
+    if modeID == "tiny" then
+        self:SetMainWindowTiny(true, true)
+    elseif modeID == "minimized" then
+        self:SetMainWindowCompact(true, true)
+    else
+        self:OpenMainWindow()
+    end
 end
 
 function GoldTracker:RefreshMainWindowLayout()

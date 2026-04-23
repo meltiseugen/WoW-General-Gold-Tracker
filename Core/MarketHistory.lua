@@ -510,7 +510,7 @@ function GoldTracker:RecordCurrentBagMarketSnapshot()
         return
     end
 
-    local source = self:GetCurrentValueSource()
+    local source = self:GetAuctionableInventoryValueSource()
     local minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     local items = self:BuildInventoryAuctionItemList(
         source and source.id,
