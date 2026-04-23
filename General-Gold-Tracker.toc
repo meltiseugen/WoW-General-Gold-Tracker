@@ -2,7 +2,7 @@
 ## Title: General Gold Tracker
 ## Notes: Retail-only (Midnight+) session-based loot gold tracker.
 ## Author: Eugen
-## Version: 1.4.0
+## Version: 1.5.0
 ## SavedVariables: WoWGeneralGoldTrackerDB
 ## OptionalDeps: TradeSkillMaster, JanisTheme-1.0
 
