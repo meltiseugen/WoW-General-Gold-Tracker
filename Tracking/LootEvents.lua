@@ -86,9 +86,6 @@ function GoldTracker:ShouldAutoStartSessionOnLoot()
     if not self.db or not self.db.autoStartSessionOnFirstLoot then
         return false
     end
-    if not self.mainFrame or not self.mainFrame:IsShown() then
-        return false
-    end
     return true
 end
 

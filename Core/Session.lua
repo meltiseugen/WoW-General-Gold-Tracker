@@ -319,6 +319,7 @@ function GoldTracker:HandleSessionLocationTransition()
         return false
     end
 
+    local previousWasInstanced = self.session.isInstanced == true
     local previousLocationKey = self.session.locationKey
     if type(previousLocationKey) ~= "string" then
         self:UpdateSessionLocationContext()
@@ -332,16 +333,17 @@ function GoldTracker:HandleSessionLocationTransition()
     end
 
     local isInstancedNow = current.isInstanced == true
-    if not isInstancedNow then
+    if not isInstancedNow and not self:IsAutoStartSessionOnLocationChangeEnabled() then
         self:UpdateSessionLocationContext()
         return false
     end
 
     local previousName = self.session.instanceName or self.session.zoneName or "Unknown"
     local currentName = current.instanceName or current.zoneName or "Unknown"
+    local transitionLabel = (previousWasInstanced or isInstancedNow) and "instance" or "zone"
 
     self:StopSession({
-        saveReason = "instance-switch",
+        saveReason = transitionLabel == "instance" and "instance-switch" or "location-switch",
         skipContextRefresh = true,
         silentChat = true,
         silentLog = true,
@@ -355,7 +357,7 @@ function GoldTracker:HandleSessionLocationTransition()
         0.9,
         1
     )
-    self:Print(string.format("Auto-started new session after instance change: %s -> %s", previousName, currentName))
+    self:Print(string.format("Auto-started new session after %s change: %s -> %s", transitionLabel, previousName, currentName))
     return true
 end
 

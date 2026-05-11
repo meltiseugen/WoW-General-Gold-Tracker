@@ -1390,8 +1390,29 @@ local function BuildLootEntryLocationLabel(entry, fallbackSession)
 end
 
 local function CountHighlightedLootEntries(addon, itemLoots)
-    local threshold = addon:GetHighlightThreshold()
     local count = 0
+    local sawExplicitHighlightState = false
+    for _, entry in ipairs(itemLoots or {}) do
+        if entry and entry.isHighlighted ~= nil then
+            sawExplicitHighlightState = true
+            if entry.isHighlighted == true then
+                count = count + 1
+            end
+        elseif entry and tonumber(entry.highlightThreshold) then
+            sawExplicitHighlightState = true
+            local totalValue = tonumber(entry.totalValue) or 0
+            local highlightThreshold = math.max(0, math.floor((tonumber(entry.highlightThreshold) or 0) + 0.5))
+            if totalValue > 0 and totalValue >= highlightThreshold then
+                count = count + 1
+            end
+        end
+    end
+
+    if sawExplicitHighlightState then
+        return count
+    end
+
+    local threshold = addon:GetHighlightThreshold()
     for _, entry in ipairs(itemLoots or {}) do
         local totalValue = tonumber(entry and entry.totalValue) or 0
         if totalValue > 0 and (threshold <= 0 or totalValue >= threshold) then

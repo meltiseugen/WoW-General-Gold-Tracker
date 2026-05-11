@@ -82,24 +82,6 @@ for _, source in ipairs(INVENTORY_DETAILS_PRICE_SOURCES) do
     INVENTORY_DETAILS_PRICE_SOURCE_BY_KEY[source.key] = source
 end
 
-local BOUND_TOOLTIP_LINES = {
-    ITEM_SOULBOUND,
-    ITEM_BIND_ON_PICKUP,
-    ITEM_BIND_QUEST,
-    ITEM_BIND_TO_BNETACCOUNT,
-    ITEM_BNETACCOUNTBOUND,
-    ITEM_BIND_TO_ACCOUNT,
-    ITEM_ACCOUNTBOUND,
-    ITEM_ACCOUNTBOUND_UNTIL_EQUIP,
-    ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
-}
-local BOUND_TOOLTIP_KEYWORDS = {
-    "consume on pick-up",
-    "consume on pickup",
-    "warband",
-    "warbound",
-}
-
 local function CreateInventoryPanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)
 end
@@ -133,74 +115,6 @@ local function CreateInventoryHeaderButton(parent, label, width, justifyH)
     return button
 end
 
-local function IsBoundTooltipLine(text)
-    if type(text) ~= "string" or text == "" then
-        return false
-    end
-
-    for _, bindingText in pairs(BOUND_TOOLTIP_LINES) do
-        if bindingText and text == bindingText then
-            return true
-        end
-    end
-
-    local normalizedText = string.lower(text)
-    for _, keyword in ipairs(BOUND_TOOLTIP_KEYWORDS) do
-        if string.find(normalizedText, keyword, 1, true) then
-            return true
-        end
-    end
-
-    return false
-end
-
-local function TooltipDataHasBoundLine(tooltipData)
-    if type(tooltipData) ~= "table" then
-        return false
-    end
-
-    if TooltipUtil and TooltipUtil.SurfaceArgs then
-        TooltipUtil.SurfaceArgs(tooltipData)
-    end
-
-    if type(tooltipData.lines) ~= "table" then
-        return false
-    end
-
-    for _, line in ipairs(tooltipData.lines) do
-        if line
-            and (IsBoundTooltipLine(line.leftText)
-                or IsBoundTooltipLine(line.rightText)
-                or IsBoundTooltipLine(line.text)) then
-            return true
-        end
-    end
-
-    return false
-end
-
-local function IsContainerItemBoundOrWarbound(bagID, slotIndex, itemLink, slotInfo)
-    if type(slotInfo) == "table" and slotInfo.isBound == true then
-        return true
-    end
-
-    if C_TooltipInfo and type(C_TooltipInfo.GetBagItem) == "function" then
-        local ok, tooltipData = pcall(C_TooltipInfo.GetBagItem, bagID, slotIndex)
-        if ok and TooltipDataHasBoundLine(tooltipData) then
-            return true
-        end
-    end
-
-    if C_TooltipInfo and type(C_TooltipInfo.GetHyperlink) == "function" and type(itemLink) == "string" then
-        local ok, tooltipData = pcall(C_TooltipInfo.GetHyperlink, itemLink)
-        if ok and TooltipDataHasBoundLine(tooltipData) then
-            return true
-        end
-    end
-
-    return false
-end
-
 local function AddBagID(bagIDs, seenBagIDs, bagID)
     local normalizedBagID = tonumber(bagID)
     if not normalizedBagID or seenBagIDs[normalizedBagID] then
@@ -228,6 +142,17 @@ local function BuildInventoryBagIDs()
 
     table.sort(bagIDs)
     return bagIDs
+end
+
+local function GetInventoryBuildCacheKey(addon, sourceID, minimumQuality)
+    local cacheVersion = math.max(0, math.floor(tonumber(addon and addon.inventoryBuildCacheVersion) or 0))
+    local normalizedQuality = math.max(0, math.floor(tonumber(minimumQuality) or 0))
+    return string.format("%d|%s|%d", cacheVersion, tostring(sourceID or ""), normalizedQuality)
+end
+
+function GoldTracker:InvalidateInventoryWindowCache()
+    self.inventoryBuildCache = {}
+    self.inventoryBuildCacheVersion = math.max(0, math.floor(tonumber(self.inventoryBuildCacheVersion) or 0)) + 1
 end
 
 local function GetContainerSlotCount(bagID)
@@ -795,7 +720,7 @@ local function FindInventoryItemLocationForRow(row)
         if itemLink ~= row.itemLink then
             return nil
         end
-        if IsContainerItemBoundOrWarbound(bagID, slotIndex, itemLink, slotInfo) then
+        if GoldTracker:IsBagItemBindingRestricted(bagID, slotIndex, itemLink, slotInfo) then
             return nil
         end
 
@@ -1579,63 +1504,81 @@ function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality
     local sourceID = source and source.id
     local normalizedMinimumQuality = NormalizeMinimumQuality(self, minimumQuality)
     local normalizedMinimumValue = math.max(0, math.floor(tonumber(minimumValueCopper) or 0))
-    local itemsByLink = {}
-    local candidateItems = {}
-    local demandCache = {}
-    local scannedStacks = 0
-    local matchedStacks = 0
-    local totalValue = 0
-    local totalQuantity = 0
+    local cacheKey = GetInventoryBuildCacheKey(self, sourceID, normalizedMinimumQuality)
+    local cachedBuild = type(self.inventoryBuildCache) == "table" and self.inventoryBuildCache[cacheKey] or nil
+    local candidateItems
+    local scannedStacks
+    if cachedBuild then
+        candidateItems = cachedBuild.items or {}
+        scannedStacks = tonumber(cachedBuild.scannedStacks) or 0
+    else
+        local itemsByLink = {}
+        candidateItems = {}
+        local demandCache = {}
+        scannedStacks = 0
 
-    for _, bagID in ipairs(BuildInventoryBagIDs()) do
-        local slotCount = GetContainerSlotCount(bagID)
-        for slotIndex = 1, slotCount do
-            local slotInfo = GetContainerSlotInfo(bagID, slotIndex)
-            local itemLink = GetContainerSlotLink(bagID, slotIndex, slotInfo)
-            if type(itemLink) == "string" and itemLink ~= "" then
-                scannedStacks = scannedStacks + 1
+        for _, bagID in ipairs(BuildInventoryBagIDs()) do
+            local slotCount = GetContainerSlotCount(bagID)
+            for slotIndex = 1, slotCount do
+                local slotInfo = GetContainerSlotInfo(bagID, slotIndex)
+                local itemLink = GetContainerSlotLink(bagID, slotIndex, slotInfo)
+                if type(itemLink) == "string" and itemLink ~= "" then
+                    scannedStacks = scannedStacks + 1
 
-                if not IsContainerItemBoundOrWarbound(bagID, slotIndex, itemLink, slotInfo) then
-                    local itemName, infoQuality, itemIcon = GetItemDisplayData(itemLink, slotInfo)
-                    local itemQuality = tonumber(slotInfo and slotInfo.quality) or tonumber(infoQuality) or self:GetItemQualityFromLink(itemLink)
-                    if ItemPassesMinimumQuality(itemQuality, normalizedMinimumQuality) then
-                        local unitValue, resolvedSourceID, resolvedSourceLabel =
-                            GetInventoryUnitValue(self, sourceID, itemLink)
-                        local quantity = math.max(1, math.floor(tonumber(slotInfo and slotInfo.stackCount) or 1))
-                        local stackValue = math.max(0, math.floor((unitValue * quantity) + 0.5))
-                        if unitValue > 0 then
-                            local demandData = GetInventoryRegionalDemandData(self, itemLink, demandCache) or {}
-                            AddInventoryItem(itemsByLink, candidateItems, {
-                                itemLink = itemLink,
-                                itemName = itemName or itemLink,
-                                itemQuality = itemQuality,
-                                icon = itemIcon,
-                                bagID = bagID,
-                                slotIndex = slotIndex,
-                                quantity = quantity,
-                                unitValue = unitValue,
-                                valueSourceID = resolvedSourceID or sourceID,
-                                valueSourceLabel = resolvedSourceLabel,
-                                valueSourceWasFallback = resolvedSourceID ~= sourceID,
-                                totalValue = stackValue,
-                                stackCount = 1,
-                                regionSoldPerDay = demandData.regionSoldPerDay,
-                                regionSaleRate = demandData.regionSaleRate,
-                                marketValue = demandData.marketValue,
-                                historicalValue = demandData.historicalValue,
-                                marketTrendPercent = demandData.marketTrendPercent,
-                                demandTier = demandData.demandTier,
-                                demandLabel = demandData.demandLabel,
-                                demandColorR = demandData.demandColorR,
-                                demandColorG = demandData.demandColorG,
-                                demandColorB = demandData.demandColorB,
-                            })
+                    if not self:IsBagItemBindingRestricted(bagID, slotIndex, itemLink, slotInfo) then
+                        local itemName, infoQuality, itemIcon = GetItemDisplayData(itemLink, slotInfo)
+                        local itemQuality = tonumber(slotInfo and slotInfo.quality) or tonumber(infoQuality) or self:GetItemQualityFromLink(itemLink)
+                        if ItemPassesMinimumQuality(itemQuality, normalizedMinimumQuality) then
+                            local unitValue, resolvedSourceID, resolvedSourceLabel =
+                                GetInventoryUnitValue(self, sourceID, itemLink)
+                            local quantity = math.max(1, math.floor(tonumber(slotInfo and slotInfo.stackCount) or 1))
+                            local stackValue = math.max(0, math.floor((unitValue * quantity) + 0.5))
+                            if unitValue > 0 then
+                                local demandData = GetInventoryRegionalDemandData(self, itemLink, demandCache) or {}
+                                AddInventoryItem(itemsByLink, candidateItems, {
+                                    itemLink = itemLink,
+                                    itemName = itemName or itemLink,
+                                    itemQuality = itemQuality,
+                                    icon = itemIcon,
+                                    bagID = bagID,
+                                    slotIndex = slotIndex,
+                                    quantity = quantity,
+                                    unitValue = unitValue,
+                                    valueSourceID = resolvedSourceID or sourceID,
+                                    valueSourceLabel = resolvedSourceLabel,
+                                    valueSourceWasFallback = resolvedSourceID ~= sourceID,
+                                    totalValue = stackValue,
+                                    stackCount = 1,
+                                    regionSoldPerDay = demandData.regionSoldPerDay,
+                                    regionSaleRate = demandData.regionSaleRate,
+                                    marketValue = demandData.marketValue,
+                                    historicalValue = demandData.historicalValue,
+                                    marketTrendPercent = demandData.marketTrendPercent,
+                                    demandTier = demandData.demandTier,
+                                    demandLabel = demandData.demandLabel,
+                                    demandColorR = demandData.demandColorR,
+                                    demandColorG = demandData.demandColorG,
+                                    demandColorB = demandData.demandColorB,
+                                })
+                            end
                         end
                     end
                 end
             end
         end
+
+        if type(self.inventoryBuildCache) ~= "table" then
+            self.inventoryBuildCache = {}
+        end
+        self.inventoryBuildCache[cacheKey] = {
+            items = candidateItems,
+            scannedStacks = scannedStacks,
+        }
     end
+
+    local matchedStacks = 0
+    local totalValue = 0
+    local totalQuantity = 0
 
     local items = {}
     for _, item in ipairs(candidateItems) do
@@ -2043,9 +1986,6 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
         frame.emptyText:Hide()
     end
 
-    if type(self.RecordInventoryMarketSnapshots) == "function" then
-        self:RecordInventoryMarketSnapshots(items)
-    end
     if frame.inventorySortKey == "historySamples" and type(self.GetMarketHistorySampleCount) == "function" then
         for _, item in ipairs(items) do
             item.marketHistorySampleCount = self:GetMarketHistorySampleCount(item.itemLink)
@@ -2438,6 +2378,9 @@ function GoldTracker:OpenInventoryWindow()
         return
     end
 
+    if type(self.QueueMarketHistoryBagSnapshot) == "function" then
+        self:QueueMarketHistoryBagSnapshot()
+    end
     self.inventoryFrame:Show()
     self.inventoryFrame:Raise()
     self:RefreshInventoryWindow(true)

@@ -18,11 +18,13 @@ GoldTracker.DEFAULTS = {
     valueSource = "TSM_DBMINBUYOUT",
     fallbackValueSource = "TSM_AUCTIONINGOPNORMAL",
     auctionableInventoryValueSource = "TSM_DBMINBUYOUT",
+    autoOpenAuctionableInventoryOnAuctionHouse = false,
     minimumTrackedItemQuality = 0,
     highlightThreshold = 100000,
     notificationsEnabled = true,
     autoStartSessionOnFirstLoot = true,
     autoStartSessionOnEnterWorld = false,
+    autoStartSessionOnLocationChange = false,
     resumeSessionAfterReload = false,
     enableSessionHistory = true,
     historyRowsPerPage = 10,
@@ -366,6 +368,9 @@ function GoldTracker:InitializeDatabase()
     if not self.VALUE_SOURCE_BY_ID[self.db.auctionableInventoryValueSource] then
         self.db.auctionableInventoryValueSource = self.DEFAULTS.auctionableInventoryValueSource
     end
+    if type(self.db.autoOpenAuctionableInventoryOnAuctionHouse) ~= "boolean" then
+        self.db.autoOpenAuctionableInventoryOnAuctionHouse = self.DEFAULTS.autoOpenAuctionableInventoryOnAuctionHouse
+    end
 
     if type(self.db.fallbackValueSource) ~= "string" then
         self.db.fallbackValueSource = self.DEFAULTS.fallbackValueSource
@@ -411,6 +416,10 @@ function GoldTracker:InitializeDatabase()
 
     if type(self.db.autoStartSessionOnEnterWorld) ~= "boolean" then
         self.db.autoStartSessionOnEnterWorld = self.DEFAULTS.autoStartSessionOnEnterWorld
+    end
+
+    if type(self.db.autoStartSessionOnLocationChange) ~= "boolean" then
+        self.db.autoStartSessionOnLocationChange = self.DEFAULTS.autoStartSessionOnLocationChange
     end
 
     if type(self.db.resumeSessionAfterReload) ~= "boolean" then
@@ -768,6 +777,13 @@ function GoldTracker:IsTotalWindowFeatureEnabled()
     return ENABLE_TOTAL_WINDOW_FEATURE == true
 end
 
+function GoldTracker:IsAutoStartSessionOnLocationChangeEnabled()
+    if not self.db then
+        return self.DEFAULTS.autoStartSessionOnLocationChange == true
+    end
+    return self.db.autoStartSessionOnLocationChange == true
+end
+
 function GoldTracker:IsActiveTimeForGoldPerHourEnabled()
     if not self.db then
         return self.DEFAULTS.useActiveTimeForGoldPerHour == true
@@ -865,6 +881,13 @@ function GoldTracker:SetAuctionableInventoryValueSource(sourceID)
     end
     self.tsmWarningShown = false
     return source
+end
+
+function GoldTracker:IsAutoOpenAuctionableInventoryOnAuctionHouseEnabled()
+    if not self.db then
+        return self.DEFAULTS.autoOpenAuctionableInventoryOnAuctionHouse == true
+    end
+    return self.db.autoOpenAuctionableInventoryOnAuctionHouse == true
 end
 
 function GoldTracker:GetFallbackValueSource()

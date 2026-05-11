@@ -26,18 +26,25 @@ local function GetAtan2(y, x)
         return math.atan2(y, x)
     end
 
-    if x == 0 then
-        if y < 0 then
-            return -(math.pi / 2)
-        end
-        return math.pi / 2
+    if x > 0 then
+        return math.atan(y / x)
     end
 
-    local angle = math.atan(y / x)
     if x < 0 then
-        angle = angle + math.pi
+        if y >= 0 then
+            return math.atan(y / x) + math.pi
+        end
+        return math.atan(y / x) - math.pi
     end
-    return angle
+
+    if y > 0 then
+        return math.pi / 2
+    end
+    if y < 0 then
+        return -(math.pi / 2)
+    end
+
+    return 0
 end
 
 local function GetMinimapButtonRadius()
@@ -51,11 +58,35 @@ local function GetMinimapButtonRadius()
     return math.max(MINIMAP_BUTTON_MIN_RADIUS, dynamicRadius)
 end
 
+local function GetMinimapCoordinateScale()
+    local scale = 1
+    if Minimap and Minimap.GetEffectiveScale then
+        scale = tonumber(Minimap:GetEffectiveScale()) or scale
+    elseif UIParent and UIParent.GetEffectiveScale then
+        scale = tonumber(UIParent:GetEffectiveScale()) or scale
+    end
+
+    if scale == 0 then
+        return 1
+    end
+
+    return scale
+end
+
 local function NormalizeAngle(angle)
     if type(angle) ~= "number" then
         return 0
     end
     return angle % 360
+end
+
+local function GetMinimapButtonMenuFrame()
+    if not GoldTracker.minimapButtonMenuFrame then
+        GoldTracker.minimapButtonMenuFrame =
+            CreateFrame("Frame", "GoldTrackerMinimapButtonMenuFrame", UIParent, "UIDropDownMenuTemplate")
+    end
+
+    return GoldTracker.minimapButtonMenuFrame
 end
 
 function GoldTracker:GetMinimapButtonAngleFromCursor()
@@ -65,7 +96,7 @@ function GoldTracker:GetMinimapButtonAngleFromCursor()
     end
 
     local cursorX, cursorY = GetCursorPosition()
-    local scale = UIParent:GetEffectiveScale()
+    local scale = GetMinimapCoordinateScale()
     cursorX = cursorX / scale
     cursorY = cursorY / scale
 
@@ -109,6 +140,62 @@ function GoldTracker:ApplyMinimapButtonPosition()
     self.minimapButton:SetPoint("CENTER", Minimap, "CENTER", xOffset, yOffset)
 end
 
+function GoldTracker:ShowMinimapButtonMenu()
+    if type(EasyMenu) ~= "function" then
+        return
+    end
+
+    local menu = {
+        { text = "General Gold Tracker", isTitle = true, notCheckable = true },
+        {
+            text = "Open Tracker",
+            notCheckable = true,
+            func = function()
+                self:HandleSlashCommand("")
+            end,
+        },
+        {
+            text = "Open Auctionable Inventory",
+            notCheckable = true,
+            func = function()
+                if type(self.OpenInventoryWindow) == "function" then
+                    self:OpenInventoryWindow()
+                end
+            end,
+        },
+        {
+            text = "Open History",
+            notCheckable = true,
+            func = function()
+                if type(self.OpenHistoryWindow) == "function" then
+                    self:OpenHistoryWindow()
+                end
+            end,
+        },
+        {
+            text = "Options",
+            notCheckable = true,
+            func = function()
+                if type(self.OpenOptions) == "function" then
+                    self:OpenOptions()
+                end
+            end,
+        },
+    }
+
+    if self:IsTotalWindowFeatureEnabled() then
+        table.insert(menu, 5, {
+            text = "Toggle Total Window",
+            notCheckable = true,
+            func = function()
+                self:ToggleTotalWindow()
+            end,
+        })
+    end
+
+    EasyMenu(menu, GetMinimapButtonMenuFrame(), "cursor", 0, 0, "MENU")
+end
+
 function GoldTracker:CreateMinimapButton()
     if self.minimapButton then
         return
@@ -141,8 +228,8 @@ function GoldTracker:CreateMinimapButton()
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton == "LeftButton" then
             addon:HandleSlashCommand("")
-        elseif mouseButton == "RightButton" and addon:IsTotalWindowFeatureEnabled() then
-            addon:ToggleTotalWindow()
+        elseif mouseButton == "RightButton" then
+            addon:ShowMinimapButtonMenu()
         end
     end)
 
@@ -167,8 +254,10 @@ function GoldTracker:CreateMinimapButton()
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("General Gold Tracker", 1, 0.82, 0)
         GameTooltip:AddLine("Left-click: Open tracker window", 0.9, 0.9, 0.9)
+        GameTooltip:AddLine("Right-click: Open menu", 0.9, 0.9, 0.9)
+        GameTooltip:AddLine("Menu: Auctionable Inventory, History, Options", 0.72, 0.76, 0.84)
         if addon:IsTotalWindowFeatureEnabled() then
-            GameTooltip:AddLine("Right-click: Toggle total window", 0.9, 0.9, 0.9)
+            GameTooltip:AddLine("Menu also includes: Toggle total window", 0.72, 0.76, 0.84)
         end
         GameTooltip:AddLine("Drag with left mouse button: Move button", 0.9, 0.9, 0.9)
         GameTooltip:Show()
@@ -183,6 +272,18 @@ function GoldTracker:CreateMinimapButton()
             self:SetScript("OnUpdate", nil)
         end
     end)
+    button:RegisterEvent("PLAYER_ENTERING_WORLD")
+    button:RegisterEvent("UI_SCALE_CHANGED")
+    button:RegisterEvent("DISPLAY_SIZE_CHANGED")
+    button:SetScript("OnEvent", function()
+        addon:ApplyMinimapButtonPosition()
+    end)
+
+    if Minimap.HookScript then
+        Minimap:HookScript("OnSizeChanged", function()
+            addon:ApplyMinimapButtonPosition()
+        end)
+    end
 
     self.minimapButton = button
     self:ApplyMinimapButtonPosition()

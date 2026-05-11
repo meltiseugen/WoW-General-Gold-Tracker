@@ -1,53 +1,6 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
-local BIND_ON_ACQUIRE = LE_ITEM_BIND_ON_ACQUIRE or (Enum and Enum.ItemBind and Enum.ItemBind.OnAcquire)
-local BIND_QUEST = LE_ITEM_BIND_QUEST or (Enum and Enum.ItemBind and Enum.ItemBind.Quest)
-local ACCOUNT_BOUND_TOOLTIP_LINES = {
-    ITEM_BIND_TO_BNETACCOUNT,
-    ITEM_BNETACCOUNTBOUND,
-    ITEM_BIND_TO_ACCOUNT,
-    ITEM_ACCOUNTBOUND,
-    ITEM_ACCOUNTBOUND_UNTIL_EQUIP,
-    ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
-}
-local IGNORED_BINDING_KEYWORDS = {
-    "consume on pick-up",
-    "consume on pickup",
-    "warband",
-    "warbound",
-}
-
-local function IsIgnoredBindingTooltipLine(text)
-    if type(text) ~= "string" then
-        return false
-    end
-
-    if ITEM_SOULBOUND and text == ITEM_SOULBOUND then
-        return true
-    end
-    if ITEM_BIND_ON_PICKUP and text == ITEM_BIND_ON_PICKUP then
-        return true
-    end
-    if ITEM_BIND_QUEST and text == ITEM_BIND_QUEST then
-        return true
-    end
-    for _, bindingText in ipairs(ACCOUNT_BOUND_TOOLTIP_LINES) do
-        if bindingText and text == bindingText then
-            return true
-        end
-    end
-
-    local normalizedText = string.lower(text)
-    for _, keyword in ipairs(IGNORED_BINDING_KEYWORDS) do
-        if string.find(normalizedText, keyword, 1, true) then
-            return true
-        end
-    end
-
-    return false
-end
-
 local function BuildLocationLabel(session)
     if type(session) ~= "table" then
         return "Unknown"
@@ -86,75 +39,6 @@ function GoldTracker:GetCurrentSessionLootLocationData()
         expansionID = session.expansionID,
         expansionName = session.expansionName,
     }
-end
-
-function GoldTracker:IsSoulboundLootItem(itemLink)
-    if type(itemLink) ~= "string" then
-        return false
-    end
-
-    local cacheKey = self:GetItemIDFromLink(itemLink) or itemLink
-    if type(self.soulboundLootTypeCache) ~= "table" then
-        self.soulboundLootTypeCache = {}
-    else
-        local cachedValue = self.soulboundLootTypeCache[cacheKey]
-        if cachedValue ~= nil then
-            return cachedValue == true
-        end
-    end
-
-    local bindType
-    if C_Item and C_Item.GetItemInfo then
-        bindType = select(14, C_Item.GetItemInfo(itemLink))
-    else
-        bindType = select(14, GetItemInfo(itemLink))
-    end
-
-    if type(bindType) == "number" then
-        local isSoulboundByBindType =
-            ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST))
-        if isSoulboundByBindType then
-            self.soulboundLootTypeCache[cacheKey] = true
-            return true
-        end
-    end
-
-    local sawTooltipTextLine = false
-    if C_TooltipInfo and C_TooltipInfo.GetHyperlink then
-        local tooltipData = C_TooltipInfo.GetHyperlink(itemLink)
-        if tooltipData then
-            if TooltipUtil and TooltipUtil.SurfaceArgs then
-                TooltipUtil.SurfaceArgs(tooltipData)
-            end
-
-            if type(tooltipData.lines) == "table" then
-                for _, line in ipairs(tooltipData.lines) do
-                    local leftText = line and line.leftText or nil
-                    local rightText = line and line.rightText or nil
-                    local lineText = line and line.text or nil
-                    if (type(leftText) == "string" and leftText ~= "")
-                        or (type(rightText) == "string" and rightText ~= "")
-                        or (type(lineText) == "string" and lineText ~= "") then
-                        sawTooltipTextLine = true
-                    end
-
-                    if IsIgnoredBindingTooltipLine(leftText)
-                        or IsIgnoredBindingTooltipLine(rightText)
-                        or IsIgnoredBindingTooltipLine(lineText) then
-                        self.soulboundLootTypeCache[cacheKey] = true
-                        return true
-                    end
-                end
-            end
-        end
-    end
-
-    -- If tooltip data had textual lines we can safely cache a non-soulbound result.
-    -- Otherwise item info is likely not ready yet; avoid caching a false negative.
-    if sawTooltipTextLine then
-        self.soulboundLootTypeCache[cacheKey] = false
-    end
-    return false
 end
 
 function GoldTracker:GetVendorItemValue(itemLink)
@@ -429,19 +313,48 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         self:ProcessSessionMilestoneAlerts(previousSessionTotal, self:GetSessionTotalValue())
     end
 
-    if shouldTrackForAH and not isSoulboundLoot then
-        local displayedSourceText = nil
-        if trackLootSource
-            and type(lootSourceText) == "string"
-            and lootSourceText ~= "" then
-            displayedSourceText = lootSourceText
-        elseif trackLootSource and lootSourceIsAoe then
-            displayedSourceText = "AOE loot"
+    local displayedSourceText = nil
+    if trackLootSource
+        and type(lootSourceText) == "string"
+        and lootSourceText ~= "" then
+        displayedSourceText = lootSourceText
+    elseif trackLootSource and lootSourceIsAoe then
+        displayedSourceText = "AOE loot"
+    end
+
+    if type(self.AddLootItemLogEntry) == "function" then
+        local logValue = selectedTotalValue
+        local logSourceParts = {}
+        local isAuctionTracked = shouldTrackForAH and not isSoulboundLoot
+        if displayedSourceText then
+            logSourceParts[#logSourceParts + 1] = displayedSourceText
+        end
+        if not shouldTrackForAH then
+            logValue = vendorTotalValue
+            logSourceParts[#logSourceParts + 1] = "Below min quality"
+            if vendorTotalValue > 0 then
+                logSourceParts[#logSourceParts + 1] = "Vendor only"
+            end
+        elseif isSoulboundLoot then
+            logValue = vendorTotalValue
+            logSourceParts[#logSourceParts + 1] = "Soulbound"
+            if vendorTotalValue > 0 then
+                logSourceParts[#logSourceParts + 1] = "Vendor only"
+            end
         end
 
-        if type(self.AddLootItemLogEntry) == "function" then
-            self:AddLootItemLogEntry(itemLink, quantity, selectedTotalValue, displayedSourceText)
-        end
+        self:AddLootItemLogEntry(
+            itemLink,
+            quantity,
+            logValue,
+            table.concat(logSourceParts, " | "),
+            {
+                tracked = isAuctionTracked,
+                r = isAuctionTracked and 0.9 or 0.82,
+                g = isAuctionTracked and 0.9 or 0.84,
+                b = isAuctionTracked and 1 or 0.72,
+            }
+        )
     end
 
     self:NotifyHighValueItem(itemLink, quantity, selectedTotalValue)

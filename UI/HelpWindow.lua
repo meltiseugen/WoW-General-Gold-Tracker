@@ -142,6 +142,7 @@ local function BuildSessionText()
         "Start Session begins tracking.",
         "Stop Session ends the active session without clearing saved history.",
         "X hides the window and does not stop the active session.",
+        "Options can auto-start sessions on first tracked loot, world entry, reload, or zone changes.",
     })
 
     AddSection(lines, "Header buttons", {
@@ -178,6 +179,7 @@ local function BuildLootText()
         "Lists recent tracked item and money events.",
         "Shows time, item, value, and source information.",
         "Can be collapsed when you only need the summary panel.",
+        "Filtered or vendor-only items can still appear with reason labels such as Soulbound, Below min quality, or Vendor only.",
     })
 
     AddSection(lines, "Highlights", {

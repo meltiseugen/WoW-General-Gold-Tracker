@@ -95,6 +95,7 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:RegisterEvent("PLAYER_FOCUS_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("BAG_UPDATE_DELAYED")
+    self:RegisterEvent("AUCTION_HOUSE_SHOW")
     self:RegisterEvent("PLAYER_LOGOUT")
     self:UnregisterEvent("ADDON_LOADED")
 
@@ -127,6 +128,9 @@ function GoldTracker:OnPlayerEnteringWorld(isInitialLogin, isReloadingUI)
         self:CreateMinimapButton()
     end
 
+    if type(self.InvalidateInventoryWindowCache) == "function" then
+        self:InvalidateInventoryWindowCache()
+    end
     if type(self.QueueMarketHistoryBagSnapshot) == "function" then
         self:QueueMarketHistoryBagSnapshot()
     end
@@ -150,6 +154,23 @@ function GoldTracker:OnPlayerEnteringWorld(isInitialLogin, isReloadingUI)
             self:Print("Session auto-started on instance entry.")
         end
     end
+end
+
+function GoldTracker:OnAuctionHouseShow()
+    if not self:IsAutoOpenAuctionableInventoryOnAuctionHouseEnabled() then
+        return
+    end
+
+    if type(self.InvalidateInventoryWindowCache) == "function" then
+        self:InvalidateInventoryWindowCache()
+    end
+    if self.inventoryFrame and self.inventoryFrame:IsShown() then
+        self.inventoryFrame:Raise()
+        self:RefreshInventoryWindow(false)
+        return
+    end
+
+    self:OpenInventoryWindow()
 end
 
 GoldTracker:SetScript("OnEvent", function(_, event, ...)
@@ -180,9 +201,17 @@ GoldTracker:SetScript("OnEvent", function(_, event, ...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         GoldTracker:OnPlayerEnteringWorld(...)
     elseif event == "BAG_UPDATE_DELAYED" then
+        if type(GoldTracker.InvalidateInventoryWindowCache) == "function" then
+            GoldTracker:InvalidateInventoryWindowCache()
+        end
         if type(GoldTracker.QueueMarketHistoryBagSnapshot) == "function" then
             GoldTracker:QueueMarketHistoryBagSnapshot()
         end
+        if GoldTracker.inventoryFrame and GoldTracker.inventoryFrame:IsShown() then
+            GoldTracker:RefreshInventoryWindow(false)
+        end
+    elseif event == "AUCTION_HOUSE_SHOW" then
+        GoldTracker:OnAuctionHouseShow()
     elseif event == "PLAYER_LOGOUT" then
         GoldTracker:HandlePlayerLogout()
     end

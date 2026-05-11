@@ -1221,7 +1221,8 @@ function GoldTracker:AddLootLogEntry(entry)
     self:RefreshMainLootLog(true)
 end
 
-function GoldTracker:AddLootItemLogEntry(itemLink, quantity, totalValue, lootSourceText)
+function GoldTracker:AddLootItemLogEntry(itemLink, quantity, totalValue, lootSourceText, options)
+    options = options or {}
     local normalizedQuantity = math.max(1, math.floor(tonumber(quantity) or 1))
     self:AddLootLogEntry({
         timeText = date("%H:%M:%S"),
@@ -1229,10 +1230,10 @@ function GoldTracker:AddLootItemLogEntry(itemLink, quantity, totalValue, lootSou
         valueText = self:FormatMoney(totalValue or 0),
         sourceText = lootSourceText or "",
         itemLink = itemLink,
-        tracked = true,
-        r = 0.9,
-        g = 0.9,
-        b = 1,
+        tracked = options.tracked ~= false,
+        r = tonumber(options.r) or 0.9,
+        g = tonumber(options.g) or 0.9,
+        b = tonumber(options.b) or 1,
     })
 end
 

@@ -43,6 +43,11 @@ function GoldTracker:RefreshOptionsControls()
         UIDropDownMenu_SetSelectedValue(controls.auctionableInventoryValueSourceDropdown, inventorySource.id)
         UIDropDownMenu_SetText(controls.auctionableInventoryValueSourceDropdown, inventorySource.label)
     end
+    if controls.autoOpenAuctionableInventoryOnAuctionHouseCheckbox then
+        controls.autoOpenAuctionableInventoryOnAuctionHouseCheckbox:SetChecked(
+            self:IsAutoOpenAuctionableInventoryOnAuctionHouseEnabled()
+        )
+    end
     local minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     local minimumQualityOption = self.TRACKED_ITEM_QUALITY_BY_ID[minimumQuality]
         or self.TRACKED_ITEM_QUALITY_BY_ID[self.DEFAULTS.minimumTrackedItemQuality]
@@ -53,6 +58,9 @@ function GoldTracker:RefreshOptionsControls()
     )
     controls.autoStartOnLootCheckbox:SetChecked(self.db.autoStartSessionOnFirstLoot)
     controls.autoStartOnEnterWorldCheckbox:SetChecked(self.db.autoStartSessionOnEnterWorld)
+    if controls.autoStartOnLocationChangeCheckbox then
+        controls.autoStartOnLocationChangeCheckbox:SetChecked(self:IsAutoStartSessionOnLocationChangeEnabled())
+    end
     controls.resumeAfterReloadCheckbox:SetChecked(self.db.resumeSessionAfterReload)
     controls.enableHistoryCheckbox:SetChecked(self.db.enableSessionHistory)
     if controls.historyRowsPerPageSlider then
@@ -448,10 +456,10 @@ function GoldTracker:CreateOptionsPanel()
     local generalLootSection = CreateOptionsSection(generalContent, generalDisplaySection, "Loot Behavior", "Small filters that affect what the tracker accepts.", 90)
 
     local trackingQualitySection = CreateOptionsSection(trackingContent, nil, "Item Tracking", "Control item eligibility and valuation in loot views.", 128)
-    local trackingSessionSection = CreateOptionsSection(trackingContent, trackingQualitySection, "Session Startup", "Choose when tracking sessions begin or resume automatically.", 166)
+    local trackingSessionSection = CreateOptionsSection(trackingContent, trackingQualitySection, "Session Startup", "Choose when tracking sessions begin, split, or resume automatically.", 214)
     local trackingLootSection = CreateOptionsSection(trackingContent, trackingSessionSection, "Loot Stream", "Controls for raw entries, timestamps, and source detection.", 208)
 
-    local inventoryDefaultsSection = CreateOptionsSection(inventoryContent, nil, "Auctionable Inventory", "Defaults used when opening the Bags auctionable inventory view.", 126)
+    local inventoryDefaultsSection = CreateOptionsSection(inventoryContent, nil, "Auctionable Inventory", "Defaults used when opening the Bags auctionable inventory view.", 174)
 
     local historyCoreSection = CreateOptionsSection(historyContent, nil, "Session History", "Save, reopen, and resume finished sessions.", 144)
     local historyDisplaySection = CreateOptionsSection(historyContent, historyCoreSection, "History Display", "Adjust list density and details text size.", 150)
@@ -556,8 +564,18 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
+    local autoOpenAuctionHouseCheckbox = CreateFrame("CheckButton", nil, inventoryDefaultsSection, "UICheckButtonTemplate")
+    autoOpenAuctionHouseCheckbox:SetPoint("TOPLEFT", inventoryValueSourceDropdown, "BOTTOMLEFT", 12, -8)
+    autoOpenAuctionHouseCheckbox:SetScript("OnClick", function(button)
+        addon.db.autoOpenAuctionableInventoryOnAuctionHouse = button:GetChecked() and true or false
+    end)
+
+    local autoOpenAuctionHouseLabel = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    autoOpenAuctionHouseLabel:SetPoint("LEFT", autoOpenAuctionHouseCheckbox, "RIGHT", 4, 1)
+    autoOpenAuctionHouseLabel:SetText("Open Auctionable Inventory when the Auction House opens")
+
     local inventoryDefaultsHint = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    inventoryDefaultsHint:SetPoint("TOPLEFT", inventoryValueSourceDropdown, "BOTTOMLEFT", 16, -8)
+    inventoryDefaultsHint:SetPoint("TOPLEFT", autoOpenAuctionHouseCheckbox, "BOTTOMLEFT", 4, -8)
     inventoryDefaultsHint:SetPoint("TOPRIGHT", inventoryDefaultsSection, "TOPRIGHT", -14, 0)
     inventoryDefaultsHint:SetJustifyH("LEFT")
     inventoryDefaultsHint:SetTextColor(0.62, 0.66, 0.74)
@@ -684,7 +702,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local autoStartOnLootLabel = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     autoStartOnLootLabel:SetPoint("LEFT", autoStartOnLootCheckbox, "RIGHT", 4, 1)
-    autoStartOnLootLabel:SetText("Auto start session on first loot")
+    autoStartOnLootLabel:SetText("Auto start session on first tracked loot")
 
     local autoStartOnEnterWorldCheckbox = CreateFrame("CheckButton", nil, trackingSessionSection, "UICheckButtonTemplate")
     autoStartOnEnterWorldCheckbox:SetPoint("TOPLEFT", autoStartOnLootCheckbox, "BOTTOMLEFT", 0, -8)
@@ -708,6 +726,23 @@ function GoldTracker:CreateOptionsPanel()
     local resumeAfterReloadLabel = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     resumeAfterReloadLabel:SetPoint("LEFT", resumeAfterReloadCheckbox, "RIGHT", 4, 1)
     resumeAfterReloadLabel:SetText("Resume active session after /reload")
+
+    local autoStartOnLocationChangeCheckbox = CreateFrame("CheckButton", nil, trackingSessionSection, "UICheckButtonTemplate")
+    autoStartOnLocationChangeCheckbox:SetPoint("TOPLEFT", resumeAfterReloadCheckbox, "BOTTOMLEFT", 0, -8)
+    autoStartOnLocationChangeCheckbox:SetScript("OnClick", function(button)
+        addon.db.autoStartSessionOnLocationChange = button:GetChecked() and true or false
+    end)
+
+    local autoStartOnLocationChangeLabel = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    autoStartOnLocationChangeLabel:SetPoint("LEFT", autoStartOnLocationChangeCheckbox, "RIGHT", 4, 1)
+    autoStartOnLocationChangeLabel:SetText("Auto start a new session when zone or instance changes")
+
+    local autoStartOnLocationChangeHint = trackingSessionSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    autoStartOnLocationChangeHint:SetPoint("TOPLEFT", autoStartOnLocationChangeCheckbox, "BOTTOMLEFT", 4, -4)
+    autoStartOnLocationChangeHint:SetPoint("TOPRIGHT", trackingSessionSection, "TOPRIGHT", -14, 0)
+    autoStartOnLocationChangeHint:SetJustifyH("LEFT")
+    autoStartOnLocationChangeHint:SetTextColor(0.62, 0.66, 0.74)
+    autoStartOnLocationChangeHint:SetText("Optional. Useful when you want route changes split into separate sessions automatically.")
 
     local enableHistoryCheckbox = CreateFrame("CheckButton", nil, historyCoreSection, "UICheckButtonTemplate")
     enableHistoryCheckbox:SetPoint("TOPLEFT", historyCoreSection, "TOPLEFT", 10, historyCoreSection.contentTopOffset + 4)
@@ -913,8 +948,8 @@ function GoldTracker:CreateOptionsPanel()
     hint:SetText("Use /gt to open the tracker. Auto-start on loot works only while the tracker window is open.")
 
     generalContent:SetHeight(476)
-    trackingContent:SetHeight(548)
-    inventoryContent:SetHeight(144)
+    trackingContent:SetHeight(596)
+    inventoryContent:SetHeight(192)
     historyContent:SetHeight(462)
 
     local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsCoreSection, "UICheckButtonTemplate")
@@ -1273,9 +1308,11 @@ function GoldTracker:CreateOptionsPanel()
         valueSourceDropdown = dropdown,
         fallbackValueSourceDropdown = fallbackDropdown,
         auctionableInventoryValueSourceDropdown = inventoryValueSourceDropdown,
+        autoOpenAuctionableInventoryOnAuctionHouseCheckbox = autoOpenAuctionHouseCheckbox,
         minimumTrackedQualityDropdown = minimumQualityDropdown,
         autoStartOnLootCheckbox = autoStartOnLootCheckbox,
         autoStartOnEnterWorldCheckbox = autoStartOnEnterWorldCheckbox,
+        autoStartOnLocationChangeCheckbox = autoStartOnLocationChangeCheckbox,
         resumeAfterReloadCheckbox = resumeAfterReloadCheckbox,
         enableHistoryCheckbox = enableHistoryCheckbox,
         historyRowsPerPageSlider = historyRowsPerPageSlider,
