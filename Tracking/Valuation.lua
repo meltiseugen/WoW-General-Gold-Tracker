@@ -90,6 +90,40 @@ function GoldTracker:GetTSMItemValue(priceSource, itemLink)
     return 0
 end
 
+function GoldTracker:GetTSMItemValueFromItemString(priceSource, itemString, suppressWarning)
+    if type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
+        if not suppressWarning and not self.tsmWarningShown then
+            self.tsmWarningShown = true
+            self:Print("TSM source selected but TradeSkillMaster API is unavailable. Returning 0 for item values.")
+        end
+        return 0
+    end
+    if type(itemString) ~= "string" or itemString == "" then
+        return 0
+    end
+
+    local ok, value = pcall(TSM_API.GetCustomPriceValue, priceSource, itemString)
+    if ok and type(value) == "number" and value > 0 then
+        self.tsmWarningShown = false
+        return math.floor(value + 0.5)
+    end
+
+    return 0
+end
+
+function GoldTracker:GetTSMItemValueForItemID(priceSource, itemID, suppressWarning)
+    local normalizedItemID = tonumber(itemID)
+    if not normalizedItemID then
+        return 0
+    end
+
+    return self:GetTSMItemValueFromItemString(
+        priceSource,
+        string.format("i:%d", math.floor(normalizedItemID + 0.5)),
+        suppressWarning
+    )
+end
+
 function GoldTracker:GetTSMRawCustomValue(priceSource, itemLink)
     if type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
         return nil
@@ -196,7 +230,10 @@ function GoldTracker:TrackLootMoney(amount)
     if type(self.ProcessSessionMilestoneAlerts) == "function" then
         self:ProcessSessionMilestoneAlerts(previousSessionTotal, self:GetSessionTotalValue())
     end
-    if self.db and self.db.showRawLootedGoldInLog and type(self.AddLootMoneyLogEntry) == "function" then
+    if self.db
+        and self.db.showRawLootedGoldInLog
+        and self:GetSessionStyleFilter() == self.SESSION_STYLE_ALL_ID
+        and type(self.AddLootMoneyLogEntry) == "function" then
         self:AddLootMoneyLogEntry(amount)
     end
     self:UpdateMainWindow()
@@ -218,11 +255,18 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     local selectedUnitValue, selectedValueSourceID, selectedValueSourceLabel = self:GetItemUnitValue(itemLink)
     self:EndDiagnosticTimer("item_value_resolve", resolveStart)
     local vendorUnitValue = self:GetVendorItemValue(itemLink)
-    local itemQuality = self:GetItemQualityFromLink(itemLink)
-    local isCraftingReagent = self:IsCraftingReagentItem(itemLink)
-    local shouldTrackForAH = self:ShouldTrackItemForAH(itemQuality)
+    local itemMetadata = self:GetLootItemMetadata(itemLink)
+    local itemQuality = self:GetItemQualityFromLink(itemLink) or itemMetadata.itemQuality
+    local isCraftingReagent = itemMetadata.isCraftingReagent == true or self:IsCraftingReagentItem(itemLink)
+    local shouldTrackForAH = isCraftingReagent or self:ShouldTrackItemForAH(itemQuality)
     local isSoulboundLoot = false
-    if shouldTrackForAH then
+    local shouldCheckLootBinding = shouldTrackForAH
+        or (
+            type(self.IsObservedWorldDropsEnabled) == "function"
+            and self:IsObservedWorldDropsEnabled()
+            and tonumber(itemQuality) == 2
+        )
+    if shouldCheckLootBinding then
         isSoulboundLoot = self:IsSoulboundLootItem(itemLink)
     end
     local trackLootSource = self:IsLootSourceTrackingEnabled()
@@ -239,6 +283,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
             lootSourceText = "AOE loot"
         end
     end
+    local observedUnitValue = selectedUnitValue
     if isSoulboundLoot or not shouldTrackForAH then
         selectedUnitValue = 0
     end
@@ -248,6 +293,22 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
 
     self:UpdateSessionLocationContext()
     local locationData = self:GetCurrentSessionLootLocationData()
+    if type(self.RecordObservedWorldDrop) == "function" then
+        self:RecordObservedWorldDrop(
+            itemLink,
+            quantity,
+            itemQuality,
+            isSoulboundLoot,
+            isCraftingReagent,
+            lootSourceInfo,
+            locationData,
+            {
+                selectedUnitValue = observedUnitValue,
+                selectedValueSourceID = selectedValueSourceID,
+                selectedValueSourceLabel = selectedValueSourceLabel,
+            }
+        )
+    end
     self.session.itemValue = (self.session.itemValue or 0) + selectedTotalValue
     self.session.itemVendorValue = (self.session.itemVendorValue or 0) + vendorTotalValue
     self:IncrementDiagnosticCounter("item_entries_tracked")
@@ -273,8 +334,14 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
     if type(self.session.itemLoots) ~= "table" then
         self.session.itemLoots = {}
     end
-    self.session.itemLoots[#self.session.itemLoots + 1] = {
+    local sessionLootEntry = {
         itemLink = itemLink,
+        itemID = itemMetadata.itemID,
+        itemClassID = itemMetadata.itemClassID,
+        itemSubclassID = itemMetadata.itemSubclassID,
+        itemType = itemMetadata.itemType,
+        itemSubType = itemMetadata.itemSubType,
+        itemEquipLoc = itemMetadata.itemEquipLoc,
         quantity = quantity,
         unitValue = selectedUnitValue,
         totalValue = selectedTotalValue,
@@ -305,6 +372,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         lootSourceText = lootSourceText,
         isCraftingReagent = isCraftingReagent == true,
     }
+    self.session.itemLoots[#self.session.itemLoots + 1] = sessionLootEntry
 
     if type(self.MarkSessionLootActivity) == "function" then
         self:MarkSessionLootActivity(lootTimestamp)
@@ -349,6 +417,7 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
             logValue,
             table.concat(logSourceParts, " | "),
             {
+                lootEntry = sessionLootEntry,
                 tracked = isAuctionTracked,
                 r = isAuctionTracked and 0.9 or 0.82,
                 g = isAuctionTracked and 0.9 or 0.84,

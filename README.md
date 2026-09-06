@@ -74,6 +74,11 @@ If you enable auto-start in options, sessions can begin automatically.
 - `/gt new` — Force a new session
 - `/gt stop` — Stop session
 - `/gt options` — Open options panel
+- `/gt explorer` — Open farming explorer
+- `/gt instances` — Open explorer on dungeon & raid farming
+- `/gt rares` — Open explorer on rare farming
+- `/gt mats` — Open explorer on materials farming
+- `/gt drops` — Open explorer on observed BoE drops
 - `/gt help` — Show command help
 
 ---
@@ -128,6 +133,31 @@ TSM is optional, but recommended if you want Auction House pricing.
 
 SavedVariables table:
 - `WoWGeneralGoldTrackerDB`
+
+Session history, saved farming scans, favorites, options, and market/observed drop data are stored account-wide, so every character on the same WoW account can see the same saved data. New session history entries also record which character and realm saved the session.
+
+Materials learned from session history and refreshed material drop/hour rates are written by WoW to SavedVariables. To commit those learned material rates into this repo after logging out or reloading the UI, run:
+
+`lua tools/export_crafting_farming_learned.lua "<WoW>/WTF/Account/<Account>/SavedVariables/General-Gold-Tracker.lua"`
+
+That updates `Data/CraftingFarmingLearned.lua`, which is loaded by the addon on startup.
+
+---
+
+## Bundled Data Sources
+
+`Data/RareDrops.lua` is generated from an installed RareScanner copy.
+
+`Data/InstanceDrops.lua` is generated from installed AtlasLoot Enhanced modules:
+- Source: https://github.com/nanderson11/AtlasLootEnhanced
+- License noted by the source addon: GPL v2 / GPL-2.0
+
+`Data/ATTBoEDrops.lua` is generated from an installed AllTheThings copy:
+- Run: `lua tools/generate_att_boe_snapshot.lua`
+- Source: https://github.com/DFortun81/AllTheThings
+- License noted by the source addon: MIT
+
+The generator scripts are developer tools and are excluded from packaged CurseForge releases.
 
 ---
 

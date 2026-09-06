@@ -1,24 +1,31 @@
 # General Gold Tracker Backlog
 
-## Scope
-- Improvement 6 is intentionally excluded from this round.
-- Focus is on behavior fixes, shared runtime helpers, inventory performance, validation, and modularization groundwork.
+### Issues:
 
-## Completed In This Pass
-- Auto-start on first tracked loot no longer depends on the tracker window being visible.
-- History split now preserves stored highlight metadata instead of recalculating against the current threshold when data exists.
-- The live loot log now shows filtered and vendor-only drops instead of silently hiding them.
-- Shared item-binding logic was extracted into `Core/ItemBinding.lua` and reused by both loot valuation and inventory scanning.
-- Inventory refreshes now reuse cached bag scans until bag state changes, and market-history writes were removed from every refresh.
-- Added an opt-in setting to start a new session automatically when the zone or instance changes.
-- Added a lightweight manifest/runtime validation script and CI step before packaging.
+X - general window:
+- - when i click a window that is behind the main window /gt, it does not get in front
+- - make /gt window fully transparent with the press of a button, lets place one called "O" near the top right buttons (_ - X)
 
-## Next
-- Extract inventory scanning and caching into a dedicated non-UI service module.
-- Extract session transition policy into a dedicated session flow helper.
-- Extend help text and diagnostics to explain why an item was logged as `Soulbound`, `Below min quality`, or `Vendor only`.
-- Add cache invalidation for any future non-bag market-data refresh triggers if the addon starts consuming them.
+X - our map window:
 
-## Later
-- Add lightweight automated tests around loot parsing, history merge/split, and location rollover decisions.
-- Revisit history action safety and undo support in a separate pass.
+X - "Item market details" window:
+
+X- rares window:
+
+X - instances window:
+
+X - materials window:
+
+X- drops window: 
+- - if the "Observed" is selected the initial and first list should be empty. Also only when "Observed" is selected should the button  to "Scan saved Sessions" be displayed. When the "Scan saved Sessions" is pressed, the addon will scan the saved sessions for item drops (green, blue, purple) and pupulate the list. this list should then be saved, and everythime i select "Observed" in the future, this list should be visible, and only when i clcik on "Scan saved Sessions" again, should the list be updated and saved. Also the items displayed for the observed, not all items from the sessions should be displayed, it should filter and display the items relevant to the currently selected expansion.
+- - When the "zones" is selected. There are some issues, because if i select "burning crusade" as the expansion, i see zone names from other places not related to the selected expansion. Also i noticed that when i had expansion = burning crusade and zone = Hellfire peninsula, it unly found one gray item (poor quaility) when it should have been a lot more. specifically the "Blade of Misfortune"
+- - When world is selected... im not sure maybe we dont event need this one, it will freeze the game a lot while it loads those items, because they are many and can drop from anywhere
+
+X - bags window:
+
+
+### Next:
+
+- will probably need another roung of item scanning to have a better overlay figure on the map (do it specifically manually on each item) 
+- Cobra scales lacks the name of an trash npc, also, we need more pins in order to constrct and overlay
+- ore/herb routes have too few pins to construct a route

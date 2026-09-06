@@ -19,6 +19,7 @@ on:
     - release.ps1
     - BACKLOG.md
     - tools/**
+    - tests/**
 
 jobs:
   build:

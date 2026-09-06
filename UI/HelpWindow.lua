@@ -155,6 +155,9 @@ local function BuildSessionText()
     AddSection(lines, "Utility buttons", {
         "Options: addon settings.",
         "Bags: auctionable inventory view.",
+        "Rares: rare-drop farming view.",
+        "Instances: dungeon and raid BoE farming view.",
+        "Mats: farmable materials and consumable inputs by expansion and profession.",
         "History: saved session history when history is enabled.",
         "Diag: runtime diagnostics when diagnostics are enabled.",
         "?: this guide.",
@@ -223,6 +226,25 @@ local function BuildHistoryText()
     AddSection(lines, "Auctionable Inventory", {
         "Scans bags for items the addon can value through TSM.",
         "Helps compare possible posting value without needing to loot the item during a session.",
+    })
+
+    AddSection(lines, "Rare Farming", {
+        "Scans RareScanner rare-drop data on demand.",
+        "Shows rare drops above your chosen TSM value threshold.",
+        "Uses a generated snapshot of RareScanner's curated loot table plus runtime RareScanner saved loot when available.",
+    })
+
+    AddSection(lines, "Dungeon & Raid Farming", {
+        "Scans bundled instance and boss loot data on demand.",
+        "Shows likely auctionable drops above your chosen TSM value threshold.",
+        "Supports saved scans, favorites, background scanning, and item price history details.",
+    })
+
+    AddSection(lines, "Materials Farming", {
+        "Shows a curated list of profession materials and common consumable inputs.",
+        "Filters by expansion, profession, and TSM value source.",
+        "Uses bundled item IDs for the material taxonomy and asks TSM for the selected value.",
+        "Add a saved custom material with /gt addmat <itemID> <expansionID> <professionID> [tag].",
     })
 
     AddSection(lines, "Diagnosis", {

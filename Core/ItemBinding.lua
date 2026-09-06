@@ -17,7 +17,6 @@ local RESTRICTED_BINDING_TOOLTIP_LINES = {
 local RESTRICTED_BINDING_KEYWORDS = {
     "consume on pick-up",
     "consume on pickup",
-    "warband",
     "warbound",
 }
 
@@ -49,6 +48,14 @@ function GoldTracker:IsRestrictedBindingTooltipLine(text)
         if string.find(normalizedText, keyword, 1, true) then
             return true
         end
+    end
+
+    if string.find(normalizedText, "warband", 1, true)
+        and (
+            string.find(normalizedText, "bind", 1, true)
+            or string.find(normalizedText, "bound", 1, true)
+        ) then
+        return true
     end
 
     return false

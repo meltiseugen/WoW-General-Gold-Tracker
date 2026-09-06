@@ -5,6 +5,13 @@ local MAX_HISTORY_SESSIONS = 300
 local BuildSessionFallbackLocationKey
 local BuildSessionFallbackLocationLabel
 
+local function NormalizeSessionStyle(addon, styleID)
+    if addon and type(addon.NormalizeSessionStyleFilter) == "function" then
+        return addon:NormalizeSessionStyleFilter(styleID)
+    end
+    return type(styleID) == "string" and styleID ~= "" and styleID or "all"
+end
+
 local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceLabel)
     local copied = {}
     for i, entry in ipairs(itemLoots or {}) do
@@ -25,6 +32,12 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
                 entry.valueSourceID or fallbackSourceID,
                 entry.valueSourceLabel or fallbackSourceLabel
             ),
+            itemID = tonumber(entry.itemID),
+            itemClassID = tonumber(entry.itemClassID),
+            itemSubclassID = tonumber(entry.itemSubclassID),
+            itemType = entry.itemType,
+            itemSubType = entry.itemSubType,
+            itemEquipLoc = entry.itemEquipLoc,
             locationKey = entry.locationKey,
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
@@ -72,6 +85,7 @@ local function BuildLegacyItemLootsFromAggregatedItems(session, fallbackSourceID
             timestamp = fallbackTimestamp,
             valueSourceID = fallbackSourceID,
             valueSourceLabel = fallbackSourceLabel,
+            itemID = GoldTracker:GetItemIDFromLink(item and item.itemLink),
             locationKey = fallbackLocationKey,
             locationLabel = fallbackLocationLabel,
             isInstanced = session.isInstanced == true,
@@ -195,6 +209,146 @@ local function AddUniqueString(target, value)
     end
 
     target[#target + 1] = value
+end
+
+local function NormalizeHistoryText(value)
+    if type(value) ~= "string" then
+        return nil
+    end
+    local trimmed = GoldTracker:Trim(value)
+    if trimmed == "" then
+        return nil
+    end
+    return trimmed
+end
+
+local function FormatHistoryCharacterLabel(characterName, realmName, fallbackLabel)
+    local fallback = NormalizeHistoryText(fallbackLabel)
+    local name = NormalizeHistoryText(characterName)
+    local realm = NormalizeHistoryText(realmName)
+
+    if name and realm then
+        return string.format("%s - %s", name, realm)
+    end
+    return name or fallback
+end
+
+local function AddHistoryCharacterLabel(target, seen, characterName, realmName, fallbackLabel)
+    local label = FormatHistoryCharacterLabel(characterName, realmName, fallbackLabel)
+    if not label or seen[label] then
+        return
+    end
+
+    seen[label] = true
+    target[#target + 1] = label
+end
+
+local function GetCurrentHistoryCharacterSnapshot()
+    local characterName
+    local realmName
+
+    if type(UnitFullName) == "function" then
+        characterName, realmName = UnitFullName("player")
+    end
+    if not NormalizeHistoryText(characterName) and type(UnitName) == "function" then
+        characterName = UnitName("player")
+    end
+    if not NormalizeHistoryText(realmName) and type(GetNormalizedRealmName) == "function" then
+        realmName = GetNormalizedRealmName()
+    end
+    if not NormalizeHistoryText(realmName) and type(GetRealmName) == "function" then
+        realmName = GetRealmName()
+    end
+
+    characterName = NormalizeHistoryText(characterName)
+    realmName = NormalizeHistoryText(realmName)
+
+    return {
+        name = characterName,
+        realm = realmName,
+        label = FormatHistoryCharacterLabel(characterName, realmName),
+    }
+end
+
+local function NormalizeHistoryCharacterMetadata(entry)
+    if type(entry) ~= "table" then
+        return
+    end
+
+    entry.savedByCharacterName = NormalizeHistoryText(entry.savedByCharacterName)
+    entry.savedByRealmName = NormalizeHistoryText(entry.savedByRealmName)
+
+    local labels = {}
+    local seen = {}
+    if type(entry.savedByCharacters) == "table" then
+        for _, label in ipairs(entry.savedByCharacters) do
+            AddHistoryCharacterLabel(labels, seen, nil, nil, label)
+        end
+    end
+    AddHistoryCharacterLabel(labels, seen, entry.savedByCharacterName, entry.savedByRealmName, entry.savedBy)
+
+    if #labels == 0 then
+        entry.savedBy = "Unknown"
+        entry.savedByCharacters = {}
+    elseif #labels == 1 then
+        entry.savedBy = labels[1]
+        entry.savedByCharacters = labels
+    else
+        entry.savedBy = table.concat(labels, ", ")
+        entry.savedByCharacters = labels
+    end
+end
+
+local function CollectHistoryCharacterLabels(sessions)
+    local labels = {}
+    local seen = {}
+    for _, session in ipairs(sessions or {}) do
+        if type(session.savedByCharacters) == "table" and #session.savedByCharacters > 0 then
+            for _, label in ipairs(session.savedByCharacters) do
+                AddHistoryCharacterLabel(labels, seen, nil, nil, label)
+            end
+        else
+            AddHistoryCharacterLabel(labels, seen, session.savedByCharacterName, session.savedByRealmName, session.savedBy)
+        end
+    end
+    return labels
+end
+
+local function ApplyHistoryCharacterMetadata(entry, characterLabels, fallbackSession)
+    if type(entry) ~= "table" then
+        return
+    end
+
+    local labels = {}
+    local seen = {}
+    for _, label in ipairs(characterLabels or {}) do
+        AddHistoryCharacterLabel(labels, seen, nil, nil, label)
+    end
+    if #labels == 0 and type(fallbackSession) == "table" then
+        if type(fallbackSession.savedByCharacters) == "table" and #fallbackSession.savedByCharacters > 0 then
+            for _, label in ipairs(fallbackSession.savedByCharacters) do
+                AddHistoryCharacterLabel(labels, seen, nil, nil, label)
+            end
+        else
+            AddHistoryCharacterLabel(labels, seen, fallbackSession.savedByCharacterName, fallbackSession.savedByRealmName, fallbackSession.savedBy)
+        end
+    end
+
+    if #labels == 1 then
+        entry.savedBy = labels[1]
+        entry.savedByCharacters = labels
+        if type(fallbackSession) == "table" then
+            entry.savedByCharacterName = NormalizeHistoryText(fallbackSession.savedByCharacterName)
+            entry.savedByRealmName = NormalizeHistoryText(fallbackSession.savedByRealmName)
+        end
+    elseif #labels > 1 then
+        entry.savedBy = table.concat(labels, ", ")
+        entry.savedByCharacters = labels
+        entry.savedByCharacterName = nil
+        entry.savedByRealmName = nil
+    else
+        NormalizeHistoryCharacterMetadata(entry)
+    end
 end
 
 local function CloneDiagnosisSnapshot(addon, snapshot)
@@ -383,6 +537,7 @@ local function NormalizeHistoryEntry(entry)
         entry.pinned = false
     end
     NormalizeResumeMetadata(entry)
+    NormalizeHistoryCharacterMetadata(entry)
 
     entry.valueSourceLabel = GoldTracker:GetValueSourceLabel(entry.valueSourceID, entry.valueSourceLabel)
 
@@ -410,6 +565,7 @@ local function NormalizeHistoryEntry(entry)
     if type(GoldTracker.NormalizeDiagnosisSnapshot) == "function" then
         entry.diagnosisSnapshot = GoldTracker:NormalizeDiagnosisSnapshot(entry.diagnosisSnapshot)
     end
+    entry.sessionStyleFilter = NormalizeSessionStyle(GoldTracker, entry.sessionStyleFilter)
 
     local fallbackSourceID = entry.valueSourceID
     local fallbackSourceLabel = GetSessionPrimarySourceLabel(entry)
@@ -432,6 +588,15 @@ local function NormalizeHistoryEntry(entry)
         end
         if loot.itemQuality == nil and loot.itemLink then
             loot.itemQuality = GoldTracker:GetItemQualityFromLink(loot.itemLink)
+        end
+        if type(loot.itemLink) == "string" and loot.itemLink ~= "" and type(GoldTracker.GetLootItemMetadata) == "function" then
+            local metadata = GoldTracker:GetLootItemMetadata(loot.itemLink)
+            loot.itemID = tonumber(loot.itemID) or metadata.itemID
+            loot.itemClassID = tonumber(loot.itemClassID) or metadata.itemClassID
+            loot.itemSubclassID = tonumber(loot.itemSubclassID) or metadata.itemSubclassID
+            loot.itemType = type(loot.itemType) == "string" and loot.itemType or metadata.itemType
+            loot.itemSubType = type(loot.itemSubType) == "string" and loot.itemSubType or metadata.itemSubType
+            loot.itemEquipLoc = type(loot.itemEquipLoc) == "string" and loot.itemEquipLoc or metadata.itemEquipLoc
         end
         if loot.ahTracked == nil then
             -- Older sessions only stored AH-tracked items; treat them as tracked.
@@ -749,6 +914,7 @@ end
 function GoldTracker:CreateSessionHistoryEntry(saveReason)
     local stopTime = self.session.stopTime or time()
     local source = self:GetCurrentValueSource()
+    local character = GetCurrentHistoryCharacterSnapshot()
     local rawGold = tonumber(self.session.goldLooted) or 0
     local itemsValue = tonumber(self.session.itemValue) or 0
     local totalValue = rawGold + itemsValue
@@ -778,6 +944,11 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         valueSourceID = source.id,
         valueSourceLabel = table.concat(sourceLabels, ", "),
         valueSourceLabels = sourceLabels,
+        savedByCharacterName = character.name,
+        savedByRealmName = character.realm,
+        savedBy = character.label or "Unknown",
+        savedByCharacters = character.label and { character.label } or {},
+        sessionStyleFilter = NormalizeSessionStyle(self, self.session.sessionStyleFilter or (self.db and self.db.sessionStyleFilter)),
         isInstanced = self.session.isInstanced == true,
         instanceName = self.session.instanceName,
         instanceMapID = self.session.instanceMapID,
@@ -888,6 +1059,10 @@ function GoldTracker:ResumeHistorySession(sessionID)
         session.goldLooted = tonumber(historySession.rawGold) or 0
         session.itemValue = tonumber(historySession.itemsValue) or 0
         session.itemVendorValue = tonumber(historySession.itemsRawGold) or 0
+        session.sessionStyleFilter = NormalizeSessionStyle(self, historySession.sessionStyleFilter)
+        if self.db then
+            self.db.sessionStyleFilter = session.sessionStyleFilter
+        end
         session.highlightItemCount = historyHighlightCount
         session.lowHighlightItemCount = 0
         session.highHighlightItemCount = session.highlightItemCount
@@ -1292,6 +1467,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     for _, session in ipairs(sessions) do
         mergedFromIDs[#mergedFromIDs + 1] = session.id
     end
+    local mergedCharacterLabels = CollectHistoryCharacterLabels(sessions)
 
     local mergedName = firstSession.name or self:BuildHistorySessionName(stopTime, firstSession)
     local mergedEntry = {
@@ -1338,6 +1514,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         resumedFromHistorySessionIDs = resumedFromHistorySessionIDs,
         resumedFromHistorySessionNames = resumedFromHistorySessionNames,
     }
+    ApplyHistoryCharacterMetadata(mergedEntry, mergedCharacterLabels, firstSession)
 
     self.db.nextHistoryID = self.db.nextHistoryID + 1
 
@@ -1724,6 +1901,7 @@ function GoldTracker:SplitHistorySessionByLocation(sessionID)
             resumedFromHistorySessionIDs = CloneNumberList(session.resumedFromHistorySessionIDs),
             resumedFromHistorySessionNames = CloneStringList(session.resumedFromHistorySessionNames),
         }
+        ApplyHistoryCharacterMetadata(splitEntry, nil, session)
 
         if #mergedFromIDs > 0 then
             splitEntry.mergedFromSessionIDs = CloneNumberList(mergedFromIDs)

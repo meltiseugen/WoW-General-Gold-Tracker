@@ -36,6 +36,14 @@ local DETAILS_ITEMS_VALUE_MIN_WIDTH = 170
 local DETAILS_ITEMS_VALUE_MAX_WIDTH = 280
 local DETAILS_ITEMS_SOURCE_MIN_WIDTH = 140
 local DETAILS_ITEMS_MIN_ITEM_WIDTH = 260
+local DETAILS_CONTROLS_LOCATION_LABEL_WIDTH = 54
+local DETAILS_CONTROLS_LOCATION_DROPDOWN_WIDTH = 230
+local DETAILS_CONTROLS_STYLE_LABEL_WIDTH = 34
+local DETAILS_CONTROLS_STYLE_DROPDOWN_WIDTH = 160
+local DETAILS_CONTROLS_BUTTON_GAP = 8
+local DETAILS_CONTROLS_FILTER_TO_BUTTON_GAP = 12
+local DETAILS_CONTROLS_SINGLE_ROW_HEIGHT = 24
+local DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT = 52
 local HISTORY_SORT_ICON_SIZE = 10
 local historyDateFilter = HistoryDateFilter:New()
 local historyFormatter = HistoryFormatter:New(GoldTracker)
@@ -247,12 +255,28 @@ local function BuildHistoryRowTitleAndSubtitle(session)
     return NewHistorySessionModel(session):BuildRowTitleAndSubtitle(session)
 end
 
-local function BuildHistoryDetailsSummary(session, selectedLocationKey)
-    return historyDataService:BuildHistoryDetailsSummary(session, selectedLocationKey)
+local function BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
+    return historyDataService:BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
 end
 
-local function BuildVisibleHistoryItems(session, selectedLocationKey)
-    return historyDataService:BuildVisibleHistoryItems(session, selectedLocationKey)
+local function BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
+    return historyDataService:BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
+end
+
+local function BuildHistorySessionStyleOptions(addon, session)
+    local options = {
+        { id = addon.SESSION_STYLE_ALL_ID or "all", label = "All" },
+    }
+    local sessionStyleID = addon.NormalizeSessionStyleFilter
+        and addon:NormalizeSessionStyleFilter(session and session.sessionStyleFilter)
+        or "all"
+    if sessionStyleID ~= (addon.SESSION_STYLE_ALL_ID or "all") then
+        options[#options + 1] = {
+            id = sessionStyleID,
+            label = addon.GetSessionStyleLabel and addon:GetSessionStyleLabel(sessionStyleID) or sessionStyleID,
+        }
+    end
+    return options
 end
 
 local function EscapeCSVValue(value)
@@ -478,6 +502,108 @@ local function ApplyHistoryLocationTableColumnLayout(frame)
         ApplyHistoryLocationColumn(row.timeFrameText, row, timeX, timeWidth)
         ApplyHistoryLocationColumn(row.highlightsText, row, highlightsX, DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
         ApplyHistoryLocationColumn(row.durationText, row, durationX, DETAILS_LOCATION_DURATION_WIDTH)
+    end
+end
+
+local function GetHistoryDetailsButtonWidth(button)
+    if not button then
+        return 0
+    end
+    return math.max(1, tonumber(button.layoutWidth) or (button.GetWidth and tonumber(button:GetWidth())) or 0)
+end
+
+local function IsHistoryDetailsButtonShown(button)
+    return button and (not button.IsShown or button:IsShown())
+end
+
+local function GetHistoryDetailsActionsWidth(frame)
+    local totalWidth = 0
+    local buttonCount = 0
+    for _, button in ipairs(frame.detailsActionButtons or {}) do
+        if IsHistoryDetailsButtonShown(button) then
+            if buttonCount > 0 then
+                totalWidth = totalWidth + DETAILS_CONTROLS_BUTTON_GAP
+            end
+            totalWidth = totalWidth + GetHistoryDetailsButtonWidth(button)
+            buttonCount = buttonCount + 1
+        end
+    end
+    return totalWidth, buttonCount
+end
+
+local function ApplyHistoryDetailsControlsLayout(frame)
+    local controlsFrame = frame and frame.detailsControlsFrame
+    if not controlsFrame then
+        return
+    end
+
+    local showStyleFilter = not frame.styleFilterDropdown
+        or not frame.styleFilterDropdown.IsShown
+        or frame.styleFilterDropdown:IsShown()
+    local filterWidth = DETAILS_CONTROLS_LOCATION_LABEL_WIDTH
+        - 6
+        + DETAILS_CONTROLS_LOCATION_DROPDOWN_WIDTH
+    if showStyleFilter then
+        filterWidth = filterWidth
+            + 8
+            + DETAILS_CONTROLS_STYLE_LABEL_WIDTH
+            - 6
+            + DETAILS_CONTROLS_STYLE_DROPDOWN_WIDTH
+    end
+
+    if frame.locationFilterLabelText then
+        frame.locationFilterLabelText:ClearAllPoints()
+        frame.locationFilterLabelText:SetPoint("TOPLEFT", controlsFrame, "TOPLEFT", 0, 0)
+        frame.locationFilterLabelText:SetWidth(DETAILS_CONTROLS_LOCATION_LABEL_WIDTH)
+    end
+    if frame.locationFilterDropdown then
+        frame.locationFilterDropdown:ClearAllPoints()
+        frame.locationFilterDropdown:SetPoint("LEFT", frame.locationFilterLabelText, "RIGHT", -6, -1)
+    end
+    if frame.styleFilterLabelText then
+        frame.styleFilterLabelText:ClearAllPoints()
+        if showStyleFilter then
+            frame.styleFilterLabelText:SetPoint("LEFT", frame.locationFilterDropdown, "RIGHT", 8, 1)
+            frame.styleFilterLabelText:SetWidth(DETAILS_CONTROLS_STYLE_LABEL_WIDTH)
+        else
+            frame.styleFilterLabelText:SetPoint("LEFT", frame.locationFilterDropdown, "RIGHT", 8, 1)
+        end
+    end
+    if frame.styleFilterDropdown then
+        frame.styleFilterDropdown:ClearAllPoints()
+        frame.styleFilterDropdown:SetPoint("LEFT", frame.styleFilterLabelText, "RIGHT", -6, -1)
+    end
+
+    local actionsWidth, actionCount = GetHistoryDetailsActionsWidth(frame)
+    if actionCount == 0 then
+        controlsFrame:SetHeight(DETAILS_CONTROLS_SINGLE_ROW_HEIGHT)
+        return
+    end
+
+    local controlsWidth = tonumber(controlsFrame:GetWidth()) or 0
+    if controlsWidth <= 1 and frame.detailsContainer then
+        controlsWidth = math.max(1, (tonumber(frame.detailsContainer:GetWidth()) or 0) - 36)
+    end
+    local useWrappedActions = controlsWidth < (filterWidth + DETAILS_CONTROLS_FILTER_TO_BUTTON_GAP + actionsWidth)
+    local rowY = useWrappedActions and -30 or 0
+    controlsFrame:SetHeight(useWrappedActions and DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT or DETAILS_CONTROLS_SINGLE_ROW_HEIGHT)
+
+    local previousButton = nil
+    for index = #(frame.detailsActionButtons or {}), 1, -1 do
+        local button = frame.detailsActionButtons[index]
+        if button then
+            button:ClearAllPoints()
+            if IsHistoryDetailsButtonShown(button) then
+                if previousButton then
+                    button:SetPoint("RIGHT", previousButton, "LEFT", -DETAILS_CONTROLS_BUTTON_GAP, 0)
+                elseif useWrappedActions then
+                    button:SetPoint("TOPRIGHT", controlsFrame, "TOPRIGHT", 0, rowY)
+                else
+                    button:SetPoint("RIGHT", controlsFrame, "RIGHT", 0, rowY)
+                end
+                previousButton = button
+            end
+        end
     end
 end
 
@@ -912,12 +1038,19 @@ function GoldTracker:CreateHistoryWindow()
     frame.summaryText = nil
     frame.sourceText = nil
 
-    local locationFilterLabel = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    locationFilterLabel:SetPoint("TOPLEFT", locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
+    local detailsControlsFrame = CreateFrame("Frame", nil, detailsContainer)
+    detailsControlsFrame:SetPoint("TOPLEFT", locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
+    detailsControlsFrame:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
+    detailsControlsFrame:SetHeight(DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT)
+    frame.detailsControlsFrame = detailsControlsFrame
+
+    local locationFilterLabel = detailsControlsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    locationFilterLabel:SetPoint("TOPLEFT", detailsControlsFrame, "TOPLEFT", 0, 0)
+    locationFilterLabel:SetWidth(DETAILS_CONTROLS_LOCATION_LABEL_WIDTH)
     locationFilterLabel:SetText("Location")
     frame.locationFilterLabelText = locationFilterLabel
 
-    local locationFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryLocationFilterDropdown", detailsContainer, "UIDropDownMenuTemplate")
+    local locationFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryLocationFilterDropdown", detailsControlsFrame, "UIDropDownMenuTemplate")
     locationFilterDropdown:SetPoint("LEFT", locationFilterLabel, "RIGHT", -6, -1)
     UIDropDownMenu_SetWidth(locationFilterDropdown, 210)
     UIDropDownMenu_Initialize(locationFilterDropdown, function(_, level)
@@ -940,9 +1073,39 @@ function GoldTracker:CreateHistoryWindow()
     }
     frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
 
-    local splitButton = CreateHistoryButton(detailsContainer, 92, 22, "Split", "neutral")
+    local styleFilterLabel = detailsControlsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    styleFilterLabel:SetPoint("LEFT", locationFilterDropdown, "RIGHT", 8, 1)
+    styleFilterLabel:SetWidth(DETAILS_CONTROLS_STYLE_LABEL_WIDTH)
+    styleFilterLabel:SetText("Style")
+    frame.styleFilterLabelText = styleFilterLabel
+
+    local styleFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryStyleFilterDropdown", detailsControlsFrame, "UIDropDownMenuTemplate")
+    styleFilterDropdown:SetPoint("LEFT", styleFilterLabel, "RIGHT", -6, -1)
+    UIDropDownMenu_SetWidth(styleFilterDropdown, 140)
+    UIDropDownMenu_Initialize(styleFilterDropdown, function(_, level)
+        for _, option in ipairs(frame.detailsStyleOptions or {}) do
+            local info = UIDropDownMenu_CreateInfo()
+            local optionID = option.id
+            info.text = option.label
+            info.value = optionID
+            info.checked = (frame.detailsStyleFilterID or addon.SESSION_STYLE_ALL_ID or "all") == optionID
+            info.func = function()
+                frame.detailsStyleFilterID = optionID
+                addon:RefreshHistoryDetailsWindow()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    frame.styleFilterDropdown = styleFilterDropdown
+    frame.detailsStyleOptions = {
+        { id = addon.SESSION_STYLE_ALL_ID or "all", label = "All" },
+    }
+    frame.detailsStyleFilterID = addon.SESSION_STYLE_ALL_ID or "all"
+
+    local splitButton = CreateHistoryButton(detailsControlsFrame, 92, 22, "Split", "neutral")
     splitButton:SetSize(92, 22)
-    splitButton:SetPoint("LEFT", locationFilterDropdown, "RIGHT", 12, 2)
+    splitButton:SetPoint("LEFT", styleFilterDropdown, "RIGHT", 12, 2)
+    splitButton.layoutWidth = 92
     splitButton:SetText("Split")
     splitButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
@@ -952,9 +1115,10 @@ function GoldTracker:CreateHistoryWindow()
     splitButton:Hide()
     frame.splitButton = splitButton
 
-    local exportButton = CreateHistoryButton(detailsContainer, 84, 22, "Export", "neutral")
+    local exportButton = CreateHistoryButton(detailsControlsFrame, 84, 22, "Export", "neutral")
     exportButton:SetSize(84, 22)
     exportButton:SetPoint("LEFT", splitButton, "RIGHT", 8, 0)
+    exportButton.layoutWidth = 84
     exportButton:SetText("Export")
     exportButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
@@ -963,9 +1127,10 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.exportButton = exportButton
 
-    local breakdownButton = CreateHistoryButton(detailsContainer, 112, 22, "Breakdown", "neutral")
+    local breakdownButton = CreateHistoryButton(detailsControlsFrame, 112, 22, "Breakdown", "neutral")
     breakdownButton:SetSize(112, 22)
     breakdownButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
+    breakdownButton.layoutWidth = 112
     breakdownButton:SetText("Breakdown")
     breakdownButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
@@ -974,9 +1139,10 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.breakdownButton = breakdownButton
 
-    local diagnosisButton = CreateHistoryButton(detailsContainer, 92, 22, "Diagnosis", "neutral")
+    local diagnosisButton = CreateHistoryButton(detailsControlsFrame, 92, 22, "Diagnosis", "neutral")
     diagnosisButton:SetSize(92, 22)
     diagnosisButton:SetPoint("LEFT", breakdownButton, "RIGHT", 8, 0)
+    diagnosisButton.layoutWidth = 92
     diagnosisButton:SetText("Diagnosis")
     diagnosisButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
@@ -985,9 +1151,10 @@ function GoldTracker:CreateHistoryWindow()
     end)
     frame.diagnosisSessionButton = diagnosisButton
 
-    local resumeSessionButton = CreateHistoryButton(detailsContainer, 112, 22, "Resume", "primary")
+    local resumeSessionButton = CreateHistoryButton(detailsControlsFrame, 112, 22, "Resume", "primary")
     resumeSessionButton:SetSize(112, 22)
     resumeSessionButton:SetPoint("LEFT", diagnosisButton, "RIGHT", 8, 0)
+    resumeSessionButton.layoutWidth = 112
     resumeSessionButton:SetText("Resume")
     resumeSessionButton:SetScript("OnClick", function()
         if frame.selectedSessionID then
@@ -995,6 +1162,13 @@ function GoldTracker:CreateHistoryWindow()
         end
     end)
     frame.resumeSessionButton = resumeSessionButton
+    frame.detailsActionButtons = {
+        splitButton,
+        exportButton,
+        breakdownButton,
+        diagnosisButton,
+        resumeSessionButton,
+    }
 
     local itemsHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     itemsHeader:SetPoint("TOPLEFT", summaryTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_SUMMARY_TO_ITEMS)
@@ -1440,8 +1614,8 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
         GameTooltip:Hide()
     end)
     row:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" and HandleModifiedItemClick then
-            HandleModifiedItemClick(self.itemLink)
+        if button == "LeftButton" then
+            GoldTracker:HandleModifiedItemClickIfModified(self)
         end
     end)
 
@@ -1816,6 +1990,10 @@ function GoldTracker:ShowHistoryDetailsView(sessionID)
     frame.view = "details"
     frame.selectedSessionID = sessionID
     frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
+    local session = self:GetHistorySessionByID(sessionID)
+    frame.detailsStyleFilterID = session
+        and self:NormalizeSessionStyleFilter(session.sessionStyleFilter)
+        or (self.SESSION_STYLE_ALL_ID or "all")
     local _, currentHeight = frame:GetSize()
     if (tonumber(currentHeight) or 0) <= HISTORY_WINDOW_DEFAULT_HEIGHT then
         frame:SetHeight(HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT)
@@ -2156,6 +2334,31 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         UIDropDownMenu_SetSelectedValue(frame.locationFilterDropdown, selectedLocationKey)
         UIDropDownMenu_SetText(frame.locationFilterDropdown, selectedLocationLabel)
     end
+    local styleOptions = BuildHistorySessionStyleOptions(self, session)
+    frame.detailsStyleOptions = styleOptions
+    local selectedStyleID = self:NormalizeSessionStyleFilter(frame.detailsStyleFilterID)
+    local selectedStyleLabel = "All"
+    local selectedStyleIsValid = false
+    for _, option in ipairs(styleOptions) do
+        if option.id == selectedStyleID then
+            selectedStyleLabel = option.label
+            selectedStyleIsValid = true
+            break
+        end
+    end
+    if not selectedStyleIsValid then
+        selectedStyleID = self.SESSION_STYLE_ALL_ID or "all"
+        frame.detailsStyleFilterID = selectedStyleID
+        selectedStyleLabel = "All"
+    end
+    if frame.styleFilterDropdown then
+        UIDropDownMenu_SetSelectedValue(frame.styleFilterDropdown, selectedStyleID)
+        UIDropDownMenu_SetText(frame.styleFilterDropdown, selectedStyleLabel)
+        frame.styleFilterDropdown:SetShown(#styleOptions > 1)
+    end
+    if frame.styleFilterLabelText then
+        frame.styleFilterLabelText:SetShown(#styleOptions > 1)
+    end
     if frame.splitButton then
         frame.splitButton:SetShown(#locationOptions > 2)
     end
@@ -2170,7 +2373,7 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         frame.diagnosisSessionButton:SetAlpha(hasDiagnosisSnapshot and 1 or 0.45)
     end
 
-    local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey)
+    local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
 
     local sessionName = session.name or "Session"
     if session.wasResumed == true or session.resumedFromHistory == true then
@@ -2183,6 +2386,7 @@ function GoldTracker:RefreshHistoryDetailsWindow()
 
     local summaryRowsData = {
         { label = "Duration", value = self:FormatDuration(filteredSummary.duration or 0) },
+        { label = "Saved by", value = session.savedBy or "Unknown" },
     }
     for _, row in ipairs(BuildHistoryResumeSummaryRows(session)) do
         summaryRowsData[#summaryRowsData + 1] = row
@@ -2285,7 +2489,7 @@ function GoldTracker:RefreshHistoryDetailsWindow()
             local summaryBodyHeight = (#summaryRowsData * (summaryMinRowHeight + 1)) + math.max(0, #summaryRowsData - 1)
             local minItemsScrollHeight = math.max(80, baseSize * 4)
             local reservedBelowLocationBody = DETAILS_GAP_LOCATION_TABLE_TO_FILTER
-                + 22
+                + DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT
                 + DETAILS_GAP_FILTER_TO_SUMMARY
                 + summaryBodyHeight
                 + DETAILS_GAP_SUMMARY_TO_ITEMS
@@ -2339,19 +2543,21 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         end
     end
 
-    if frame.locationFilterLabelText then
-        frame.locationFilterLabelText:ClearAllPoints()
+    if frame.detailsControlsFrame then
+        frame.detailsControlsFrame:ClearAllPoints()
         if hasLocationRows and frame.locationTableFrame then
-            frame.locationFilterLabelText:SetPoint("TOPLEFT", frame.locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
+            frame.detailsControlsFrame:SetPoint("TOPLEFT", frame.locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
         else
-            frame.locationFilterLabelText:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
+            frame.detailsControlsFrame:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
         end
+        frame.detailsControlsFrame:SetPoint("RIGHT", frame.detailsContainer, "RIGHT", -20, 0)
+        ApplyHistoryDetailsControlsLayout(frame)
     end
 
     if frame.summaryTableFrame then
         frame.summaryTableFrame:ClearAllPoints()
-        if frame.locationFilterLabelText then
-            frame.summaryTableFrame:SetPoint("TOPLEFT", frame.locationFilterLabelText, "BOTTOMLEFT", 0, -DETAILS_GAP_FILTER_TO_SUMMARY)
+        if frame.detailsControlsFrame then
+            frame.summaryTableFrame:SetPoint("TOPLEFT", frame.detailsControlsFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_FILTER_TO_SUMMARY)
         else
             frame.summaryTableFrame:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -8)
         end
@@ -2407,7 +2613,7 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         frame.summaryTableFrame:Show()
     end
 
-    local items, includeSourceLabel = BuildVisibleHistoryItems(session, selectedLocationKey)
+    local items, includeSourceLabel = BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
     self:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
 end
 
@@ -2419,16 +2625,19 @@ function GoldTracker:BuildHistorySessionCSV(sessionID)
     end
 
     local selectedLocationKey = DETAILS_LOCATION_FILTER_ALL
+    local selectedStyleID = self.SESSION_STYLE_ALL_ID or "all"
     if frame and frame.view == "details" and frame.selectedSessionID == sessionID then
         selectedLocationKey = frame.detailsLocationFilterKey or DETAILS_LOCATION_FILTER_ALL
+        selectedStyleID = self:NormalizeSessionStyleFilter(frame.detailsStyleFilterID)
     end
 
-    local summary = BuildHistoryDetailsSummary(session, selectedLocationKey)
-    local items = BuildVisibleHistoryItems(session, selectedLocationKey)
+    local summary = BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
+    local items = BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
     local rows = {
         "section,key,value",
         string.format("session,id,%s", EscapeCSVValue(session.id)),
         string.format("session,name,%s", EscapeCSVValue(session.name or "Session")),
+        string.format("session,saved_by,%s", EscapeCSVValue(session.savedBy or "Unknown")),
         string.format("session,start_time,%s", EscapeCSVValue(date("%Y-%m-%d %H:%M:%S", tonumber(summary.startTime) or time()))),
         string.format("session,stop_time,%s", EscapeCSVValue(date("%Y-%m-%d %H:%M:%S", tonumber(summary.stopTime) or time()))),
         string.format("session,duration_seconds,%s", EscapeCSVValue(math.floor(tonumber(summary.duration) or 0))),

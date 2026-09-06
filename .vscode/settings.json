@@ -46,6 +46,14 @@
         "ITEM_ACCOUNTBOUND_UNTIL_EQUIP",
         "ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP",
         "BACKPACK_CONTAINER",
-        "NUM_BAG_SLOTS"
+        "NUM_BAG_SLOTS",
+        "FauxScrollFrame_Update",
+        "FauxScrollFrame_SetOffset",
+        "FauxScrollFrame_GetOffset",
+        "FauxScrollFrame_OnVerticalScroll",
+        "UiMapPoint",
+        "UIDropDownMenu_Refresh",
+        "UIDropDownMenu_SetAnchor",
+        "CloseDropDownMenus"
     ]
 }

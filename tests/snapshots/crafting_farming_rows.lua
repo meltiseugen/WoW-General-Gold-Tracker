@@ -1,0 +1,38 @@
+return {
+    {
+        expansionID = "classic",
+        expansionLabel = "Classic",
+        itemID = 3004,
+        itemName = "Custom Ore",
+        professionLabel = "Mining",
+        tag = "Custom",
+        value = 7000,
+    },
+    {
+        expansionID = "warWithin",
+        expansionLabel = "The War Within",
+        itemID = 3002,
+        itemName = "New Herb",
+        professionLabel = "Herbalism",
+        tag = "Herb",
+        value = 5000,
+    },
+    {
+        expansionID = "classic",
+        expansionLabel = "Classic",
+        itemID = 3001,
+        itemName = "Old Ore",
+        professionLabel = "Mining",
+        tag = "Ore",
+        value = 1000,
+    },
+    {
+        expansionID = "classic",
+        expansionLabel = "Classic",
+        itemID = 3003,
+        itemName = "Old Herb",
+        professionLabel = "Herbalism",
+        tag = "Herb",
+        value = 100,
+    },
+}

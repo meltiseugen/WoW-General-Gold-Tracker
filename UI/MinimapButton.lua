@@ -164,6 +164,15 @@ function GoldTracker:ShowMinimapButtonMenu()
             end,
         },
         {
+            text = "Open Explorer",
+            notCheckable = true,
+            func = function()
+                if type(self.OpenExplorerWindow) == "function" then
+                    self:OpenExplorerWindow()
+                end
+            end,
+        },
+        {
             text = "Open History",
             notCheckable = true,
             func = function()
@@ -255,7 +264,7 @@ function GoldTracker:CreateMinimapButton()
         GameTooltip:AddLine("General Gold Tracker", 1, 0.82, 0)
         GameTooltip:AddLine("Left-click: Open tracker window", 0.9, 0.9, 0.9)
         GameTooltip:AddLine("Right-click: Open menu", 0.9, 0.9, 0.9)
-        GameTooltip:AddLine("Menu: Auctionable Inventory, History, Options", 0.72, 0.76, 0.84)
+        GameTooltip:AddLine("Menu: Auctionable Inventory, Explorer, History, Options", 0.72, 0.76, 0.84)
         if addon:IsTotalWindowFeatureEnabled() then
             GameTooltip:AddLine("Menu also includes: Toggle total window", 0.72, 0.76, 0.84)
         end

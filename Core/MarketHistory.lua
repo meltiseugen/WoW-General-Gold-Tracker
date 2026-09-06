@@ -235,8 +235,12 @@ local function GetBaselineSummary(addon, latest)
     return nil
 end
 
-function GoldTracker:GetMarketHistoryItemKey(itemLink)
+function GoldTracker:GetMarketHistoryItemKey(itemLink, itemID)
     if type(itemLink) ~= "string" or itemLink == "" then
+        local normalizedItemID = tonumber(itemID or itemLink)
+        if normalizedItemID then
+            return string.format("i:%d", math.floor(normalizedItemID + 0.5))
+        end
         return nil
     end
 
@@ -248,6 +252,234 @@ function GoldTracker:GetMarketHistoryItemKey(itemLink)
     end
 
     return self:GetTSMItemStringFromLink(itemLink) or itemLink
+end
+
+local function GetMarketHistoryDisplayItemLink(item)
+    if type(item) ~= "table" then
+        return nil
+    end
+    if type(item.itemLink) == "string" and item.itemLink ~= "" then
+        return item.itemLink
+    end
+    return nil
+end
+
+local function RoundPercentChange(value)
+    local change = tonumber(value)
+    if not change then
+        return nil
+    end
+    if change >= 0 then
+        return math.floor(change + 0.5)
+    end
+    return math.ceil(change - 0.5)
+end
+
+local function GetPositiveSnapshotPrice(snapshot, fieldKey)
+    local value = tonumber(snapshot and snapshot[fieldKey])
+    return value and value > 0 and value or nil
+end
+
+local function GetPositiveItemPrice(item, fieldKey)
+    local value = tonumber(item and item[fieldKey])
+    return value and value > 0 and value or nil
+end
+
+local function GetPriceIncreaseAlertCurrentPrice(item, snapshot)
+    return GetPositiveSnapshotPrice(snapshot, "dbMarket")
+        or GetPositiveItemPrice(item, "marketValue")
+        or GetPositiveSnapshotPrice(snapshot, "dbRecent")
+        or GetPositiveSnapshotPrice(snapshot, "dbMinBuyout")
+        or GetPositiveSnapshotPrice(snapshot, "selectedUnitValue")
+        or GetPositiveItemPrice(item, "unitValue")
+        or GetPositiveItemPrice(item, "value")
+end
+
+local function CalculateRawPercentChange(currentPrice, baselinePrice)
+    local current = tonumber(currentPrice)
+    local baseline = tonumber(baselinePrice)
+    if not current or not baseline or baseline <= 0 then
+        return nil
+    end
+    return ((current - baseline) * 100) / baseline
+end
+
+local function GetPriceIncreaseAlertHistoryComparison(history, now, lookbackDays, minimumSamples)
+    local snapshots = history and history.snapshots
+    if type(snapshots) ~= "table" or #snapshots == 0 then
+        return {
+            sampleCount = 0,
+        }
+    end
+
+    local cutoff = now - (lookbackDays * 86400)
+    local oldest = nil
+    local latest = nil
+    local sampleCount = 0
+
+    for _, snapshot in ipairs(snapshots) do
+        local timestamp = tonumber(snapshot and snapshot.timestamp) or 0
+        local price = GetSnapshotPrice(snapshot)
+        if timestamp >= cutoff and timestamp <= now and price and price > 0 then
+            sampleCount = sampleCount + 1
+            oldest = oldest or snapshot
+            latest = snapshot
+        end
+    end
+
+    if sampleCount < minimumSamples or not oldest or not latest or oldest == latest then
+        return {
+            sampleCount = sampleCount,
+            latestPrice = latest and GetSnapshotPrice(latest) or nil,
+        }
+    end
+
+    local baselinePrice = GetSnapshotPrice(oldest)
+    local latestPrice = GetSnapshotPrice(latest)
+    local rawChange = CalculateRawPercentChange(latestPrice, baselinePrice)
+    return {
+        sampleCount = sampleCount,
+        baselinePrice = baselinePrice,
+        latestPrice = latestPrice,
+        baselineTimestamp = oldest.timestamp,
+        latestTimestamp = latest.timestamp,
+        rawChangePercent = rawChange,
+        changePercent = RoundPercentChange(rawChange),
+    }
+end
+
+local function GetPriceIncreaseAlertTSMComparison(item, snapshot)
+    local currentPrice = GetPriceIncreaseAlertCurrentPrice(item, snapshot)
+    local baselinePrice = GetPositiveSnapshotPrice(snapshot, "dbRecent")
+    local baselineLabel = "TSM recent"
+
+    if not baselinePrice then
+        baselinePrice = GetPositiveSnapshotPrice(snapshot, "dbHistorical")
+        baselineLabel = "TSM historical"
+    end
+    if not baselinePrice then
+        baselinePrice = GetPositiveSnapshotPrice(snapshot, "dbRegionHistorical")
+        baselineLabel = "TSM region historical"
+    end
+
+    local rawChange = CalculateRawPercentChange(currentPrice, baselinePrice)
+    if not rawChange then
+        return nil
+    end
+
+    return {
+        currentPrice = currentPrice,
+        baselinePrice = baselinePrice,
+        baselineLabel = baselineLabel,
+        rawChangePercent = rawChange,
+        changePercent = RoundPercentChange(rawChange),
+    }
+end
+
+local function BuildPriceIncreaseCurrentSnapshot(addon, item)
+    local itemLink = type(item and item.itemLink) == "string" and item.itemLink ~= "" and item.itemLink or nil
+    local itemID = tonumber(item and item.itemID)
+    local snapshot = addon:GetMarketHistorySourceSnapshot(itemLink, itemID)
+
+    snapshot.selectedUnitValue = snapshot.selectedUnitValue or FloorNumber(item and (item.unitValue or item.value))
+    snapshot.totalValue = snapshot.totalValue or FloorNumber(item and item.totalValue)
+    snapshot.dbMarket = snapshot.dbMarket or FloorNumber(item and item.marketValue)
+    snapshot.dbHistorical = snapshot.dbHistorical or FloorNumber(item and item.historicalValue)
+    snapshot.dbRegionSaleRate = snapshot.dbRegionSaleRate or tonumber(item and item.regionSaleRate)
+    snapshot.dbRegionSoldPerDay = snapshot.dbRegionSoldPerDay or tonumber(item and item.regionSoldPerDay)
+
+    return snapshot
+end
+
+local function IsPriceIncreaseAlertMaterialItem(addon, item)
+    if type(item) ~= "table" then
+        return false
+    end
+    if item.isCraftingReagent == true or item.categoryID == "crafting" then
+        return true
+    end
+
+    local itemID = tonumber(item.itemID)
+    if not itemID then
+        return false
+    end
+    itemID = math.floor(itemID + 0.5)
+    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialFarmingSpots
+    local materialItems = type(farmingSpots) == "table" and farmingSpots.items or nil
+    return type(materialItems) == "table" and materialItems[itemID] ~= nil
+end
+
+local function BuildPriceIncreaseAlertRow(addon, item, itemKey, history, config, now)
+    local snapshot = BuildPriceIncreaseCurrentSnapshot(addon, item)
+    local localComparison = GetPriceIncreaseAlertHistoryComparison(
+        history,
+        now,
+        config.lookbackDays,
+        config.minimumSamples
+    )
+    local tsmComparison = GetPriceIncreaseAlertTSMComparison(item, snapshot)
+    local localRawChange = tonumber(localComparison and localComparison.rawChangePercent)
+    local tsmRawChange = tonumber(tsmComparison and tsmComparison.rawChangePercent)
+
+    local qualifyingComparison = nil
+    local basis = nil
+    if localRawChange and localRawChange >= config.thresholdPercent then
+        qualifyingComparison = localComparison
+        basis = "Local"
+    elseif tsmRawChange and tsmRawChange >= config.thresholdPercent then
+        qualifyingComparison = tsmComparison
+        basis = tsmComparison.baselineLabel or "TSM"
+    else
+        return nil
+    end
+
+    local currentPrice = GetPriceIncreaseAlertCurrentPrice(item, snapshot)
+        or qualifyingComparison.latestPrice
+        or qualifyingComparison.currentPrice
+    local quantity = math.max(1, math.floor((tonumber(item and item.quantity) or 1) + 0.5))
+
+    return {
+        itemKey = itemKey,
+        itemID = item and item.itemID,
+        itemLink = item and item.itemLink,
+        itemName = item and item.itemName,
+        itemQuality = item and item.itemQuality,
+        icon = item and item.icon,
+        quantity = quantity,
+        unitValue = currentPrice,
+        totalValue = FloorNumber(item and item.totalValue) or (currentPrice and currentPrice * quantity) or 0,
+        baselinePrice = qualifyingComparison.baselinePrice,
+        latestPrice = qualifyingComparison.latestPrice or qualifyingComparison.currentPrice or currentPrice,
+        changePercent = qualifyingComparison.changePercent,
+        rawChangePercent = qualifyingComparison.rawChangePercent,
+        localChangePercent = localComparison and localComparison.changePercent,
+        localRawChangePercent = localComparison and localComparison.rawChangePercent,
+        tsmChangePercent = tsmComparison and tsmComparison.changePercent,
+        tsmRawChangePercent = tsmComparison and tsmComparison.rawChangePercent,
+        tsmBaselineLabel = tsmComparison and tsmComparison.baselineLabel,
+        localSampleCount = localComparison and localComparison.sampleCount or 0,
+        baselineTimestamp = localComparison and localComparison.baselineTimestamp,
+        latestTimestamp = localComparison and localComparison.latestTimestamp,
+        regionSoldPerDay = item and item.regionSoldPerDay,
+        regionSaleRate = item and item.regionSaleRate,
+        marketValue = snapshot.dbMarket or item and item.marketValue,
+        historicalValue = snapshot.dbHistorical or item and item.historicalValue,
+        categoryID = item and item.categoryID,
+        categoryLabel = item and item.categoryLabel,
+        isMaterial = IsPriceIncreaseAlertMaterialItem(addon, item),
+        alertBasis = basis,
+    }
+end
+
+local function GetMarketHistoryDisplayItemName(item)
+    if type(item) ~= "table" then
+        return nil
+    end
+    if type(item.itemName) == "string" and item.itemName ~= "" then
+        return item.itemName
+    end
+    local itemID = tonumber(item.itemID)
+    return itemID and ("Item " .. tostring(math.floor(itemID + 0.5))) or nil
 end
 
 local function AddUniqueCandidate(candidates, candidate)
@@ -314,8 +546,9 @@ local function FindMarketHistoryByQuery(addon, query)
     return nil, nil
 end
 
-function GoldTracker:GetMarketHistoryForItem(itemLink)
-    return FindMarketHistoryByQuery(self, itemLink)
+function GoldTracker:GetMarketHistoryForItem(itemLink, itemID)
+    local query = type(itemLink) == "string" and itemLink ~= "" and itemLink or itemID
+    return FindMarketHistoryByQuery(self, query)
 end
 
 local function FormatMarketHistoryMoney(addon, value)
@@ -359,14 +592,36 @@ function GoldTracker:GetMarketHistorySampleCount(itemLink)
     return #history.snapshots
 end
 
-function GoldTracker:GetMarketHistorySourceSnapshot(itemLink)
+local function GetTSMRawCustomValueForMarketHistory(addon, priceSource, itemLink, itemID)
+    if type(itemLink) == "string" and itemLink ~= "" and type(addon.GetTSMRawCustomValue) == "function" then
+        local value = addon:GetTSMRawCustomValue(priceSource, itemLink)
+        if value then
+            return value
+        end
+    end
+
+    local normalizedItemID = tonumber(itemID)
+    if not normalizedItemID or type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
+        return nil
+    end
+
+    local itemString = string.format("i:%d", math.floor(normalizedItemID + 0.5))
+    local ok, value = pcall(TSM_API.GetCustomPriceValue, priceSource, itemString)
+    if ok and type(value) == "number" and value > 0 then
+        return value
+    end
+    return nil
+end
+
+function GoldTracker:GetMarketHistorySourceSnapshot(itemLink, itemID)
     local snapshot = {}
-    if type(self.GetTSMRawCustomValue) ~= "function" then
+    if type(self.GetTSMRawCustomValue) ~= "function"
+        and not (type(TSM_API) == "table" and type(TSM_API.GetCustomPriceValue) == "function") then
         return snapshot
     end
 
     for fieldKey, sourceKey in pairs(SNAPSHOT_SOURCES) do
-        local value = self:GetTSMRawCustomValue(sourceKey, itemLink)
+        local value = GetTSMRawCustomValueForMarketHistory(self, sourceKey, itemLink, itemID)
         if fieldKey == "dbRegionSaleRate" or fieldKey == "dbRegionSoldPerDay" then
             snapshot[fieldKey] = tonumber(value)
         else
@@ -453,15 +708,17 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
     local touched = false
 
     for _, item in ipairs(items) do
-        local itemLink = item and item.itemLink
-        local itemKey = self:GetMarketHistoryItemKey(itemLink)
+        local itemLink = GetMarketHistoryDisplayItemLink(item)
+        local itemID = tonumber(item and item.itemID)
+        local itemKey = self:GetMarketHistoryItemKey(itemLink, itemID)
         if itemKey then
             local history = marketHistory.items[itemKey]
             if type(history) ~= "table" then
                 history = {
                     itemKey = itemKey,
                     itemLink = itemLink,
-                    itemName = item.itemName,
+                    itemID = itemID and math.floor(itemID + 0.5) or nil,
+                    itemName = GetMarketHistoryDisplayItemName(item),
                     itemQuality = item.itemQuality,
                     firstSeen = now,
                     snapshots = {},
@@ -470,22 +727,25 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
             end
 
             history.itemLink = itemLink or history.itemLink
-            history.itemName = item.itemName or history.itemName
+            history.itemID = itemID and math.floor(itemID + 0.5) or history.itemID
+            history.itemName = GetMarketHistoryDisplayItemName(item) or history.itemName
             history.itemQuality = item.itemQuality or history.itemQuality
             history.lastSeen = now
 
-            local snapshot = self:GetMarketHistorySourceSnapshot(itemLink)
+            local snapshot = self:GetMarketHistorySourceSnapshot(itemLink, itemID)
             snapshot.date = dateKey
             snapshot.hourKey = hourKey
             snapshot.hour = hour
             snapshot.weekday = weekday
             snapshot.timestamp = now
             snapshot.selectedSourceID = item.valueSourceID
-            snapshot.selectedUnitValue = FloorNumber(item.unitValue)
-            snapshot.quantity = FloorNumber(item.quantity)
-            snapshot.totalValue = FloorNumber(item.totalValue)
+            snapshot.selectedUnitValue = FloorNumber(item.unitValue or item.value)
+            snapshot.quantity = FloorNumber(item.quantity) or 1
+            snapshot.totalValue = FloorNumber(item.totalValue or item.value)
             snapshot.dbMarket = snapshot.dbMarket or FloorNumber(item.marketValue)
             snapshot.dbHistorical = snapshot.dbHistorical or FloorNumber(item.historicalValue)
+            snapshot.dbRegionMarketAvg = snapshot.dbRegionMarketAvg or FloorNumber(item.regionMarketValue)
+            snapshot.dbRegionSaleAvg = snapshot.dbRegionSaleAvg or FloorNumber(item.averageValue)
             snapshot.dbRegionSaleRate = snapshot.dbRegionSaleRate or tonumber(item.regionSaleRate)
             snapshot.dbRegionSoldPerDay = snapshot.dbRegionSoldPerDay or tonumber(item.regionSoldPerDay)
 
@@ -503,6 +763,234 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
     if touched then
         self:PruneMarketHistory(now)
     end
+end
+
+local function AddMarketHistoryCandidate(candidates, seen, item)
+    if type(item) ~= "table" then
+        return
+    end
+
+    local itemKey = item.marketHistoryItemKey
+    if type(itemKey) ~= "string" or itemKey == "" then
+        itemKey = GoldTracker:GetMarketHistoryItemKey(item.itemLink, item.itemID)
+    end
+    if not itemKey or seen[itemKey] then
+        return
+    end
+
+    seen[itemKey] = true
+    candidates[#candidates + 1] = item
+end
+
+function GoldTracker:RecordRareFarmingMarketSnapshots(rows)
+    if type(rows) ~= "table" then
+        return
+    end
+
+    local candidates = {}
+    local seen = {}
+    for _, row in ipairs(rows) do
+        AddMarketHistoryCandidate(candidates, seen, row)
+    end
+    self:RecordInventoryMarketSnapshots(candidates)
+end
+
+function GoldTracker:RecordSavedRareFarmingMarketSnapshots()
+    if type(self.db) ~= "table" then
+        return
+    end
+
+    local candidates = {}
+    local seen = {}
+    local favorites = self.db.rareFarmingFavorites
+    if type(favorites) == "table" then
+        for _, favorite in pairs(favorites) do
+            AddMarketHistoryCandidate(candidates, seen, favorite)
+        end
+    end
+
+    local cache = self.db.rareFarmingScanCache
+    if type(cache) == "table" then
+        for _, entry in pairs(cache) do
+            if type(entry) == "table" and type(entry.results) == "table" then
+                for _, row in ipairs(entry.results) do
+                    AddMarketHistoryCandidate(candidates, seen, row)
+                end
+            end
+        end
+    end
+
+    self:RecordInventoryMarketSnapshots(candidates)
+end
+
+function GoldTracker:RecordInstanceFarmingMarketSnapshots(rows)
+    if type(rows) ~= "table" then
+        return
+    end
+
+    local candidates = {}
+    local seen = {}
+    for _, row in ipairs(rows) do
+        AddMarketHistoryCandidate(candidates, seen, row)
+    end
+    self:RecordInventoryMarketSnapshots(candidates)
+end
+
+function GoldTracker:RecordSavedInstanceFarmingMarketSnapshots()
+    if type(self.db) ~= "table" then
+        return
+    end
+
+    local candidates = {}
+    local seen = {}
+    local favorites = self.db.instanceFarmingFavorites
+    if type(favorites) == "table" then
+        for _, favorite in pairs(favorites) do
+            AddMarketHistoryCandidate(candidates, seen, favorite)
+        end
+    end
+
+    local cache = self.db.instanceFarmingScanCache
+    if type(cache) == "table" then
+        for _, entry in pairs(cache) do
+            if type(entry) == "table" and type(entry.results) == "table" then
+                for _, row in ipairs(entry.results) do
+                    AddMarketHistoryCandidate(candidates, seen, row)
+                end
+            end
+        end
+    end
+
+    self:RecordInventoryMarketSnapshots(candidates)
+end
+
+function GoldTracker:RecordCraftingFarmingMarketSnapshots(rows)
+    if type(rows) ~= "table" then
+        return
+    end
+
+    local candidates = {}
+    local seen = {}
+    for _, row in ipairs(rows) do
+        AddMarketHistoryCandidate(candidates, seen, row)
+    end
+    self:RecordInventoryMarketSnapshots(candidates)
+end
+
+function GoldTracker:GetPriceIncreaseAlertConfig(options)
+    options = type(options) == "table" and options or {}
+    local defaults = self.DEFAULTS or {}
+
+    local thresholdPercent = tonumber(options.thresholdPercent)
+        or tonumber(self.db and self.db.priceIncreaseAlertThresholdPercent)
+        or tonumber(defaults.priceIncreaseAlertThresholdPercent)
+        or 30
+    local lookbackDays = tonumber(options.lookbackDays)
+        or tonumber(self.db and self.db.priceIncreaseAlertLookbackDays)
+        or tonumber(defaults.priceIncreaseAlertLookbackDays)
+        or 3
+    local minimumSamples = tonumber(options.minimumSamples)
+        or tonumber(self.db and self.db.priceIncreaseAlertMinimumSamples)
+        or tonumber(defaults.priceIncreaseAlertMinimumSamples)
+        or 2
+
+    return {
+        thresholdPercent = math.max(1, math.floor(thresholdPercent + 0.5)),
+        lookbackDays = math.max(1, math.floor(lookbackDays + 0.5)),
+        minimumSamples = math.max(2, math.floor(minimumSamples + 0.5)),
+    }
+end
+
+function GoldTracker:GetPriceIncreaseAlertForItem(item, options)
+    if type(item) ~= "table" then
+        return nil
+    end
+
+    local itemLink = type(item.itemLink) == "string" and item.itemLink ~= "" and item.itemLink or nil
+    local itemID = tonumber(item.itemID)
+    local itemKey = item.marketHistoryItemKey or self:GetMarketHistoryItemKey(itemLink, itemID)
+    if not itemKey then
+        return nil
+    end
+
+    local marketHistory = self:NormalizeMarketHistory()
+    local history = marketHistory and marketHistory.items and marketHistory.items[itemKey]
+    return BuildPriceIncreaseAlertRow(
+        self,
+        item,
+        itemKey,
+        history,
+        self:GetPriceIncreaseAlertConfig(options),
+        tonumber(options and options.now) or time()
+    )
+end
+
+function GoldTracker:BuildPriceIncreaseAlertRows(options)
+    local config = self:GetPriceIncreaseAlertConfig(options)
+    local source = self.GetAuctionableInventoryValueSource and self:GetAuctionableInventoryValueSource() or nil
+    local sourceID = source and source.id
+    local minimumQuality = self.GetConfiguredMinimumTrackedItemQuality and self:GetConfiguredMinimumTrackedItemQuality() or 0
+    local items = {}
+    local totalValue = 0
+    local totalQuantity = 0
+    local scannedStacks = 0
+    local matchedStacks = 0
+
+    if type(self.BuildInventoryAuctionItemList) == "function" then
+        items, totalValue, totalQuantity, scannedStacks, matchedStacks = self:BuildInventoryAuctionItemList(
+            sourceID,
+            minimumQuality,
+            0,
+            "itemName",
+            true
+        )
+        items = type(items) == "table" and items or {}
+    end
+
+    if type(self.RecordInventoryMarketSnapshots) == "function" and #items > 0 then
+        self:RecordInventoryMarketSnapshots(items)
+    end
+
+    local rows = {}
+    local seen = {}
+    for _, item in ipairs(items) do
+        local itemKey = item and (item.marketHistoryItemKey or self:GetMarketHistoryItemKey(item.itemLink, item.itemID))
+        if itemKey and not seen[itemKey] then
+            seen[itemKey] = true
+            local row = self:GetPriceIncreaseAlertForItem(item, config)
+            if row then
+                rows[#rows + 1] = row
+            end
+        end
+    end
+
+    table.sort(rows, function(left, right)
+        local leftChange = tonumber(left and left.rawChangePercent) or -1000000
+        local rightChange = tonumber(right and right.rawChangePercent) or -1000000
+        if leftChange ~= rightChange then
+            return leftChange > rightChange
+        end
+
+        local leftValue = tonumber(left and left.totalValue) or 0
+        local rightValue = tonumber(right and right.totalValue) or 0
+        if leftValue ~= rightValue then
+            return leftValue > rightValue
+        end
+
+        return string.lower(tostring(left and (left.itemName or left.itemLink or left.itemID) or ""))
+            < string.lower(tostring(right and (right.itemName or right.itemLink or right.itemID) or ""))
+    end)
+
+    return rows, {
+        thresholdPercent = config.thresholdPercent,
+        lookbackDays = config.lookbackDays,
+        minimumSamples = config.minimumSamples,
+        scannedStacks = tonumber(scannedStacks) or 0,
+        matchedStacks = tonumber(matchedStacks) or 0,
+        inventoryItemCount = #items,
+        totalValue = tonumber(totalValue) or 0,
+        totalQuantity = tonumber(totalQuantity) or 0,
+    }
 end
 
 function GoldTracker:RecordCurrentBagMarketSnapshot()
@@ -549,7 +1037,7 @@ end
 
 function GoldTracker:GetInventoryMarketInsight(item)
     local itemLink = item and item.itemLink
-    local itemKey = item and item.marketHistoryItemKey or self:GetMarketHistoryItemKey(itemLink)
+    local itemKey = item and item.marketHistoryItemKey or self:GetMarketHistoryItemKey(itemLink, item and item.itemID)
     local marketHistory = self:NormalizeMarketHistory()
     local history = marketHistory and itemKey and marketHistory.items[itemKey]
     if type(history) ~= "table" or type(history.snapshots) ~= "table" or #history.snapshots == 0 then

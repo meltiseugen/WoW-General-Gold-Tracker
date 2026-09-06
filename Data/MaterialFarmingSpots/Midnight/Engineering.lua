@@ -1,0 +1,2 @@
+-- Aetherlume remains cataloged in FarmingItems.lua, but is intentionally left
+-- pending until a coordinate-backed direct farm is confirmed.

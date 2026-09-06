@@ -1,0 +1,282 @@
+local _, NS = ...
+local Register = NS.RegisterMaterialFarmingSpot
+
+local function C(x, y, label)
+    return { x = x, y = y, label = label }
+end
+
+local function ItemUrl(itemID)
+    return "https://www.wowhead.com/item=" .. tostring(itemID)
+end
+
+local GHOST_IRON_ROUTES = {
+    {
+        id = "mists-ghost-iron-valley-four-winds-north-loop",
+        source = "wow-professions Ghost Iron guide, retail xScarlife Routes import string, and retail Wowhead object pages",
+        sourceUrls = {
+            "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+            "https://xscarlife-gaming.com/farming-retail/",
+            "https://www.wowhead.com/object=209311/ghost-iron-deposit",
+            "https://www.wowhead.com/object=209330/rich-ghost-iron-deposit",
+        },
+        mapName = "Valley of the Four Winds",
+        location = "Northern Valley route around Paoquan Hollow, The Heartland, and Pool of Purity",
+        routeType = "mining-loop",
+        density = "High",
+        dropDifficulty = "Best general Ghost Iron route, but Tillers traffic can make it busy.",
+        tips = {
+            "Stay mostly in the northern half of the zone because that is where most Valley Ghost Iron nodes spawn.",
+            "Mine Ghost Iron even when targeting Trillium because many potential spawns are shared.",
+            "Use Mist-Piercing Goggles when available to reveal extra Pandaria ore nodes.",
+        },
+        coords = {
+            C(0.2934, 0.3115, "xScarlife west Heartland pin"),
+            C(0.3338, 0.2500, "Northwest Heartland ridge"),
+            C(0.3299, 0.4240, "Western Heartland node"),
+            C(0.3773, 0.4090, "Heartland ridge bend"),
+            C(0.4382, 0.3190, "North Heartland sweep"),
+            C(0.5093, 0.2523, "Halfhill north ridge"),
+            C(0.5863, 0.2491, "Paoquan north approach"),
+            C(0.6687, 0.2685, "Paoquan Hollow north"),
+            C(0.5645, 0.3920, "Paoquan return node"),
+            C(0.4594, 0.4398, "Heartland south bend"),
+            C(0.4105, 0.5305, "Central return"),
+            C(0.3454, 0.5383, "Western return ridge"),
+            C(0.1613, 0.7438, "Southwest extension"),
+            C(0.1290, 0.7328, "Southwest cliff check"),
+            C(0.0838, 0.7619, "Far west node check"),
+            C(0.1051, 0.7030, "Far west return"),
+            C(0.1232, 0.6425, "Western water edge"),
+            C(0.0877, 0.5230, "Northwest river bend"),
+            C(0.1340, 0.3646, "Northwest ridge return"),
+            C(0.1733, 0.2943, "Northwest wall"),
+            C(0.2105, 0.3286, "West Heartland entry"),
+            C(0.2133, 0.3740, "Western slope node"),
+            C(0.1985, 0.4180, "Western ridge pocket"),
+            C(0.2082, 0.4747, "West-central return"),
+            C(0.2409, 0.5055, "West-central bend"),
+            C(0.3023, 0.4645, "Heartland return"),
+        },
+        confidence = "high",
+    },
+    {
+        id = "mists-ghost-iron-jade-forest-windward-tian-loop",
+        source = "wow-professions Ghost Iron guide and retail Wowhead ore object pages",
+        sourceUrls = {
+            "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+            "https://www.wowhead.com/object=209311/ghost-iron-deposit",
+            "https://www.wowhead.com/object=209328/trillium-vein",
+        },
+        mapName = "The Jade Forest",
+        location = "Tian Monastery, Paw'don Village, and Windward Isle checks",
+        routeType = "mining-loop",
+        density = "Medium to high",
+        dropDifficulty = "Good alternate Ghost Iron route with simple terrain and several notable node areas.",
+        tips = {
+            "Use this route if Valley of the Four Winds is crowded.",
+            "Windward Isle nodes can share with Trillium, so clear Ghost Iron there to refresh rare ore checks.",
+            "Do not widen the route into sparse forest sections unless competition is high.",
+        },
+        coords = {
+            C(0.444, 0.244, "Tian Monastery hills"),
+            C(0.512, 0.334, "North Jade ridge"),
+            C(0.436, 0.520, "Central Jade hill"),
+            C(0.374, 0.738, "Paw'don Village hills"),
+            C(0.650, 0.276, "Windward Isle north"),
+            C(0.704, 0.316, "Windward Isle east"),
+        },
+        confidence = "high",
+    },
+}
+
+local KYPARITE_ROUTES = {
+    {
+        id = "mists-kyparite-dread-wastes-zanvess-klaxxivess-loop",
+        source = "retail xScarlife Routes import string, wow-professions Ghost Iron guide, and retail Wowhead Kyparite pages",
+        sourceUrls = {
+            "https://xscarlife-gaming.com/farming-retail/",
+            "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+            "https://www.wowhead.com/object=209312/kyparite-deposit",
+            "https://www.wowhead.com/object=209313/rich-kyparite-deposit",
+        },
+        mapName = "Dread Wastes",
+        location = "Zan'Vess south checks into Klaxxi'vess and Kypari Vor",
+        routeType = "mining-loop",
+        density = "Medium",
+        dropDifficulty = "Kyparite is zone-limited and less dense than Ghost Iron; competition is noticeable.",
+        tips = {
+            "Check Zan'Vess first, then sweep northeast toward Klaxxi'vess and Kypari Vor.",
+            "Skip the Heart of Fear and Kypari Ik area because the ore guide excludes those from good Ghost Iron/Kyparite routes.",
+            "Mine nearby Ghost Iron and Trillium to keep shared node turnover moving.",
+        },
+        coords = {
+            C(0.3482, 0.1875, "Northern Kypari Vor pin"),
+            C(0.4005, 0.1546, "Kypari Vor north ridge"),
+            C(0.4223, 0.1048, "Northeast Kyparite check"),
+            C(0.4905, 0.1339, "Northeast return"),
+            C(0.4874, 0.1967, "Kypari Vor return"),
+            C(0.4648, 0.2837, "North-central bend"),
+            C(0.4286, 0.3393, "North-central ridge"),
+            C(0.4161, 0.4061, "Klaxxi'vess west"),
+            C(0.4716, 0.4166, "Klaxxi'vess approach"),
+            C(0.5088, 0.4529, "Klaxxi'vess south"),
+            C(0.4962, 0.3301, "Kypari Vor south"),
+            C(0.4931, 0.2475, "Kypari Vor central"),
+            C(0.5182, 0.2067, "Kypari Vor east"),
+            C(0.5843, 0.1465, "East ridge check"),
+            C(0.6301, 0.1277, "Far northeast ridge"),
+            C(0.6736, 0.1282, "Northeast cliff check"),
+            C(0.6944, 0.2303, "Northeast return ridge"),
+            C(0.6485, 0.3008, "East Kyparite pocket"),
+            C(0.6571, 0.3518, "East ridge south"),
+            C(0.7143, 0.3093, "Far east pocket"),
+            C(0.7088, 0.3375, "Far east return"),
+            C(0.6904, 0.3609, "Eastern descent"),
+            C(0.6117, 0.3940, "Central east bend"),
+            C(0.5541, 0.4473, "Central return"),
+            C(0.6123, 0.4746, "East central node"),
+            C(0.6833, 0.4923, "Eastern pass"),
+            C(0.6817, 0.6130, "Southeast route"),
+            C(0.6564, 0.7224, "South route"),
+            C(0.5465, 0.6408, "South-central route"),
+            C(0.4120, 0.6991, "Zan'Vess east"),
+            C(0.4024, 0.5917, "Zan'Vess north return"),
+            C(0.3391, 0.5872, "Zan'Vess west"),
+            C(0.3400, 0.7651, "Zan'Vess south"),
+            C(0.3321, 0.8320, "Southwest Kyparite check"),
+            C(0.2767, 0.8700, "Far southwest route"),
+            C(0.2349, 0.8276, "Southwest coast"),
+            C(0.2166, 0.7502, "Southwest return"),
+            C(0.2970, 0.4662, "West Dread Wastes check"),
+            C(0.2580, 0.3503, "Northwest pocket"),
+            C(0.2829, 0.2657, "Northwest return"),
+        },
+        confidence = "high",
+    },
+    {
+        id = "mists-kyparite-townlong-kri-sra-niuzao-loop",
+        source = "wow-professions Ghost Iron guide and retail Wowhead Kyparite pages",
+        sourceUrls = {
+            "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+            "https://www.wowhead.com/object=209312/kyparite-deposit",
+        },
+        mapName = "Townlong Steppes",
+        location = "Gao-Ran, Sik'vess, Kri'vess, Niuzao Temple, and Sra'vess checks",
+        routeType = "mining-loop",
+        density = "Medium",
+        dropDifficulty = "Good backup route when Dread Wastes is crowded.",
+        tips = {
+            "Follow the mantid and kypari landmarks rather than trying to full-clear the zone.",
+            "Use Sra'vess and Niuzao Temple as loop anchors.",
+        },
+        coords = {
+            C(0.392, 0.300, "Gao-Ran Battlefront"),
+            C(0.482, 0.420, "Sik'vess"),
+            C(0.532, 0.548, "Kri'vess"),
+            C(0.388, 0.626, "Niuzao Temple south"),
+            C(0.238, 0.144, "Sra'vess"),
+        },
+        confidence = "high",
+    },
+}
+
+local TRILLIUM_ROUTES = {
+    {
+        id = "mists-trillium-dread-wastes-south-east-loop",
+        source = "retail xScarlife Routes import string, wow-professions Ghost Iron guide, and retail Wowhead Trillium pages",
+        sourceUrls = {
+            "https://xscarlife-gaming.com/farming-retail/",
+            "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+            "https://www.wowhead.com/object=209328/trillium-vein",
+            "https://www.wowhead.com/object=209329/rich-trillium-vein",
+        },
+        mapName = "Dread Wastes",
+        location = "Southern and eastern Dread Wastes Ghost Iron/Trillium shared route",
+        routeType = "mining-loop",
+        density = "Medium for Trillium, high for ore turnover",
+        dropDifficulty = "Trillium is a rare shared spawn, so the route needs steady Ghost Iron clearing.",
+        tips = {
+            "The ore guide identifies Dread Wastes south and east as the practical Trillium route.",
+            "Mine every Ghost Iron Deposit because Trillium can replace shared spawns.",
+            "Black and White Trillium Ore are equal-chance outputs from Trillium nodes.",
+        },
+        coords = {
+            C(0.324, 0.684, "Southwest ore sweep"),
+            C(0.456, 0.732, "Southern ore sweep"),
+            C(0.590, 0.690, "Southeast ore sweep"),
+            C(0.686, 0.520, "Eastern ore sweep"),
+            C(0.638, 0.338, "Northeast ore sweep"),
+            C(0.520, 0.430, "Central return"),
+        },
+        confidence = "high",
+    },
+    {
+        id = "mists-trillium-kunlai-central-mountain-loop",
+        source = "wow-professions Ghost Iron guide and retail Wowhead Trillium page",
+        sourceUrls = {
+            "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+            "https://www.wowhead.com/object=209328/trillium-vein",
+        },
+        mapName = "Kun-Lai Summit",
+        location = "Central and southern Kun-Lai mountain Trillium checks",
+        routeType = "mining-loop",
+        density = "Medium",
+        dropDifficulty = "Mountain route with scattered spawns; stronger when Dread Wastes is contested.",
+        tips = {
+            "Prioritize central and southern mountain ridges instead of lowland travel.",
+            "Use this as an alternate Trillium route because the ore guide calls out those hills for Trillium.",
+        },
+        coords = {
+            C(0.456, 0.486, "Central mountain ridge"),
+            C(0.530, 0.396, "North central ridge"),
+            C(0.626, 0.474, "East mountain checks"),
+            C(0.586, 0.654, "South central ridge"),
+            C(0.438, 0.704, "Southwest mountain return"),
+        },
+        confidence = "high",
+    },
+}
+
+Register({
+    itemID = 72092,
+    itemName = "Ghost Iron Ore",
+    expansion = "mists",
+    professions = { "mining" },
+    category = "Ore",
+    sourceUrls = { ItemUrl(72092), "https://www.wow-professions.com/farming/ghost-iron-ore-farming" },
+    summary = "Baseline Pandaria ore, best farmed in Valley of the Four Winds with Jade Forest and Townlong backups.",
+    spots = GHOST_IRON_ROUTES,
+})
+
+Register({
+    itemID = 72093,
+    itemName = "Kyparite",
+    expansion = "mists",
+    professions = { "mining" },
+    category = "Ore",
+    sourceUrls = { ItemUrl(72093), "https://www.wow-professions.com/farming/ghost-iron-ore-farming" },
+    summary = "Zone-limited Pandaria ore from Dread Wastes and Townlong Steppes Kyparite deposits.",
+    spots = KYPARITE_ROUTES,
+})
+
+Register({
+    itemID = 72094,
+    itemName = "Black Trillium Ore",
+    expansion = "mists",
+    professions = { "mining" },
+    category = "Ore",
+    sourceUrls = { ItemUrl(72094), "https://www.wow-professions.com/farming/ghost-iron-ore-farming" },
+    summary = "Rare Trillium node output; farm shared Ghost Iron/Trillium routes and keep node turnover high.",
+    spots = TRILLIUM_ROUTES,
+})
+
+Register({
+    itemID = 72103,
+    itemName = "White Trillium Ore",
+    expansion = "mists",
+    professions = { "mining" },
+    category = "Ore",
+    sourceUrls = { ItemUrl(72103), "https://www.wow-professions.com/farming/ghost-iron-ore-farming" },
+    summary = "Rare Trillium node output with equal chance to Black Trillium from Trillium veins.",
+    spots = TRILLIUM_ROUTES,
+})

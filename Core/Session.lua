@@ -1,6 +1,13 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
+local function NormalizeSessionStyle(addon, styleID)
+    if addon and type(addon.NormalizeSessionStyleFilter) == "function" then
+        return addon:NormalizeSessionStyleFilter(styleID)
+    end
+    return type(styleID) == "string" and styleID ~= "" and styleID or "all"
+end
+
 local function CloneReloadItemLoots(itemLoots)
     local copied = {}
     for i, entry in ipairs(itemLoots or {}) do
@@ -18,6 +25,12 @@ local function CloneReloadItemLoots(itemLoots)
             timestamp = tonumber(entry.timestamp) or 0,
             valueSourceID = entry.valueSourceID,
             valueSourceLabel = GoldTracker:GetValueSourceLabel(entry.valueSourceID, entry.valueSourceLabel),
+            itemID = tonumber(entry.itemID),
+            itemClassID = tonumber(entry.itemClassID),
+            itemSubclassID = tonumber(entry.itemSubclassID),
+            itemType = entry.itemType,
+            itemSubType = entry.itemSubType,
+            itemEquipLoc = entry.itemEquipLoc,
             locationKey = entry.locationKey,
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
@@ -81,6 +94,7 @@ local function BuildReloadSessionSnapshot(session)
         goldLooted = tonumber(session.goldLooted) or 0,
         itemValue = tonumber(session.itemValue) or 0,
         itemVendorValue = tonumber(session.itemVendorValue) or 0,
+        sessionStyleFilter = NormalizeSessionStyle(GoldTracker, session.sessionStyleFilter),
         highlightItemCount = highlightCount,
         lowHighlightItemCount = 0,
         highHighlightItemCount = highlightCount,
@@ -165,6 +179,7 @@ function GoldTracker:TryRestorePendingReloadSession()
     session.goldLooted = tonumber(snapshot.goldLooted) or 0
     session.itemValue = tonumber(snapshot.itemValue) or 0
     session.itemVendorValue = tonumber(snapshot.itemVendorValue) or 0
+    session.sessionStyleFilter = NormalizeSessionStyle(self, snapshot.sessionStyleFilter)
 
     local highlightCount = tonumber(snapshot.highlightItemCount)
     if not highlightCount then
@@ -239,6 +254,9 @@ function GoldTracker:StartSession(forceNew, options)
     self.session.goldLooted = 0
     self.session.itemValue = 0
     self.session.itemVendorValue = 0
+    self.session.sessionStyleFilter = type(self.GetSessionStyleFilter) == "function"
+        and self:GetSessionStyleFilter()
+        or "all"
     self.session.highlightItemCount = 0
     self.session.lowHighlightItemCount = 0
     self.session.highHighlightItemCount = 0
@@ -319,7 +337,6 @@ function GoldTracker:HandleSessionLocationTransition()
         return false
     end
 
-    local previousWasInstanced = self.session.isInstanced == true
     local previousLocationKey = self.session.locationKey
     if type(previousLocationKey) ~= "string" then
         self:UpdateSessionLocationContext()
@@ -332,18 +349,18 @@ function GoldTracker:HandleSessionLocationTransition()
         return false
     end
 
-    local isInstancedNow = current.isInstanced == true
-    if not isInstancedNow and not self:IsAutoStartSessionOnLocationChangeEnabled() then
+    local decision = self:GetSessionLocationTransitionDecision(
+        self.session,
+        current,
+        self:IsAutoStartSessionOnLocationChangeEnabled()
+    )
+    if not decision then
         self:UpdateSessionLocationContext()
         return false
     end
 
-    local previousName = self.session.instanceName or self.session.zoneName or "Unknown"
-    local currentName = current.instanceName or current.zoneName or "Unknown"
-    local transitionLabel = (previousWasInstanced or isInstancedNow) and "instance" or "zone"
-
     self:StopSession({
-        saveReason = transitionLabel == "instance" and "instance-switch" or "location-switch",
+        saveReason = decision.saveReason,
         skipContextRefresh = true,
         silentChat = true,
         silentLog = true,
@@ -352,12 +369,17 @@ function GoldTracker:HandleSessionLocationTransition()
         silentChat = true,
     })
     self:AddLogMessage(
-        string.format("%s  Auto-started new session: %s -> %s", date("%H:%M:%S"), previousName, currentName),
+        string.format("%s  Auto-started new session: %s -> %s", date("%H:%M:%S"), decision.previousName, decision.currentName),
         0.55,
         0.9,
         1
     )
-    self:Print(string.format("Auto-started new session after %s change: %s -> %s", transitionLabel, previousName, currentName))
+    self:Print(string.format(
+        "Auto-started new session after %s change: %s -> %s",
+        decision.transitionLabel,
+        decision.previousName,
+        decision.currentName
+    ))
     return true
 end
 

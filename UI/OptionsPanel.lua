@@ -48,6 +48,9 @@ function GoldTracker:RefreshOptionsControls()
             self:IsAutoOpenAuctionableInventoryOnAuctionHouseEnabled()
         )
     end
+    if controls.inventoryCategoryOrderRefresh then
+        controls.inventoryCategoryOrderRefresh()
+    end
     local minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     local minimumQualityOption = self.TRACKED_ITEM_QUALITY_BY_ID[minimumQuality]
         or self.TRACKED_ITEM_QUALITY_BY_ID[self.DEFAULTS.minimumTrackedItemQuality]
@@ -74,6 +77,12 @@ function GoldTracker:RefreshOptionsControls()
     end
     if controls.historyDetailsFontSizeValueText then
         controls.historyDetailsFontSizeValueText:SetText(string.format("%d px", self:GetHistoryDetailsFontSize()))
+    end
+    if controls.worldMapProjectionPinScaleSlider then
+        controls.worldMapProjectionPinScaleSlider:SetValue(self:GetWorldMapProjectionPinScale())
+    end
+    if controls.worldMapProjectionPinScaleValueText then
+        controls.worldMapProjectionPinScaleValueText:SetText(string.format("%d%%", math.floor((self:GetWorldMapProjectionPinScale() * 100) + 0.5)))
     end
     if controls.marketHistoryRetentionDaysInput and not controls.marketHistoryRetentionDaysInput:HasFocus() then
         controls.marketHistoryRetentionDaysInput:SetText(tostring(self.db.marketHistoryRetentionDays))
@@ -103,6 +112,9 @@ function GoldTracker:RefreshOptionsControls()
     if controls.activeTimeGoldPerHourCheckbox then
         controls.activeTimeGoldPerHourCheckbox:SetChecked(self:IsActiveTimeForGoldPerHourEnabled())
     end
+    if controls.chatLoggingCheckbox then
+        controls.chatLoggingCheckbox:SetChecked(self:IsChatLoggingEnabled())
+    end
     if controls.resumeHistorySessionCheckbox then
         controls.resumeHistorySessionCheckbox:SetChecked(self:IsResumeHistorySessionEnabled())
     end
@@ -110,6 +122,9 @@ function GoldTracker:RefreshOptionsControls()
         controls.lootLogTimestampCheckbox:SetChecked(self:IsLootLogTimestampsEnabled())
     end
     controls.lootSourceTrackingCheckbox:SetChecked(self:IsLootSourceTrackingEnabled())
+    if controls.observedWorldDropsCheckbox then
+        controls.observedWorldDropsCheckbox:SetChecked(self:IsObservedWorldDropsEnabled())
+    end
     if controls.diagnosticsPanelCheckbox then
         controls.diagnosticsPanelCheckbox:SetChecked(self:IsDiagnosticsPanelEnabled())
     end
@@ -459,7 +474,7 @@ function GoldTracker:CreateOptionsPanel()
     local trackingSessionSection = CreateOptionsSection(trackingContent, trackingQualitySection, "Session Startup", "Choose when tracking sessions begin, split, or resume automatically.", 214)
     local trackingLootSection = CreateOptionsSection(trackingContent, trackingSessionSection, "Loot Stream", "Controls for raw entries, timestamps, and source detection.", 208)
 
-    local inventoryDefaultsSection = CreateOptionsSection(inventoryContent, nil, "Auctionable Inventory", "Defaults used when opening the Bags auctionable inventory view.", 174)
+    local inventoryDefaultsSection = CreateOptionsSection(inventoryContent, nil, "Auctionable Inventory", "Defaults used when opening the Bags auctionable inventory view.", 330)
 
     local historyCoreSection = CreateOptionsSection(historyContent, nil, "Session History", "Save, reopen, and resume finished sessions.", 144)
     local historyDisplaySection = CreateOptionsSection(historyContent, historyCoreSection, "History Display", "Adjust list density and details text size.", 150)
@@ -471,6 +486,7 @@ function GoldTracker:CreateOptionsPanel()
     local noLootSection = CreateOptionsSection(alertsContent, highValueSection, "No Loot Alert", "Fire once when no loot is tracked for the selected number of minutes.", 210)
 
     local experimentalDiagnosticsSection = CreateOptionsSection(experimentalContent, nil, "Diagnostics", "Runtime counters and timing data for debugging.", 140)
+    local experimentalObservedDropsSection = CreateOptionsSection(experimentalContent, experimentalDiagnosticsSection, "Observed Drops", "Capture uncommon-or-better BoE drops locally while you play.", 118)
 
     local sourceLabel = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", generalPricingSection, "TOPLEFT", 14, generalPricingSection.contentTopOffset)
@@ -572,7 +588,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local autoOpenAuctionHouseLabel = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     autoOpenAuctionHouseLabel:SetPoint("LEFT", autoOpenAuctionHouseCheckbox, "RIGHT", 4, 1)
-    autoOpenAuctionHouseLabel:SetText("Open Auctionable Inventory when the Auction House opens")
+    autoOpenAuctionHouseLabel:SetText("Open Auctionable Inventory on AH Sell tab click")
 
     local inventoryDefaultsHint = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     inventoryDefaultsHint:SetPoint("TOPLEFT", autoOpenAuctionHouseCheckbox, "BOTTOMLEFT", 4, -8)
@@ -580,6 +596,105 @@ function GoldTracker:CreateOptionsPanel()
     inventoryDefaultsHint:SetJustifyH("LEFT")
     inventoryDefaultsHint:SetTextColor(0.62, 0.66, 0.74)
     inventoryDefaultsHint:SetText("Used for Auctionable Inventory totals, market snapshots, and the Bags value source dropdown.")
+
+    local inventoryCategoryOrderLabel = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    inventoryCategoryOrderLabel:SetPoint("TOPLEFT", inventoryDefaultsHint, "BOTTOMLEFT", 0, -18)
+    inventoryCategoryOrderLabel:SetText("Category display order")
+
+    local resetInventoryCategoryOrderButton = CreateOptionsButton(inventoryDefaultsSection, 70, 22, "Reset", "neutral")
+    resetInventoryCategoryOrderButton:SetPoint("RIGHT", inventoryDefaultsSection, "RIGHT", -14, 0)
+    resetInventoryCategoryOrderButton:SetPoint("TOP", inventoryCategoryOrderLabel, "TOP", 0, 4)
+    resetInventoryCategoryOrderButton:SetScript("OnClick", function()
+        addon:SetInventoryCategoryOrder(addon.INVENTORY_CATEGORY_DEFAULT_ORDER)
+        addon:RefreshOptionsControls()
+    end)
+
+    local inventoryCategoryOrderRows = {}
+    local draggingInventoryCategoryID
+
+    local function RefreshInventoryCategoryOrderRows()
+        local categoryOrder = addon:GetInventoryCategoryOrder()
+        for index, categoryID in ipairs(categoryOrder) do
+            local row = inventoryCategoryOrderRows[index]
+            if not row then
+                row = CreateFrame("Button", nil, inventoryDefaultsSection)
+                row:SetHeight(26)
+                row:SetPoint("LEFT", inventoryDefaultsSection, "LEFT", 14, 0)
+                row:SetPoint("RIGHT", inventoryDefaultsSection, "RIGHT", -14, 0)
+                row:EnableMouse(true)
+                row:RegisterForDrag("LeftButton")
+
+                local background = row:CreateTexture(nil, "BACKGROUND")
+                background:SetAllPoints(row)
+                row.background = background
+
+                local handleText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+                handleText:SetPoint("LEFT", row, "LEFT", 10, 0)
+                handleText:SetWidth(32)
+                handleText:SetJustifyH("LEFT")
+                handleText:SetText("drag")
+                row.handleText = handleText
+
+                local labelText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                labelText:SetPoint("LEFT", row, "LEFT", 52, 0)
+                labelText:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+                labelText:SetJustifyH("LEFT")
+                labelText:SetWordWrap(false)
+                row.labelText = labelText
+
+                row:SetScript("OnDragStart", function(self)
+                    draggingInventoryCategoryID = self.categoryID
+                    if self.background then
+                        self.background:SetColorTexture(1.0, 0.82, 0.18, 0.18)
+                    end
+                end)
+                row:SetScript("OnMouseUp", function()
+                    draggingInventoryCategoryID = nil
+                    RefreshInventoryCategoryOrderRows()
+                end)
+                row:SetScript("OnEnter", function(self)
+                    if draggingInventoryCategoryID
+                        and draggingInventoryCategoryID ~= self.categoryID
+                        and type(self.orderIndex) == "number" then
+                        addon:MoveInventoryCategory(draggingInventoryCategoryID, self.orderIndex)
+                        RefreshInventoryCategoryOrderRows()
+                    end
+                end)
+                row:SetScript("OnUpdate", function()
+                    if draggingInventoryCategoryID
+                        and type(IsMouseButtonDown) == "function"
+                        and not IsMouseButtonDown("LeftButton") then
+                        draggingInventoryCategoryID = nil
+                        RefreshInventoryCategoryOrderRows()
+                    end
+                end)
+                row:SetScript("OnHide", function()
+                    draggingInventoryCategoryID = nil
+                end)
+
+                inventoryCategoryOrderRows[index] = row
+            end
+
+            local category = addon.INVENTORY_CATEGORY_BY_ID[categoryID]
+            row.categoryID = categoryID
+            row.orderIndex = index
+            row:ClearAllPoints()
+            if index == 1 then
+                row:SetPoint("TOPLEFT", inventoryCategoryOrderLabel, "BOTTOMLEFT", 0, -8)
+                row:SetPoint("RIGHT", inventoryDefaultsSection, "RIGHT", -14, 0)
+            else
+                row:SetPoint("TOPLEFT", inventoryCategoryOrderRows[index - 1], "BOTTOMLEFT", 0, -4)
+                row:SetPoint("TOPRIGHT", inventoryCategoryOrderRows[index - 1], "BOTTOMRIGHT", 0, -4)
+            end
+            row.labelText:SetText(category and category.label or categoryID)
+            row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.025)
+            row:Show()
+        end
+
+        for index = (#categoryOrder + 1), #inventoryCategoryOrderRows do
+            inventoryCategoryOrderRows[index]:Hide()
+        end
+    end
 
     local ignoreMailboxLootCheckbox = CreateFrame("CheckButton", nil, generalLootSection, "UICheckButtonTemplate")
     ignoreMailboxLootCheckbox:SetPoint("TOPLEFT", generalLootSection, "TOPLEFT", 10, generalLootSection.contentTopOffset + 4)
@@ -633,8 +748,18 @@ function GoldTracker:CreateOptionsPanel()
     activeTimeGoldPerHourLabel:SetPoint("LEFT", activeTimeGoldPerHourCheckbox, "RIGHT", 4, 1)
     activeTimeGoldPerHourLabel:SetText("Use active loot time for gold per hour (ignores long idle gaps)")
 
+    local chatLoggingCheckbox = CreateFrame("CheckButton", nil, generalDisplaySection, "UICheckButtonTemplate")
+    chatLoggingCheckbox:SetPoint("TOPLEFT", activeTimeGoldPerHourCheckbox, "BOTTOMLEFT", 0, -8)
+    chatLoggingCheckbox:SetScript("OnClick", function(button)
+        addon.db.enableChatLogging = button:GetChecked() and true or false
+    end)
+
+    local chatLoggingLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    chatLoggingLabel:SetPoint("LEFT", chatLoggingCheckbox, "RIGHT", 4, 1)
+    chatLoggingLabel:SetText("Allow addon messages in game chat")
+
     local slashOpenModeLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    slashOpenModeLabel:SetPoint("TOPLEFT", activeTimeGoldPerHourCheckbox, "BOTTOMLEFT", 4, -12)
+    slashOpenModeLabel:SetPoint("TOPLEFT", chatLoggingCheckbox, "BOTTOMLEFT", 4, -12)
     slashOpenModeLabel:SetText("/gt opens tracker as")
 
     local slashOpenModeDropdown = CreateFrame("Frame", "GoldTrackerSlashOpenModeDropdown", generalDisplaySection, "UIDropDownMenuTemplate")
@@ -652,6 +777,44 @@ function GoldTracker:CreateOptionsPanel()
             end
             UIDropDownMenu_AddButton(info, level)
         end
+    end)
+
+    local worldMapPinScaleLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    worldMapPinScaleLabel:SetPoint("TOPLEFT", generalDisplaySection, "TOPLEFT", 330, generalDisplaySection.contentTopOffset)
+    worldMapPinScaleLabel:SetText("Blizzard map pin size")
+
+    local worldMapPinScaleSlider = CreateFrame("Slider", "GoldTrackerWorldMapProjectionPinScaleSlider", generalDisplaySection, "OptionsSliderTemplate")
+    worldMapPinScaleSlider:SetPoint("TOPLEFT", worldMapPinScaleLabel, "BOTTOMLEFT", 6, -10)
+    worldMapPinScaleSlider:SetWidth(220)
+    worldMapPinScaleSlider:SetMinMaxValues(
+        addon.WORLD_MAP_PROJECTION_PIN_SCALE_MIN or 0.6,
+        addon.WORLD_MAP_PROJECTION_PIN_SCALE_MAX or 2.0
+    )
+    worldMapPinScaleSlider:SetValueStep(addon.WORLD_MAP_PROJECTION_PIN_SCALE_STEP or 0.1)
+    if worldMapPinScaleSlider.SetObeyStepOnDrag then
+        worldMapPinScaleSlider:SetObeyStepOnDrag(true)
+    end
+
+    local pinScaleSliderLow = _G[worldMapPinScaleSlider:GetName() .. "Low"]
+    local pinScaleSliderHigh = _G[worldMapPinScaleSlider:GetName() .. "High"]
+    local pinScaleSliderText = _G[worldMapPinScaleSlider:GetName() .. "Text"]
+    if pinScaleSliderLow then
+        pinScaleSliderLow:SetText("60%")
+    end
+    if pinScaleSliderHigh then
+        pinScaleSliderHigh:SetText("200%")
+    end
+    if pinScaleSliderText then
+        pinScaleSliderText:SetText("")
+    end
+
+    local worldMapPinScaleValueText = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    worldMapPinScaleValueText:SetPoint("TOP", worldMapPinScaleSlider, "BOTTOM", 0, -18)
+    worldMapPinScaleValueText:SetJustifyH("CENTER")
+    worldMapPinScaleValueText:SetText("100%")
+
+    worldMapPinScaleSlider:SetScript("OnValueChanged", function(_, value)
+        addon:SetWorldMapProjectionPinScaleOption(value)
     end)
 
     local resumeHistorySessionCheckbox = CreateFrame("CheckButton", nil, historyCoreSection, "UICheckButtonTemplate")
@@ -949,7 +1112,7 @@ function GoldTracker:CreateOptionsPanel()
 
     generalContent:SetHeight(476)
     trackingContent:SetHeight(596)
-    inventoryContent:SetHeight(192)
+    inventoryContent:SetHeight(348)
     historyContent:SetHeight(462)
 
     local alertsEnabledCheckbox = CreateFrame("CheckButton", nil, alertsCoreSection, "UICheckButtonTemplate")
@@ -1290,7 +1453,24 @@ function GoldTracker:CreateOptionsPanel()
     experimentalHint:SetWidth(620)
     experimentalHint:SetJustifyH("LEFT")
     experimentalHint:SetText("When enabled, a Diagnosis button appears next to History in the tracker window and shows event/timing counters for QA/debug.")
-    experimentalContent:SetHeight(166)
+
+    local observedWorldDropsCheckbox = CreateFrame("CheckButton", nil, experimentalObservedDropsSection, "UICheckButtonTemplate")
+    observedWorldDropsCheckbox:SetPoint("TOPLEFT", experimentalObservedDropsSection, "TOPLEFT", 10, experimentalObservedDropsSection.contentTopOffset + 4)
+    observedWorldDropsCheckbox:SetScript("OnClick", function(button)
+        addon.db.enableObservedWorldDrops = button:GetChecked() and true or false
+        addon:RefreshOptionsControls()
+    end)
+
+    local observedWorldDropsLabel = experimentalObservedDropsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    observedWorldDropsLabel:SetPoint("LEFT", observedWorldDropsCheckbox, "RIGHT", 4, 1)
+    observedWorldDropsLabel:SetText("Enable observed BoE drops")
+
+    local observedWorldDropsHint = experimentalObservedDropsSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    observedWorldDropsHint:SetPoint("TOPLEFT", observedWorldDropsCheckbox, "BOTTOMLEFT", 4, -10)
+    observedWorldDropsHint:SetWidth(620)
+    observedWorldDropsHint:SetJustifyH("LEFT")
+    observedWorldDropsHint:SetText("Records uncommon-or-better BoE drops, source names, locations, and TSM values in saved variables for later farming-data experiments.")
+    experimentalContent:SetHeight(296)
 
     Theme:CreateResizeButton(window, {
         minWidth = 720,
@@ -1309,6 +1489,7 @@ function GoldTracker:CreateOptionsPanel()
         fallbackValueSourceDropdown = fallbackDropdown,
         auctionableInventoryValueSourceDropdown = inventoryValueSourceDropdown,
         autoOpenAuctionableInventoryOnAuctionHouseCheckbox = autoOpenAuctionHouseCheckbox,
+        inventoryCategoryOrderRefresh = RefreshInventoryCategoryOrderRows,
         minimumTrackedQualityDropdown = minimumQualityDropdown,
         autoStartOnLootCheckbox = autoStartOnLootCheckbox,
         autoStartOnEnterWorldCheckbox = autoStartOnEnterWorldCheckbox,
@@ -1319,6 +1500,8 @@ function GoldTracker:CreateOptionsPanel()
         historyRowsPerPageValueText = historyRowsPerPageValueText,
         historyDetailsFontSizeSlider = historyDetailsFontSizeSlider,
         historyDetailsFontSizeValueText = historyDetailsFontSizeValueText,
+        worldMapProjectionPinScaleSlider = worldMapPinScaleSlider,
+        worldMapProjectionPinScaleValueText = worldMapPinScaleValueText,
         marketHistoryRetentionDaysInput = marketHistoryRetentionDaysInput,
         marketHistoryMaxItemsInput = marketHistoryMaxItemsInput,
         marketHistoryMaxSnapshotsPerItemInput = marketHistoryMaxSnapshotsPerItemInput,
@@ -1330,8 +1513,10 @@ function GoldTracker:CreateOptionsPanel()
         totalWindowGoldPerHourCheckbox = totalWindowGoldPerHourCheckbox,
         totalWindowGoldPerHourLabel = totalWindowGoldPerHourLabel,
         activeTimeGoldPerHourCheckbox = activeTimeGoldPerHourCheckbox,
+        chatLoggingCheckbox = chatLoggingCheckbox,
         resumeHistorySessionCheckbox = resumeHistorySessionCheckbox,
         lootSourceTrackingCheckbox = lootSourceTrackingCheckbox,
+        observedWorldDropsCheckbox = observedWorldDropsCheckbox,
         diagnosticsPanelCheckbox = diagnosticsPanelCheckbox,
         alertsRefresh = RefreshAlertsControls,
     }
@@ -1382,5 +1567,27 @@ function GoldTracker:SetHistoryDetailsFontSizeOption(value)
     end
     if self.historyFrame and self.historyFrame:IsShown() and self.historyFrame.view == "details" then
         self:RefreshHistoryDetailsWindow()
+    end
+end
+
+function GoldTracker:SetWorldMapProjectionPinScaleOption(value)
+    local scale
+    if type(self.NormalizeWorldMapProjectionPinScale) == "function" then
+        scale = self:NormalizeWorldMapProjectionPinScale(value)
+    else
+        scale = tonumber(value) or 1
+        scale = math.max(0.6, math.min(2.0, scale))
+    end
+
+    if self.db then
+        self.db.worldMapProjectionPinScale = scale
+    end
+
+    if self.optionsControls and self.optionsControls.worldMapProjectionPinScaleValueText then
+        self.optionsControls.worldMapProjectionPinScaleValueText:SetText(string.format("%d%%", math.floor((scale * 100) + 0.5)))
+    end
+
+    if self.worldMapRouteDataProvider and type(self.worldMapRouteDataProvider.RefreshAllData) == "function" then
+        self.worldMapRouteDataProvider:RefreshAllData()
     end
 end

@@ -25,13 +25,16 @@ local MAIN_WINDOW_EXPANDED_MIN_WIDTH = 780
 local MAIN_WINDOW_COLLAPSED_MIN_WIDTH = 356
 local MAIN_WINDOW_COLLAPSED_MAX_WIDTH = 388
 local MAIN_WINDOW_MAX_WIDTH = 1200
-local MAIN_WINDOW_MIN_HEIGHT = 460
+local MAIN_WINDOW_MIN_HEIGHT = 500
 local MAIN_WINDOW_MAX_HEIGHT = 1000
 local MAIN_WINDOW_COMPACT_WIDTH = 360
 local MAIN_WINDOW_COMPACT_HEIGHT = 148
 local MAIN_WINDOW_COMPACT_HIGHLIGHT_HEIGHT = 184
 local MAIN_WINDOW_TINY_WIDTH = 300
 local MAIN_WINDOW_TINY_HEIGHT = 54
+local MAIN_SESSION_STYLE_SELECTOR_HEIGHT = 24
+local MAIN_SESSION_STYLE_POPUP_ROW_HEIGHT = 26
+local MAIN_SESSION_STYLE_POPUP_PADDING = 5
 local function CreatePanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)
 end
@@ -40,11 +43,89 @@ local function CreateModernButton(parent, width, height, text, paletteKey)
     return Theme:CreateButton(parent, width, height, text, paletteKey)
 end
 
+local function ApplySessionStyleSelectorVisual(button, isOpen)
+    if not button or type(button.SetBackdropColor) ~= "function" then
+        return
+    end
+
+    if isOpen then
+        button:SetBackdropColor(0.11, 0.12, 0.16, 0.98)
+        button:SetBackdropBorderColor(1.0, 0.82, 0.24, 0.42)
+    elseif button.isHovered then
+        button:SetBackdropColor(0.10, 0.11, 0.15, 0.98)
+        button:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.14)
+    else
+        button:SetBackdropColor(0.08, 0.09, 0.13, 0.96)
+        button:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08)
+    end
+end
+
+local function ApplySessionStyleOptionVisual(button, isSelected)
+    if not button or type(button.SetBackdropColor) ~= "function" then
+        return
+    end
+
+    if isSelected then
+        button:SetBackdropColor(0.19, 0.15, 0.04, 0.96)
+        button:SetBackdropBorderColor(1.0, 0.82, 0.24, 0.58)
+    elseif button.isHovered then
+        button:SetBackdropColor(0.12, 0.13, 0.18, 0.98)
+        button:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.12)
+    else
+        button:SetBackdropColor(0.08, 0.09, 0.13, 0.96)
+        button:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.04)
+    end
+
+    if button.text then
+        if isSelected then
+            button.text:SetTextColor(1.0, 0.93, 0.62)
+        else
+            button.text:SetTextColor(0.90, 0.92, 0.98)
+        end
+    end
+end
+
+local function RefreshSessionStyleSelector(addon, frame)
+    if not addon or not frame or not frame.sessionStyleSelectorButton then
+        return
+    end
+
+    local styleID = addon:GetSessionStyleFilter()
+    local selectedLabel = addon:GetSessionStyleLabel(styleID)
+    if frame.sessionStyleSelectorText then
+        frame.sessionStyleSelectorText:SetText(string.format("Style: %s", selectedLabel))
+    end
+    ApplySessionStyleSelectorVisual(
+        frame.sessionStyleSelectorButton,
+        frame.sessionStylePopup and frame.sessionStylePopup:IsShown()
+    )
+
+    for _, optionButton in ipairs(frame.sessionStyleOptionButtons or {}) do
+        local isSelected = optionButton.styleID == styleID
+        if optionButton.text then
+            optionButton.text:SetText(string.format("%s%s", isSelected and "* " or "", optionButton.styleLabel or ""))
+        end
+        ApplySessionStyleOptionVisual(optionButton, isSelected)
+    end
+end
+
+local function HideSessionStylePopup(frame)
+    if not frame or not frame.sessionStylePopup then
+        return
+    end
+
+    frame.sessionStylePopup:Hide()
+    ApplySessionStyleSelectorVisual(frame.sessionStyleSelectorButton, false)
+    if frame.sessionStyleSelectorArrow then
+        frame.sessionStyleSelectorArrow:SetText("v")
+    end
+end
+
 local function CreateSummaryRow(parent, anchor, labelText)
     local row = CreateFrame("Frame", nil, parent)
     row:SetHeight(14)
     row:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -5)
-    row:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -16, 0)
+    row:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", 0, -5)
 
     local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     label:SetPoint("LEFT", row, "LEFT", 0, 0)
@@ -322,34 +403,70 @@ function GoldTracker:ApplyMainWindowAlpha()
     end
 
     local frame = self.mainFrame
+    local isTransparent = self.db and self.db.mainWindowTransparent == true
+    local chromeAlpha = isTransparent and 0 or 1
+    local panelAlpha = isTransparent and 0 or 1
+    local accentAlpha = isTransparent and 0 or 1
+    local borderAlpha = isTransparent and 0 or 1
 
     frame:SetAlpha(1)
 
     if frame.chrome then
-        frame.chrome:SetBackdropColor(0.03, 0.04, 0.06, 1)
-        frame.chrome:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08)
+        frame.chrome:SetBackdropColor(0.03, 0.04, 0.06, chromeAlpha)
+        frame.chrome:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08 * borderAlpha)
     end
     if frame.headerBar then
-        frame.headerBar:SetBackdropColor(0.06, 0.07, 0.10, 1)
-        frame.headerBar:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.03)
+        frame.headerBar:SetBackdropColor(0.06, 0.07, 0.10, chromeAlpha)
+        frame.headerBar:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.03 * borderAlpha)
     end
     if frame.summaryPanel then
-        frame.summaryPanel:SetBackdropColor(0.06, 0.07, 0.09, 1)
-        frame.summaryPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.12)
+        frame.summaryPanel:SetBackdropColor(0.06, 0.07, 0.09, panelAlpha)
+        frame.summaryPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.12 * borderAlpha)
     end
     if frame.logPanel then
-        frame.logPanel:SetBackdropColor(0.05, 0.06, 0.08, 1)
-        frame.logPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.10)
+        frame.logPanel:SetBackdropColor(0.05, 0.06, 0.08, panelAlpha)
+        frame.logPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.10 * borderAlpha)
+    end
+    if frame.compactPanel then
+        frame.compactPanel:SetBackdropColor(0.05, 0.06, 0.08, panelAlpha)
+        frame.compactPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.10 * borderAlpha)
+    end
+    if frame.sessionStatusBadge then
+        if isTransparent then
+            frame.sessionStatusBadge:SetBackdropColor(0, 0, 0, 0)
+            frame.sessionStatusBadge:SetBackdropBorderColor(1.0, 1.0, 1.0, 0)
+        elseif self.session and self.session.active then
+            frame.sessionStatusBadge:SetBackdropColor(0.10, 0.22, 0.16, 0.96)
+            frame.sessionStatusBadge:SetBackdropBorderColor(0.42, 1.0, 0.72, 0.26)
+        else
+            frame.sessionStatusBadge:SetBackdropColor(0.16, 0.10, 0.10, 0.96)
+            frame.sessionStatusBadge:SetBackdropBorderColor(1.0, 0.58, 0.58, 0.16)
+        end
     end
     if frame.headerAccent then
-        frame.headerAccent:SetAlpha(1)
+        frame.headerAccent:SetAlpha(accentAlpha)
     end
     if frame.summaryAccent then
-        frame.summaryAccent:SetAlpha(1)
+        frame.summaryAccent:SetAlpha(accentAlpha)
     end
     if frame.logAccent then
-        frame.logAccent:SetAlpha(1)
+        frame.logAccent:SetAlpha(accentAlpha)
     end
+    if frame.compactDivider then
+        frame.compactDivider:SetAlpha(isTransparent and 0.18 or 0.36)
+    end
+    if frame.opacityButton and type(frame.opacityButton.SetSelected) == "function" then
+        frame.opacityButton:SetSelected(isTransparent)
+    end
+end
+
+function GoldTracker:ToggleMainWindowTransparency()
+    if not self.db then
+        return
+    end
+
+    self.db.mainWindowTransparent = self.db.mainWindowTransparent ~= true
+    self:ApplyMainWindowAlpha()
 end
 
 function GoldTracker:SetMainLootStreamExpanded(isExpanded)
@@ -422,8 +539,9 @@ function GoldTracker:UpdateMainCompactWindow()
     end
 
     local session = self.session or {}
-    local sessionTotal = self:GetSessionTotalValue()
-    local sessionTotalRaw = (tonumber(session.goldLooted) or 0) + (tonumber(session.itemVendorValue) or 0)
+    local viewSummary = self:BuildSessionViewSummary(session, self:GetSessionStyleFilter())
+    local sessionTotal = viewSummary.totalValue or 0
+    local sessionTotalRaw = viewSummary.rawTotal or 0
 
     if frame.compactTotalValue then
         frame.compactTotalValue:SetText(self:FormatMoney(sessionTotal))
@@ -670,6 +788,10 @@ function GoldTracker:RefreshMainWindowLayout()
         frame.tinyButton:ClearAllPoints()
         frame.tinyButton:SetShown(not isTinyMode)
     end
+    if frame.opacityButton then
+        frame.opacityButton:ClearAllPoints()
+        frame.opacityButton:Show()
+    end
 
     if isTinyMode then
         if frame.expandButton and frame.closeButton then
@@ -678,7 +800,12 @@ function GoldTracker:RefreshMainWindowLayout()
         if frame.minimizeButton and frame.expandButton then
             frame.minimizeButton:SetPoint("RIGHT", frame.expandButton, "LEFT", -6, 0)
         end
-        if frame.tinyTotalValue and frame.minimizeButton then
+        if frame.opacityButton and frame.minimizeButton then
+            frame.opacityButton:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -6, 0)
+        end
+        if frame.tinyTotalValue and frame.opacityButton then
+            frame.tinyTotalValue:SetPoint("RIGHT", frame.opacityButton, "LEFT", -10, 0)
+        elseif frame.tinyTotalValue and frame.minimizeButton then
             frame.tinyTotalValue:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -10, 0)
         end
     elseif isCompactMode then
@@ -688,6 +815,11 @@ function GoldTracker:RefreshMainWindowLayout()
         if frame.tinyButton and frame.expandButton then
             frame.tinyButton:SetPoint("RIGHT", frame.expandButton, "LEFT", -6, 0)
         end
+        if frame.opacityButton and frame.tinyButton then
+            frame.opacityButton:SetPoint("RIGHT", frame.tinyButton, "LEFT", -6, 0)
+        elseif frame.opacityButton and frame.expandButton then
+            frame.opacityButton:SetPoint("RIGHT", frame.expandButton, "LEFT", -6, 0)
+        end
     else
         if frame.minimizeButton and frame.closeButton then
             frame.minimizeButton:SetPoint("RIGHT", frame.closeButton, "LEFT", -6, 0)
@@ -695,10 +827,17 @@ function GoldTracker:RefreshMainWindowLayout()
         if frame.tinyButton and frame.minimizeButton then
             frame.tinyButton:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -6, 0)
         end
+        if frame.opacityButton and frame.tinyButton then
+            frame.opacityButton:SetPoint("RIGHT", frame.tinyButton, "LEFT", -6, 0)
+        elseif frame.opacityButton and frame.minimizeButton then
+            frame.opacityButton:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -6, 0)
+        end
     end
     if frame.sessionStatusBadge then
         frame.sessionStatusBadge:ClearAllPoints()
-        if frame.tinyButton and not isCompactMode and not isTinyMode then
+        if frame.opacityButton and not isCompactMode and not isTinyMode then
+            frame.sessionStatusBadge:SetPoint("RIGHT", frame.opacityButton, "LEFT", -10, 0)
+        elseif frame.tinyButton and not isCompactMode and not isTinyMode then
             frame.sessionStatusBadge:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
         elseif frame.minimizeButton and not isCompactMode and not isTinyMode then
             frame.sessionStatusBadge:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -10, 0)
@@ -708,12 +847,16 @@ function GoldTracker:RefreshMainWindowLayout()
         frame.sessionStatusBadge:SetShown(not isCompactMode and not isTinyMode)
     end
     if frame.headerTitleText and not isTinyMode then
-        if isCompactMode and frame.tinyButton then
+        if isCompactMode and frame.opacityButton then
+            frame.headerTitleText:SetPoint("RIGHT", frame.opacityButton, "LEFT", -10, 0)
+        elseif isCompactMode and frame.tinyButton then
             frame.headerTitleText:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
         elseif isCompactMode and frame.expandButton then
             frame.headerTitleText:SetPoint("RIGHT", frame.expandButton, "LEFT", -10, 0)
         elseif frame.sessionStatusBadge then
             frame.headerTitleText:SetPoint("RIGHT", frame.sessionStatusBadge, "LEFT", -10, 0)
+        elseif frame.opacityButton then
+            frame.headerTitleText:SetPoint("RIGHT", frame.opacityButton, "LEFT", -10, 0)
         elseif frame.tinyButton then
             frame.headerTitleText:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
         elseif frame.minimizeButton then
@@ -808,8 +951,8 @@ function GoldTracker:RefreshMainWindowLayout()
     if frame.optionsButton then
         actionButtons[#actionButtons + 1] = frame.optionsButton
     end
-    if frame.inventoryButton then
-        actionButtons[#actionButtons + 1] = frame.inventoryButton
+    if frame.explorerButton then
+        actionButtons[#actionButtons + 1] = frame.explorerButton
     end
     if frame.historyButton and self.db and self.db.enableSessionHistory then
         actionButtons[#actionButtons + 1] = frame.historyButton
@@ -825,18 +968,18 @@ function GoldTracker:RefreshMainWindowLayout()
         local gap = #actionButtons >= 4 and 4 or 8
         local rowWidth = math.max(1, math.floor(frame.utilityButtonRow:GetWidth() or 1))
         local buttonCount = #actionButtons
-        local minimumButtonWidth = buttonCount >= 4 and 44 or (buttonCount >= 3 and 56 or 68)
+        local minimumButtonWidth = buttonCount >= 6 and 36 or (buttonCount >= 4 and 44 or (buttonCount >= 3 and 56 or 68))
         local sharedWidth = buttonCount > 0 and math.max(minimumButtonWidth, math.floor((rowWidth - (gap * math.max(0, buttonCount - 1))) / buttonCount)) or rowWidth
         local previousButton = nil
 
-        for _, button in ipairs({ frame.optionsButton, frame.inventoryButton, frame.historyButton, frame.diagnosisButton, frame.helpButton }) do
+        for _, button in ipairs({ frame.optionsButton, frame.explorerButton, frame.historyButton, frame.diagnosisButton, frame.helpButton }) do
             if button then
                 button:ClearAllPoints()
             end
         end
 
         if frame.diagnosisButton then
-            frame.diagnosisButton:SetText(buttonCount >= 4 and "Diag" or "Diagnosis")
+            frame.diagnosisButton:SetText(buttonCount >= 5 and "Diag" or "Diagnosis")
         end
 
         for index, button in ipairs(actionButtons) do
@@ -1073,8 +1216,8 @@ function GoldTracker:GetMainLootLogRow(index)
         GameTooltip:Hide()
     end)
     row:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" and HandleModifiedItemClick then
-            HandleModifiedItemClick(self.itemLink)
+        if button == "LeftButton" then
+            GoldTracker:HandleModifiedItemClickIfModified(self)
         end
     end)
 
@@ -1223,6 +1366,11 @@ end
 
 function GoldTracker:AddLootItemLogEntry(itemLink, quantity, totalValue, lootSourceText, options)
     options = options or {}
+    if options.forceVisible ~= true
+        and type(self.LootItemMatchesSessionStyle) == "function"
+        and not self:LootItemMatchesSessionStyle(options.lootEntry or { itemLink = itemLink }, self:GetSessionStyleFilter()) then
+        return
+    end
     local normalizedQuantity = math.max(1, math.floor(tonumber(quantity) or 1))
     self:AddLootLogEntry({
         timeText = date("%H:%M:%S"),
@@ -1266,8 +1414,12 @@ function GoldTracker:ImportSessionLootsToMainLootLog(itemLoots, moneyLoots, repl
     local entries = replaceExisting and {} or self:GetMainLootLogEntries()
     local importedEntries = {}
     local sortIndex = 0
+    local styleID = self:GetSessionStyleFilter()
 
-    if self.db and self.db.showRawLootedGoldInLog and type(moneyLoots) == "table" then
+    if self.db
+        and self.db.showRawLootedGoldInLog
+        and styleID == self.SESSION_STYLE_ALL_ID
+        and type(moneyLoots) == "table" then
         for _, money in ipairs(moneyLoots) do
             local amount = tonumber(money and money.amount) or 0
             if amount > 0 then
@@ -1294,11 +1446,19 @@ function GoldTracker:ImportSessionLootsToMainLootLog(itemLoots, moneyLoots, repl
     if type(itemLoots) == "table" then
         for _, loot in ipairs(itemLoots) do
             if loot
-                and (loot.ahTracked == true or loot.ahTracked == nil)
-                and loot.isSoulbound ~= true
+                and self:LootItemMatchesSessionStyle(loot, styleID)
                 and type(loot.itemLink) == "string"
                 and loot.itemLink ~= "" then
                 local quantity = math.max(1, math.floor((tonumber(loot.quantity) or 1) + 0.5))
+                local isAuctionTracked = (loot.ahTracked == true or loot.ahTracked == nil) and loot.isSoulbound ~= true
+                local displayValue = isAuctionTracked and (tonumber(loot.totalValue) or 0) or (tonumber(loot.vendorTotalValue) or 0)
+                local sourceText = ResolveLootLogSourceText(self, loot)
+                if not isAuctionTracked then
+                    if sourceText ~= "" then
+                        sourceText = sourceText .. " | "
+                    end
+                    sourceText = sourceText .. (loot.isSoulbound == true and "Soulbound" or "Vendor only")
+                end
                 sortIndex = sortIndex + 1
                 importedEntries[#importedEntries + 1] = {
                     sortTimestamp = tonumber(loot.timestamp) or 0,
@@ -1306,13 +1466,13 @@ function GoldTracker:ImportSessionLootsToMainLootLog(itemLoots, moneyLoots, repl
                     entry = {
                         timeText = FormatLootLogTimestamp(loot.timestamp),
                         itemText = string.format("%s x%d", loot.itemLink, quantity),
-                        valueText = self:FormatMoney(tonumber(loot.totalValue) or 0),
-                        sourceText = ResolveLootLogSourceText(self, loot),
+                        valueText = self:FormatMoney(displayValue),
+                        sourceText = sourceText,
                         itemLink = loot.itemLink,
-                        r = 0.9,
-                        g = 0.9,
-                        b = 1,
-                        tracked = true,
+                        r = isAuctionTracked and 0.9 or 0.82,
+                        g = isAuctionTracked and 0.9 or 0.84,
+                        b = isAuctionTracked and 1 or 0.72,
+                        tracked = isAuctionTracked,
                     },
                 }
             end
@@ -1340,6 +1500,7 @@ function GoldTracker:UpdateMainWindow()
     local frame = self.mainFrame
     local source = self:GetCurrentValueSource()
     local session = self.session
+    local viewSummary = self:BuildSessionViewSummary(session, self:GetSessionStyleFilter())
 
     if frame.statusValue then
         frame.statusValue:SetText(session.active and "LIVE" or "IDLE")
@@ -1356,21 +1517,17 @@ function GoldTracker:UpdateMainWindow()
     end
 
     frame.timeValue:SetText(self:FormatDuration(self:GetSessionElapsedSeconds()))
-    frame.goldValue:SetText(self:FormatMoney(session.goldLooted))
-    frame.itemValue:SetText(self:FormatMoney(session.itemValue))
-    frame.itemVendorValue:SetText(self:FormatMoney(session.itemVendorValue))
+    frame.goldValue:SetText(self:FormatMoney(viewSummary.rawGold))
+    frame.itemValue:SetText(self:FormatMoney(viewSummary.itemsValue))
+    frame.itemVendorValue:SetText(self:FormatMoney(viewSummary.itemsRawGold))
     local elapsedSeconds = self:GetSessionRateDurationSeconds()
     local elapsedForRate = elapsedSeconds
     if session.active and elapsedForRate > 0 then
         elapsedForRate = math.max(60, elapsedForRate)
     end
-    local highlightCount = tonumber(session.highlightItemCount)
-    if not highlightCount then
-        highlightCount = (tonumber(session.lowHighlightItemCount) or 0) + (tonumber(session.highHighlightItemCount) or 0)
-    end
-    frame.highlightValue:SetText(tostring(math.max(0, highlightCount or 0)))
-    local sessionTotal = self:GetSessionTotalValue()
-    local sessionTotalRaw = (tonumber(session.goldLooted) or 0) + (tonumber(session.itemVendorValue) or 0)
+    frame.highlightValue:SetText(tostring(math.max(0, tonumber(viewSummary.highlightItemCount) or 0)))
+    local sessionTotal = viewSummary.totalValue or 0
+    local sessionTotalRaw = viewSummary.rawTotal or 0
     frame.totalValue:SetText(self:FormatMoney(sessionTotal))
     frame.totalRawValue:SetText(self:FormatMoney(sessionTotalRaw))
     local shouldShowMainWindowGoldPerHour = self:IsMainWindowGoldPerHourEnabled()
@@ -1379,7 +1536,7 @@ function GoldTracker:UpdateMainWindow()
         frame.sessionPerHourValue:SetText(self:FormatMoneyPerHour(sessionTotal, elapsedForRate))
     end
     if shouldShowMainWindowGoldPerHour and frame.ahPerHourValue then
-        frame.ahPerHourValue:SetText(self:FormatMoneyPerHour(session.itemValue or 0, elapsedForRate))
+        frame.ahPerHourValue:SetText(self:FormatMoneyPerHour(viewSummary.itemsValue or 0, elapsedForRate))
     end
     if shouldShowMainWindowGoldPerHour and frame.rawPerHourValue then
         frame.rawPerHourValue:SetText(self:FormatMoneyPerHour(sessionTotalRaw, elapsedForRate))
@@ -1387,6 +1544,7 @@ function GoldTracker:UpdateMainWindow()
     if frame.sourceValue then
         frame.sourceValue:SetText(source.label)
     end
+    RefreshSessionStyleSelector(self, frame)
     self:UpdateMainLastHighlight()
     self:UpdateMainCompactWindow()
     frame.startStopButton:SetText(session.active and "Stop Session" or "Start Session")
@@ -1401,6 +1559,7 @@ function GoldTracker:UpdateMainWindow()
     if type(self.UpdateDiagnosisWindow) == "function" then
         self:UpdateDiagnosisWindow()
     end
+    self:ApplyMainWindowAlpha()
 end
 
 function GoldTracker:RefreshDiagnosisButtonVisibility()
@@ -1433,10 +1592,11 @@ function GoldTracker:GetMostRecentHighlightedLootEntry()
     if type(session) ~= "table" or type(session.itemLoots) ~= "table" then
         return nil
     end
+    local styleID = self:GetSessionStyleFilter()
 
     for index = #session.itemLoots, 1, -1 do
         local entry = session.itemLoots[index]
-        if entry and entry.isHighlighted == true then
+        if entry and entry.isHighlighted == true and self:LootItemMatchesSessionStyle(entry, styleID) then
             return entry
         end
     end
@@ -1445,7 +1605,7 @@ function GoldTracker:GetMostRecentHighlightedLootEntry()
     for index = #session.itemLoots, 1, -1 do
         local entry = session.itemLoots[index]
         local totalValue = tonumber(entry and entry.totalValue) or 0
-        if totalValue > 0 and totalValue >= threshold then
+        if totalValue > 0 and totalValue >= threshold and self:LootItemMatchesSessionStyle(entry, styleID) then
             return entry
         end
     end
@@ -1457,7 +1617,7 @@ function GoldTracker:GetMostRecentHighlightedLootEntry()
     if (tonumber(highlightCount) or 0) > 0 then
         for index = #session.itemLoots, 1, -1 do
             local entry = session.itemLoots[index]
-            if entry and (tonumber(entry.totalValue) or 0) > 0 then
+            if entry and (tonumber(entry.totalValue) or 0) > 0 and self:LootItemMatchesSessionStyle(entry, styleID) then
                 return entry
             end
         end
@@ -1478,8 +1638,9 @@ function GoldTracker:UpdateTotalWindow()
     self:ApplyTotalWindowGoldPerHourVisibility()
 
     if self.session and self.session.active then
-        local sessionTotal = self:GetSessionTotalValue()
-        local sessionTotalRaw = (tonumber(self.session.goldLooted) or 0) + (tonumber(self.session.itemVendorValue) or 0)
+        local viewSummary = self:BuildSessionViewSummary(self.session, self:GetSessionStyleFilter())
+        local sessionTotal = viewSummary.totalValue or 0
+        local sessionTotalRaw = viewSummary.rawTotal or 0
         local elapsedSeconds = self:GetSessionRateDurationSeconds()
         local elapsedForRate = elapsedSeconds
         if elapsedForRate > 0 then
@@ -1633,9 +1794,7 @@ function GoldTracker:CreateTotalWindow()
         GameTooltip:Hide()
     end)
     highlightButton:SetScript("OnClick", function()
-        if type(frame.lastHighlightItemLink) == "string" and frame.lastHighlightItemLink ~= "" and HandleModifiedItemClick then
-            HandleModifiedItemClick(frame.lastHighlightItemLink)
-        end
+        addon:HandleModifiedItemClickIfModified(frame.lastHighlightItemLink)
     end)
     frame.lastHighlightButton = highlightButton
 
@@ -1715,6 +1874,9 @@ function GoldTracker:CreateMainWindow()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
     frame:SetClampedToScreen(true)
+    if Theme and type(Theme.RegisterWindowForFocus) == "function" then
+        Theme:RegisterWindowForFocus(frame, "addon")
+    end
 
     local function HandleMainWindowSizeChanged(_, width, height)
         if frame.isCompactMode == true or frame.isTinyMode == true then
@@ -1817,9 +1979,17 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.tinyButton = tinyButton
 
+    local opacityButton = CreateModernButton(headerBar, 22, 22, "O", "neutral")
+    opacityButton:SetPoint("RIGHT", tinyButton, "LEFT", -6, 0)
+    opacityButton.tooltipText = "Transparent window"
+    opacityButton:SetScript("OnClick", function()
+        addon:ToggleMainWindowTransparency()
+    end)
+    frame.opacityButton = opacityButton
+
     local sessionStatusBadge = CreateFrame("Frame", nil, headerBar, "BackdropTemplate")
     sessionStatusBadge:SetSize(64, 20)
-    sessionStatusBadge:SetPoint("RIGHT", tinyButton, "LEFT", -10, 0)
+    sessionStatusBadge:SetPoint("RIGHT", opacityButton, "LEFT", -10, 0)
     Theme:ApplyBackdrop(sessionStatusBadge, { 0.16, 0.10, 0.10, 0.96 }, { 1.0, 0.58, 0.58, 0.16 })
     frame.sessionStatusBadge = sessionStatusBadge
 
@@ -1976,16 +2146,125 @@ function GoldTracker:CreateMainWindow()
         GameTooltip:Hide()
     end)
     compactHighlightButton:SetScript("OnClick", function()
-        if type(frame.compactLastHighlightItemLink) == "string"
-            and frame.compactLastHighlightItemLink ~= ""
-            and HandleModifiedItemClick then
-            HandleModifiedItemClick(frame.compactLastHighlightItemLink)
-        end
+        addon:HandleModifiedItemClickIfModified(frame.compactLastHighlightItemLink)
     end)
     frame.compactHighlightButton = compactHighlightButton
 
+    local stylePanel = CreatePanel(summaryPanel, { 0.04, 0.07, 0.10, 0.94 }, { 0.68, 0.86, 1.0, 0.18 })
+    stylePanel:SetPoint("TOPLEFT", summaryPanel, "TOPLEFT", 16, -12)
+    stylePanel:SetPoint("TOPRIGHT", summaryPanel, "TOPRIGHT", -16, -12)
+    stylePanel:SetHeight(28)
+    frame.sessionStylePanel = stylePanel
+
+    local sessionStyleSelector = CreateFrame("Button", nil, stylePanel, "BackdropTemplate")
+    sessionStyleSelector:SetPoint("LEFT", stylePanel, "LEFT", 6, 0)
+    sessionStyleSelector:SetPoint("RIGHT", stylePanel, "RIGHT", -6, 0)
+    sessionStyleSelector:SetHeight(MAIN_SESSION_STYLE_SELECTOR_HEIGHT)
+    sessionStyleSelector:RegisterForClicks("LeftButtonUp")
+    sessionStyleSelector:SetBackdrop(Theme.backdrop)
+    frame.sessionStyleSelectorButton = sessionStyleSelector
+
+    local sessionStyleSelectorText = sessionStyleSelector:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    sessionStyleSelectorText:SetPoint("LEFT", sessionStyleSelector, "LEFT", 12, 0)
+    sessionStyleSelectorText:SetPoint("RIGHT", sessionStyleSelector, "RIGHT", -24, 0)
+    sessionStyleSelectorText:SetJustifyH("CENTER")
+    sessionStyleSelectorText:SetTextColor(0.90, 0.92, 0.98)
+    if sessionStyleSelectorText.SetWordWrap then
+        sessionStyleSelectorText:SetWordWrap(false)
+    end
+    frame.sessionStyleSelectorText = sessionStyleSelectorText
+
+    local sessionStyleSelectorArrow = sessionStyleSelector:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    sessionStyleSelectorArrow:SetPoint("RIGHT", sessionStyleSelector, "RIGHT", -8, 0)
+    sessionStyleSelectorArrow:SetTextColor(0.72, 0.76, 0.84)
+    sessionStyleSelectorArrow:SetText("v")
+    frame.sessionStyleSelectorArrow = sessionStyleSelectorArrow
+
+    local sessionStylePopup = CreateFrame("Frame", nil, stylePanel, "BackdropTemplate")
+    sessionStylePopup:SetPoint("TOPLEFT", sessionStyleSelector, "BOTTOMLEFT", 0, -4)
+    sessionStylePopup:SetPoint("TOPRIGHT", sessionStyleSelector, "BOTTOMRIGHT", 0, -4)
+    sessionStylePopup:SetHeight(
+        (#(addon.SESSION_STYLE_OPTIONS or {}) * MAIN_SESSION_STYLE_POPUP_ROW_HEIGHT)
+            + (MAIN_SESSION_STYLE_POPUP_PADDING * 2)
+    )
+    sessionStylePopup:SetFrameLevel(stylePanel:GetFrameLevel() + 10)
+    sessionStylePopup:SetBackdrop(Theme.backdrop)
+    sessionStylePopup:SetBackdropColor(0.04, 0.05, 0.07, 0.98)
+    sessionStylePopup:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08)
+    sessionStylePopup:EnableMouse(true)
+    sessionStylePopup:Hide()
+    frame.sessionStylePopup = sessionStylePopup
+    frame.sessionStyleOptionButtons = {}
+
+    local previousOptionButton
+    for optionIndex, style in ipairs(addon.SESSION_STYLE_OPTIONS or {}) do
+        local optionButton = CreateFrame("Button", nil, sessionStylePopup, "BackdropTemplate")
+        optionButton:SetPoint("LEFT", sessionStylePopup, "LEFT", MAIN_SESSION_STYLE_POPUP_PADDING, 0)
+        optionButton:SetPoint("RIGHT", sessionStylePopup, "RIGHT", -MAIN_SESSION_STYLE_POPUP_PADDING, 0)
+        optionButton:SetHeight(MAIN_SESSION_STYLE_POPUP_ROW_HEIGHT - 3)
+        optionButton:SetBackdrop(Theme.backdrop)
+        optionButton.styleID = style.id
+        optionButton.styleLabel = style.label
+        if previousOptionButton then
+            optionButton:SetPoint("TOP", previousOptionButton, "BOTTOM", 0, -2)
+        else
+            optionButton:SetPoint("TOP", sessionStylePopup, "TOP", 0, -MAIN_SESSION_STYLE_POPUP_PADDING)
+        end
+
+        local optionText = optionButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        optionText:SetPoint("LEFT", optionButton, "LEFT", 8, 0)
+        optionText:SetPoint("RIGHT", optionButton, "RIGHT", -8, 0)
+        optionText:SetJustifyH("CENTER")
+        if optionText.SetWordWrap then
+            optionText:SetWordWrap(false)
+        end
+        optionButton.text = optionText
+
+        optionButton:SetScript("OnEnter", function(self)
+            self.isHovered = true
+            ApplySessionStyleOptionVisual(self, addon:GetSessionStyleFilter() == self.styleID)
+        end)
+        optionButton:SetScript("OnLeave", function(self)
+            self.isHovered = false
+            ApplySessionStyleOptionVisual(self, addon:GetSessionStyleFilter() == self.styleID)
+        end)
+        optionButton:SetScript("OnClick", function(self)
+            HideSessionStylePopup(frame)
+            addon:SetSessionStyleFilter(self.styleID)
+        end)
+
+        frame.sessionStyleOptionButtons[optionIndex] = optionButton
+        previousOptionButton = optionButton
+    end
+
+    sessionStyleSelector:SetScript("OnEnter", function(self)
+        self.isHovered = true
+        ApplySessionStyleSelectorVisual(self, frame.sessionStylePopup and frame.sessionStylePopup:IsShown())
+    end)
+    sessionStyleSelector:SetScript("OnLeave", function(self)
+        self.isHovered = false
+        ApplySessionStyleSelectorVisual(self, frame.sessionStylePopup and frame.sessionStylePopup:IsShown())
+    end)
+    sessionStyleSelector:SetScript("OnClick", function()
+        if frame.sessionStylePopup:IsShown() then
+            HideSessionStylePopup(frame)
+        else
+            RefreshSessionStyleSelector(addon, frame)
+            frame.sessionStylePopup:Show()
+            frame.sessionStylePopup:SetFrameLevel(stylePanel:GetFrameLevel() + 10)
+            ApplySessionStyleSelectorVisual(frame.sessionStyleSelectorButton, true)
+            if frame.sessionStyleSelectorArrow then
+                frame.sessionStyleSelectorArrow:SetText("^")
+            end
+        end
+    end)
+    stylePanel:SetScript("OnHide", function()
+        HideSessionStylePopup(frame)
+    end)
+    RefreshSessionStyleSelector(addon, frame)
+
     local summaryEyebrow = summaryPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    summaryEyebrow:SetPoint("TOPLEFT", summaryPanel, "TOPLEFT", 16, -16)
+    summaryEyebrow:SetPoint("TOPLEFT", stylePanel, "BOTTOMLEFT", 0, -10)
     summaryEyebrow:SetTextColor(1.0, 0.82, 0.18)
     summaryEyebrow:SetText("Current Session")
 
@@ -2038,6 +2317,7 @@ function GoldTracker:CreateMainWindow()
     rawPerHourRow, frame.rawPerHourLabel, frame.rawPerHourValue = CreateSummaryRow(summaryPanel, ahPerHourRow, "Raw / h")
     local highlightRow
     highlightRow, _, frame.highlightValue = CreateSummaryRow(summaryPanel, rawPerHourRow, "Highlights")
+    frame.highlightRow = highlightRow
 
     frame.timeValue:SetTextColor(0.92, 0.95, 1.0)
     frame.sourceValue:SetTextColor(0.92, 0.95, 1.0)
@@ -2075,9 +2355,8 @@ function GoldTracker:CreateMainWindow()
     frame.startStopButton = startStopButton
 
     local mainLastHighlightContainer = CreateFrame("Frame", nil, summaryPanel)
-    mainLastHighlightContainer:SetPoint("BOTTOMLEFT", startStopButton, "TOPLEFT", 0, 8)
+    mainLastHighlightContainer:SetPoint("TOPLEFT", highlightRow, "BOTTOMLEFT", 0, -10)
     mainLastHighlightContainer:SetPoint("BOTTOMRIGHT", startStopButton, "TOPRIGHT", 0, 8)
-    mainLastHighlightContainer:SetHeight(40)
     frame.mainLastHighlightContainer = mainLastHighlightContainer
 
     local mainLastHighlightLabel = mainLastHighlightContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -2127,9 +2406,7 @@ function GoldTracker:CreateMainWindow()
         GameTooltip:Hide()
     end)
     mainLastHighlightButton:SetScript("OnClick", function()
-        if type(frame.mainLastHighlightItemLink) == "string" and frame.mainLastHighlightItemLink ~= "" and HandleModifiedItemClick then
-            HandleModifiedItemClick(frame.mainLastHighlightItemLink)
-        end
+        addon:HandleModifiedItemClickIfModified(frame.mainLastHighlightItemLink)
     end)
     frame.mainLastHighlightButton = mainLastHighlightButton
 
@@ -2140,15 +2417,15 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.optionsButton = optionsButton
 
-    local inventoryButton = CreateModernButton(utilityButtonRow, 90, 22, "Bags", "neutral")
-    inventoryButton:SetText("Bags")
-    inventoryButton.tooltipText = "Auctionable inventory"
-    inventoryButton:SetScript("OnClick", function()
-        if type(addon.OpenInventoryWindow) == "function" then
-            addon:OpenInventoryWindow()
+    local explorerButton = CreateModernButton(utilityButtonRow, 90, 22, "Explorer", "neutral")
+    explorerButton:SetText("Explorer")
+    explorerButton.tooltipText = "Farming explorer"
+    explorerButton:SetScript("OnClick", function()
+        if type(addon.OpenExplorerWindow) == "function" then
+            addon:OpenExplorerWindow()
         end
     end)
-    frame.inventoryButton = inventoryButton
+    frame.explorerButton = explorerButton
 
     local historyButton = CreateModernButton(utilityButtonRow, 90, 22, "History", "neutral")
     historyButton:SetText("History")

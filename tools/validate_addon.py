@@ -8,7 +8,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TOC_PATH = REPO_ROOT / "General-Gold-Tracker.toc"
-RUNTIME_DIRS = ("Core", "Tracking", "UI", "Libs")
+RUNTIME_DIRS = ("Core", "Tracking", "UI", "Libs", "Data")
 REQUIRED_HEADERS = ("Interface", "Title", "Version", "SavedVariables")
 SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 

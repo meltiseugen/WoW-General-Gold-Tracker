@@ -56,7 +56,7 @@ function HistoryDataService:SessionHasMultipleValueSources(session)
     return count > 1
 end
 
-function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocationKey)
+function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
     local summary = {
         rawGold = 0,
         itemsValue = 0,
@@ -68,6 +68,9 @@ function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocation
     }
 
     local model = self:NewSessionModel(session)
+    local styleID = self.addon and self.addon.NormalizeSessionStyleFilter
+        and self.addon:NormalizeSessionStyleFilter(selectedStyleID)
+        or "all"
     local firstTimestamp
     local lastTimestamp
     local fallbackSessionLocationKey = model:ResolveHistoryLocationKey(session, session)
@@ -88,12 +91,12 @@ function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocation
     local hasMoneyDetails = type(session and session.moneyLoots) == "table" and #session.moneyLoots > 0
     if hasMoneyDetails then
         for _, money in ipairs(session.moneyLoots) do
-            if model:EntryMatchesLocation(money, selectedLocationKey, session) then
+            if styleID == "all" and model:EntryMatchesLocation(money, selectedLocationKey, session) then
                 summary.rawGold = summary.rawGold + (tonumber(money and money.amount) or 0)
                 ConsiderTimestamp(money and money.timestamp)
             end
         end
-    elseif selectedLocationKey == self.allLocationKey or selectedLocationKey == fallbackSessionLocationKey then
+    elseif styleID == "all" and (selectedLocationKey == self.allLocationKey or selectedLocationKey == fallbackSessionLocationKey) then
         summary.rawGold = tonumber(session and session.rawGold) or 0
     end
 
@@ -101,12 +104,20 @@ function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocation
     if hasItemDetails then
         for _, loot in ipairs(session.itemLoots) do
             if model:EntryMatchesLocation(loot, selectedLocationKey, session) then
-                summary.itemsValue = summary.itemsValue + (tonumber(loot and loot.totalValue) or 0)
-                summary.itemsRawGold = summary.itemsRawGold + (tonumber(loot and loot.vendorTotalValue) or 0)
-                ConsiderTimestamp(loot and loot.timestamp)
+                local matchesStyle = styleID == "all"
+                    or (
+                        self.addon
+                        and type(self.addon.LootItemMatchesSessionStyle) == "function"
+                        and self.addon:LootItemMatchesSessionStyle(loot, styleID)
+                    )
+                if matchesStyle then
+                    summary.itemsValue = summary.itemsValue + (tonumber(loot and loot.totalValue) or 0)
+                    summary.itemsRawGold = summary.itemsRawGold + (tonumber(loot and loot.vendorTotalValue) or 0)
+                    ConsiderTimestamp(loot and loot.timestamp)
+                end
             end
         end
-    elseif selectedLocationKey == self.allLocationKey or selectedLocationKey == fallbackSessionLocationKey then
+    elseif styleID == "all" and (selectedLocationKey == self.allLocationKey or selectedLocationKey == fallbackSessionLocationKey) then
         summary.itemsValue = tonumber(session and session.itemsValue) or 0
         summary.itemsRawGold = tonumber(session and session.itemsRawGold) or 0
     end
@@ -136,9 +147,12 @@ function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocation
     return summary
 end
 
-function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKey)
+function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
     local byLink = {}
     local model = self:NewSessionModel(session)
+    local styleID = self.addon and self.addon.NormalizeSessionStyleFilter
+        and self.addon:NormalizeSessionStyleFilter(selectedStyleID)
+        or "all"
     local hasDetailedLoot = type(session and session.itemLoots) == "table" and #session.itemLoots > 0
     local includeSourceLabel = self:SessionHasMultipleValueSources(session)
     local includeLootSourceText = not (type(self.addon) == "table"
@@ -171,6 +185,11 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
                 and model:EntryMatchesLocation(entry, selectedLocationKey, session)
                 and entry.ahTracked == true
                 and entry.isSoulbound ~= true
+                and (styleID == "all" or (
+                    self.addon
+                    and type(self.addon.LootItemMatchesSessionStyle) == "function"
+                    and self.addon:LootItemMatchesSessionStyle(entry, styleID)
+                ))
                 and PassesQualityFilter(entry.itemQuality, entry.itemLink) then
                 local sourceLabel = entry.valueSourceLabel or fallbackSourceLabel
                 local lootSourceText = nil
@@ -228,6 +247,9 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
 
     local fallbackSessionLocationKey = model:ResolveHistoryLocationKey(session, session)
     if selectedLocationKey ~= self.allLocationKey and selectedLocationKey ~= fallbackSessionLocationKey then
+        return {}, includeSourceLabel
+    end
+    if styleID ~= "all" then
         return {}, includeSourceLabel
     end
 

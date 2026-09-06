@@ -1,0 +1,11 @@
+ignore:
+  - .github
+  - .vscode
+  - .idea
+  - AssetsRaw*
+  - BACKLOG.md
+  - README.md
+  - release.ps1
+  - tools/generate_atlasloot_snapshot.ps1
+  - tools/generate_rarescanner_snapshot.py
+  - tools/generate_rarescanner_snapshot.ps1

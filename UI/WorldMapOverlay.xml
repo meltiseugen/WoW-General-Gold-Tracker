@@ -1,0 +1,30 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Button name="GoldTrackerWorldMapRoutePinTemplate" hidden="false" enableMouse="true" mixin="GoldTrackerWorldMapRoutePinMixin" virtual="true">
+        <Size x="26" y="26"/>
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture parentKey="Ring" setAllPoints="true" alphaMode="ADD"/>
+                <Texture parentKey="Icon">
+                    <Size x="18" y="18"/>
+                    <Anchors>
+                        <Anchor point="CENTER"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+            <Layer level="OVERLAY">
+                <FontString parentKey="Number" inherits="GameFontNormalSmall" justifyH="CENTER" justifyV="MIDDLE">
+                    <Size x="24" y="14"/>
+                    <Anchors>
+                        <Anchor point="CENTER" x="0" y="-1"/>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+            <OnEnter method="OnMouseEnter"/>
+            <OnLeave method="OnMouseLeave"/>
+            <OnClick method="OnMouseClickAction"/>
+        </Scripts>
+    </Button>
+</Ui>

@@ -2,11 +2,11 @@ local _, NS = ...
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
-local INVENTORY_WINDOW_MIN_WIDTH = 820
-local INVENTORY_WINDOW_DEFAULT_WIDTH = 1080
+local INVENTORY_WINDOW_MIN_WIDTH = 900
+local INVENTORY_WINDOW_DEFAULT_WIDTH = 1160
 local INVENTORY_WINDOW_DEFAULT_HEIGHT = 620
 local INVENTORY_WINDOW_MIN_HEIGHT = 420
-local INVENTORY_WINDOW_MAX_WIDTH = 1200
+local INVENTORY_WINDOW_MAX_WIDTH = 1320
 local INVENTORY_WINDOW_MAX_HEIGHT = 900
 local INVENTORY_ROW_HEIGHT = 24
 local INVENTORY_ROW_SPACING = 2
@@ -16,19 +16,28 @@ local INVENTORY_HEADER_LEFT_INSET = 12
 local INVENTORY_ROW_ICON_LEFT = 8
 local INVENTORY_ROW_ICON_GAP = 8
 local INVENTORY_ROW_RIGHT_PADDING = 6
-local INVENTORY_ITEM_MIN_WIDTH = 140
+local INVENTORY_ACTION_COLUMN_GAP = 6
+local INVENTORY_TRACKED_COLUMN_WIDTH = 60
+local INVENTORY_MAP_COLUMN_WIDTH = 44
+local INVENTORY_TRACKED_BUTTON_WIDTH = 24
+local INVENTORY_TRACKED_BUTTON_HEIGHT = 20
+local INVENTORY_MAP_BUTTON_WIDTH = 40
+local INVENTORY_MAP_BUTTON_HEIGHT = 20
 local INVENTORY_QUANTITY_WIDTH = 56
 local INVENTORY_HISTORY_WIDTH = 46
 local INVENTORY_DEMAND_WIDTH = 82
+local INVENTORY_SELL_RATE_WIDTH = 78
 local INVENTORY_TREND_WIDTH = 64
 local INVENTORY_UNIT_VALUE_WIDTH = 116
 local INVENTORY_TOTAL_VALUE_WIDTH = 126
 local INVENTORY_SORT_ICON_SIZE = 10
-local INVENTORY_DEFAULT_SORT_KEY = "demand"
+local INVENTORY_DEFAULT_SORT_KEY = "totalValue"
 local INVENTORY_DEFAULT_SORT_ASCENDING = false
 local INVENTORY_FALLBACK_VALUE_SOURCE_ID = "TSM_AUCTIONINGOPNORMAL"
+local INVENTORY_CATEGORY_ALL_ID = GoldTracker.INVENTORY_CATEGORY_ALL_ID or "all"
 local INVENTORY_SORT_KEYS = {
     demand = true,
+    sellRate = true,
     historySamples = true,
     itemName = true,
     quantity = true,
@@ -36,18 +45,25 @@ local INVENTORY_SORT_KEYS = {
     unitValue = true,
     totalValue = true,
 }
+local INVENTORY_CATEGORY_OPTIONS = GoldTracker.INVENTORY_CATEGORY_OPTIONS or {}
+local INVENTORY_CATEGORY_BY_ID = GoldTracker.INVENTORY_CATEGORY_BY_ID or {}
 local INVENTORY_DETAILS_WINDOW_WIDTH = 760
-local INVENTORY_DETAILS_WINDOW_HEIGHT = 560
+local INVENTORY_DETAILS_WINDOW_HEIGHT = 580
 local INVENTORY_DETAILS_WINDOW_MIN_WIDTH = 640
-local INVENTORY_DETAILS_WINDOW_MIN_HEIGHT = 440
+local INVENTORY_DETAILS_WINDOW_MIN_HEIGHT = 460
 local INVENTORY_DETAILS_SOURCE_DROPDOWN_WIDTH = 230
 local INVENTORY_DETAILS_GRAPH_LINE_THICKNESS = 2
 local INVENTORY_DETAILS_GRAPH_POINT_SIZE = 5
 local INVENTORY_DETAILS_AXIS_TICK_COUNT = 5
 local INVENTORY_DETAILS_AXIS_LABEL_WIDTH = 86
-local INVENTORY_DETAILS_STATS_ROW_HEIGHT = 18
-local INVENTORY_DETAILS_STATS_LABEL_WIDTH = 72
+local INVENTORY_DETAILS_STATS_ROW_HEIGHT = 20
+local INVENTORY_DETAILS_STATS_LABEL_WIDTH = 82
 local INVENTORY_DETAILS_GRAPH_HOVER_SIZE = 16
+local INVENTORY_DETAILS_RARE_SOURCE_ROW_HEIGHT = 22
+local INVENTORY_DETAILS_RARE_SOURCE_LIST_HEIGHT = 92
+local INVENTORY_DETAILS_MATERIAL_PANEL_HEIGHT = 56
+local INVENTORY_DETAILS_STATS_PANEL_HEIGHT = 118
+local INVENTORY_DETAILS_GRAPH_BOTTOM_OFFSET = 144
 local INVENTORY_DETAILS_SOURCE_BY_VALUE_SOURCE_ID = {
     TSM_DBMARKET = "dbMarket",
     TSM_DBRECENT = "dbRecent",
@@ -151,8 +167,7 @@ local function GetInventoryBuildCacheKey(addon, sourceID, minimumQuality)
 end
 
 function GoldTracker:InvalidateInventoryWindowCache()
-    self.inventoryBuildCache = {}
-    self.inventoryBuildCacheVersion = math.max(0, math.floor(tonumber(self.inventoryBuildCacheVersion) or 0)) + 1
+    self:InvalidateAuctionableInventoryScanCache()
 end
 
 local function GetContainerSlotCount(bagID)
@@ -242,6 +257,96 @@ local function GetItemDisplayData(itemLink, slotInfo)
     return itemName, itemQuality, itemIcon
 end
 
+local function GetInventoryItemMetadata(itemLink)
+    local itemType, itemSubType, itemEquipLoc, itemClassID, itemSubclassID, isCraftingReagent
+    if C_Item and type(C_Item.GetItemInfo) == "function" then
+        _, _, _, _, _, itemType, itemSubType, _, itemEquipLoc, _, _, itemClassID, itemSubclassID, _, _, _,
+            isCraftingReagent = C_Item.GetItemInfo(itemLink)
+    elseif type(GetItemInfo) == "function" then
+        _, _, _, _, _, itemType, itemSubType, _, itemEquipLoc, _, _, itemClassID, itemSubclassID, _, _, _,
+            isCraftingReagent = GetItemInfo(itemLink)
+    end
+
+    if (not itemClassID or not itemSubclassID or not itemEquipLoc) and type(GetItemInfoInstant) == "function" then
+        local _, instantItemType, instantItemSubType, instantItemEquipLoc, _, instantClassID, instantSubclassID =
+            GetItemInfoInstant(itemLink)
+        itemType = itemType or instantItemType
+        itemSubType = itemSubType or instantItemSubType
+        itemEquipLoc = itemEquipLoc or instantItemEquipLoc
+        itemClassID = itemClassID or instantClassID
+        itemSubclassID = itemSubclassID or instantSubclassID
+    end
+
+    return {
+        itemType = itemType,
+        itemSubType = itemSubType,
+        itemEquipLoc = itemEquipLoc,
+        itemClassID = tonumber(itemClassID),
+        itemSubclassID = tonumber(itemSubclassID),
+        isCraftingReagent = isCraftingReagent == true,
+    }
+end
+
+local function InventoryItemClassMatches(itemClassID, enumKey, fallbackID)
+    local enumValue = Enum and Enum.ItemClass and Enum.ItemClass[enumKey]
+    return tonumber(itemClassID) == tonumber(enumValue or fallbackID)
+end
+
+local function NormalizeInventoryCategoryFilter(categoryID)
+    if INVENTORY_CATEGORY_BY_ID[categoryID] then
+        return categoryID
+    end
+    return INVENTORY_CATEGORY_ALL_ID
+end
+
+local function GetInventoryCategoryOption(categoryID)
+    return INVENTORY_CATEGORY_BY_ID[NormalizeInventoryCategoryFilter(categoryID)]
+        or INVENTORY_CATEGORY_BY_ID[INVENTORY_CATEGORY_ALL_ID]
+end
+
+local function GetInventoryMaterialFarmingSpotData(addon, itemID)
+    local normalizedItemID = tonumber(itemID)
+    if not normalizedItemID then
+        return nil
+    end
+
+    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialFarmingSpots
+    local items = type(farmingSpots) == "table" and farmingSpots.items or nil
+    return items and items[math.floor(normalizedItemID + 0.5)] or nil
+end
+
+local function GetInventoryItemCategoryID(item)
+    if type(item) ~= "table" then
+        return "uncategorized"
+    end
+
+    local itemType = tostring(item.itemType or "")
+    local itemSubType = tostring(item.itemSubType or "")
+    if item.isCraftingReagent
+        or InventoryItemClassMatches(item.itemClassID, "Tradegoods", 7)
+        or itemType == "Trade Goods"
+        or itemType == "Tradeskill" then
+        return "crafting"
+    end
+
+    if InventoryItemClassMatches(item.itemClassID, "Consumable", 0) or itemType == "Consumable" then
+        return "consumables"
+    end
+
+    if itemSubType == "Cosmetic" or item.itemEquipLoc == "INVTYPE_COSMETIC" then
+        return "transmog"
+    end
+
+    if InventoryItemClassMatches(item.itemClassID, "Weapon", 2)
+        or InventoryItemClassMatches(item.itemClassID, "Armor", 4)
+        or itemType == "Weapon"
+        or itemType == "Armor" then
+        return "armorWeapons"
+    end
+
+    return "uncategorized"
+end
+
 local function NormalizeMinimumQuality(addon, minimumQuality)
     local normalizedQuality = tonumber(minimumQuality)
     if normalizedQuality then
@@ -297,6 +402,14 @@ local function AddInventoryItem(itemsByLink, itemOrder, item)
             existingItem.bagID = item.bagID
             existingItem.slotIndex = item.slotIndex
         end
+        existingItem.itemType = existingItem.itemType or item.itemType
+        existingItem.itemSubType = existingItem.itemSubType or item.itemSubType
+        existingItem.itemEquipLoc = existingItem.itemEquipLoc or item.itemEquipLoc
+        existingItem.itemClassID = existingItem.itemClassID or item.itemClassID
+        existingItem.itemSubclassID = existingItem.itemSubclassID or item.itemSubclassID
+        existingItem.isCraftingReagent = existingItem.isCraftingReagent or item.isCraftingReagent == true
+        existingItem.categoryID = existingItem.categoryID or item.categoryID
+        existingItem.categoryLabel = existingItem.categoryLabel or item.categoryLabel
         return
     end
 
@@ -344,6 +457,45 @@ local function FormatInventorySoldPerDay(regionSoldPerDay)
         return string.format("%.1f/d", soldPerDay)
     end
     return string.format("%.2f/d", soldPerDay)
+end
+
+local function FormatInventorySaleRate(regionSaleRate)
+    local saleRate = tonumber(regionSaleRate)
+    if not saleRate or saleRate <= 0 then
+        return "--"
+    end
+
+    local percent = saleRate * 100
+    if percent >= 100 then
+        return "100%"
+    end
+    if percent >= 10 then
+        return string.format("%.0f%%", percent)
+    end
+    if percent >= 1 then
+        return string.format("%.1f%%", percent)
+    end
+    return string.format("%.2f%%", percent)
+end
+
+local function GetInventorySellRateTier(regionSaleRate)
+    local saleRate = tonumber(regionSaleRate)
+    if not saleRate or saleRate <= 0 then
+        return "--", 0.62, 0.66, 0.74
+    end
+    if saleRate >= 0.50 then
+        return "Instant", 0.52, 1.00, 0.56
+    end
+    if saleRate >= 0.20 then
+        return "Fast", 0.68, 0.96, 0.72
+    end
+    if saleRate >= 0.10 then
+        return "Normal", 0.72, 0.86, 1.0
+    end
+    if saleRate >= 0.03 then
+        return "Slow", 1.0, 0.82, 0.18
+    end
+    return "Very Slow", 1.00, 0.58, 0.42
 end
 
 local function FormatInventoryTrendPercent(marketTrendPercent)
@@ -639,6 +791,9 @@ local function GetInventorySortValue(item, sortKey)
     if sortKey == "demand" then
         return tonumber(item and item.regionSoldPerDay) or 0
     end
+    if sortKey == "sellRate" then
+        return tonumber(item and item.regionSaleRate) or 0
+    end
     if sortKey == "historySamples" then
         return tonumber(item and item.marketHistorySampleCount) or 0
     end
@@ -669,11 +824,17 @@ local function SortInventoryItems(items, sortKey, sortAscending)
         end
 
         if normalizedSortKey ~= "itemName" then
-            if normalizedSortKey == "demand" then
+            if normalizedSortKey == "demand" or normalizedSortKey == "sellRate" then
                 local leftRate = tonumber(left and left.regionSaleRate) or 0
                 local rightRate = tonumber(right and right.regionSaleRate) or 0
                 if leftRate ~= rightRate then
                     return leftRate > rightRate
+                end
+
+                local leftDemand = tonumber(left and left.regionSoldPerDay) or 0
+                local rightDemand = tonumber(right and right.regionSoldPerDay) or 0
+                if leftDemand ~= rightDemand then
+                    return leftDemand > rightDemand
                 end
 
                 local leftTotal = tonumber(left and left.totalValue) or 0
@@ -694,6 +855,43 @@ local function SortInventoryItems(items, sortKey, sortAscending)
 
         return tostring(left and left.itemLink or "") < tostring(right and right.itemLink or "")
     end)
+end
+
+local function BuildInventoryDisplayRows(items, categoryFilterID, groupByCategory)
+    local normalizedCategoryID = NormalizeInventoryCategoryFilter(categoryFilterID)
+    if normalizedCategoryID ~= INVENTORY_CATEGORY_ALL_ID or groupByCategory ~= true then
+        return items
+    end
+
+    local itemsByCategory = {}
+    for _, item in ipairs(items or {}) do
+        local categoryID = GetInventoryItemCategoryID(item)
+        itemsByCategory[categoryID] = itemsByCategory[categoryID] or {}
+        itemsByCategory[categoryID][#itemsByCategory[categoryID] + 1] = item
+    end
+
+    local displayRows = {}
+    local categoryOrder = type(GoldTracker.GetInventoryCategoryOrder) == "function"
+        and GoldTracker:GetInventoryCategoryOrder()
+        or GoldTracker.INVENTORY_CATEGORY_DEFAULT_ORDER
+        or {}
+    for _, categoryID in ipairs(categoryOrder) do
+        local categoryItems = itemsByCategory[categoryID]
+        if categoryItems and #categoryItems > 0 then
+            local category = GetInventoryCategoryOption(categoryID)
+            displayRows[#displayRows + 1] = {
+                isCategoryDivider = true,
+                categoryID = categoryID,
+                categoryLabel = category and category.label or "Uncategorized",
+                itemCount = #categoryItems,
+            }
+            for _, item in ipairs(categoryItems) do
+                displayRows[#displayRows + 1] = item
+            end
+        end
+    end
+
+    return displayRows
 end
 
 local function CreateInventoryItemLocation(bagID, slotIndex)
@@ -1128,6 +1326,173 @@ local function UpdateInventoryDetailsStatsFields(frame, stats, sourceLabel)
     return true
 end
 
+local function BuildInventoryDetailsWowheadItemURL(itemID)
+    local normalizedItemID = tonumber(itemID)
+    if not normalizedItemID then
+        return ""
+    end
+    return string.format("https://www.wowhead.com/item=%d", math.floor(normalizedItemID + 0.5))
+end
+
+local function BuildInventoryDetailsWowheadNpcURL(npcID)
+    local normalizedNpcID = tonumber(npcID)
+    if not normalizedNpcID then
+        return ""
+    end
+    return string.format("https://www.wowhead.com/npc=%d", math.floor(normalizedNpcID + 0.5))
+end
+
+local function BuildInventoryDetailsWowheadSearchURL(text)
+    if type(text) ~= "string" or text == "" then
+        return ""
+    end
+    local query = string.gsub(text, "%%", "%%25")
+    query = string.gsub(query, "%s+", "+")
+    query = string.gsub(query, "'", "%%27")
+    query = string.gsub(query, "&", "%%26")
+    return "https://www.wowhead.com/search?q=" .. query
+end
+
+local function SetInventoryDetailsEditBoxText(editBox, text)
+    if not editBox then
+        return
+    end
+
+    editBox:SetText(text or "")
+    editBox:SetCursorPosition(0)
+    editBox:ClearFocus()
+end
+
+local function HasInventoryDetailsRareSources(itemData)
+    return type(itemData and itemData.rareSources) == "table" and #itemData.rareSources > 0
+end
+
+local function GetInventoryDetailsMaterialProfessionID(itemData)
+    local professionIDs = itemData and itemData.materialProfessionIDs
+    if type(professionIDs) == "table" then
+        for _, professionID in ipairs(professionIDs) do
+            if type(professionID) == "string" and professionID ~= "" then
+                return professionID
+            end
+        end
+    end
+    return type(itemData and itemData.materialProfessionID) == "string" and itemData.materialProfessionID or nil
+end
+
+local function GetInventoryDetailsProfessionLabel(addon, professionID)
+    if type(addon.GetCraftingFarmingProfessionOptions) == "function" then
+        for _, option in ipairs(addon:GetCraftingFarmingProfessionOptions() or {}) do
+            if option and option.id == professionID then
+                return option.label
+            end
+        end
+    end
+    return tostring(professionID or "Unknown")
+end
+
+local function UpdateInventoryDetailsMaterialProfessionDropdown(addon, frame, itemData)
+    if not frame or not frame.materialProfessionDropdown then
+        return
+    end
+
+    local professionID = GetInventoryDetailsMaterialProfessionID(itemData)
+    UIDropDownMenu_SetSelectedValue(frame.materialProfessionDropdown, professionID)
+    UIDropDownMenu_SetText(frame.materialProfessionDropdown, GetInventoryDetailsProfessionLabel(addon, professionID))
+end
+
+local function GetInventoryDetailsRareSourceCoordinateText(source)
+    local locations = source and source.locations
+    local location = type(locations) == "table" and locations[1] or nil
+    local x = tonumber(location and location.x)
+    local y = tonumber(location and location.y)
+    if not x or not y then
+        return "Waypoint"
+    end
+    if x >= 0 and x <= 1 then
+        x = x * 100
+    end
+    if y >= 0 and y <= 1 then
+        y = y * 100
+    end
+    return string.format("%.1f,%.1f", x, y)
+end
+
+local function GetInventoryDetailsRareSourceRow(frame, index)
+    if not frame or not frame.rareSourcesContent then
+        return nil
+    end
+
+    frame.rareSourceRows = frame.rareSourceRows or {}
+    local row = frame.rareSourceRows[index]
+    if row then
+        return row
+    end
+
+    row = CreateFrame("Frame", nil, frame.rareSourcesContent)
+    row:SetHeight(INVENTORY_DETAILS_RARE_SOURCE_ROW_HEIGHT)
+
+    local background = row:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints(row)
+    row.background = background
+
+    local rareText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    rareText:SetPoint("LEFT", row, "LEFT", 6, 0)
+    rareText:SetWidth(190)
+    rareText:SetJustifyH("LEFT")
+    rareText:SetWordWrap(false)
+    row.rareText = rareText
+
+    local locationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    locationText:SetPoint("LEFT", rareText, "RIGHT", 8, 0)
+    locationText:SetPoint("RIGHT", row, "RIGHT", -112, 0)
+    locationText:SetJustifyH("LEFT")
+    locationText:SetWordWrap(false)
+    row.locationText = locationText
+
+    local waypointButton = CreateInventoryButton(row, 96, 18, "Waypoint", "neutral")
+    waypointButton:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+    waypointButton:SetScript("OnClick", function(self)
+        local parent = self:GetParent()
+        if parent and parent.sourceData and type(GoldTracker.SetRareFarmingWaypoint) == "function" then
+            GoldTracker:SetRareFarmingWaypoint(parent.sourceData)
+        end
+    end)
+    row.waypointButton = waypointButton
+
+    frame.rareSourceRows[index] = row
+    return row
+end
+
+local function RefreshInventoryDetailsRareSources(addon, frame, sources)
+    if not frame or not frame.rareSourcesScrollFrame or not frame.rareSourcesContent then
+        return
+    end
+
+    local rareSources = type(sources) == "table" and sources or {}
+    local contentWidth = frame.rareSourcesScrollFrame and math.max(1, math.floor(frame.rareSourcesScrollFrame:GetWidth() or 1)) or 1
+    frame.rareSourcesContent:SetWidth(contentWidth)
+    for index, source in ipairs(rareSources) do
+        local row = GetInventoryDetailsRareSourceRow(frame, index)
+        if row then
+            row.sourceData = source
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.rareSourcesContent, "TOPLEFT", 0, -((index - 1) * INVENTORY_DETAILS_RARE_SOURCE_ROW_HEIGHT))
+            row:SetPoint("TOPRIGHT", frame.rareSourcesContent, "TOPRIGHT", 0, -((index - 1) * INVENTORY_DETAILS_RARE_SOURCE_ROW_HEIGHT))
+            row.rareText:SetText(source.rareName or (source.npcID and ("Rare " .. tostring(source.npcID)) or "Unknown rare"))
+            row.locationText:SetText(source.locationLabel or "Unknown location")
+            row.waypointButton:SetText(GetInventoryDetailsRareSourceCoordinateText(source))
+            row.waypointButton:SetEnabled(type(addon.SetRareFarmingWaypoint) == "function")
+            row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.022)
+            row:Show()
+        end
+    end
+
+    for index = #rareSources + 1, #(frame.rareSourceRows or {}) do
+        frame.rareSourceRows[index]:Hide()
+    end
+    frame.rareSourcesContent:SetHeight(math.max(1, #rareSources * INVENTORY_DETAILS_RARE_SOURCE_ROW_HEIGHT))
+end
+
 function GoldTracker:RefreshInventoryItemDetailsWindow()
     local frame = self.inventoryItemDetailsFrame
     if not frame or not frame.itemData then
@@ -1136,9 +1501,13 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
 
     local itemData = frame.itemData
     local itemLink = itemData.itemLink
+    local itemID = itemData.itemID
+    local npcID = itemData.npcID
+    local bossName = itemData.bossName
+    local instanceName = itemData.instanceName
     local itemKey, history
     if type(self.GetMarketHistoryForItem) == "function" then
-        itemKey, history = self:GetMarketHistoryForItem(itemLink)
+        itemKey, history = self:GetMarketHistoryForItem(itemLink, itemID)
     end
     frame.marketHistoryItemKey = itemKey
     frame.marketHistory = history
@@ -1164,7 +1533,7 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
         end
     end
     if frame.itemText then
-        frame.itemText:SetText(itemLink or itemData.itemName or "Unknown item")
+        frame.itemText:SetText(itemLink or itemData.itemName or (itemID and ("Item " .. tostring(itemID)) or "Unknown item"))
     end
     if frame.metaText then
         local historyCount = type(history and history.snapshots) == "table" and #history.snapshots or 0
@@ -1174,6 +1543,89 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
             historyCount == 1 and "" or "s",
             itemKey and (" for " .. tostring(itemKey)) or ""
         ))
+    end
+    -- Every item details surface should expose a copyable Wowhead item URL when an item ID is available.
+    local hasItemWowheadLink = tonumber(itemID) ~= nil
+    local hasSourceWowheadLink = npcID ~= nil or type(bossName) == "string" or type(instanceName) == "string"
+    local showRareSources = HasInventoryDetailsRareSources(itemData)
+    local showWowheadLinks = hasItemWowheadLink or showRareSources or hasSourceWowheadLink
+    if frame.wowheadPanel then
+        frame.wowheadPanel:SetShown(showWowheadLinks)
+        frame.wowheadPanel:SetHeight(showRareSources and 164 or 56)
+    end
+    if showWowheadLinks then
+        if frame.wowheadTitleText then
+            frame.wowheadTitleText:SetText("Wowhead links")
+        end
+        if frame.wowheadRareLabelText then
+            frame.wowheadRareLabelText:SetText((npcID or showRareSources) and "Rare" or "Boss / Instance")
+        end
+        if frame.wowheadRareEditBox then
+            frame.wowheadRareEditBox:SetShown(showRareSources or hasSourceWowheadLink)
+        end
+        if frame.wowheadRareLabelText then
+            frame.wowheadRareLabelText:SetShown(showRareSources or hasSourceWowheadLink)
+        end
+        SetInventoryDetailsEditBoxText(frame.wowheadItemEditBox, BuildInventoryDetailsWowheadItemURL(itemID))
+        if npcID or showRareSources then
+            local source = showRareSources and itemData.rareSources[1] or nil
+            SetInventoryDetailsEditBoxText(frame.wowheadRareEditBox, BuildInventoryDetailsWowheadNpcURL(npcID or source.npcID))
+        elseif hasSourceWowheadLink then
+            SetInventoryDetailsEditBoxText(frame.wowheadRareEditBox, BuildInventoryDetailsWowheadSearchURL((bossName or "") .. " " .. (instanceName or "")))
+        else
+            SetInventoryDetailsEditBoxText(frame.wowheadRareEditBox, "")
+        end
+    end
+    if frame.rareSourcesTitleText then
+        frame.rareSourcesTitleText:SetShown(showRareSources)
+        frame.rareSourcesTitleText:SetText(showRareSources and string.format("Rare sources (%d)", #itemData.rareSources) or "")
+    end
+    if frame.rareSourcesScrollFrame then
+        frame.rareSourcesScrollFrame:SetShown(showRareSources)
+    end
+    local showMaterialControls = itemData.materialContext == "craftingFarming"
+        and itemData.materialExpansionID ~= nil
+        and type(self.SetCraftingFarmingItemProfession) == "function"
+    if frame.materialPanel then
+        if frame.bodyPanel and frame.materialPanel.ClearAllPoints and frame.materialPanel.SetPoint then
+            frame.materialPanel:ClearAllPoints()
+            local materialTopOffset = showRareSources and -230 or -122
+            frame.materialPanel:SetPoint("TOPLEFT", frame.bodyPanel, "TOPLEFT", 14, materialTopOffset)
+            frame.materialPanel:SetPoint("TOPRIGHT", frame.bodyPanel, "TOPRIGHT", -14, materialTopOffset)
+        end
+        if frame.materialPanel.SetHeight then
+            frame.materialPanel:SetHeight(INVENTORY_DETAILS_MATERIAL_PANEL_HEIGHT)
+        end
+        if frame.materialPanel.SetShown then
+            frame.materialPanel:SetShown(showMaterialControls)
+        end
+    end
+    if showMaterialControls then
+        if frame.materialTitleText then
+            local sourceText = itemData.materialLearnedFromSession and "Learned from session"
+                or (itemData.materialManualProfessionOverride and "Manual override" or "Curated material")
+            frame.materialTitleText:SetText(sourceText)
+        end
+        if frame.materialExpansionText then
+            frame.materialExpansionText:SetText("Expansion: " .. tostring(itemData.materialExpansionLabel or itemData.materialExpansionID or "Unknown"))
+        end
+        UpdateInventoryDetailsMaterialProfessionDropdown(self, frame, itemData)
+    end
+    RefreshInventoryDetailsRareSources(self, frame, showRareSources and itemData.rareSources or nil)
+    if frame.graphPanel and frame.bodyPanel then
+        frame.graphPanel:ClearAllPoints()
+        local graphTopOffset
+        if showRareSources and showMaterialControls then
+            graphTopOffset = -296
+        elseif showRareSources then
+            graphTopOffset = -232
+        elseif showMaterialControls then
+            graphTopOffset = -188
+        else
+            graphTopOffset = showWowheadLinks and -124 or -62
+        end
+        frame.graphPanel:SetPoint("TOPLEFT", frame.bodyPanel, "TOPLEFT", 14, graphTopOffset)
+        frame.graphPanel:SetPoint("BOTTOMRIGHT", frame.bodyPanel, "BOTTOMRIGHT", -14, INVENTORY_DETAILS_GRAPH_BOTTOM_OFFSET)
     end
 
     local latestSourceLabel = source.label
@@ -1219,14 +1671,14 @@ local function CreateInventoryDetailsStatField(parent, label, column, row)
     end
     cell:SetHeight(INVENTORY_DETAILS_STATS_ROW_HEIGHT)
 
-    local labelText = cell:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local labelText = cell:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     labelText:SetPoint("LEFT", cell, "LEFT", 0, 0)
     labelText:SetWidth(INVENTORY_DETAILS_STATS_LABEL_WIDTH)
     labelText:SetJustifyH("LEFT")
     labelText:SetTextColor(1.0, 0.82, 0.18)
     labelText:SetText(label)
 
-    local valueText = cell:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local valueText = cell:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     valueText:SetPoint("LEFT", labelText, "RIGHT", 4, 0)
     valueText:SetPoint("RIGHT", cell, "RIGHT", 0, 0)
     valueText:SetJustifyH("LEFT")
@@ -1239,6 +1691,47 @@ local function CreateInventoryDetailsStatField(parent, label, column, row)
         labelText = labelText,
         valueText = valueText,
     }
+end
+
+local function CreateInventoryDetailsLinkEditBox(parent, labelText, leftAnchor, width)
+    local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("TOPLEFT", parent, "TOPLEFT", leftAnchor, -6)
+    label:SetText(labelText)
+
+    local editBox = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+    editBox:SetSize(width, 22)
+    if editBox.SetFontObject and GameFontHighlight then
+        editBox:SetFontObject(GameFontHighlight)
+    end
+    editBox:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -5)
+    editBox:SetAutoFocus(false)
+    editBox:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
+    editBox:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+    editBox:SetScript("OnEditFocusGained", function(self)
+        self:HighlightText()
+    end)
+    editBox:SetScript("OnMouseUp", function(self)
+        self:SetFocus()
+        self:HighlightText()
+    end)
+    editBox.labelText = label
+
+    return editBox
+end
+
+local function ApplyInventoryDetailsDropdownFont(dropdown)
+    if not dropdown or type(dropdown.GetName) ~= "function" then
+        return
+    end
+
+    local dropdownText = _G[dropdown:GetName() .. "Text"]
+    if dropdownText and dropdownText.SetFontObject and GameFontHighlight then
+        dropdownText:SetFontObject(GameFontHighlight)
+    end
 end
 
 function GoldTracker:CreateInventoryItemDetailsWindow()
@@ -1300,7 +1793,7 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     itemText:SetText("")
     frame.itemText = itemText
 
-    local metaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local metaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     metaText:SetPoint("TOPLEFT", itemText, "BOTTOMLEFT", 0, -6)
     metaText:SetPoint("TOPRIGHT", itemText, "BOTTOMRIGHT", 0, -6)
     metaText:SetJustifyH("LEFT")
@@ -1308,7 +1801,7 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     metaText:SetText("")
     frame.metaText = metaText
 
-    local sourceLabel = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local sourceLabel = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     sourceLabel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -238, -13)
     sourceLabel:SetText("Data source")
     frame.sourceLabel = sourceLabel
@@ -1316,6 +1809,7 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     local sourceDropdown = CreateFrame("Frame", "GoldTrackerInventoryDetailsSourceDropdown", bodyPanel, "UIDropDownMenuTemplate")
     sourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -18, -5)
     UIDropDownMenu_SetWidth(sourceDropdown, INVENTORY_DETAILS_SOURCE_DROPDOWN_WIDTH)
+    ApplyInventoryDetailsDropdownFont(sourceDropdown)
     UIDropDownMenu_Initialize(sourceDropdown, function(_, level)
         for _, source in ipairs(INVENTORY_DETAILS_PRICE_SOURCES) do
             local sourceKey = source.key
@@ -1332,12 +1826,109 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     end)
     frame.sourceDropdown = sourceDropdown
 
+    local wowheadPanel = CreateInventoryPanel(bodyPanel, { 0.05, 0.06, 0.08, 0.86 }, { 1.0, 0.82, 0.18, 0.10 })
+    wowheadPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -60)
+    wowheadPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -60)
+    wowheadPanel:SetHeight(56)
+    wowheadPanel:Hide()
+    frame.wowheadPanel = wowheadPanel
+
+    local wowheadTitleText = wowheadPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    wowheadTitleText:SetPoint("TOPLEFT", wowheadPanel, "TOPLEFT", 10, -6)
+    wowheadTitleText:SetWidth(130)
+    wowheadTitleText:SetJustifyH("LEFT")
+    wowheadTitleText:SetWordWrap(false)
+    wowheadTitleText:SetText("Wowhead links")
+    frame.wowheadTitleText = wowheadTitleText
+
+    frame.wowheadItemEditBox = CreateInventoryDetailsLinkEditBox(wowheadPanel, "Item", 152, 250)
+    frame.wowheadRareEditBox = CreateInventoryDetailsLinkEditBox(wowheadPanel, "Rare", 430, 250)
+    frame.wowheadRareLabelText = frame.wowheadRareEditBox.labelText
+
+    local materialPanel = CreateInventoryPanel(bodyPanel, { 0.05, 0.06, 0.08, 0.86 }, { 1.0, 0.82, 0.18, 0.10 })
+    materialPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -122)
+    materialPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -122)
+    materialPanel:SetHeight(INVENTORY_DETAILS_MATERIAL_PANEL_HEIGHT)
+    materialPanel:Hide()
+    frame.materialPanel = materialPanel
+
+    local materialTitleText = materialPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    materialTitleText:SetPoint("TOPLEFT", materialPanel, "TOPLEFT", 10, -8)
+    materialTitleText:SetWidth(160)
+    materialTitleText:SetJustifyH("LEFT")
+    materialTitleText:SetWordWrap(false)
+    materialTitleText:SetText("Curated material")
+    frame.materialTitleText = materialTitleText
+
+    local materialExpansionText = materialPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    materialExpansionText:SetPoint("TOPLEFT", materialTitleText, "BOTTOMLEFT", 0, -5)
+    materialExpansionText:SetWidth(250)
+    materialExpansionText:SetJustifyH("LEFT")
+    materialExpansionText:SetWordWrap(false)
+    materialExpansionText:SetTextColor(0.72, 0.76, 0.84)
+    materialExpansionText:SetText("")
+    frame.materialExpansionText = materialExpansionText
+
+    local materialProfessionLabel = materialPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    materialProfessionLabel:SetPoint("TOPLEFT", materialPanel, "TOPLEFT", 300, -8)
+    materialProfessionLabel:SetText("Profession")
+    frame.materialProfessionLabel = materialProfessionLabel
+
+    local materialProfessionDropdown = CreateFrame("Frame", "GoldTrackerInventoryDetailsMaterialProfessionDropdown", materialPanel, "UIDropDownMenuTemplate")
+    materialProfessionDropdown:SetPoint("TOPLEFT", materialProfessionLabel, "BOTTOMLEFT", -18, -2)
+    UIDropDownMenu_SetWidth(materialProfessionDropdown, 190)
+    ApplyInventoryDetailsDropdownFont(materialProfessionDropdown)
+    UIDropDownMenu_Initialize(materialProfessionDropdown, function(_, level)
+        local itemData = frame.itemData or {}
+        local currentProfessionID = GetInventoryDetailsMaterialProfessionID(itemData)
+        for _, profession in ipairs(addon:GetCraftingFarmingProfessionOptions() or {}) do
+            if profession.id ~= "all" then
+                local info = UIDropDownMenu_CreateInfo()
+                local professionID = profession.id
+                info.text = profession.label
+                info.value = professionID
+                info.checked = currentProfessionID == professionID
+                info.func = function()
+                    local changed = addon:SetCraftingFarmingItemProfession(itemData.itemID, professionID)
+                    if changed then
+                        itemData.materialProfessionID = professionID
+                        itemData.materialProfessionIDs = { professionID }
+                        itemData.materialProfessionLabel = profession.label
+                        itemData.materialManualProfessionOverride = true
+                    end
+                    addon:RefreshInventoryItemDetailsWindow()
+                end
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end
+    end)
+    frame.materialProfessionDropdown = materialProfessionDropdown
+
+    local rareSourcesTitleText = wowheadPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    rareSourcesTitleText:SetPoint("TOPLEFT", wowheadPanel, "TOPLEFT", 10, -62)
+    rareSourcesTitleText:SetText("Rare sources")
+    rareSourcesTitleText:Hide()
+    frame.rareSourcesTitleText = rareSourcesTitleText
+
+    local rareSourcesScrollFrame = CreateFrame("ScrollFrame", nil, wowheadPanel, "UIPanelScrollFrameTemplate")
+    rareSourcesScrollFrame:SetPoint("TOPLEFT", rareSourcesTitleText, "BOTTOMLEFT", 0, -6)
+    rareSourcesScrollFrame:SetPoint("TOPRIGHT", wowheadPanel, "TOPRIGHT", -28, -82)
+    rareSourcesScrollFrame:SetHeight(INVENTORY_DETAILS_RARE_SOURCE_LIST_HEIGHT)
+    rareSourcesScrollFrame:Hide()
+    frame.rareSourcesScrollFrame = rareSourcesScrollFrame
+
+    local rareSourcesContent = CreateFrame("Frame", nil, rareSourcesScrollFrame)
+    rareSourcesContent:SetSize(1, 1)
+    rareSourcesScrollFrame:SetScrollChild(rareSourcesContent)
+    frame.rareSourcesContent = rareSourcesContent
+    frame.rareSourceRows = {}
+
     local graphPanel = CreateInventoryPanel(bodyPanel, { 0.03, 0.04, 0.06, 0.82 }, { 1.0, 0.82, 0.18, 0.10 })
     graphPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -62)
-    graphPanel:SetPoint("BOTTOMRIGHT", bodyPanel, "BOTTOMRIGHT", -14, 134)
+    graphPanel:SetPoint("BOTTOMRIGHT", bodyPanel, "BOTTOMRIGHT", -14, INVENTORY_DETAILS_GRAPH_BOTTOM_OFFSET)
     frame.graphPanel = graphPanel
 
-    local graphTitle = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local graphTitle = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     graphTitle:SetPoint("TOPLEFT", graphPanel, "TOPLEFT", 12, -10)
     graphTitle:SetText("Price evolution")
     frame.graphTitle = graphTitle
@@ -1356,58 +1947,58 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
         gridLine:SetHeight(1)
         frame.graphGridLines[index] = gridLine
 
-        local axisLabel = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local axisLabel = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         axisLabel:SetWidth(INVENTORY_DETAILS_AXIS_LABEL_WIDTH)
-        axisLabel:SetHeight(14)
+        axisLabel:SetHeight(16)
         axisLabel:SetJustifyH("RIGHT")
         axisLabel:SetTextColor(isEdgeTick and 0.72 or 0.62, isEdgeTick and 0.86 or 0.66, isEdgeTick and 1.0 or 0.74)
         axisLabel:SetText("--")
         frame.graphAxisLabels[index] = axisLabel
     end
 
-    local graphStartText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphStartText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphStartText:SetPoint("TOPLEFT", graphCanvas, "BOTTOMLEFT", 0, -8)
     graphStartText:SetWidth(120)
     graphStartText:SetJustifyH("LEFT")
     graphStartText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphStartText = graphStartText
 
-    local graphStartDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphStartDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphStartDayText:SetPoint("TOPLEFT", graphStartText, "BOTTOMLEFT", 0, -2)
     graphStartDayText:SetWidth(120)
     graphStartDayText:SetJustifyH("LEFT")
     graphStartDayText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphStartDayText = graphStartDayText
 
-    local graphMiddleText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphMiddleText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphMiddleText:SetPoint("TOP", graphCanvas, "BOTTOM", 0, -8)
     graphMiddleText:SetWidth(120)
     graphMiddleText:SetJustifyH("CENTER")
     graphMiddleText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphMiddleText = graphMiddleText
 
-    local graphMiddleDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphMiddleDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphMiddleDayText:SetPoint("TOP", graphMiddleText, "BOTTOM", 0, -2)
     graphMiddleDayText:SetWidth(120)
     graphMiddleDayText:SetJustifyH("CENTER")
     graphMiddleDayText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphMiddleDayText = graphMiddleDayText
 
-    local graphEndText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphEndText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphEndText:SetPoint("TOPRIGHT", graphCanvas, "BOTTOMRIGHT", 0, -8)
     graphEndText:SetWidth(120)
     graphEndText:SetJustifyH("RIGHT")
     graphEndText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphEndText = graphEndText
 
-    local graphEndDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphEndDayText = graphPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphEndDayText:SetPoint("TOPRIGHT", graphEndText, "BOTTOMRIGHT", 0, -2)
     graphEndDayText:SetWidth(120)
     graphEndDayText:SetJustifyH("RIGHT")
     graphEndDayText:SetTextColor(0.62, 0.66, 0.74)
     frame.graphEndDayText = graphEndDayText
 
-    local graphEmptyText = graphCanvas:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local graphEmptyText = graphCanvas:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     graphEmptyText:SetPoint("CENTER", graphCanvas, "CENTER", 0, 0)
     graphEmptyText:SetJustifyH("CENTER")
     graphEmptyText:SetTextColor(0.62, 0.66, 0.74)
@@ -1417,7 +2008,7 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     local statsPanel = CreateInventoryPanel(bodyPanel, { 0.05, 0.06, 0.08, 0.86 }, { 1.0, 0.82, 0.18, 0.10 })
     statsPanel:SetPoint("BOTTOMLEFT", bodyPanel, "BOTTOMLEFT", 14, 14)
     statsPanel:SetPoint("BOTTOMRIGHT", bodyPanel, "BOTTOMRIGHT", -14, 14)
-    statsPanel:SetHeight(108)
+    statsPanel:SetHeight(INVENTORY_DETAILS_STATS_PANEL_HEIGHT)
     frame.statsPanel = statsPanel
 
     frame.statsFields = {
@@ -1460,7 +2051,13 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
 end
 
 function GoldTracker:OpenInventoryItemDetailsWindow(row)
-    if type(row) ~= "table" or type(row.itemLink) ~= "string" or row.itemLink == "" then
+    if type(row) ~= "table" then
+        return
+    end
+
+    local itemLink = type(row.itemLink) == "string" and row.itemLink ~= "" and row.itemLink or nil
+    local itemID = tonumber(row.itemID)
+    if not itemLink and not itemID then
         return
     end
 
@@ -1472,19 +2069,42 @@ function GoldTracker:OpenInventoryItemDetailsWindow(row)
 
     local itemKey, history
     if type(self.GetMarketHistoryForItem) == "function" then
-        itemKey, history = self:GetMarketHistoryForItem(row.itemLink)
+        itemKey, history = self:GetMarketHistoryForItem(itemLink, itemID)
+    end
+
+    local iconTexture = row.iconTexture
+    if iconTexture == nil and (type(row.icon) == "number" or type(row.icon) == "string") then
+        iconTexture = row.icon
     end
 
     frame.itemData = {
-        itemLink = row.itemLink,
+        itemID = itemID and math.floor(itemID + 0.5) or nil,
+        itemLink = itemLink,
         itemName = row.itemName,
         itemQuality = row.itemQuality,
-        icon = row.iconTexture,
-        quantity = row.quantity,
-        unitValue = row.unitValue,
-        totalValue = row.totalValue,
+        icon = iconTexture,
+        npcID = row.npcID,
+        rareName = row.rareName,
+        rareSources = row.rareSources,
+        rareSourceCount = row.rareSourceCount,
+        locationLabel = row.locationLabel,
+        locations = row.locations,
+        instanceName = row.instanceName,
+        bossName = row.bossName,
+        instanceEncounterJournalID = row.instanceEncounterJournalID,
+        bossEncounterJournalID = row.bossEncounterJournalID,
+        quantity = row.quantity or 1,
+        unitValue = row.unitValue or row.value,
+        totalValue = row.totalValue or row.value,
         valueSourceID = row.valueSourceID,
         valueSourceLabel = row.valueSourceLabel,
+        materialContext = row.materialExpansionID and "craftingFarming" or nil,
+        materialExpansionID = row.materialExpansionID,
+        materialExpansionLabel = row.materialExpansionLabel,
+        materialProfessionIDs = row.materialProfessionIDs,
+        materialProfessionLabel = row.materialProfessionLabel,
+        materialLearnedFromSession = row.materialLearnedFromSession == true,
+        materialManualProfessionOverride = row.materialManualProfessionOverride == true,
     }
     frame.marketHistoryItemKey = itemKey
     frame.marketHistory = history
@@ -1499,105 +2119,89 @@ function GoldTracker:OpenInventoryItemDetailsWindow(row)
     self:RefreshInventoryItemDetailsWindow()
 end
 
-function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper, sortKey, sortAscending)
-    local source = self.VALUE_SOURCE_BY_ID[valueSourceID] or self:GetAuctionableInventoryValueSource()
-    local sourceID = source and source.id
-    local normalizedMinimumQuality = NormalizeMinimumQuality(self, minimumQuality)
-    local normalizedMinimumValue = math.max(0, math.floor(tonumber(minimumValueCopper) or 0))
-    local cacheKey = GetInventoryBuildCacheKey(self, sourceID, normalizedMinimumQuality)
-    local cachedBuild = type(self.inventoryBuildCache) == "table" and self.inventoryBuildCache[cacheKey] or nil
-    local candidateItems
-    local scannedStacks
-    if cachedBuild then
-        candidateItems = cachedBuild.items or {}
-        scannedStacks = tonumber(cachedBuild.scannedStacks) or 0
+function GoldTracker:BuildInventoryAuctionItemList(valueSourceID, minimumQuality, minimumValueCopper, sortKey, sortAscending, categoryFilterID)
+    return self:BuildAuctionableInventoryItemList(
+        valueSourceID,
+        minimumQuality,
+        minimumValueCopper,
+        sortKey,
+        sortAscending,
+        categoryFilterID
+    )
+end
+
+function GoldTracker:HasInventoryMaterialFarmingMap(rowOrItemID)
+    local itemID = type(rowOrItemID) == "table" and rowOrItemID.itemID or rowOrItemID
+    local materialData = GetInventoryMaterialFarmingSpotData(self, itemID)
+    return type(materialData) == "table" and type(materialData.spots) == "table" and #materialData.spots > 0
+end
+
+function GoldTracker:OpenInventoryMaterialFarmingMap(row)
+    local itemID = tonumber(row and row.itemID)
+    if not itemID or not self:HasInventoryMaterialFarmingMap(itemID) then
+        local frame = self.inventoryFrame
+        if frame and frame.metaText then
+            frame.metaText:SetText("No coordinate-backed farming map data for this bag item yet.")
+        end
+        return false
+    end
+    if type(self.OpenMaterialFarmingMap) ~= "function" then
+        local frame = self.inventoryFrame
+        if frame and frame.metaText then
+            frame.metaText:SetText("The material farming map is not available yet.")
+        end
+        return false
+    end
+    return self:OpenMaterialFarmingMap(itemID)
+end
+
+function GoldTracker:ToggleInventoryItemFavorite(row)
+    if type(row) ~= "table" then
+        return false
+    end
+
+    local key = type(self.GetFarmingFavoriteKey) == "function" and self:GetFarmingFavoriteKey(row)
+    local favorites = type(self.GetFarmingFavoriteStore) == "function" and self:GetFarmingFavoriteStore() or nil
+    if not key or type(favorites) ~= "table" then
+        return false
+    end
+
+    if favorites[key] then
+        favorites[key] = nil
     else
-        local itemsByLink = {}
-        candidateItems = {}
-        local demandCache = {}
-        scannedStacks = 0
-
-        for _, bagID in ipairs(BuildInventoryBagIDs()) do
-            local slotCount = GetContainerSlotCount(bagID)
-            for slotIndex = 1, slotCount do
-                local slotInfo = GetContainerSlotInfo(bagID, slotIndex)
-                local itemLink = GetContainerSlotLink(bagID, slotIndex, slotInfo)
-                if type(itemLink) == "string" and itemLink ~= "" then
-                    scannedStacks = scannedStacks + 1
-
-                    if not self:IsBagItemBindingRestricted(bagID, slotIndex, itemLink, slotInfo) then
-                        local itemName, infoQuality, itemIcon = GetItemDisplayData(itemLink, slotInfo)
-                        local itemQuality = tonumber(slotInfo and slotInfo.quality) or tonumber(infoQuality) or self:GetItemQualityFromLink(itemLink)
-                        if ItemPassesMinimumQuality(itemQuality, normalizedMinimumQuality) then
-                            local unitValue, resolvedSourceID, resolvedSourceLabel =
-                                GetInventoryUnitValue(self, sourceID, itemLink)
-                            local quantity = math.max(1, math.floor(tonumber(slotInfo and slotInfo.stackCount) or 1))
-                            local stackValue = math.max(0, math.floor((unitValue * quantity) + 0.5))
-                            if unitValue > 0 then
-                                local demandData = GetInventoryRegionalDemandData(self, itemLink, demandCache) or {}
-                                AddInventoryItem(itemsByLink, candidateItems, {
-                                    itemLink = itemLink,
-                                    itemName = itemName or itemLink,
-                                    itemQuality = itemQuality,
-                                    icon = itemIcon,
-                                    bagID = bagID,
-                                    slotIndex = slotIndex,
-                                    quantity = quantity,
-                                    unitValue = unitValue,
-                                    valueSourceID = resolvedSourceID or sourceID,
-                                    valueSourceLabel = resolvedSourceLabel,
-                                    valueSourceWasFallback = resolvedSourceID ~= sourceID,
-                                    totalValue = stackValue,
-                                    stackCount = 1,
-                                    regionSoldPerDay = demandData.regionSoldPerDay,
-                                    regionSaleRate = demandData.regionSaleRate,
-                                    marketValue = demandData.marketValue,
-                                    historicalValue = demandData.historicalValue,
-                                    marketTrendPercent = demandData.marketTrendPercent,
-                                    demandTier = demandData.demandTier,
-                                    demandLabel = demandData.demandLabel,
-                                    demandColorR = demandData.demandColorR,
-                                    demandColorG = demandData.demandColorG,
-                                    demandColorB = demandData.demandColorB,
-                                })
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        if type(self.inventoryBuildCache) ~= "table" then
-            self.inventoryBuildCache = {}
-        end
-        self.inventoryBuildCache[cacheKey] = {
-            items = candidateItems,
-            scannedStacks = scannedStacks,
+        favorites[key] = {
+            favoriteKey = key,
+            itemID = row.itemID,
+            itemLink = row.itemLink,
+            itemName = row.itemName,
+            itemQuality = row.itemQuality,
+            icon = row.iconTexture or row.icon,
+            quantity = row.quantity,
+            stackCount = row.stackCount,
+            categoryID = row.categoryID,
+            categoryLabel = row.categoryLabel,
+            locationLabel = "Bags",
+            value = row.totalValue or row.unitValue,
+            unitValue = row.unitValue,
+            totalValue = row.totalValue,
+            marketValue = row.marketValue,
+            historicalValue = row.historicalValue,
+            valueSourceID = row.valueSourceID,
+            valueSourceLabel = row.valueSourceLabel,
+            farmingSourceType = "inventory",
+            favoritedAt = date("%Y-%m-%d %H:%M"),
+            favoritedAtTime = time(),
         }
     end
 
-    local matchedStacks = 0
-    local totalValue = 0
-    local totalQuantity = 0
-
-    local items = {}
-    for _, item in ipairs(candidateItems) do
-        if item.totalValue > normalizedMinimumValue then
-            if type(self.GetMarketHistorySampleCount) == "function" then
-                item.marketHistorySampleCount = self:GetMarketHistorySampleCount(item.itemLink)
-            else
-                item.marketHistorySampleCount = 0
-            end
-            matchedStacks = matchedStacks + item.stackCount
-            totalValue = totalValue + item.totalValue
-            totalQuantity = totalQuantity + item.quantity
-            items[#items + 1] = item
-        end
+    self:RefreshInventoryWindow(false)
+    if type(self.RefreshRareFarmingLibraryWindow) == "function" then
+        self:RefreshRareFarmingLibraryWindow()
     end
-
-    SortInventoryItems(items, sortKey, sortAscending)
-
-    return items, totalValue, totalQuantity, scannedStacks, matchedStacks
+    if type(self.RefreshInstanceFarmingLibraryWindow) == "function" then
+        self:RefreshInstanceFarmingLibraryWindow()
+    end
+    return true
 end
 
 function GoldTracker:RefreshInventoryWindowControls()
@@ -1623,6 +2227,16 @@ function GoldTracker:RefreshInventoryWindowControls()
     if frame.minimumValueInput and not frame.minimumValueInput:HasFocus() then
         frame.minimumValueInput:SetText(FormatGoldInput(self, minimumValueCopper))
     end
+
+    frame.categoryFilterID = NormalizeInventoryCategoryFilter(frame.categoryFilterID)
+    local category = GetInventoryCategoryOption(frame.categoryFilterID)
+    if frame.categoryDropdown and category then
+        UIDropDownMenu_SetSelectedValue(frame.categoryDropdown, category.id)
+        UIDropDownMenu_SetText(frame.categoryDropdown, category.label)
+    end
+    if frame.groupByCategoryCheckbox then
+        frame.groupByCategoryCheckbox:SetChecked(frame.groupByCategory == true)
+    end
 end
 
 function GoldTracker:UpdateInventorySortHeaderState()
@@ -1634,7 +2248,8 @@ function GoldTracker:UpdateInventorySortHeaderState()
     local sortKey = NormalizeInventorySortKey(frame.inventorySortKey)
     local sortAscending = frame.inventorySortAscending == true
     local headers = {
-        demand = { button = frame.demandHeaderButton, label = "Demand" },
+        demand = { button = frame.demandHeaderButton, label = "Sold/day" },
+        sellRate = { button = frame.sellRateHeaderButton, label = "Sale %" },
         historySamples = { button = frame.historyHeaderButton, label = "Hist" },
         itemName = { button = frame.itemHeaderButton, label = "Item" },
         quantity = { button = frame.quantityHeaderButton, label = "Qty" },
@@ -1715,6 +2330,16 @@ local function SetInventoryRowColumn(fontString, row, leftOffset, width)
     fontString:SetWidth(math.max(1, width))
 end
 
+local function SetInventoryRowControl(control, row, leftOffset, width)
+    if not control or not row then
+        return
+    end
+
+    control:ClearAllPoints()
+    control:SetPoint("LEFT", row, "LEFT", leftOffset, 0)
+    control:SetWidth(math.max(1, width))
+end
+
 local function ApplyInventoryTableColumnLayout(frame)
     if not frame then
         return
@@ -1725,34 +2350,45 @@ local function ApplyInventoryTableColumnLayout(frame)
         frame.inventoryContent:SetWidth(availableWidth)
     end
 
-    local itemX = INVENTORY_ROW_ICON_LEFT + INVENTORY_ICON_SIZE + INVENTORY_ROW_ICON_GAP
+    local favoriteX = INVENTORY_ROW_ICON_LEFT
+    local mapX = favoriteX + INVENTORY_TRACKED_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
+    local iconX = mapX + INVENTORY_MAP_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
+    local itemX = iconX + INVENTORY_ICON_SIZE + INVENTORY_ROW_ICON_GAP
     local rightEdge = availableWidth - INVENTORY_ROW_RIGHT_PADDING
     local totalX = rightEdge - INVENTORY_TOTAL_VALUE_WIDTH
-    local unitX = totalX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
+    local quantityX = totalX - INVENTORY_COLUMN_GAP - INVENTORY_QUANTITY_WIDTH
+    local unitX = quantityX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
     local trendX = unitX - INVENTORY_COLUMN_GAP - INVENTORY_TREND_WIDTH
-    local demandX = trendX - INVENTORY_COLUMN_GAP - INVENTORY_DEMAND_WIDTH
+    local sellRateX = trendX - INVENTORY_COLUMN_GAP - INVENTORY_SELL_RATE_WIDTH
+    local demandX = sellRateX - INVENTORY_COLUMN_GAP - INVENTORY_DEMAND_WIDTH
     local historyX = demandX - INVENTORY_COLUMN_GAP - INVENTORY_HISTORY_WIDTH
-    local quantityX = historyX - INVENTORY_COLUMN_GAP - INVENTORY_QUANTITY_WIDTH
-    local itemWidth = math.max(INVENTORY_ITEM_MIN_WIDTH, quantityX - INVENTORY_COLUMN_GAP - itemX)
+    local itemWidth = math.max(1, historyX - INVENTORY_COLUMN_GAP - itemX)
 
     if frame.listPanel then
         local headerX = INVENTORY_HEADER_LEFT_INSET
+        SetInventoryHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX, INVENTORY_TRACKED_COLUMN_WIDTH)
+        SetInventoryHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX, INVENTORY_MAP_COLUMN_WIDTH)
         SetInventoryHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX, itemWidth)
-        SetInventoryHeaderColumn(frame.quantityHeaderButton, frame.listPanel, headerX + quantityX, INVENTORY_QUANTITY_WIDTH)
         SetInventoryHeaderColumn(frame.historyHeaderButton, frame.listPanel, headerX + historyX, INVENTORY_HISTORY_WIDTH)
         SetInventoryHeaderColumn(frame.demandHeaderButton, frame.listPanel, headerX + demandX, INVENTORY_DEMAND_WIDTH)
+        SetInventoryHeaderColumn(frame.sellRateHeaderButton, frame.listPanel, headerX + sellRateX, INVENTORY_SELL_RATE_WIDTH)
         SetInventoryHeaderColumn(frame.trendHeaderButton, frame.listPanel, headerX + trendX, INVENTORY_TREND_WIDTH)
         SetInventoryHeaderColumn(frame.unitHeaderButton, frame.listPanel, headerX + unitX, INVENTORY_UNIT_VALUE_WIDTH)
+        SetInventoryHeaderColumn(frame.quantityHeaderButton, frame.listPanel, headerX + quantityX, INVENTORY_QUANTITY_WIDTH)
         SetInventoryHeaderColumn(frame.totalHeaderButton, frame.listPanel, headerX + totalX, INVENTORY_TOTAL_VALUE_WIDTH)
     end
 
     for _, row in ipairs(frame.inventoryRows or {}) do
+        SetInventoryRowControl(row.favoriteButton, row, favoriteX + math.floor((INVENTORY_TRACKED_COLUMN_WIDTH - INVENTORY_TRACKED_BUTTON_WIDTH) / 2), INVENTORY_TRACKED_BUTTON_WIDTH)
+        SetInventoryRowControl(row.mapButton, row, mapX + math.floor((INVENTORY_MAP_COLUMN_WIDTH - INVENTORY_MAP_BUTTON_WIDTH) / 2), INVENTORY_MAP_BUTTON_WIDTH)
+        SetInventoryRowControl(row.icon, row, iconX, INVENTORY_ICON_SIZE)
         SetInventoryRowColumn(row.itemText, row, itemX, itemWidth)
-        SetInventoryRowColumn(row.quantityText, row, quantityX, INVENTORY_QUANTITY_WIDTH)
         SetInventoryRowColumn(row.historySamplesText, row, historyX, INVENTORY_HISTORY_WIDTH)
         SetInventoryRowColumn(row.demandText, row, demandX, INVENTORY_DEMAND_WIDTH)
+        SetInventoryRowColumn(row.sellRateText, row, sellRateX, INVENTORY_SELL_RATE_WIDTH)
         SetInventoryRowColumn(row.trendText, row, trendX, INVENTORY_TREND_WIDTH)
         SetInventoryRowColumn(row.unitValueText, row, unitX, INVENTORY_UNIT_VALUE_WIDTH)
+        SetInventoryRowColumn(row.quantityText, row, quantityX, INVENTORY_QUANTITY_WIDTH)
         SetInventoryRowColumn(row.totalValueText, row, totalX, INVENTORY_TOTAL_VALUE_WIDTH)
     end
 end
@@ -1783,6 +2419,54 @@ function GoldTracker:GetInventoryWindowRow(index)
     hover:SetColorTexture(1, 0.82, 0.18, 0.08)
     row.hover = hover
 
+    local favoriteButton = CreateInventoryButton(row, INVENTORY_TRACKED_BUTTON_WIDTH, INVENTORY_TRACKED_BUTTON_HEIGHT, "+", "neutral")
+    favoriteButton:RegisterForClicks("LeftButtonUp")
+    favoriteButton:SetScript("OnClick", function(self)
+        GoldTracker:ToggleInventoryItemFavorite(self:GetParent())
+    end)
+    favoriteButton:SetScript("OnEnter", function(self)
+        if not GameTooltip then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetText(self:GetParent().favorite and "Remove tracked item" or "Track item", 1.0, 0.82, 0.18)
+        GameTooltip:AddLine("Shows this bag item in Favorites with the other farming lists.", 0.72, 0.86, 1.0)
+        GameTooltip:Show()
+    end)
+    favoriteButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    row.favoriteButton = favoriteButton
+
+    local mapButton = CreateInventoryButton(row, INVENTORY_MAP_BUTTON_WIDTH, INVENTORY_MAP_BUTTON_HEIGHT, "Map", "neutral")
+    mapButton:RegisterForClicks("LeftButtonUp")
+    mapButton:SetScript("OnClick", function(self)
+        GoldTracker:OpenInventoryMaterialFarmingMap(self:GetParent())
+    end)
+    mapButton:SetScript("OnEnter", function(self)
+        if not GameTooltip then
+            return
+        end
+        local parent = self:GetParent()
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        if parent and parent.hasFarmingMap then
+            GameTooltip:SetText("Open farming map", 1.0, 0.82, 0.18)
+            GameTooltip:AddLine("Shows the indexed material route for this bag item.", 0.72, 0.86, 1.0)
+        else
+            GameTooltip:SetText("No farming map", 0.62, 0.66, 0.74)
+            GameTooltip:AddLine("This bag item is not in the static farming map index.", 0.72, 0.76, 0.84)
+        end
+        GameTooltip:Show()
+    end)
+    mapButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    row.mapButton = mapButton
+
     local icon = row:CreateTexture(nil, "ARTWORK")
     icon:SetSize(INVENTORY_ICON_SIZE, INVENTORY_ICON_SIZE)
     icon:SetPoint("LEFT", row, "LEFT", 8, 0)
@@ -1795,8 +2479,15 @@ function GoldTracker:GetInventoryWindowRow(index)
     totalValueText:SetWordWrap(false)
     row.totalValueText = totalValueText
 
+    local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    quantityText:SetPoint("RIGHT", totalValueText, "LEFT", -12, 0)
+    quantityText:SetWidth(INVENTORY_QUANTITY_WIDTH)
+    quantityText:SetJustifyH("RIGHT")
+    quantityText:SetWordWrap(false)
+    row.quantityText = quantityText
+
     local unitValueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    unitValueText:SetPoint("RIGHT", totalValueText, "LEFT", -12, 0)
+    unitValueText:SetPoint("RIGHT", quantityText, "LEFT", -12, 0)
     unitValueText:SetWidth(INVENTORY_UNIT_VALUE_WIDTH)
     unitValueText:SetJustifyH("RIGHT")
     unitValueText:SetWordWrap(false)
@@ -1809,8 +2500,15 @@ function GoldTracker:GetInventoryWindowRow(index)
     trendText:SetWordWrap(false)
     row.trendText = trendText
 
+    local sellRateText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sellRateText:SetPoint("RIGHT", trendText, "LEFT", -12, 0)
+    sellRateText:SetWidth(INVENTORY_SELL_RATE_WIDTH)
+    sellRateText:SetJustifyH("RIGHT")
+    sellRateText:SetWordWrap(false)
+    row.sellRateText = sellRateText
+
     local demandText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    demandText:SetPoint("RIGHT", trendText, "LEFT", -12, 0)
+    demandText:SetPoint("RIGHT", sellRateText, "LEFT", -12, 0)
     demandText:SetWidth(INVENTORY_DEMAND_WIDTH)
     demandText:SetJustifyH("RIGHT")
     demandText:SetWordWrap(false)
@@ -1823,16 +2521,9 @@ function GoldTracker:GetInventoryWindowRow(index)
     historySamplesText:SetWordWrap(false)
     row.historySamplesText = historySamplesText
 
-    local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    quantityText:SetPoint("RIGHT", historySamplesText, "LEFT", -12, 0)
-    quantityText:SetWidth(INVENTORY_QUANTITY_WIDTH)
-    quantityText:SetJustifyH("RIGHT")
-    quantityText:SetWordWrap(false)
-    row.quantityText = quantityText
-
     local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     itemText:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-    itemText:SetPoint("RIGHT", quantityText, "LEFT", -12, 0)
+    itemText:SetPoint("RIGHT", historySamplesText, "LEFT", -12, 0)
     itemText:SetJustifyH("LEFT")
     itemText:SetWordWrap(false)
     row.itemText = itemText
@@ -1852,15 +2543,28 @@ function GoldTracker:GetInventoryWindowRow(index)
         GameTooltip:SetHyperlink(self.itemLink)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("TSM regional demand", 1.0, 0.82, 0.18)
+        local regionSaleRateText = FormatInventoryDecimalValue(self.regionSaleRate, 3)
+        if regionSaleRateText then
+            regionSaleRateText = regionSaleRateText .. " (" .. FormatInventorySaleRate(self.regionSaleRate) .. ")"
+        end
         GameTooltip:AddDoubleLine(
-            "Region avg daily sold",
+            "DBRegionSoldPerDay",
             FormatInventoryDecimalValue(self.regionSoldPerDay, 2) or "Unknown",
             0.72, 0.86, 1.0,
             1, 1, 1
         )
+        GameTooltip:AddLine("Average volume sold per Auction House per day in your region.", 0.62, 0.66, 0.74)
         GameTooltip:AddDoubleLine(
-            "Region sale rate",
-            FormatInventoryDecimalValue(self.regionSaleRate, 3) or "Unknown",
+            "DBRegionSaleRate",
+            regionSaleRateText or "Unknown",
+            0.72, 0.86, 1.0,
+            1, 1, 1
+        )
+        GameTooltip:AddLine("Average chance/rate of selling per post in your region.", 0.62, 0.66, 0.74)
+        local sellRateLabel = GetInventorySellRateTier(self.regionSaleRate)
+        GameTooltip:AddDoubleLine(
+            "Sell rate",
+            sellRateLabel ~= "--" and sellRateLabel or "Unknown",
             0.72, 0.86, 1.0,
             1, 1, 1
         )
@@ -1892,18 +2596,23 @@ function GoldTracker:GetInventoryWindowRow(index)
                 1, 1, 1
             )
         end
-        if type(self.marketHistoryInsight) == "table" then
+        local marketHistoryInsight = self.marketHistoryInsight
+        if type(marketHistoryInsight) ~= "table" and type(GoldTracker.GetInventoryMarketInsight) == "function" then
+            marketHistoryInsight = GoldTracker:GetInventoryMarketInsight(self)
+            self.marketHistoryInsight = marketHistoryInsight
+        end
+        if type(marketHistoryInsight) == "table" then
             GameTooltip:AddLine(" ")
             GameTooltip:AddLine("Local market history", 1.0, 0.82, 0.18)
             GameTooltip:AddDoubleLine(
                 "Saved snapshots",
-                tostring(self.marketHistoryInsight.sampleCount or self.marketHistorySampleCount or 0),
+                tostring(marketHistoryInsight.sampleCount or self.marketHistorySampleCount or 0),
                 0.72, 0.86, 1.0,
                 1, 1, 1
             )
-            GameTooltip:AddLine(self.marketHistoryInsight.summary or "Collecting local market history.", 0.72, 0.86, 1.0)
-            if type(self.marketHistoryInsight.detail) == "string" and self.marketHistoryInsight.detail ~= "" then
-                GameTooltip:AddLine(self.marketHistoryInsight.detail, 0.62, 0.66, 0.74)
+            GameTooltip:AddLine(marketHistoryInsight.summary or "Collecting local market history.", 0.72, 0.86, 1.0)
+            if type(marketHistoryInsight.detail) == "string" and marketHistoryInsight.detail ~= "" then
+                GameTooltip:AddLine(marketHistoryInsight.detail, 0.62, 0.66, 0.74)
             end
         end
         GameTooltip:AddLine(" ")
@@ -1915,20 +2624,16 @@ function GoldTracker:GetInventoryWindowRow(index)
     end)
     row:SetScript("OnMouseUp", function(self, button)
         if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" then
-            local hasModifier = (IsShiftKeyDown and IsShiftKeyDown())
-                or (IsControlKeyDown and IsControlKeyDown())
-                or (IsAltKeyDown and IsAltKeyDown())
-            if hasModifier and HandleModifiedItemClick and HandleModifiedItemClick(self.itemLink) then
+            if GoldTracker:HandleModifiedItemClickIfModified(self) then
                 return
             end
             GoldTracker:OpenInventoryItemDetailsWindow(self)
-        elseif button == "RightButton" then
+        elseif button == "RightButton" and type(self.itemLink) == "string" and self.itemLink ~= "" then
             GoldTracker:LoadInventoryItemIntoAuctionHouse(self)
         end
     end)
 
     frame.inventoryRows[index] = row
-    ApplyInventoryTableColumnLayout(frame)
     return row
 end
 
@@ -1959,7 +2664,8 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
             minimumQuality,
             minimumValueCopper,
             frame.inventorySortKey,
-            frame.inventorySortAscending
+            frame.inventorySortAscending,
+            frame.categoryFilterID
         )
     local rowHeight = INVENTORY_ROW_HEIGHT
     local yOffset = 0
@@ -1993,85 +2699,177 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
         SortInventoryItems(items, frame.inventorySortKey, frame.inventorySortAscending)
     end
 
-    for index, item in ipairs(items) do
+    local displayRows = BuildInventoryDisplayRows(items, frame.categoryFilterID, frame.groupByCategory)
+
+    for index, displayRow in ipairs(displayRows) do
         local row = self:GetInventoryWindowRow(index)
         if row then
-            row.itemLink = item.itemLink
-            row.itemName = item.itemName
-            row.itemQuality = item.itemQuality
-            row.iconTexture = item.icon
-            row.quantity = item.quantity
-            row.unitValue = item.unitValue
-            row.totalValue = item.totalValue
-            row.valueSourceID = item.valueSourceID
-            row.bagID = item.bagID
-            row.slotIndex = item.slotIndex
-            row.regionSoldPerDay = item.regionSoldPerDay
-            row.regionSaleRate = item.regionSaleRate
-            row.marketValue = item.marketValue
-            row.historicalValue = item.historicalValue
-            row.marketTrendPercent = item.marketTrendPercent
-            row.valueSourceLabel = item.valueSourceLabel
-            row.valueSourceWasFallback = item.valueSourceWasFallback == true
-            row.marketHistoryInsight = type(self.GetInventoryMarketInsight) == "function"
-                and self:GetInventoryMarketInsight(item)
-                or nil
-            row.marketHistorySampleCount = row.marketHistoryInsight and row.marketHistoryInsight.sampleCount
-                or item.marketHistorySampleCount
-                or 0
-            row.itemText:SetText(item.itemLink)
-            row.quantityText:SetText(tostring(item.quantity or 0))
-            row.demandText:SetText(FormatInventorySoldPerDay(item.regionSoldPerDay))
-            row.historySamplesText:SetText(row.marketHistorySampleCount > 0 and tostring(row.marketHistorySampleCount) or "--")
-            row.trendText:SetText(FormatInventoryTrendPercent(item.marketTrendPercent))
-            row.unitValueText:SetText(self:FormatMoney(item.unitValue or 0))
-            row.totalValueText:SetText(self:FormatMoney(item.totalValue or 0))
-            row.totalValueText:SetTextColor(0.68, 0.96, 0.72)
-            row.unitValueText:SetTextColor(0.72, 0.86, 1.0)
-            row.trendText:SetTextColor(GetInventoryTrendColor(item.marketTrendPercent))
-            row.demandText:SetTextColor(
-                item.demandColorR or 0.62,
-                item.demandColorG or 0.66,
-                item.demandColorB or 0.74
-            )
-            if row.marketHistorySampleCount >= 10 then
-                row.historySamplesText:SetTextColor(0.68, 0.96, 0.72)
-            elseif row.marketHistorySampleCount >= 3 then
-                row.historySamplesText:SetTextColor(0.72, 0.86, 1.0)
+            if displayRow.isCategoryDivider then
+                row.isCategoryDivider = true
+                row.itemID = nil
+                row.itemLink = nil
+                row.itemName = nil
+                row.itemQuality = nil
+                row.iconTexture = nil
+                row.quantity = nil
+                row.unitValue = nil
+                row.totalValue = nil
+                row.valueSourceID = nil
+                row.bagID = nil
+                row.slotIndex = nil
+                row.regionSoldPerDay = nil
+                row.regionSaleRate = nil
+                row.marketValue = nil
+                row.historicalValue = nil
+                row.marketTrendPercent = nil
+                row.valueSourceLabel = nil
+                row.valueSourceWasFallback = false
+                row.marketHistoryInsight = nil
+                row.marketHistorySampleCount = 0
+                row.favorite = false
+                row.hasFarmingMap = false
+                if row.favoriteButton then
+                    row.favoriteButton:Hide()
+                end
+                if row.mapButton then
+                    row.mapButton:Hide()
+                end
+                if row.icon then
+                    row.icon:Hide()
+                end
+                row.itemText:Show()
+                row.itemText:SetText(string.format("%s (%d)", displayRow.categoryLabel or "Uncategorized", displayRow.itemCount or 0))
+                row.itemText:SetTextColor(1.0, 0.82, 0.18)
+                row.quantityText:Hide()
+                row.historySamplesText:Hide()
+                row.demandText:Hide()
+                row.sellRateText:Hide()
+                row.trendText:Hide()
+                row.unitValueText:Hide()
+                row.totalValueText:Hide()
+                if row.background then
+                    row.background:SetColorTexture(1.0, 0.82, 0.18, 0.10)
+                end
+                if row.divider then
+                    row.divider:SetShown(true)
+                end
+
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", frame.inventoryContent, "TOPLEFT", 0, -yOffset)
+                row:SetPoint("TOPRIGHT", frame.inventoryContent, "TOPRIGHT", 0, -yOffset)
+                row:SetHeight(rowHeight)
+                row:Show()
+
+                yOffset = yOffset + rowHeight + INVENTORY_ROW_SPACING
             else
-                row.historySamplesText:SetTextColor(0.62, 0.66, 0.74)
-            end
-            row.quantityText:SetTextColor(0.92, 0.95, 1.0)
+                local item = displayRow
+                row.isCategoryDivider = false
+                row.itemID = item.itemID
+                row.itemLink = item.itemLink
+                row.itemName = item.itemName
+                row.itemQuality = item.itemQuality
+                row.iconTexture = item.icon
+                row.quantity = item.quantity
+                row.unitValue = item.unitValue
+                row.totalValue = item.totalValue
+                row.valueSourceID = item.valueSourceID
+                row.categoryID = item.categoryID
+                row.categoryLabel = item.categoryLabel
+                row.bagID = item.bagID
+                row.slotIndex = item.slotIndex
+                row.regionSoldPerDay = item.regionSoldPerDay
+                row.regionSaleRate = item.regionSaleRate
+                row.marketValue = item.marketValue
+                row.historicalValue = item.historicalValue
+                row.marketTrendPercent = item.marketTrendPercent
+                row.valueSourceLabel = item.valueSourceLabel
+                row.valueSourceWasFallback = item.valueSourceWasFallback == true
+                row.marketHistoryInsight = nil
+                row.marketHistorySampleCount = item.marketHistorySampleCount or 0
+                row.favorite = type(self.IsFarmingItemFavorite) == "function" and self:IsFarmingItemFavorite(row)
+                row.hasFarmingMap = self:HasInventoryMaterialFarmingMap(row)
+                if row.favoriteButton then
+                    row.favoriteButton:SetText(row.favorite and "-" or "+")
+                    if row.favoriteButton.SetSelected then
+                        row.favoriteButton:SetSelected(row.favorite)
+                    end
+                    row.favoriteButton:Show()
+                end
+                if row.mapButton then
+                    row.mapButton:SetText("Map")
+                    if row.mapButton.SetEnabled then
+                        row.mapButton:SetEnabled(row.hasFarmingMap)
+                    end
+                    if row.mapButton.SetAlpha then
+                        row.mapButton:SetAlpha(row.hasFarmingMap and 1 or 0.42)
+                    end
+                    row.mapButton:Show()
+                end
+                row.itemText:Show()
+                row.quantityText:Show()
+                row.historySamplesText:Show()
+                row.demandText:Show()
+                row.sellRateText:Show()
+                row.trendText:Show()
+                row.unitValueText:Show()
+                row.totalValueText:Show()
+                row.itemText:SetText(item.itemLink)
+                row.quantityText:SetText(tostring(item.quantity or 0))
+                row.demandText:SetText(FormatInventorySoldPerDay(item.regionSoldPerDay))
+                local sellRateLabel, sellRateR, sellRateG, sellRateB = GetInventorySellRateTier(item.regionSaleRate)
+                row.sellRateText:SetText(FormatInventorySaleRate(item.regionSaleRate))
+                row.historySamplesText:SetText(row.marketHistorySampleCount > 0 and tostring(row.marketHistorySampleCount) or "--")
+                row.trendText:SetText(FormatInventoryTrendPercent(item.marketTrendPercent))
+                row.unitValueText:SetText(self:FormatMoney(item.unitValue or 0))
+                row.totalValueText:SetText(self:FormatMoney(item.totalValue or 0))
+                row.totalValueText:SetTextColor(0.68, 0.96, 0.72)
+                row.unitValueText:SetTextColor(0.72, 0.86, 1.0)
+                row.trendText:SetTextColor(GetInventoryTrendColor(item.marketTrendPercent))
+                row.demandText:SetTextColor(
+                    item.demandColorR or 0.62,
+                    item.demandColorG or 0.66,
+                    item.demandColorB or 0.74
+                )
+                row.sellRateText:SetTextColor(sellRateR, sellRateG, sellRateB)
+                if row.marketHistorySampleCount >= 10 then
+                    row.historySamplesText:SetTextColor(0.68, 0.96, 0.72)
+                elseif row.marketHistorySampleCount >= 3 then
+                    row.historySamplesText:SetTextColor(0.72, 0.86, 1.0)
+                else
+                    row.historySamplesText:SetTextColor(0.62, 0.66, 0.74)
+                end
+                row.quantityText:SetTextColor(0.92, 0.95, 1.0)
 
-            if item.icon then
-                row.icon:SetTexture(item.icon)
-                row.icon:Show()
-            else
-                row.icon:Hide()
-            end
+                if item.icon then
+                    row.icon:SetTexture(item.icon)
+                    row.icon:Show()
+                else
+                    row.icon:Hide()
+                end
 
-            if row.background then
-                local alpha = index % 2 == 0 and 0.045 or 0.022
-                row.background:SetColorTexture(1, 1, 1, alpha)
-            end
-            if row.divider then
-                row.divider:SetShown(index < #items)
-            end
+                if row.background then
+                    local alpha = index % 2 == 0 and 0.045 or 0.022
+                    row.background:SetColorTexture(1, 1, 1, alpha)
+                end
+                if row.divider then
+                    row.divider:SetShown(index < #displayRows)
+                end
 
-            row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", frame.inventoryContent, "TOPLEFT", 0, -yOffset)
-            row:SetPoint("TOPRIGHT", frame.inventoryContent, "TOPRIGHT", 0, -yOffset)
-            row:SetHeight(rowHeight)
-            row:Show()
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", frame.inventoryContent, "TOPLEFT", 0, -yOffset)
+                row:SetPoint("TOPRIGHT", frame.inventoryContent, "TOPRIGHT", 0, -yOffset)
+                row:SetHeight(rowHeight)
+                row:Show()
 
-            yOffset = yOffset + rowHeight
-            if index < #items then
-                yOffset = yOffset + INVENTORY_ROW_SPACING
+                yOffset = yOffset + rowHeight
+                if index < #displayRows then
+                    yOffset = yOffset + INVENTORY_ROW_SPACING
+                end
             end
         end
     end
 
-    for index = (#items + 1), #(frame.inventoryRows or {}) do
+    for index = (#displayRows + 1), #(frame.inventoryRows or {}) do
         if frame.inventoryRows[index] then
             frame.inventoryRows[index]:Hide()
         end
@@ -2142,6 +2940,8 @@ function GoldTracker:CreateInventoryWindow()
     frame.valueSourceID = initialSource and initialSource.id
     frame.minimumQuality = self:GetConfiguredMinimumTrackedItemQuality()
     frame.minimumValueCopper = 0
+    frame.categoryFilterID = INVENTORY_CATEGORY_ALL_ID
+    frame.groupByCategory = false
     frame.inventoryRows = {}
     frame.inventorySortKey = INVENTORY_DEFAULT_SORT_KEY
     frame.inventorySortAscending = INVENTORY_DEFAULT_SORT_ASCENDING
@@ -2152,7 +2952,7 @@ function GoldTracker:CreateInventoryWindow()
     local controlsPanel = CreateInventoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
     controlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -54)
-    controlsPanel:SetHeight(74)
+    controlsPanel:SetHeight(114)
     frame.controlsPanel = controlsPanel
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -2229,6 +3029,43 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.minimumValueInput = minimumValueInput
 
+    local categoryLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    categoryLabel:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", 0, -42)
+    categoryLabel:SetText("Category")
+
+    local categoryDropdown = CreateFrame("Frame", "GoldTrackerInventoryCategoryDropdown", controlsPanel, "UIDropDownMenuTemplate")
+    categoryDropdown:SetPoint("TOPLEFT", categoryLabel, "BOTTOMLEFT", -16, -5)
+    UIDropDownMenu_SetWidth(categoryDropdown, 210)
+    UIDropDownMenu_Initialize(categoryDropdown, function(_, level)
+        for _, category in ipairs(INVENTORY_CATEGORY_OPTIONS) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = category.label
+            info.value = category.id
+            info.checked = frame.categoryFilterID == category.id
+            info.func = function()
+                frame.categoryFilterID = NormalizeInventoryCategoryFilter(category.id)
+                addon:RefreshInventoryWindow(true)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    frame.categoryDropdown = categoryDropdown
+
+    local groupByCategoryCheckbox = CreateFrame("CheckButton", nil, controlsPanel, "UICheckButtonTemplate")
+    groupByCategoryCheckbox:SetPoint("LEFT", categoryDropdown, "RIGHT", 12, 2)
+    groupByCategoryCheckbox:SetChecked(frame.groupByCategory == true)
+    groupByCategoryCheckbox:SetScript("OnClick", function(button)
+        frame.groupByCategory = button:GetChecked() and true or false
+        addon:RefreshInventoryWindow(false)
+    end)
+    frame.groupByCategoryCheckbox = groupByCategoryCheckbox
+
+    local groupByCategoryLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    groupByCategoryLabel:SetPoint("LEFT", groupByCategoryCheckbox, "RIGHT", 3, 1)
+    groupByCategoryLabel:SetText("Group items")
+    groupByCategoryLabel:SetTextColor(0.92, 0.95, 1.0)
+    frame.groupByCategoryLabel = groupByCategoryLabel
+
     local refreshButton = CreateInventoryButton(controlsPanel, 86, 22, "Refresh", "neutral")
     refreshButton:SetSize(86, 22)
     refreshButton:SetPoint("RIGHT", controlsPanel, "RIGHT", -14, -10)
@@ -2249,8 +3086,15 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.totalHeaderButton = totalHeaderButton
 
+    local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
+    quantityHeaderButton:SetPoint("RIGHT", totalHeaderButton, "LEFT", -12, 0)
+    quantityHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("quantity")
+    end)
+    frame.quantityHeaderButton = quantityHeaderButton
+
     local unitHeaderButton = CreateInventoryHeaderButton(listPanel, "Unit value", INVENTORY_UNIT_VALUE_WIDTH, "RIGHT")
-    unitHeaderButton:SetPoint("RIGHT", totalHeaderButton, "LEFT", -12, 0)
+    unitHeaderButton:SetPoint("RIGHT", quantityHeaderButton, "LEFT", -12, 0)
     unitHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("unitValue")
     end)
@@ -2263,8 +3107,15 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.trendHeaderButton = trendHeaderButton
 
-    local demandHeaderButton = CreateInventoryHeaderButton(listPanel, "Demand", INVENTORY_DEMAND_WIDTH, "RIGHT")
-    demandHeaderButton:SetPoint("RIGHT", trendHeaderButton, "LEFT", -12, 0)
+    local sellRateHeaderButton = CreateInventoryHeaderButton(listPanel, "Sale %", INVENTORY_SELL_RATE_WIDTH, "RIGHT")
+    sellRateHeaderButton:SetPoint("RIGHT", trendHeaderButton, "LEFT", -12, 0)
+    sellRateHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("sellRate")
+    end)
+    frame.sellRateHeaderButton = sellRateHeaderButton
+
+    local demandHeaderButton = CreateInventoryHeaderButton(listPanel, "Sold/day", INVENTORY_DEMAND_WIDTH, "RIGHT")
+    demandHeaderButton:SetPoint("RIGHT", sellRateHeaderButton, "LEFT", -12, 0)
     demandHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("demand")
     end)
@@ -2277,16 +3128,17 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.historyHeaderButton = historyHeaderButton
 
-    local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
-    quantityHeaderButton:SetPoint("RIGHT", historyHeaderButton, "LEFT", -12, 0)
-    quantityHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("quantity")
-    end)
-    frame.quantityHeaderButton = quantityHeaderButton
+    local favoriteHeaderButton = CreateInventoryHeaderButton(listPanel, "Tracked", INVENTORY_TRACKED_COLUMN_WIDTH, "CENTER")
+    favoriteHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 20, -12)
+    frame.favoriteHeaderButton = favoriteHeaderButton
+
+    local mapHeaderButton = CreateInventoryHeaderButton(listPanel, "Map", INVENTORY_MAP_COLUMN_WIDTH, "CENTER")
+    mapHeaderButton:SetPoint("LEFT", favoriteHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
+    frame.mapHeaderButton = mapHeaderButton
 
     local itemHeaderButton = CreateInventoryHeaderButton(listPanel, "Item", nil, "LEFT")
-    itemHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 34, -12)
-    itemHeaderButton:SetPoint("RIGHT", quantityHeaderButton, "LEFT", -12, 0)
+    itemHeaderButton:SetPoint("LEFT", mapHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
+    itemHeaderButton:SetPoint("RIGHT", historyHeaderButton, "LEFT", -12, 0)
     itemHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("itemName")
     end)
@@ -2362,6 +3214,9 @@ function GoldTracker:CreateInventoryWindow()
         addon:RefreshInventoryWindowLayout()
     end)
     frame:SetScript("OnShow", function()
+        if frame.suppressExplorerOnShow then
+            return
+        end
         addon:RefreshInventoryWindow(true)
     end)
     frame:SetScript("OnHide", function()
@@ -2373,6 +3228,11 @@ function GoldTracker:CreateInventoryWindow()
 end
 
 function GoldTracker:OpenInventoryWindow()
+    if type(self.OpenExplorerWindow) == "function" then
+        self:OpenExplorerWindow("inventory")
+        return
+    end
+
     self:CreateInventoryWindow()
     if not self.inventoryFrame then
         return
@@ -2387,6 +3247,11 @@ function GoldTracker:OpenInventoryWindow()
 end
 
 function GoldTracker:ToggleInventoryWindow()
+    if type(self.ToggleExplorerWindow) == "function" then
+        self:ToggleExplorerWindow("inventory")
+        return
+    end
+
     self:CreateInventoryWindow()
     if not self.inventoryFrame then
         return
