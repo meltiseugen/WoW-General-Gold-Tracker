@@ -194,6 +194,8 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     self:RegisterEvent("LOOT_OPENED")
     self:RegisterEvent("LOOT_CLOSED")
+    self:RegisterEvent("MAIL_SHOW")
+    self:RegisterEvent("MAIL_CLOSED")
     self:RegisterEvent("PLAYER_TARGET_CHANGED")
     self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
     self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
@@ -513,6 +515,10 @@ GoldTracker:SetScript("OnEvent", function(_, event, ...)
         GoldTracker:OnLootOpened(...)
     elseif event == "LOOT_CLOSED" then
         GoldTracker:OnLootClosed(...)
+    elseif event == "MAIL_SHOW" then
+        GoldTracker:OnMailShow(...)
+    elseif event == "MAIL_CLOSED" then
+        GoldTracker:OnMailClosed(...)
     elseif event == "PLAYER_TARGET_CHANGED" then
         GoldTracker:OnPlayerTargetChanged(...)
     elseif event == "UPDATE_MOUSEOVER_UNIT" then

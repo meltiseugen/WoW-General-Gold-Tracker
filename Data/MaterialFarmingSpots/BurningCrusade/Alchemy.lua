@@ -1,5 +1,6 @@
 local _, NS = ...
 local Register = NS.RegisterMaterialFarmingSpot
+local Pins = NS.GetBurningCrusadeNpcCoords
 
 local function C(x, y, label)
     return { x = x, y = y, label = label }
@@ -39,13 +40,7 @@ RegisterMote(22572, "Mote of Air", { "alchemy", "engineering" }, {
             "Start at the Netherwing Fields cluster, then sweep north toward smaller ridge pockets.",
             "Pair this with nearby Cobra Scales if you can skin Shadow Serpents.",
         },
-        coords = {
-            C(0.554, 0.718, "Southern Enraged Air Spirit cluster"),
-            C(0.588, 0.656, "Netherwing Fields western cluster"),
-            C(0.626, 0.648, "Central air spirit pocket"),
-            C(0.660, 0.576, "Northern Netherwing Fields pocket"),
-            C(0.704, 0.666, "Eastern air spirit pocket"),
-        },
+        coords = Pins({ 21060 }, 104),
         confidence = "high",
     },
 })
@@ -71,13 +66,7 @@ RegisterMote(22573, "Mote of Earth", { "mining", "alchemy", "engineering" }, {
             "Run west to east along the chasm, then loop back once the first mobs respawn.",
             "Mine Adamantite nearby for extra Mote of Earth and Eternium chances.",
         },
-        coords = {
-            C(0.242, 0.714, "Western chasm rumbler"),
-            C(0.286, 0.760, "Southern chasm cluster"),
-            C(0.326, 0.806, "Central chasm cluster"),
-            C(0.396, 0.836, "Eastern chasm cluster"),
-            C(0.502, 0.770, "Far eastern rumbler"),
-        },
+        coords = Pins({ 17157 }, 107),
         confidence = "high",
     },
 })
@@ -103,13 +92,7 @@ RegisterMote(22574, "Mote of Fire", { "mining", "alchemy" }, {
             "Circle the fire elemental spawns and avoid wasting time on unkillable Felblood Initiates.",
             "Switch to Shadowmoon if the plateau is crowded.",
         },
-        coords = {
-            C(0.572, 0.228, "Western Throne of Kil'jaeden spark"),
-            C(0.596, 0.188, "Central Throne spark"),
-            C(0.632, 0.164, "Northern Throne spark"),
-            C(0.654, 0.172, "Eastern Throne spark"),
-            C(0.672, 0.180, "Far eastern Throne spark"),
-        },
+        coords = Pins({ 22323 }, 100),
         confidence = "high",
     },
     {
@@ -128,13 +111,7 @@ RegisterMote(22574, "Mote of Fire", { "mining", "alchemy" }, {
             "Circle the lower Fel Pits lava pockets.",
             "Earth elementals on the rim can add mixed mote value if the fire route runs dry.",
         },
-        coords = {
-            C(0.442, 0.452, "West Fel Pits fire spirit"),
-            C(0.462, 0.388, "North Fel Pits pocket"),
-            C(0.484, 0.464, "Central Fel Pits pocket"),
-            C(0.498, 0.510, "South Fel Pits pocket"),
-            C(0.532, 0.526, "East Fel Pits fire spirit"),
-        },
+        coords = Pins({ 21061 }, 104),
         confidence = "medium",
     },
 })
@@ -161,13 +138,7 @@ RegisterMote(22575, "Mote of Life", { "herbalism", "alchemy" }, {
             "Kill, loot, then herb-gather eligible bog giant corpses before moving.",
             "Use the eastern Dead Mire cluster when you want the tightest kill loop.",
         },
-        coords = {
-            C(0.102, 0.620, "Western Starving Fungal Giant cluster"),
-            C(0.136, 0.602, "Spawning Glen giant loop"),
-            C(0.782, 0.402, "Eastern Withered Giant cluster"),
-            C(0.814, 0.432, "Dead Mire central giant cluster"),
-            C(0.852, 0.400, "Dead Mire eastern giant cluster"),
-        },
+        coords = Pins({ 18124, 18125 }, 102),
         confidence = "high",
     },
 })
@@ -192,13 +163,7 @@ RegisterMote(22576, "Mote of Mana", { "alchemy", "engineering" }, {
             "Sweep the Area 52 ridge, then expand south if the main cluster is empty.",
             "Pair with Netherbloom and mining routes if pure mote value is weak.",
         },
-        coords = {
-            C(0.294, 0.586, "Northwest Mana Wraith"),
-            C(0.312, 0.714, "Southwest Mana Wraith"),
-            C(0.334, 0.584, "Central Mana Wraith"),
-            C(0.354, 0.606, "Eastern Mana Wraith"),
-            C(0.378, 0.610, "Far eastern Mana Wraith"),
-        },
+        coords = Pins({ 18864 }, 109),
         confidence = "high",
     },
 })
@@ -224,13 +189,7 @@ RegisterMote(22577, "Mote of Shadow", { "alchemy", "enchanting" }, {
             "Move along the ridge instead of camping a single cluster.",
             "Keep distance from Collapsing Voidwalkers when they are about to die.",
         },
-        coords = {
-            C(0.754, 0.646, "Northern Void Ridge"),
-            C(0.772, 0.702, "Central Void Ridge"),
-            C(0.786, 0.684, "Inner Void Ridge"),
-            C(0.794, 0.772, "Southern Void Ridge"),
-            C(0.810, 0.788, "Far southern Void Ridge"),
-        },
+        coords = Pins({ 17014 }, 100),
         confidence = "high",
     },
     {
@@ -249,13 +208,7 @@ RegisterMote(22577, "Mote of Shadow", { "alchemy", "enchanting" }, {
             "Use this route when Void Ridge is crowded.",
             "Oshu'gun Crystal Powder Samples are useful side drops if you still need Halaa turn-ins.",
         },
-        coords = {
-            C(0.314, 0.696, "Northwest Oshu'gun Voidspawn"),
-            C(0.332, 0.756, "West Oshu'gun Voidspawn"),
-            C(0.374, 0.666, "North Oshu'gun Voidspawn"),
-            C(0.394, 0.702, "Central Oshu'gun Voidspawn"),
-            C(0.432, 0.704, "East Oshu'gun Voidspawn"),
-        },
+        coords = Pins({ 17981 }, 107),
         confidence = "high",
     },
 })
@@ -281,13 +234,7 @@ RegisterMote(22578, "Mote of Water", { "alchemy", "engineering" }, {
             "Circle the lake and kill elementals while checking fishing pools.",
             "This route can be paired with Icefin Bluefish and Figluster's Mudfish pool checks.",
         },
-        coords = {
-            C(0.544, 0.262, "Western Skysong Lake spirit"),
-            C(0.558, 0.234, "Northwest Skysong Lake spirit"),
-            C(0.570, 0.282, "Central Skysong Lake spirit"),
-            C(0.592, 0.264, "Eastern Skysong Lake spirit"),
-            C(0.606, 0.314, "Southern Skysong Lake spirit"),
-        },
+        coords = Pins({ 17153 }, 107),
         confidence = "high",
     },
 })

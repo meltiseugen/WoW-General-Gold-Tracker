@@ -25,6 +25,12 @@ describe("Core/Session reload persistence", function()
                         quantity = "2",
                         totalValue = "400",
                         valueSourceID = "TSM_DBMARKET",
+                        mapID = "100",
+                        mapX = "0.57",
+                        mapY = "0.23",
+                        coordinateSource = "retry",
+                        coordinateCapturedAt = "1710000000",
+                        coordinateRetryCount = "2",
                         ahTracked = nil,
                     },
                 },
@@ -56,6 +62,12 @@ describe("Core/Session reload persistence", function()
         assert.equals(400, snapshot.itemLoots[1].totalValue)
         assert.equals("Market Value", snapshot.itemLoots[1].valueSourceLabel)
         assert.is_true(snapshot.itemLoots[1].ahTracked)
+        assert.equals(100, snapshot.itemLoots[1].mapID)
+        assert.equals(0.57, snapshot.itemLoots[1].mapX)
+        assert.equals(0.23, snapshot.itemLoots[1].mapY)
+        assert.equals("retry", snapshot.itemLoots[1].coordinateSource)
+        assert.equals(1710000000, snapshot.itemLoots[1].coordinateCapturedAt)
+        assert.equals(2, snapshot.itemLoots[1].coordinateRetryCount)
         assert.equals(25, snapshot.moneyLoots[1].amount)
         assert.equals(999, snapshot.savedAt)
     end)

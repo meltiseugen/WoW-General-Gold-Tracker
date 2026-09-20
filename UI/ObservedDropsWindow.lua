@@ -28,7 +28,7 @@ local HORIZONTAL_SCROLL_HEIGHT = 14
 local DEFAULT_SORT_KEY = "value"
 local OBSERVED_DROPS_BACKGROUND_SCAN_ITEMS_PER_TICK = 150
 local OBSERVED_DROPS_SCAN_REFRESH_INTERVAL = 0.20
-local OBSERVED_DROPS_SCAN_CACHE_VERSION = 1
+local OBSERVED_DROPS_SCAN_CACHE_VERSION = 2
 local OBSERVED_DROPS_SCAN_CACHE_MAX_ENTRIES = 30
 local EXPANSION_ALL_ID = "all"
 local DROP_SOURCE_OBSERVED_ID = "observed"
@@ -727,17 +727,30 @@ local function GetObservedRowPriceSnapshot(addon, drop, itemLink)
     local sourceID = source and source.id
     local sourceLabel = source and source.label or "Unknown"
     local cache = addon.observedDropsFrame and addon.observedDropsFrame.priceCache
-    local cacheKey = tostring(drop and (drop.itemKey or drop.itemID or itemLink) or itemLink or "") .. "|" .. tostring(sourceID or "")
+    local fallbackSignature = type(addon.GetValueSourceFallbackSignature) == "function"
+        and addon:GetValueSourceFallbackSignature()
+        or "legacy"
+    local cacheKey = table.concat({
+        tostring(drop and (drop.itemKey or drop.itemID or itemLink) or itemLink or ""),
+        tostring(sourceID or ""),
+        fallbackSignature,
+    }, "|")
     if type(cache) == "table" and type(cache[cacheKey]) == "table" then
         return cache[cacheKey]
     end
 
     local itemID = tonumber(drop and drop.itemID)
     local selectedValue = 0
-    if itemLink and sourceID and type(addon.GetItemUnitValueFromSource) == "function" then
+    local resolvedSourceID = sourceID
+    local resolvedSourceLabel = sourceLabel
+    local valueSourceWasFallback = false
+    if sourceID and type(addon.ResolveItemUnitValue) == "function" then
+        selectedValue, resolvedSourceID, resolvedSourceLabel, valueSourceWasFallback =
+            addon:ResolveItemUnitValue(sourceID, itemLink, itemID, true)
+    elseif itemLink and sourceID and type(addon.GetItemUnitValueFromSource) == "function" then
         selectedValue = NormalizeCopper(addon:GetItemUnitValueFromSource(sourceID, itemLink))
     end
-    if selectedValue <= 0 and source and source.tsmKey then
+    if selectedValue <= 0 and source and source.tsmKey and type(addon.ResolveItemUnitValue) ~= "function" then
         selectedValue = GetRawTSMValue(addon, itemLink, itemID, source.tsmKey)
     end
     if selectedValue <= 0 and sourceID == drop.valueSourceID then
@@ -746,8 +759,9 @@ local function GetObservedRowPriceSnapshot(addon, drop, itemLink)
 
     local snapshot = {
         selectedValue = selectedValue,
-        valueSourceID = sourceID,
-        valueSourceLabel = sourceLabel,
+        valueSourceID = resolvedSourceID,
+        valueSourceLabel = resolvedSourceLabel,
+        valueSourceWasFallback = valueSourceWasFallback == true,
         marketValue = GetRawTSMValue(addon, itemLink, itemID, "DBMarket"),
         historicalValue = GetRawTSMValue(addon, itemLink, itemID, "DBHistorical"),
         regionMarketValue = GetRawTSMValue(addon, itemLink, itemID, "DBRegionMarketAvg"),
@@ -1052,6 +1066,7 @@ local function AddKnownDropRow(addon, rows, item, source)
         totalValue = prices.selectedValue,
         valueSourceID = prices.valueSourceID,
         valueSourceLabel = prices.valueSourceLabel,
+        valueSourceWasFallback = prices.valueSourceWasFallback == true,
         marketValue = prices.marketValue,
         historicalValue = prices.historicalValue,
         regionMarketValue = prices.regionMarketValue,
@@ -1181,6 +1196,7 @@ local function AddObservedCapturedDropRow(addon, rows, key, drop, expansionFilte
         totalValue = prices.selectedValue,
         valueSourceID = prices.valueSourceID,
         valueSourceLabel = prices.valueSourceLabel,
+        valueSourceWasFallback = prices.valueSourceWasFallback == true,
         marketValue = prices.marketValue,
         historicalValue = prices.historicalValue,
         regionMarketValue = prices.regionMarketValue,
@@ -1402,6 +1418,7 @@ function GoldTracker:UpdateObservedDropsPrices()
             drop.value = prices.selectedValue
             drop.valueSourceID = prices.valueSourceID
             drop.valueSourceLabel = prices.valueSourceLabel
+            drop.valueSourceWasFallback = prices.valueSourceWasFallback == true
             drop.marketValue = prices.marketValue
             drop.historicalValue = prices.historicalValue
             drop.regionMarketValue = prices.regionMarketValue
@@ -1442,6 +1459,7 @@ function GoldTracker:RefreshCurrentObservedDropsScanPrices()
             row.totalValue = prices.selectedValue
             row.valueSourceID = prices.valueSourceID
             row.valueSourceLabel = prices.valueSourceLabel
+            row.valueSourceWasFallback = prices.valueSourceWasFallback == true
             row.marketValue = prices.marketValue
             row.historicalValue = prices.historicalValue
             row.regionMarketValue = prices.regionMarketValue
@@ -1456,6 +1474,9 @@ function GoldTracker:RefreshCurrentObservedDropsScanPrices()
         state.valueSourceID = frame.valueSourceID
         local source = GetObservedValueSource(self)
         state.valueSourceLabel = source and source.label or state.valueSourceLabel
+    end
+    if updated > 0 and type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(rows)
     end
     return updated
 end
@@ -1559,6 +1580,9 @@ function GoldTracker:FinishObservedDropsScan()
         state.isScanning = false
         frame.scannedObservedDropsRows = state.results or {}
     end
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(frame.scannedObservedDropsRows or {})
+    end
     frame.hasObservedDropsScanRun = true
     if frame.scanButton then
         frame.scanButton:SetEnabled(true)
@@ -1596,6 +1620,9 @@ function GoldTracker:CancelObservedDropsScan()
     state.cancelled = true
     self:StopObservedDropsScanWorker()
     frame.scannedObservedDropsRows = state.results or {}
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(frame.scannedObservedDropsRows)
+    end
     frame.hasObservedDropsScanRun = true
     if frame.statusText then
         frame.statusText:SetText(string.format(
@@ -1624,6 +1651,7 @@ local function ProcessObservedDropsScanFrame(worker, elapsed)
     end
 
     local processed = 0
+    local firstNewResultIndex = #state.results + 1
     local batchSize = tonumber(state.scanBatchSize) or OBSERVED_DROPS_BACKGROUND_SCAN_ITEMS_PER_TICK
     while processed < batchSize and state.candidateIndex <= #state.candidates do
         local candidate = state.candidates[state.candidateIndex]
@@ -1631,6 +1659,14 @@ local function ProcessObservedDropsScanFrame(worker, elapsed)
         state.scannedDrops = (state.scannedDrops or 0) + 1
         processed = processed + 1
         ProcessObservedDropScanCandidate(addon, state, candidate)
+    end
+
+    if #state.results >= firstNewResultIndex and type(addon.RecordDiscoveredItemMarketSnapshots) == "function" then
+        local discoveredRows = {}
+        for index = firstNewResultIndex, #state.results do
+            discoveredRows[#discoveredRows + 1] = state.results[index]
+        end
+        addon:RecordDiscoveredItemMarketSnapshots(discoveredRows)
     end
 
     addon:UpdateObservedDropsScanProgress()
@@ -1748,6 +1784,7 @@ local function BuildObservedDropsScanCacheKey(addon, state)
         tostring(state and state.zoneFilterID or ZONE_ALL_ID),
         tostring(sourceID),
         tostring(minimumValue),
+        type(addon.GetValueSourceFallbackSignature) == "function" and addon:GetValueSourceFallbackSignature() or "legacy",
     }, "|")
 end
 
@@ -1776,6 +1813,7 @@ local function CloneObservedDropResultForCache(row)
         totalValue = math.max(0, math.floor((tonumber(row.totalValue) or row.value or 0) + 0.5)),
         valueSourceID = row.valueSourceID,
         valueSourceLabel = row.valueSourceLabel,
+        valueSourceWasFallback = row.valueSourceWasFallback == true,
         marketValue = math.max(0, math.floor((tonumber(row.marketValue) or 0) + 0.5)),
         historicalValue = math.max(0, math.floor((tonumber(row.historicalValue) or 0) + 0.5)),
         regionMarketValue = math.max(0, math.floor((tonumber(row.regionMarketValue) or 0) + 0.5)),
@@ -2045,6 +2083,7 @@ function GoldTracker:ToggleObservedDropFavorite(row)
             averageValue = row.averageValue,
             valueSourceID = row.valueSourceID,
             valueSourceLabel = row.valueSourceLabel,
+            valueSourceWasFallback = row.valueSourceWasFallback == true,
             farmingSourceType = row.farmingSourceType or "observed",
         }
     end
@@ -2521,6 +2560,11 @@ function GoldTracker:GetObservedDropsWindowRow(index)
         GameTooltip:AddDoubleLine("Location", self.locationLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Source", self.sourceTextValue or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Seen / Qty", string.format("%d / %d", tonumber(self.seenCount) or 0, tonumber(self.quantity) or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+        local priceSourceLabel = self.valueSourceLabel or self.valueSourceID or "Unknown"
+        if self.valueSourceWasFallback then
+            priceSourceLabel = priceSourceLabel .. " (fallback)"
+        end
+        GameTooltip:AddDoubleLine("Price source", priceSourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("Click Details for price history.", 0.72, 0.86, 1.0)
         GameTooltip:Show()
@@ -2565,7 +2609,9 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         row.tracked = type(self.IsFarmingItemFavorite) == "function" and self:IsFarmingItemFavorite(row)
     end
     SortRows(rows, frame.sortKey, frame.sortAscending)
-    if type(self.RecordInventoryMarketSnapshots) == "function" then
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(rows)
+    elseif type(self.RecordInventoryMarketSnapshots) == "function" then
         self:RecordInventoryMarketSnapshots(rows)
     end
 
@@ -2591,6 +2637,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             row.totalValue = result.totalValue
             row.valueSourceID = result.valueSourceID
             row.valueSourceLabel = result.valueSourceLabel
+            row.valueSourceWasFallback = result.valueSourceWasFallback == true
             row.marketValue = result.marketValue
             row.historicalValue = result.historicalValue
             row.regionMarketValue = result.regionMarketValue
@@ -2805,7 +2852,7 @@ function GoldTracker:CreateObservedDropsWindow()
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Value source")
+    sourceLabel:SetText("Preferred value source")
 
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerObservedDropsValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)

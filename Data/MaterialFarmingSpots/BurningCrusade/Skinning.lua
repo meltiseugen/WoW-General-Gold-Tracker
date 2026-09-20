@@ -1,5 +1,6 @@
 local _, NS = ...
 local Register = NS.RegisterMaterialFarmingSpot
+local Pins = NS.GetBurningCrusadeNpcCoords
 
 local function C(x, y, label)
     return { x = x, y = y, label = label }
@@ -19,23 +20,18 @@ local function RegisterSkinning(itemID, itemName, category, sourceUrls, summary,
     })
 end
 
-local RAVAGER_HELLFIRE_COORDS = {
-    C(0.214, 0.654, "Quillfang Ravager western pack"),
-    C(0.222, 0.670, "Quillfang Ravager central pack"),
-    C(0.234, 0.650, "Quillfang Ravager eastern pack"),
-    C(0.046, 0.504, "Thornfang Ravager western pack"),
-    C(0.094, 0.522, "Thornfang Hill ravager pack"),
-    C(0.126, 0.476, "Thornfang Venomspitter pack"),
-}
+local RAVAGER_HELLFIRE_COORDS = Pins({ 16934, 19349, 19350 }, 100)
+local NAGRAND_CLEFTHOOF_COORDS = Pins({ 17132, 17133 }, 107)
+local TEROKKAR_BASILISK_COORDS = Pins({ 18463, 18461, 18648 }, 108)
 
-local NAGRAND_CLEFTHOOF_COORDS = {
-    C(0.240, 0.472, "Aged Clefthoof western route"),
-    C(0.282, 0.334, "Northwest Aged Clefthoof"),
-    C(0.304, 0.632, "Southern Aged Clefthoof loop"),
-    C(0.438, 0.718, "South-central Clefthoof Bull"),
-    C(0.496, 0.520, "Central Clefthoof Bull"),
-    C(0.604, 0.390, "Eastern Clefthoof herd"),
-}
+for _, coord in ipairs({
+    C(0.5296, 0.2984, "AoA north Terokkar Fel Scale route pin"),
+    C(0.5882, 0.3043, "AoA northeast Terokkar Fel Scale route pin"),
+    C(0.6012, 0.3846, "AoA central Terokkar basilisk pin"),
+    C(0.6390, 0.4504, "AoA eastern Terokkar basilisk pin"),
+}) do
+    TEROKKAR_BASILISK_COORDS[#TEROKKAR_BASILISK_COORDS + 1] = coord
+end
 
 RegisterSkinning(25649, "Knothide Leather Scraps", "Scrap", {
     "https://www.wowhead.com/item=25649/knothide-leather-scraps",
@@ -160,17 +156,7 @@ RegisterSkinning(25700, "Fel Scales", "Scale", {
             "Follow the eastern river banks and kill basilisks as they respawn.",
             "Skin every basilisk; Crystal-Infused Leather can appear as side value.",
         },
-        coords = {
-            C(0.5296, 0.2984, "AoA north Terokkar Fel Scale route pin"),
-            C(0.530, 0.422, "Northern Dampscale river bank"),
-            C(0.5882, 0.3043, "AoA northeast Terokkar Fel Scale route pin"),
-            C(0.596, 0.374, "Central Dampscale river bank"),
-            C(0.6012, 0.3846, "AoA central Terokkar basilisk pin"),
-            C(0.628, 0.438, "Eastern Dampscale cluster"),
-            C(0.6390, 0.4504, "AoA eastern Terokkar basilisk pin"),
-            C(0.686, 0.436, "Southern Dampscale river bank"),
-            C(0.638, 0.294, "Stonegazer basilisk ridge"),
-        },
+        coords = TEROKKAR_BASILISK_COORDS,
         confidence = "medium",
     },
 })
@@ -197,13 +183,7 @@ RegisterSkinning(25707, "Fel Hide", "Hide", {
             "Loop the Arklon Ruins floor and skin every eligible demon-beast corpse.",
             "Use defensive pulls if Mana Burn or Spell Lock slows your character down.",
         },
-        coords = {
-            C(0.384, 0.714, "Arklon Ruins western Artifact Seeker"),
-            C(0.394, 0.726, "Arklon Ruins north cluster"),
-            C(0.404, 0.742, "Arklon Ruins center cluster"),
-            C(0.418, 0.718, "Arklon Ruins eastern cluster"),
-            C(0.424, 0.744, "Arklon Ruins southeast cluster"),
-        },
+        coords = Pins({ 19852 }, 109),
         confidence = "high",
     },
 })
@@ -257,13 +237,7 @@ RegisterSkinning(29539, "Cobra Scales", "Scale", {
             "Stay on non-elite serpent pulls if the western end is awkward.",
             "Mana Thistle and Dreaming Glory can add herbalism side value nearby.",
         },
-        coords = {
-            C(0.074, 0.418, "Far west Twilight Serpent"),
-            C(0.096, 0.442, "Western Twilight Serpent cluster"),
-            C(0.124, 0.374, "Central Twilight Serpent cluster"),
-            C(0.174, 0.316, "Eastern Twilight Serpent cluster"),
-            C(0.200, 0.348, "Far east Twilight Serpent"),
-        },
+        coords = Pins({ 23026 }, 107),
         confidence = "high",
     },
     {
@@ -282,13 +256,26 @@ RegisterSkinning(29539, "Cobra Scales", "Scale", {
             "Kill Coilskar Cobras outside the cave first; only farm inside if your character can handle the extra pulls.",
             "Use the outside Cistern cluster when you want a cleaner route.",
         },
-        coords = {
-            C(0.454, 0.294, "Southwest Coilskar Cobra"),
-            C(0.476, 0.308, "South Coilskar Cobra"),
-            C(0.516, 0.226, "Coilskar cave approach"),
-            C(0.534, 0.224, "Coilskar Cistern center"),
-            C(0.560, 0.216, "Northeast Coilskar Cobra"),
+        coords = Pins({ 19784 }, 104),
+        confidence = "high",
+    },
+    {
+        id = "cobra-scales-shadowmoon-shadow-serpents",
+        source = "Complete Retail Wowhead NPC map-pin set and Cobra Scales skinning table",
+        sourceUrls = {
+            "https://www.wowhead.com/npc=23020/shadow-serpent",
+            "https://www.wowhead.com/item=29539/cobra-scales",
         },
+        mapName = "Shadowmoon Valley",
+        location = "Coilskar Point and the northern Shadowmoon ridges, farming Shadow Serpents",
+        routeType = "skinning-loop",
+        density = "High across several separate clusters",
+        dropDifficulty = "Moderate. The serpent pins span several ridges, so flying is strongly recommended.",
+        tips = {
+            "Keep the Coilskar Point and northern ridge groups as separate sweeps; both mob clusters are retained.",
+            "This is the previously missing third Cobra Scales source mob.",
+        },
+        coords = Pins({ 23020 }, 104),
         confidence = "high",
     },
 })
@@ -314,13 +301,7 @@ RegisterSkinning(29547, "Wind Scales", "Scale", {
             "Circle the dragonhawk clusters and skin before moving to the next pocket.",
             "Switch to Scalewing Shelf if Shadowmoon is contested.",
         },
-        coords = {
-            C(0.436, 0.682, "West Eclipsion Dragonhawk"),
-            C(0.452, 0.668, "Northwest Eclipsion Dragonhawk"),
-            C(0.468, 0.706, "Central Eclipsion Dragonhawk"),
-            C(0.484, 0.654, "East Eclipsion Dragonhawk"),
-            C(0.516, 0.604, "Northeast Eclipsion Dragonhawk"),
-        },
+        coords = Pins({ 20502 }, 104),
         confidence = "high",
     },
     {
@@ -339,13 +320,7 @@ RegisterSkinning(29547, "Wind Scales", "Scale", {
             "Kill Scalewing Serpents and Daggermaw Lashtails.",
             "The shelf route also supports Serpent Flesh side farming.",
         },
-        coords = {
-            C(0.614, 0.542, "Northwest Scalewing Shelf"),
-            C(0.650, 0.504, "North Scalewing Shelf"),
-            C(0.668, 0.604, "Central Scalewing Shelf"),
-            C(0.680, 0.698, "South Scalewing Shelf"),
-            C(0.686, 0.742, "Far south Scalewing Shelf"),
-        },
+        coords = Pins({ 20749, 20751 }, 105),
         confidence = "medium",
     },
 })
@@ -371,13 +346,7 @@ RegisterSkinning(29548, "Nether Dragonscales", "Scale", {
             "Loop the Celestial Ridge platform and kill every skinnable nether dragonkin.",
             "Use Blade's Edge if Netherstorm travel feels too spread out.",
         },
-        coords = {
-            C(0.692, 0.342, "West Celestial Ridge drake"),
-            C(0.700, 0.400, "Central Celestial Ridge drake"),
-            C(0.722, 0.386, "East Celestial Ridge drake"),
-            C(0.734, 0.420, "Southeast Celestial Ridge drake"),
-            C(0.746, 0.386, "Far east Celestial Ridge drake"),
-        },
+        coords = Pins({ 18877 }, 109),
         confidence = "high",
     },
     {
@@ -396,13 +365,7 @@ RegisterSkinning(29548, "Nether Dragonscales", "Scale", {
             "Stay on Singing Ridge and reset the route once the first whelps respawn.",
             "If Netherwing reputation affects nearby dragons elsewhere, use neutral dragonkin routes instead.",
         },
-        coords = {
-            C(0.586, 0.726, "Northwest Singing Ridge whelp"),
-            C(0.602, 0.760, "Central Singing Ridge whelp"),
-            C(0.622, 0.762, "East Singing Ridge whelp"),
-            C(0.644, 0.754, "Southeast Singing Ridge whelp"),
-            C(0.672, 0.754, "Far southeast Singing Ridge whelp"),
-        },
+        coords = Pins({ 20021 }, 105),
         confidence = "medium",
     },
 })

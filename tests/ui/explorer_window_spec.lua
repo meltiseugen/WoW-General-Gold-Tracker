@@ -194,6 +194,49 @@ describe("UI/ExplorerWindow", function()
         assert.same({ "Favorites", "Alerts", "Rares", "Instances", "Drops", "Materials", "Bags" }, labels)
     end)
 
+    it("explains the Bags tab TradeSkillMaster dependency", function()
+        loader.with_globals({ TSM_API = nil }, function()
+            local addon = load_explorer({})
+
+            assert.matches("Requires TradeSkillMaster", addon:GetExplorerTabTooltip("inventory"))
+            assert.matches("unavailable", addon:GetExplorerTabTooltip("inventory"))
+            assert.is_nil(addon:GetExplorerTabTooltip("materials"))
+        end)
+
+        loader.with_globals({
+            TSM_API = {
+                GetCustomPriceValue = function() end,
+            },
+        }, function()
+            local addon = load_explorer({})
+
+            assert.matches("using TradeSkillMaster", addon:GetExplorerTabTooltip("inventory"))
+        end)
+    end)
+
+    it("refreshes the Bags tab tooltip with TSM availability", function()
+        local buttons = tab_buttons()
+        local addon = load_explorer({
+            explorerFrame = {
+                tabButtons = buttons,
+            },
+        })
+
+        loader.with_globals({ TSM_API = nil }, function()
+            addon:RefreshExplorerTabs()
+            assert.matches("Requires TradeSkillMaster", buttons.inventory.tooltipText)
+        end)
+
+        loader.with_globals({
+            TSM_API = {
+                GetCustomPriceValue = function() end,
+            },
+        }, function()
+            addon:RefreshExplorerTabs()
+            assert.matches("using TradeSkillMaster", buttons.inventory.tooltipText)
+        end)
+    end)
+
     it("shows only saved scans and new scan sub-tabs on rare farming", function()
         local rare_frame = frame()
         rare_frame.librarySavedTabButton = button()

@@ -54,6 +54,13 @@
         "UiMapPoint",
         "UIDropDownMenu_Refresh",
         "UIDropDownMenu_SetAnchor",
-        "CloseDropDownMenus"
+        "CloseDropDownMenus",
+        "UIDropDownMenu_EnableDropDown",
+        "UIDropDownMenu_DisableDropDown",
+        "WorldMapFrame",
+        "MapCanvasDataProviderMixin",
+        "OpenWorldMap",
+        "ToggleWorldMap",
+        "MapCanvasPinMixin"
     ]
 }

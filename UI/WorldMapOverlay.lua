@@ -1,12 +1,20 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
-local Theme = NS.JanisTheme
+local MapAreaOverlay = GoldTracker.MapAreaOverlay
 
 local PIN_TEMPLATE = "GoldTrackerWorldMapRoutePinTemplate"
 local LINE_THICKNESS = 3
+local ROUTE_OVERLAY_FRAME_LEVEL_OFFSET = 100
 local PIN_BASE_SIZE = 26
 local PIN_ICON_SIZE = 18
 local PIN_RING_SIZE = 32
+local MINIMAP_PIN_SIZE = 18
+local MINIMAP_PIN_ICON_SIZE = 14
+local MINIMAP_PIN_RING_SIZE = 22
+local MINIMAP_PIN_PADDING = 8
+local MINIMAP_PIN_REFRESH_SECONDS = 0.20
+local MAX_MINIMAP_PROJECTION_PINS = 80
+local FALLBACK_MINIMAP_COORDINATE_RADIUS = 0.08
 local CONTROLS_WIDTH = 176
 local CONTROLS_HEIGHT = 22
 local CONTROLS_CANVAS_INSET = 16
@@ -18,23 +26,6 @@ local function LoadBlizzardMapAddOns()
     elseif type(LoadAddOn) == "function" then
         pcall(LoadAddOn, "Blizzard_MapCanvas")
         pcall(LoadAddOn, "Blizzard_WorldMap")
-    end
-end
-
-LoadBlizzardMapAddOns()
-
-local function FocusWorldMapFrame()
-    if not WorldMapFrame or not Theme then
-        return
-    end
-
-    if type(Theme.RegisterExternalFocusFrames) == "function" then
-        Theme:RegisterExternalFocusFrames({ "WorldMapFrame" })
-    end
-    if type(Theme.BringManagedWindowToFront) == "function" then
-        Theme:BringManagedWindowToFront(WorldMapFrame)
-    elseif type(WorldMapFrame.Raise) == "function" then
-        WorldMapFrame:Raise()
     end
 end
 
@@ -93,9 +84,19 @@ local function CopyProjectionPin(pinData, fallbackMapID)
         label = pinData.label,
         itemName = pinData.itemName,
         spotLocation = pinData.spotLocation,
+        targetName = pinData.targetName,
+        targetType = pinData.targetType,
+        isRoute = pinData.isRoute == true,
+        routeID = pinData.routeID,
         routeType = pinData.routeType,
         density = pinData.density,
         dropDifficulty = pinData.dropDifficulty,
+        sourceType = pinData.sourceType,
+        sourceKind = pinData.sourceKind,
+        sourceLabel = pinData.sourceLabel,
+        seenCount = tonumber(pinData.seenCount),
+        totalQuantity = tonumber(pinData.totalQuantity),
+        projectionTitle = pinData.projectionTitle,
         tips = CopyArray(pinData.tips),
         sourceUrls = CopyArray(pinData.sourceUrls),
     }
@@ -110,9 +111,14 @@ local function CopyMapOptions(mapOptions)
     for _, option in ipairs(mapOptions) do
         if type(option) == "table" then
             local copiedOption = {
+                id = option.id,
                 mapID = tonumber(option.mapID),
+                mapLabel = option.mapLabel,
                 label = option.label,
+                location = option.location,
                 spotCount = option.spotCount,
+                sourceType = option.sourceType,
+                sourceLabel = option.sourceLabel,
                 pins = {},
             }
             for _, pinData in ipairs(option.pins or {}) do
@@ -145,8 +151,14 @@ end
 local function AddProjectionTooltipLines(tooltip, pinData)
     tooltip:SetText(pinData.label or "Farming route pin", 1, 0.82, 0.18)
     tooltip:AddLine(FormatPinCoordinate(pinData), 0.82, 0.86, 0.92)
+    if type(pinData.projectionTitle) == "string" and pinData.projectionTitle ~= "" then
+        tooltip:AddDoubleLine("Projection", pinData.projectionTitle, 0.72, 0.86, 1.0, 1, 1, 1)
+    end
     if type(pinData.itemName) == "string" and pinData.itemName ~= "" then
         tooltip:AddDoubleLine("Item", pinData.itemName, 0.72, 0.86, 1.0, 1, 1, 1)
+    end
+    if type(pinData.sourceLabel) == "string" and pinData.sourceLabel ~= "" then
+        tooltip:AddDoubleLine("Source", pinData.sourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
     end
     if type(pinData.spotLocation) == "string" and pinData.spotLocation ~= "" then
         tooltip:AddLine(pinData.spotLocation, 0.92, 0.95, 1.0, true)
@@ -168,6 +180,21 @@ local function AddProjectionTooltipLines(tooltip, pinData)
     end
 end
 
+local function BringWorldMapToFront(mapFrame)
+    if not mapFrame then
+        return
+    end
+    if mapFrame.SetFrameStrata then
+        pcall(mapFrame.SetFrameStrata, mapFrame, "FULLSCREEN")
+    end
+    if mapFrame.SetToplevel then
+        pcall(mapFrame.SetToplevel, mapFrame, true)
+    end
+    if mapFrame.Raise then
+        pcall(mapFrame.Raise, mapFrame)
+    end
+end
+
 local function OpenWorldMapToMapID(mapID)
     LoadBlizzardMapAddOns()
 
@@ -176,6 +203,7 @@ local function OpenWorldMapToMapID(mapID)
         if mapFrame.SetMapID then
             mapFrame:SetMapID(mapID)
         end
+        BringWorldMapToFront(mapFrame)
         return true
     end
 
@@ -196,6 +224,7 @@ local function OpenWorldMapToMapID(mapID)
     if mapFrame and mapFrame.SetMapID then
         pcall(mapFrame.SetMapID, mapFrame, mapID)
     end
+    BringWorldMapToFront(mapFrame)
     return opened
 end
 
@@ -245,6 +274,207 @@ local function EnsureProjectionPinTexture(pin, key, layer, subLevel)
     return texture
 end
 
+local function TrySetAtlas(texture, atlas)
+    return texture
+        and type(texture.SetAtlas) == "function"
+        and pcall(texture.SetAtlas, texture, atlas, true)
+end
+
+local function ApplyProjectionPinTexture(texture, atlas, fallbackTexture)
+    if not texture then
+        return false
+    end
+    if atlas and TrySetAtlas(texture, atlas) then
+        return "atlas"
+    end
+    if fallbackTexture and type(texture.SetTexture) == "function" then
+        texture:SetTexture(fallbackTexture)
+        return "texture"
+    end
+    return nil
+end
+
+local function BuildProjectionKey(projection)
+    if type(projection) ~= "table" then
+        return nil
+    end
+    return table.concat({
+        tostring(projection.projectionKey or projection.title or "Projected Farming Route"),
+        tostring(projection.mapID or ""),
+    }, "\031")
+end
+
+local function GetProjectionIdentity(projection)
+    if type(projection) ~= "table" then
+        return nil
+    end
+    return projection.projectionKey or projection.title
+end
+
+local function GetProjectionStore(addon)
+    if not addon then
+        return {}
+    end
+
+    if type(addon.worldMapProjections) ~= "table" then
+        addon.worldMapProjections = {}
+        if type(addon.worldMapProjection) == "table" then
+            addon.worldMapProjections[1] = addon.worldMapProjection
+        end
+    end
+    return addon.worldMapProjections
+end
+
+local function HasActiveProjection(addon)
+    return type(addon and addon.worldMapProjections) == "table"
+        and #addon.worldMapProjections > 0
+        or type(addon and addon.worldMapProjection) == "table"
+end
+
+local function CopyDisplayProjectionPin(pinData, projection, projectionIndex, pinIndex, pinCount)
+    local displayPin = {}
+    for key, value in pairs(pinData or {}) do
+        displayPin[key] = value
+    end
+    displayPin.projectionTitle = projection and projection.title
+    displayPin.projectionIndex = projectionIndex
+    displayPin.projectionPinIndex = pinIndex
+    displayPin.projectionPinCount = pinCount
+    return displayPin
+end
+
+local function GetProjectedPinsForMap(addon, mapID)
+    local normalizedMapID = tonumber(mapID)
+    local pins = {}
+    if not normalizedMapID then
+        return pins
+    end
+
+    for projectionIndex, projection in ipairs(GetProjectionStore(addon)) do
+        if type(projection) == "table" and tonumber(projection.mapID) == normalizedMapID then
+            local projectionPins = type(projection.pins) == "table" and projection.pins or {}
+            for pinIndex, pinData in ipairs(projectionPins) do
+                if type(pinData) == "table" and tonumber(pinData.mapID) == normalizedMapID then
+                    pins[#pins + 1] = CopyDisplayProjectionPin(
+                        pinData,
+                        projection,
+                        projectionIndex,
+                        pinIndex,
+                        #projectionPins
+                    )
+                end
+            end
+        end
+    end
+    return pins
+end
+
+local function GetPointXY(point)
+    if type(point) ~= "table" then
+        return nil, nil
+    end
+    if type(point.GetXY) == "function" then
+        return point:GetXY()
+    end
+    return point.x or point[1], point.y or point[2]
+end
+
+local function GetPlayerMapPosition(mapID)
+    if not C_Map or type(C_Map.GetPlayerMapPosition) ~= "function" then
+        return nil, nil
+    end
+
+    local ok, position = pcall(C_Map.GetPlayerMapPosition, mapID, "player")
+    if not ok then
+        return nil, nil
+    end
+    local x, y = GetPointXY(position)
+    x = NormalizeCoordinate(x)
+    y = NormalizeCoordinate(y)
+    return x, y
+end
+
+local function GetWorldPositionFromMapPosition(mapID, x, y)
+    if not C_Map or type(C_Map.GetWorldPosFromMapPos) ~= "function"
+        or not UiMapPoint or type(UiMapPoint.CreateFromCoordinates) ~= "function" then
+        return nil, nil
+    end
+
+    local pointOK, point = pcall(UiMapPoint.CreateFromCoordinates, mapID, x, y)
+    if not pointOK or not point then
+        return nil, nil
+    end
+
+    local ok, first, second = pcall(C_Map.GetWorldPosFromMapPos, mapID, point)
+    if not ok then
+        return nil, nil
+    end
+    if type(first) == "number" and type(second) == "number" then
+        return first, second
+    end
+    if type(second) == "table" then
+        return GetPointXY(second)
+    end
+    if type(first) == "table" then
+        return GetPointXY(first)
+    end
+    return nil, nil
+end
+
+local function GetMinimapViewRadius()
+    if C_Minimap and type(C_Minimap.GetViewRadius) == "function" then
+        local ok, radius = pcall(C_Minimap.GetViewRadius)
+        if ok and tonumber(radius) and tonumber(radius) > 0 then
+            return tonumber(radius)
+        end
+    end
+    if Minimap and type(Minimap.GetViewRadius) == "function" then
+        local ok, radius = pcall(Minimap.GetViewRadius, Minimap)
+        if ok and tonumber(radius) and tonumber(radius) > 0 then
+            return tonumber(radius)
+        end
+    end
+    return nil
+end
+
+local function GetMinimapCurrentMapID()
+    if C_Map and type(C_Map.GetBestMapForUnit) == "function" then
+        local ok, mapID = pcall(C_Map.GetBestMapForUnit, "player")
+        if ok and tonumber(mapID) then
+            return tonumber(mapID)
+        end
+    end
+    return nil
+end
+
+local function CalculateMinimapProjectionOffset(mapID, pinData, radius)
+    local playerX, playerY = GetPlayerMapPosition(mapID)
+    if not playerX or not playerY then
+        return nil, nil
+    end
+
+    local playerWorldX, playerWorldY = GetWorldPositionFromMapPosition(mapID, playerX, playerY)
+    local pinWorldX, pinWorldY = GetWorldPositionFromMapPosition(mapID, pinData.x, pinData.y)
+    local viewRadius = GetMinimapViewRadius()
+    local offsetX
+    local offsetY
+    if playerWorldX and playerWorldY and pinWorldX and pinWorldY and viewRadius then
+        offsetX = ((pinWorldX - playerWorldX) / viewRadius) * radius
+        offsetY = -((pinWorldY - playerWorldY) / viewRadius) * radius
+    else
+        offsetX = ((pinData.x - playerX) / FALLBACK_MINIMAP_COORDINATE_RADIUS) * radius
+        offsetY = -((pinData.y - playerY) / FALLBACK_MINIMAP_COORDINATE_RADIUS) * radius
+    end
+
+    local distance = math.sqrt((offsetX * offsetX) + (offsetY * offsetY))
+    if distance > radius and distance > 0 then
+        local clampedScale = radius / distance
+        offsetX = offsetX * clampedScale
+        offsetY = offsetY * clampedScale
+    end
+    return offsetX, offsetY
+end
+
 local function EnsureWorldMapOverlayMixins()
     LoadBlizzardMapAddOns()
     if type(CreateFromMixins) ~= "function" or not MapCanvasPinMixin or not MapCanvasDataProviderMixin then
@@ -284,11 +514,7 @@ local function EnsureWorldMapOverlayMixins()
                 ring:ClearAllPoints()
                 ring:SetPoint("CENTER", self, "CENTER")
                 ring:SetSize(PIN_RING_SIZE, PIN_RING_SIZE)
-                if ring.SetColorTexture then
-                    ring:SetColorTexture(1.0, 0.82, 0.18, 0.58)
-                elseif ring.SetTexture then
-                    ring:SetTexture("Interface\\Buttons\\WHITE8X8")
-                end
+                ApplyProjectionPinTexture(ring, "worldquest-icon-ring", "Interface\\Minimap\\MiniMap-TrackingBorder")
                 if ring.SetVertexColor then
                     ring:SetVertexColor(1.0, 0.82, 0.18, 0.9)
                 end
@@ -303,10 +529,8 @@ local function EnsureWorldMapOverlayMixins()
                 icon:ClearAllPoints()
                 icon:SetPoint("CENTER", self, "CENTER")
                 icon:SetSize(PIN_ICON_SIZE, PIN_ICON_SIZE)
-                if icon.SetTexture then
-                    icon:SetTexture("Interface\\Icons\\INV_Misc_Map02")
-                end
-                if icon.SetTexCoord then
+                local iconTextureKind = ApplyProjectionPinTexture(icon, "VignetteLoot", "Interface\\Icons\\INV_Misc_Map02")
+                if iconTextureKind ~= "atlas" and icon.SetTexCoord then
                     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
                 end
                 if icon.SetVertexColor then
@@ -350,6 +574,9 @@ local function EnsureWorldMapOverlayMixins()
             end
             if self.Number then
                 self.Number:SetText(pinCount and pinCount > 1 and tostring(pinIndex) or "")
+                if pinData.projectionPinCount and pinData.projectionPinCount > 1 then
+                    self.Number:SetText(tostring(pinData.projectionPinIndex or pinIndex))
+                end
             end
             self:Show()
         end
@@ -404,25 +631,71 @@ local function EnsureWorldMapOverlayMixins()
             end
         end
 
+        function providerMixin:HideNonRouteAreas()
+            if MapAreaOverlay then
+                MapAreaOverlay:Hide(self, "worldMapArea")
+            end
+        end
+
+        function providerMixin:GetRouteOverlay(canvas)
+            if not canvas or type(CreateFrame) ~= "function" then
+                return nil
+            end
+
+            local overlay = self.routeOverlay
+            if not overlay then
+                overlay = CreateFrame("Frame", nil, canvas)
+                if overlay.EnableMouse then
+                    overlay:EnableMouse(false)
+                end
+                self.routeOverlay = overlay
+            elseif overlay.SetParent then
+                overlay:SetParent(canvas)
+            end
+
+            if overlay.ClearAllPoints then
+                overlay:ClearAllPoints()
+            end
+            if overlay.SetAllPoints then
+                overlay:SetAllPoints(canvas)
+            else
+                overlay:SetPoint("TOPLEFT", canvas, "TOPLEFT", 0, 0)
+                overlay:SetPoint("BOTTOMRIGHT", canvas, "BOTTOMRIGHT", 0, 0)
+            end
+            if overlay.SetFrameLevel then
+                local canvasLevel = canvas.GetFrameLevel and canvas:GetFrameLevel() or 0
+                overlay:SetFrameLevel(canvasLevel + ROUTE_OVERLAY_FRAME_LEVEL_OFFSET)
+            end
+            if overlay.Show then
+                overlay:Show()
+            end
+            return overlay
+        end
+
         function providerMixin:GetRouteLine(index, canvas)
             self.routeLines = self.routeLines or {}
             local line = self.routeLines[index]
+            local overlay = self:GetRouteOverlay(canvas)
+            if not overlay then
+                return nil
+            end
             if not line then
-                if not canvas or type(canvas.CreateLine) ~= "function" then
+                if type(overlay.CreateLine) ~= "function" then
                     return nil
                 end
-                line = canvas:CreateLine(nil, "ARTWORK")
+                line = overlay:CreateLine(nil, "OVERLAY", nil, 7)
                 self.routeLines[index] = line
             end
-            line:SetParent(canvas)
+            if line.SetParent then
+                line:SetParent(overlay)
+            end
             return line
         end
 
         function providerMixin:RefreshRouteLines()
             self:HideRouteLines()
-            local projection = self.addon and self.addon.worldMapProjection
             local map = self:GetMap()
-            if not projection or not map or not map.GetMapID or projection.mapID ~= map:GetMapID() then
+            if not map or not map.GetMapID then
                 return
             end
 
@@ -433,26 +706,79 @@ local function EnsureWorldMapOverlayMixins()
 
             local width = math.max(1, canvas:GetWidth() or 1)
             local height = math.max(1, canvas:GetHeight() or 1)
-            local pins = projection.pins or {}
-            for index = 1, #pins - 1 do
-                local fromPin = pins[index]
-                local toPin = pins[index + 1]
-                local line = self:GetRouteLine(index, canvas)
-                if line and fromPin and toPin then
-                    line:ClearAllPoints()
-                    line:SetStartPoint("TOPLEFT", canvas, width * fromPin.x, -(height * fromPin.y))
-                    line:SetEndPoint("TOPLEFT", canvas, width * toPin.x, -(height * toPin.y))
-                    if line.SetThickness then
-                        line:SetThickness(LINE_THICKNESS)
+            local currentMapID = map:GetMapID()
+            local lineIndex = 1
+            for _, projection in ipairs(GetProjectionStore(self.addon)) do
+                if type(projection) == "table" and tonumber(projection.mapID) == tonumber(currentMapID) then
+                    local pins = projection.pins or {}
+                    for index = 1, #pins - 1 do
+                        local fromPin = pins[index]
+                        local toPin = pins[index + 1]
+                        local isRouteSegment = fromPin
+                            and toPin
+                            and fromPin.isRoute == true
+                            and toPin.isRoute == true
+                            and fromPin.routeID == toPin.routeID
+                        local line = isRouteSegment and self:GetRouteLine(lineIndex, canvas) or nil
+                        if line then
+                            line:ClearAllPoints()
+                            line:SetStartPoint("TOPLEFT", self.routeOverlay, width * fromPin.x, -(height * fromPin.y))
+                            line:SetEndPoint("TOPLEFT", self.routeOverlay, width * toPin.x, -(height * toPin.y))
+                            if line.SetThickness then
+                                line:SetThickness(LINE_THICKNESS)
+                            end
+                            if line.SetColorTexture then
+                                line:SetColorTexture(1.0, 0.82, 0.18, 0.58)
+                            elseif line.SetVertexColor then
+                                line:SetVertexColor(1.0, 0.82, 0.18, 0.58)
+                            end
+                            line:Show()
+                            lineIndex = lineIndex + 1
+                        end
                     end
-                    if line.SetColorTexture then
-                        line:SetColorTexture(1.0, 0.82, 0.18, 0.58)
-                    elseif line.SetVertexColor then
-                        line:SetVertexColor(1.0, 0.82, 0.18, 0.58)
-                    end
-                    line:Show()
                 end
             end
+        end
+
+        function providerMixin:RefreshNonRouteAreas()
+            self:HideNonRouteAreas()
+            if not MapAreaOverlay then
+                return 0
+            end
+
+            local map = self:GetMap()
+            if not map or not map.GetMapID then
+                return 0
+            end
+            local canvas = map:GetCanvas()
+            if not canvas or not canvas.GetWidth or not canvas.GetHeight then
+                return 0
+            end
+
+            local currentMapID = map:GetMapID()
+            local polygons = {}
+            for _, projection in ipairs(GetProjectionStore(self.addon)) do
+                if type(projection) == "table" and tonumber(projection.mapID) == tonumber(currentMapID) then
+                    for _, polygon in ipairs(MapAreaOverlay:BuildPolygons(projection.pins, currentMapID)) do
+                        polygons[#polygons + 1] = polygon
+                    end
+                end
+            end
+
+            return MapAreaOverlay:Render(
+                self,
+                self:GetRouteOverlay(canvas),
+                "worldMapArea",
+                polygons,
+                canvas:GetWidth(),
+                canvas:GetHeight(),
+                {
+                    layer = "ARTWORK",
+                    fillSubLevel = 1,
+                    glowSubLevel = 2,
+                    borderSubLevel = 3,
+                }
+            )
         end
 
         function providerMixin:RemoveAllData()
@@ -467,26 +793,19 @@ local function EnsureWorldMapOverlayMixins()
             end
             self.acquiredPins = {}
             self:HideRouteLines()
+            self:HideNonRouteAreas()
         end
 
         function providerMixin:RefreshAllData()
             self:RemoveAllData()
-            local projection = self.addon and self.addon.worldMapProjection
             local map = self:GetMap()
-            if not projection or not map or not map.GetMapID or projection.mapID ~= map:GetMapID() then
+            if not map or not map.GetMapID then
                 return
             end
 
             self:RefreshRouteLines()
+            self:RefreshNonRouteAreas()
             self.acquiredPins = {}
-            for index, pinData in ipairs(projection.pins or {}) do
-                local pin = map:AcquirePin(PIN_TEMPLATE, self, pinData, index, #projection.pins)
-                pin:SetPosition(pinData.x, pinData.y)
-                if pin.ApplyGoldTrackerScale then
-                    pin:ApplyGoldTrackerScale()
-                end
-                self.acquiredPins[#self.acquiredPins + 1] = pin
-            end
         end
 
         function providerMixin:OnMapChanged()
@@ -519,7 +838,176 @@ local function EnsureWorldMapOverlayMixins()
     return true
 end
 
-EnsureWorldMapOverlayMixins()
+local function HideMinimapProjectionPins(frame, usedPins)
+    for index, pin in ipairs(frame and frame.pins or {}) do
+        if index > (usedPins or 0) and pin.Hide then
+            pin:Hide()
+        end
+    end
+end
+
+local function CreateMinimapProjectionPin(frame)
+    local pin = CreateFrame("Button", nil, frame)
+    pin:SetSize(MINIMAP_PIN_SIZE, MINIMAP_PIN_SIZE)
+    if pin.RegisterForClicks then
+        pin:RegisterForClicks("LeftButtonUp")
+    end
+
+    local ring = pin:CreateTexture(nil, "ARTWORK")
+    ring:SetPoint("CENTER", pin, "CENTER")
+    ring:SetSize(MINIMAP_PIN_RING_SIZE, MINIMAP_PIN_RING_SIZE)
+    ApplyProjectionPinTexture(ring, "worldquest-icon-ring", "Interface\\Minimap\\MiniMap-TrackingBorder")
+    if ring.SetVertexColor then
+        ring:SetVertexColor(1.0, 0.82, 0.18, 0.92)
+    end
+    pin.ring = ring
+
+    local icon = pin:CreateTexture(nil, "OVERLAY")
+    icon:SetPoint("CENTER", pin, "CENTER")
+    icon:SetSize(MINIMAP_PIN_ICON_SIZE, MINIMAP_PIN_ICON_SIZE)
+    local iconTextureKind = ApplyProjectionPinTexture(icon, "VignetteLoot", "Interface\\Icons\\INV_Misc_Map02")
+    if iconTextureKind ~= "atlas" and icon.SetTexCoord then
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
+    pin.icon = icon
+
+    pin:SetScript("OnEnter", function(self)
+        if not GameTooltip or not self.pinData then
+            return
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        AddProjectionTooltipLines(GameTooltip, self.pinData)
+        GameTooltip:Show()
+    end)
+    pin:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    pin:SetScript("OnClick", function(self, button)
+        if button == "LeftButton" and frame.addon and self.pinData then
+            frame.addon:SetWorldMapProjectionWaypoint(self.pinData)
+        end
+    end)
+    return pin
+end
+
+local function GetMinimapProjectionPin(frame, index)
+    frame.pins = frame.pins or {}
+    if not frame.pins[index] then
+        frame.pins[index] = CreateMinimapProjectionPin(frame)
+    end
+    return frame.pins[index]
+end
+
+function GoldTracker:EnsureMinimapProjectionOverlay()
+    if self.minimapProjectionOverlay then
+        return self.minimapProjectionOverlay
+    end
+    if not Minimap or type(CreateFrame) ~= "function" then
+        return nil
+    end
+
+    local overlay = CreateFrame("Frame", "GoldTrackerMinimapProjectionOverlay", Minimap)
+    overlay.addon = self
+    overlay.pins = {}
+    if overlay.SetAllPoints then
+        overlay:SetAllPoints(Minimap)
+    else
+        overlay:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 0, 0)
+        overlay:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", 0, 0)
+    end
+    if overlay.SetFrameStrata then
+        overlay:SetFrameStrata("HIGH")
+    end
+    if overlay.EnableMouse then
+        overlay:EnableMouse(false)
+    end
+    if overlay.RegisterEvent then
+        overlay:RegisterEvent("PLAYER_ENTERING_WORLD")
+        overlay:RegisterEvent("ZONE_CHANGED")
+        overlay:RegisterEvent("ZONE_CHANGED_INDOORS")
+        overlay:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+        overlay:RegisterEvent("MINIMAP_UPDATE_ZOOM")
+    end
+    overlay:SetScript("OnEvent", function()
+        self:RefreshMinimapProjectionPins(true)
+    end)
+    overlay:SetScript("OnUpdate", function(frame, elapsed)
+        frame.elapsed = (frame.elapsed or 0) + (elapsed or 0)
+        if frame.elapsed >= MINIMAP_PIN_REFRESH_SECONDS then
+            frame.elapsed = 0
+            self:RefreshMinimapProjectionPins(false)
+        end
+    end)
+    overlay:Hide()
+
+    self.minimapProjectionOverlay = overlay
+    return overlay
+end
+
+function GoldTracker:RefreshMinimapProjectionPins(force)
+    local overlay = self.minimapProjectionOverlay
+    if not overlay and HasActiveProjection(self) then
+        overlay = self:EnsureMinimapProjectionOverlay()
+    end
+    if not overlay then
+        return false
+    end
+
+    if not HasActiveProjection(self) then
+        HideMinimapProjectionPins(overlay, 0)
+        overlay:Hide()
+        return true
+    end
+
+    local mapID = GetMinimapCurrentMapID()
+    local pins = GetProjectedPinsForMap(self, mapID)
+    if #pins == 0 then
+        HideMinimapProjectionPins(overlay, 0)
+        overlay:Hide()
+        return true
+    end
+
+    if force then
+        overlay.elapsed = 0
+    end
+    if overlay.SetAllPoints and Minimap then
+        overlay:SetAllPoints(Minimap)
+    end
+
+    local width = Minimap and Minimap.GetWidth and tonumber(Minimap:GetWidth()) or 140
+    local height = Minimap and Minimap.GetHeight and tonumber(Minimap:GetHeight()) or 140
+    local radius = math.max(1, (math.min(width, height) * 0.5) - MINIMAP_PIN_PADDING)
+    local usedPins = 0
+    for _, pinData in ipairs(pins) do
+        if usedPins >= MAX_MINIMAP_PROJECTION_PINS then
+            break
+        end
+
+        local offsetX, offsetY = CalculateMinimapProjectionOffset(mapID, pinData, radius)
+        if offsetX and offsetY then
+            usedPins = usedPins + 1
+            local pin = GetMinimapProjectionPin(overlay, usedPins)
+            pin.pinData = pinData
+            pin:ClearAllPoints()
+            pin:SetPoint("CENTER", overlay, "CENTER", offsetX, offsetY)
+            pin:Show()
+        end
+    end
+
+    HideMinimapProjectionPins(overlay, usedPins)
+    overlay:SetShown(usedPins > 0)
+    return true
+end
+
+function GoldTracker:ClearMinimapProjectionPins()
+    if self.minimapProjectionOverlay then
+        HideMinimapProjectionPins(self.minimapProjectionOverlay, 0)
+        self.minimapProjectionOverlay:Hide()
+    end
+    return true
+end
 
 function GoldTracker:BuildWorldMapProjectionPayload(options)
     options = type(options) == "table" and options or {}
@@ -547,6 +1035,7 @@ function GoldTracker:BuildWorldMapProjectionPayload(options)
 
     return {
         title = options.title or "Projected Farming Route",
+        projectionKey = options.projectionKey,
         mapID = mapID,
         mapName = options.mapLabel or GetMapName(mapID),
         pins = pins,
@@ -618,7 +1107,7 @@ function GoldTracker:RefreshWorldMapProjectionControls()
     end
 
     PositionWorldMapProjectionControls(controls)
-    local shouldShow = self.worldMapProjection ~= nil
+    local shouldShow = HasActiveProjection(self)
         and (not WorldMapFrame or not WorldMapFrame.IsShown or WorldMapFrame:IsShown())
     controls:SetShown(shouldShow)
 end
@@ -653,6 +1142,14 @@ function GoldTracker:ProjectMapRouteToWorldMap(options)
         return false, "No route pins are available to project."
     end
 
+    local projections = GetProjectionStore(self)
+    local projectionKey = BuildProjectionKey(projection)
+    for index = #projections, 1, -1 do
+        if BuildProjectionKey(projections[index]) == projectionKey then
+            table.remove(projections, index)
+        end
+    end
+    projections[#projections + 1] = projection
     self.worldMapProjection = projection
 
     local providerReady, message = self:EnsureWorldMapProjectionProvider()
@@ -664,21 +1161,21 @@ function GoldTracker:ProjectMapRouteToWorldMap(options)
     end
 
     local opened = OpenWorldMapToMapID(projection.mapID)
-    if opened then
-        FocusWorldMapFrame()
-    end
     if self.worldMapRouteDataProvider then
         self.worldMapRouteDataProvider:RefreshAllData()
     end
+    self:RefreshMinimapProjectionPins(true)
     self:RefreshWorldMapProjectionControls()
 
     if type(self.Print) == "function" then
         local suffix = opened and "" or " Open the world map after combat to view it."
         self:Print(string.format(
-            "Projected %d %s on %s.%s",
+            "Projected %d %s on %s. %d %s active.%s",
             #projection.pins,
             #projection.pins == 1 and "pin" or "route pins",
             projection.mapName,
+            #projections,
+            #projections == 1 and "projection" or "projections",
             suffix
         ))
     end
@@ -686,19 +1183,51 @@ function GoldTracker:ProjectMapRouteToWorldMap(options)
 end
 
 function GoldTracker:ClearWorldMapProjection()
+    self.worldMapProjections = {}
     self.worldMapProjection = nil
     if self.worldMapRouteDataProvider then
         self.worldMapRouteDataProvider:RemoveAllData()
     end
+    self:ClearMinimapProjectionPins()
     self:RefreshWorldMapProjectionControls()
     if type(self.Print) == "function" then
-        self:Print("Cleared projected farming route from the world map.")
+        self:Print("Cleared projected farming routes from the world map and minimap.")
     end
     return true
 end
 
+function GoldTracker:ClearWorldMapProjectionByKey(projectionKey)
+    if projectionKey == nil then
+        return false, 0
+    end
+
+    local projections = GetProjectionStore(self)
+    local removedCount = 0
+    for index = #projections, 1, -1 do
+        if GetProjectionIdentity(projections[index]) == projectionKey then
+            table.remove(projections, index)
+            removedCount = removedCount + 1
+        end
+    end
+    if removedCount == 0 then
+        return false, 0
+    end
+
+    self.worldMapProjection = projections[#projections]
+    if self.worldMapRouteDataProvider then
+        self.worldMapRouteDataProvider:RefreshAllData()
+    end
+    self:RefreshMinimapProjectionPins(true)
+    self:RefreshWorldMapProjectionControls()
+    if type(self.Print) == "function" then
+        self:Print("Cleared this farming map's projected pins from the world map and minimap.")
+    end
+    return true, removedCount
+end
+
 function GoldTracker:OpenWorldMapProjectionDetails()
-    local projection = self.worldMapProjection
+    local projections = GetProjectionStore(self)
+    local projection = self.worldMapProjection or projections[#projections]
     if not projection then
         return false
     end
@@ -711,6 +1240,7 @@ function GoldTracker:OpenWorldMapProjectionDetails()
 
     self:OpenStandaloneMapWindow({
         title = projection.title,
+        projectionKey = projection.projectionKey,
         mapID = projection.mapID,
         pins = projection.pins,
         mapOptions = projection.mapOptions,

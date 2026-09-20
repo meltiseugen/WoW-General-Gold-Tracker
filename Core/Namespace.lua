@@ -55,6 +55,15 @@ GoldTracker.DEFAULTS = {
     valueSource = "TSM_DBMINBUYOUT",
     sessionStyleFilter = GoldTracker.SESSION_STYLE_ALL_ID,
     fallbackValueSource = "TSM_AUCTIONINGOPNORMAL",
+    valueSourceFallbackOrder = {
+        "TSM_DBMARKET",
+        "TSM_DBREGIONMARKETAVG",
+        "TSM_DBRECENT",
+        "TSM_DBHISTORICAL",
+        "TSM_DBREGIONHISTORICAL",
+        "TSM_DBREGIONSALEAVG",
+        "TSM_DBMINBUYOUT",
+    },
     auctionableInventoryValueSource = "TSM_DBMINBUYOUT",
     autoOpenAuctionableInventoryOnAuctionHouse = true,
     rareFarmingValueSource = "TSM_DBMARKET",
@@ -86,6 +95,10 @@ GoldTracker.DEFAULTS = {
     craftingFarmingCustomItems = {},
     craftingFarmingItemOverrides = {},
     craftingFarmingDropRates = {},
+    userMaterialFarmingPins = {
+        schemaVersion = 1,
+        items = {},
+    },
     explorerTab = "rares",
     inventoryCategoryOrder = {
         "crafting",
@@ -134,6 +147,7 @@ GoldTracker.DEFAULTS = {
     priceIncreaseAlertThresholdPercent = 30,
     priceIncreaseAlertLookbackDays = 3,
     priceIncreaseAlertMinimumSamples = 2,
+    priceIncreaseAlertMinimumValue = 30 * GoldTracker.COPPER_PER_GOLD,
     worldMapProjectionPinScale = 1.0,
 }
 
@@ -150,6 +164,20 @@ GoldTracker.VALUE_SOURCES = {
     { id = "TSM_AUCTIONINGOPMAX", label = "Auctioning Max", tsmKey = "AuctioningOpMax" },
     { id = "TSM_CRAFTING", label = "Crafting Cost", tsmKey = "Crafting" },
 }
+
+GoldTracker.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER = {
+    "TSM_DBMARKET",
+    "TSM_DBREGIONMARKETAVG",
+    "TSM_DBRECENT",
+    "TSM_DBHISTORICAL",
+    "TSM_DBREGIONHISTORICAL",
+    "TSM_DBREGIONSALEAVG",
+    "TSM_DBMINBUYOUT",
+}
+GoldTracker.VALUE_SOURCE_FALLBACK_ALLOWED = {}
+for _, sourceID in ipairs(GoldTracker.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER) do
+    GoldTracker.VALUE_SOURCE_FALLBACK_ALLOWED[sourceID] = true
+end
 
 local CRAFTING_FARMING_GATHERING_PROFESSIONS = {
     mining = true,
@@ -225,6 +253,38 @@ local function CopyCraftingFarmingTrackedItem(item)
     return copied
 end
 
+local function CopyCraftingFarmingTrackedOverride(item, fallbackItemID)
+    local itemID = tonumber(type(item) == "table" and item.itemID) or tonumber(fallbackItemID)
+    if itemID then
+        itemID = math.floor(itemID + 0.5)
+    end
+    if not itemID or itemID <= 0 or type(item) ~= "table" then
+        return nil
+    end
+
+    local professions = {}
+    local seenProfessions = {}
+    for _, professionID in ipairs(type(item.professions) == "table" and item.professions or {}) do
+        if type(professionID) == "string"
+            and professionID ~= ""
+            and professionID ~= "all"
+            and not seenProfessions[professionID] then
+            professions[#professions + 1] = professionID
+            seenProfessions[professionID] = true
+        end
+    end
+    if #professions == 0 then
+        return nil
+    end
+
+    return {
+        itemID = itemID,
+        professions = professions,
+        source = "bundled",
+        updatedAt = tonumber(item.updatedAt),
+    }
+end
+
 local function CopyCraftingFarmingTrackedDropRate(entry, fallbackItemID)
     local itemID = tonumber(entry and entry.itemID) or tonumber(fallbackItemID)
     if itemID then
@@ -280,6 +340,33 @@ function GoldTracker:ApplyCraftingFarmingLearnedDataDefaults()
             if copied and not seenItems[copied.itemID] then
                 self.db.craftingFarmingCustomItems[#self.db.craftingFarmingCustomItems + 1] = copied
                 seenItems[copied.itemID] = true
+            end
+        end
+    end
+
+    if type(tracked.itemOverrides) == "table" then
+        if type(self.db.craftingFarmingItemOverrides) ~= "table" then
+            self.db.craftingFarmingItemOverrides = {}
+        end
+        local bundledItemIDs = {}
+        for key, item in pairs(tracked.itemOverrides) do
+            local copied = CopyCraftingFarmingTrackedOverride(item, key)
+            if copied then
+                local savedKey = tostring(copied.itemID)
+                bundledItemIDs[savedKey] = true
+                local existing = self.db.craftingFarmingItemOverrides[savedKey]
+                    or self.db.craftingFarmingItemOverrides[copied.itemID]
+                if type(existing) ~= "table" or existing.source ~= "manual" then
+                    self.db.craftingFarmingItemOverrides[savedKey] = copied
+                else
+                    self.db.craftingFarmingItemOverrides[savedKey] = existing
+                end
+                self.db.craftingFarmingItemOverrides[copied.itemID] = nil
+            end
+        end
+        for key, item in pairs(self.db.craftingFarmingItemOverrides) do
+            if type(item) == "table" and item.source == "bundled" and not bundledItemIDs[tostring(key)] then
+                self.db.craftingFarmingItemOverrides[key] = nil
             end
         end
     end
@@ -938,6 +1025,103 @@ function GoldTracker:MoveInventoryCategory(categoryID, targetIndex)
     self:SetInventoryCategoryOrder(nextOrder)
 end
 
+function GoldTracker:NormalizeValueSourceFallbackOrder()
+    local defaultOrder = self.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER or {}
+    if type(self.db) ~= "table" then
+        return defaultOrder
+    end
+
+    local savedOrder = type(self.db.valueSourceFallbackOrder) == "table" and self.db.valueSourceFallbackOrder or {}
+    local normalizedOrder = {}
+    local seenSourceIDs = {}
+
+    for _, sourceID in ipairs(savedOrder) do
+        if self.VALUE_SOURCE_FALLBACK_ALLOWED[sourceID]
+            and self.VALUE_SOURCE_BY_ID[sourceID]
+            and not seenSourceIDs[sourceID] then
+            normalizedOrder[#normalizedOrder + 1] = sourceID
+            seenSourceIDs[sourceID] = true
+        end
+    end
+
+    for _, sourceID in ipairs(defaultOrder) do
+        if not seenSourceIDs[sourceID] then
+            normalizedOrder[#normalizedOrder + 1] = sourceID
+            seenSourceIDs[sourceID] = true
+        end
+    end
+
+    self.db.valueSourceFallbackOrder = normalizedOrder
+    return normalizedOrder
+end
+
+function GoldTracker:GetValueSourceFallbackOrder()
+    if type(self.db) ~= "table" then
+        return self.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER or {}
+    end
+    return self:NormalizeValueSourceFallbackOrder()
+end
+
+function GoldTracker:GetValueSourceResolutionOrder(preferredSourceID)
+    local resolutionOrder = {}
+    local seenSourceIDs = {}
+    local preferredSource = self.VALUE_SOURCE_BY_ID[preferredSourceID]
+    if preferredSource then
+        resolutionOrder[#resolutionOrder + 1] = preferredSource.id
+        seenSourceIDs[preferredSource.id] = true
+    end
+
+    for _, sourceID in ipairs(self:GetValueSourceFallbackOrder()) do
+        if self.VALUE_SOURCE_BY_ID[sourceID] and not seenSourceIDs[sourceID] then
+            resolutionOrder[#resolutionOrder + 1] = sourceID
+            seenSourceIDs[sourceID] = true
+        end
+    end
+    return resolutionOrder
+end
+
+function GoldTracker:GetValueSourceFallbackSignature()
+    return table.concat(self:GetValueSourceFallbackOrder(), ",")
+end
+
+function GoldTracker:InvalidateValueSourceResolutionCaches()
+    if type(self.InvalidateAuctionableInventoryScanCache) == "function" then
+        self:InvalidateAuctionableInventoryScanCache()
+    end
+    if self.observedDropsFrame then
+        self.observedDropsFrame.priceCache = {}
+    end
+end
+
+function GoldTracker:SetValueSourceFallbackOrder(sourceOrder)
+    if type(self.db) ~= "table" then
+        return
+    end
+    self.db.valueSourceFallbackOrder = type(sourceOrder) == "table"
+        and sourceOrder
+        or self.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER
+    self:NormalizeValueSourceFallbackOrder()
+    self:InvalidateValueSourceResolutionCaches()
+end
+
+function GoldTracker:MoveValueSourceFallback(sourceID, targetIndex)
+    if not self.VALUE_SOURCE_FALLBACK_ALLOWED[sourceID] then
+        return
+    end
+
+    local currentOrder = self:GetValueSourceFallbackOrder()
+    local nextOrder = {}
+    for _, currentSourceID in ipairs(currentOrder) do
+        if currentSourceID ~= sourceID then
+            nextOrder[#nextOrder + 1] = currentSourceID
+        end
+    end
+
+    local normalizedTargetIndex = math.max(1, math.min(#nextOrder + 1, math.floor((tonumber(targetIndex) or 1) + 0.5)))
+    table.insert(nextOrder, normalizedTargetIndex, sourceID)
+    self:SetValueSourceFallbackOrder(nextOrder)
+end
+
 function GoldTracker:NormalizeCraftingFarmingCustomItems()
     if type(self.db) ~= "table" then
         return {}
@@ -1204,6 +1388,7 @@ function GoldTracker:InitializeDatabase()
     local hadPreviousPricingDefaults = self.db.valueSource == "TSM_DBMARKET"
         and (self.db.fallbackValueSource == nil or self.db.fallbackValueSource == "")
     local hadAuctionableInventoryValueSource = self.db.auctionableInventoryValueSource ~= nil
+    local hadValueSourceFallbackOrder = type(self.db.valueSourceFallbackOrder) == "table"
 
     for key, value in pairs(self.DEFAULTS) do
         if self.db[key] == nil then
@@ -1362,6 +1547,13 @@ function GoldTracker:InitializeDatabase()
     end
     self:NormalizeCraftingFarmingCustomItems()
     self:NormalizeCraftingFarmingItemOverrides()
+    if type(self.NormalizeUserMaterialFarmingPinStore) == "function" then
+        self:NormalizeUserMaterialFarmingPinStore()
+    elseif type(self.db.userMaterialFarmingPins) ~= "table" then
+        self.db.userMaterialFarmingPins = { schemaVersion = 1, items = {} }
+    elseif type(self.db.userMaterialFarmingPins.items) ~= "table" then
+        self.db.userMaterialFarmingPins.items = {}
+    end
     local rareFarmingMinimumValue = tonumber(self.db.rareFarmingMinimumValue)
     if not rareFarmingMinimumValue or rareFarmingMinimumValue < 0 then
         rareFarmingMinimumValue = self.DEFAULTS.rareFarmingMinimumValue
@@ -1394,6 +1586,17 @@ function GoldTracker:InitializeDatabase()
             self.db.fallbackValueSource = ""
         end
     end
+    if not hadValueSourceFallbackOrder
+        and self.VALUE_SOURCE_FALLBACK_ALLOWED[self.db.fallbackValueSource] then
+        local migratedOrder = { self.db.fallbackValueSource }
+        for _, sourceID in ipairs(self.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER) do
+            if sourceID ~= self.db.fallbackValueSource then
+                migratedOrder[#migratedOrder + 1] = sourceID
+            end
+        end
+        self.db.valueSourceFallbackOrder = migratedOrder
+    end
+    self:NormalizeValueSourceFallbackOrder()
 
     self:NormalizeMinimumTrackedItemQuality()
 
@@ -1573,6 +1776,12 @@ function GoldTracker:InitializeDatabase()
     end
     self.db.priceIncreaseAlertMinimumSamples =
         math.floor(math.max(2, math.min(24, priceIncreaseAlertMinimumSamples)) + 0.5)
+
+    local priceIncreaseAlertMinimumValue = tonumber(self.db.priceIncreaseAlertMinimumValue)
+    if not priceIncreaseAlertMinimumValue then
+        priceIncreaseAlertMinimumValue = self.DEFAULTS.priceIncreaseAlertMinimumValue
+    end
+    self.db.priceIncreaseAlertMinimumValue = math.max(0, math.floor(priceIncreaseAlertMinimumValue + 0.5))
 
     if type(self.db.pendingReloadSession) ~= "table" then
         self.db.pendingReloadSession = nil

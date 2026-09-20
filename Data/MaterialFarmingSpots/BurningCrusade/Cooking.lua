@@ -1,9 +1,13 @@
 local _, NS = ...
 local Register = NS.RegisterMaterialFarmingSpot
+local Pins = NS.GetBurningCrusadeNpcCoords
 
 local function C(x, y, label)
     return { x = x, y = y, label = label }
 end
+
+local BUZZARD_COORDS = Pins({ 16972 }, 100)
+BUZZARD_COORDS[#BUZZARD_COORDS + 1] = C(0.610, 0.730, "Dense buzzard loop from retail comment")
 
 local function RegisterMeat(itemID, itemName, sourceUrls, summary, spot)
     Register({
@@ -42,13 +46,7 @@ RegisterMeat(27671, "Buzzard Meat", {
         "Pull carefully if you are leveling; buzzards can chain into the next corpse.",
         "Terokkar Bonelashers are the fallback when the Honor Hold route is crowded.",
     },
-    coords = {
-        C(0.572, 0.722, "South of Honor Hold buzzard pack"),
-        C(0.596, 0.704, "Western Bonestripper circle"),
-        C(0.610, 0.730, "Retail Wowhead comment buzzard circle"),
-        C(0.626, 0.704, "Eastern Bonestripper circle"),
-        C(0.646, 0.742, "Southeast Bonestripper loop"),
-    },
+    coords = BUZZARD_COORDS,
     confidence = "high",
 })
 
@@ -72,13 +70,7 @@ RegisterMeat(27674, "Ravager Flesh", {
         "Skinning turns this into a stronger mixed farm.",
         "Run the same route used for Fel Scales and Knothide Leather Scraps.",
     },
-    coords = {
-        C(0.214, 0.654, "Quillfang Ravager western pack"),
-        C(0.222, 0.670, "Quillfang Ravager central pack"),
-        C(0.046, 0.504, "Thornfang Ravager western pack"),
-        C(0.094, 0.522, "Thornfang Hill ravager pack"),
-        C(0.126, 0.476, "Thornfang Venomspitter pack"),
-    },
+    coords = Pins({ 16934, 19349, 19350 }, 100),
     confidence = "high",
 })
 
@@ -102,13 +94,7 @@ RegisterMeat(27678, "Clefthoof Meat", {
         "Use Track Beasts and skin every kill if possible.",
         "This is one of the best places to combine cooking meat and leather.",
     },
-    coords = {
-        C(0.240, 0.472, "Aged Clefthoof western route"),
-        C(0.282, 0.334, "Northwest Aged Clefthoof"),
-        C(0.304, 0.632, "Southern Aged Clefthoof loop"),
-        C(0.438, 0.718, "South-central Clefthoof Bull"),
-        C(0.604, 0.390, "Eastern Clefthoof herd"),
-    },
+    coords = Pins({ 17132, 17133 }, 107),
     confidence = "high",
 })
 
@@ -132,13 +118,7 @@ RegisterMeat(27681, "Warped Flesh", {
         "Use the larger eastern Warp Stalker pocket first.",
         "Skinning adds Knothide value to the route.",
     },
-    coords = {
-        C(0.302, 0.374, "Western Warp Stalker pocket"),
-        C(0.336, 0.386, "Central-west Warp Stalker pocket"),
-        C(0.556, 0.384, "Eastern Warp Stalker pocket"),
-        C(0.598, 0.434, "East-central Warp Stalker pocket"),
-        C(0.176, 0.748, "Southern Warp Hunter pocket"),
-    },
+    coords = Pins({ 18464, 18465 }, 108),
     confidence = "medium",
 })
 
@@ -162,13 +142,7 @@ RegisterMeat(27682, "Talbuk Venison", {
         "Run a broad loop through central Nagrand when eastern packs are empty.",
         "Skinning keeps the route profitable even when venison prices dip.",
     },
-    coords = {
-        C(0.474, 0.426, "Central Talbuk Thorngrazer"),
-        C(0.502, 0.478, "Central-east Talbuk Thorngrazer"),
-        C(0.604, 0.446, "Eastern Talbuk Stag"),
-        C(0.662, 0.470, "East Nagrand talbuk range"),
-        C(0.724, 0.486, "Far east Talbuk Stag"),
-    },
+    coords = Pins({ 17130, 17131 }, 107),
     confidence = "high",
 })
 
@@ -192,13 +166,7 @@ RegisterMeat(31670, "Raptor Ribs", {
         "Circle the Bladespire raptor pockets before using Netherstorm as a backup.",
         "Skinning adds extra value if you can skin the kills.",
     },
-    coords = {
-        C(0.392, 0.554, "West Bladespire Raptor"),
-        C(0.404, 0.534, "Central-west Bladespire Raptor"),
-        C(0.418, 0.554, "Central Bladespire Raptor"),
-        C(0.436, 0.530, "East Bladespire Raptor"),
-        C(0.478, 0.522, "Far east Bladespire Raptor"),
-    },
+    coords = Pins({ 20728, 20634 }, 105),
     confidence = "high",
 })
 
@@ -222,12 +190,149 @@ RegisterMeat(31671, "Serpent Flesh", {
         "Use this when Cobra Scales are valuable; otherwise Scalewing Shelf can be easier.",
         "Skin every serpent if possible.",
     },
-    coords = {
-        C(0.074, 0.418, "Far west Twilight Serpent"),
-        C(0.096, 0.442, "Western Twilight Serpent cluster"),
-        C(0.124, 0.374, "Central Twilight Serpent cluster"),
-        C(0.174, 0.316, "Eastern Twilight Serpent cluster"),
-        C(0.200, 0.348, "Far east Twilight Serpent"),
-    },
+    coords = Pins({ 23026 }, 107),
     confidence = "high",
+})
+
+local function RegisterAdditionalMeat(itemID, itemName, summary, spots)
+    Register({
+        itemID = itemID,
+        itemName = itemName,
+        expansion = "burningCrusade",
+        professions = { "cooking" },
+        category = "Meat",
+        researchStatus = "researched",
+        sourceUrls = { "https://www.wowhead.com/item=" .. itemID },
+        summary = summary,
+        spots = spots,
+    })
+end
+
+RegisterAdditionalMeat(23676, "Moongraze Stag Tenderloin", "Azuremyst cooking meat with a near-guaranteed drop from Moongraze Stags and Bucks. Every Retail Wowhead spawn pin for both mobs is retained.", {
+    {
+        id = "moongraze-tenderloin-azuremyst-stags-bucks",
+        source = "Complete Retail Wowhead NPC drop tables and map-pin sets",
+        sourceUrls = {
+            "https://www.wowhead.com/item=23676/moongraze-stag-tenderloin",
+            "https://www.wowhead.com/npc=17200/moongraze-stag",
+            "https://www.wowhead.com/npc=17201/moongraze-buck",
+        },
+        mapName = "Azuremyst Isle",
+        location = "Moongraze Stags and Bucks throughout central and southern Azuremyst Isle",
+        routeType = "beast-meat-grind",
+        density = "Very high",
+        dropDifficulty = "Easy. Both target mobs have an almost guaranteed meat drop.",
+        tips = { "Sweep every marked stag and buck pocket; no close pins were removed." },
+        coords = Pins({ 17200, 17201 }, 97),
+        confidence = "high",
+    },
+})
+
+RegisterAdditionalMeat(27668, "Lynx Meat", "Blood elf starting-zone cooking meat from Springpaw and Ghostclaw lynxes. Eversong and Ghostlands are preserved as separate full-pin farms.", {
+    {
+        id = "lynx-meat-eversong-springpaws",
+        source = "Complete Retail Wowhead NPC drop tables and map-pin sets",
+        sourceUrls = {
+            "https://www.wowhead.com/item=27668/lynx-meat",
+            "https://www.wowhead.com/npc=15651/springpaw-stalker",
+            "https://www.wowhead.com/npc=15652/elder-springpaw",
+        },
+        mapName = "Eversong Woods",
+        location = "Springpaw Stalkers and Elder Springpaws across Eversong Woods",
+        routeType = "beast-meat-grind",
+        density = "Very high",
+        dropDifficulty = "Easy.",
+        tips = { "Use the Eversong sweep when you also want Olemba Lumber." },
+        coords = Pins({ 15651, 15652 }, 94),
+        confidence = "high",
+    },
+    {
+        id = "lynx-meat-ghostlands-ghostclaws",
+        source = "Complete Retail Wowhead NPC drop tables and map-pin sets",
+        sourceUrls = {
+            "https://www.wowhead.com/item=27668/lynx-meat",
+            "https://www.wowhead.com/npc=16347/starving-ghostclaw",
+            "https://www.wowhead.com/npc=16348/ghostclaw-lynx",
+            "https://www.wowhead.com/npc=16349/ghostclaw-ravager",
+        },
+        mapName = "Ghostlands",
+        location = "Starving Ghostclaws, Ghostclaw Lynxes, and Ghostclaw Ravagers throughout Ghostlands",
+        routeType = "beast-meat-grind",
+        density = "Very high",
+        dropDifficulty = "Easy.",
+        tips = { "This route overlaps the Bat Flesh sources and Olemba Lumber." },
+        coords = Pins({ 16347, 16348, 16349 }, 95),
+        confidence = "high",
+    },
+})
+
+RegisterAdditionalMeat(27669, "Bat Flesh", "Ghostlands cooking meat from Lesser Scourgebats and Vampiric Mistbats. All currently published mob pins are retained.", {
+    {
+        id = "bat-flesh-ghostlands-mistbats-scourgebats",
+        source = "Complete Retail Wowhead NPC drop tables and map-pin sets",
+        sourceUrls = {
+            "https://www.wowhead.com/item=27669/bat-flesh",
+            "https://www.wowhead.com/npc=16354/vampiric-mistbat",
+            "https://www.wowhead.com/npc=16355/lesser-scourgebat",
+        },
+        mapName = "Ghostlands",
+        location = "Vampiric Mistbats and Lesser Scourgebats throughout Ghostlands",
+        routeType = "beast-meat-grind",
+        density = "High",
+        dropDifficulty = "Easy.",
+        tips = { "Combine this with Lynx Meat and Olemba Lumber instead of flying a bat-only line." },
+        coords = Pins({ 16354, 16355 }, 95),
+        confidence = "high",
+    },
+})
+
+RegisterAdditionalMeat(27677, "Chunk o' Basilisk", "Outland basilisk cooking meat. Terokkar, Zangarmarsh, and Blade's Edge mob families are kept as separate farms with every published spawn pin.", {
+    {
+        id = "chunk-basilisk-terokkar-dampscale-ironspine",
+        source = "Complete Retail Wowhead NPC drop tables and map-pin sets",
+        sourceUrls = {
+            "https://www.wowhead.com/item=27677/chunk-o-basilisk",
+            "https://www.wowhead.com/npc=18461/dampscale-basilisk",
+            "https://www.wowhead.com/npc=18463/dampscale-devourer",
+            "https://www.wowhead.com/npc=21816/ironspine-chomper",
+        },
+        mapName = "Terokkar Forest",
+        location = "Dampscale and Ironspine basilisks across eastern Terokkar",
+        routeType = "beast-meat-grind",
+        density = "High",
+        dropDifficulty = "Easy; skinning adds Fel Scales and Crystal-Infused Leather.",
+        tips = { "Retain both the riverbank and ridge clusters." },
+        coords = Pins({ 18461, 18463, 21816 }, 108),
+        confidence = "high",
+    },
+    {
+        id = "chunk-basilisk-zangarmarsh-marshrock-ragestone",
+        source = "Complete Retail Wowhead NPC drop tables and map-pin sets",
+        sourceUrls = {
+            "https://www.wowhead.com/npc=19706/marshrock-threshalisk",
+            "https://www.wowhead.com/npc=20279/ragestone-threshalisk",
+            "https://www.wowhead.com/npc=20283/marshrock-stomper",
+        },
+        mapName = "Zangarmarsh",
+        location = "Marshrock and Ragestone basilisk pockets",
+        routeType = "beast-meat-grind",
+        density = "Medium",
+        dropDifficulty = "Easy.",
+        tips = { "Use this as a separate alternative rather than merging it into Terokkar." },
+        coords = Pins({ 19706, 20279, 20283 }, 102),
+        confidence = "high",
+    },
+    {
+        id = "chunk-basilisk-blades-edge-ruuan-weald",
+        source = "Complete Retail Wowhead NPC drop table and map-pin set",
+        sourceUrls = { "https://www.wowhead.com/npc=20987/ruuan-weald-basilisk" },
+        mapName = "Blade's Edge Mountains",
+        location = "Ruuan Weald Basilisk pocket",
+        routeType = "beast-meat-grind",
+        density = "Low",
+        dropDifficulty = "Easy but less dense than Terokkar.",
+        tips = { "Keep this small pocket as an independent fallback." },
+        coords = Pins({ 20987 }, 105),
+        confidence = "high",
+    },
 })

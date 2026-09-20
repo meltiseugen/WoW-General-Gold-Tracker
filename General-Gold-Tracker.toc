@@ -24,6 +24,19 @@ Data/FarmingItems.lua
 Data/CraftingFarmingLearned.lua
 Data/MaterialFarmingSpots.lua
 Data/MaterialFarmingSpots/Shared.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocations.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsElementals.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsSkinning.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsCooking.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsStarterZones.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsTailoring.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsMiscellaneous.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsReputation.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsReputationAdditional.lua
+Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsNagrandMiscellaneous.lua
+Data/MaterialFarmingSpots/BurningCrusade/ObjectLocations.lua
+Data/MaterialFarmingSpots/BurningCrusade/ObjectLocationsFishing.lua
+Data/MaterialFarmingSpots/BurningCrusade/ObjectLocationsMiscellaneous.lua
 Data/MaterialFarmingSpots/Classic/Alchemy.lua
 Data/MaterialFarmingSpots/Classic/Enchanting.lua
 Data/MaterialFarmingSpots/Classic/Herbalism.lua
@@ -40,6 +53,8 @@ Data/MaterialFarmingSpots/BurningCrusade/Jewelcrafting.lua
 Data/MaterialFarmingSpots/BurningCrusade/Mining.lua
 Data/MaterialFarmingSpots/BurningCrusade/Skinning.lua
 Data/MaterialFarmingSpots/BurningCrusade/Tailoring.lua
+Data/MaterialFarmingSpots/BurningCrusade/Miscellaneous.lua
+Data/MaterialFarmingSpots/BurningCrusade/Housing.lua
 Data/MaterialFarmingSpots/Wrath/Enchanting.lua
 Data/MaterialFarmingSpots/Wrath/Engineering.lua
 Data/MaterialFarmingSpots/Wrath/Cooking.lua
@@ -141,6 +156,7 @@ UI/PriceIncreaseAlertsWindow.lua
 UI/ExplorerWindow.lua
 UI/DiagnosisWindow.lua
 UI/OptionsPanel.lua
+UI/MapAreaOverlay.lua
 UI/WorldMapOverlay.lua
 UI/WorldMapOverlay.xml
 UI/StandaloneMapWindow.lua
@@ -152,6 +168,7 @@ UI/History/HistoryDataService.lua
 UI/HistoryWindow.lua
 Tracking/Valuation.lua
 Tracking/ObservedDrops.lua
+Tracking/UserMaterialFarmingPins.lua
 Tracking/Loot/LootChatParser.lua
 Tracking/Loot/LootSourceService.lua
 Tracking/LootEvents.lua

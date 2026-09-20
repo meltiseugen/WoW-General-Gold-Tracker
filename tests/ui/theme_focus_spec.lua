@@ -134,4 +134,33 @@ describe("UI/Theme focus management", function()
         assert.is_true(parent.raised)
         assert.is_true(parent.level > 10)
     end)
+
+    it("never manages the Blizzard world map as an external focus window", function()
+        local world_map = frame("WorldMapFrame", "HIGH", 10)
+        local theme = nil
+
+        loader.with_globals({
+            WorldMapFrame = world_map,
+            UIPanelWindows = {
+                WorldMapFrame = {},
+            },
+            CreateFrame = function()
+                return {
+                    SetScript = function() end,
+                }
+            end,
+        }, function()
+            theme = load_theme()
+
+            assert.is_false(theme:IsKnownExternalWindow(world_map))
+            assert.is_nil(theme:RegisterExternalWindowForFocus(world_map))
+            theme:RegisterExternalFocusFrames({ "WorldMapFrame" })
+        end)
+
+        assert.is_nil(world_map.goldTrackerWindowFocusRegistered)
+        assert.is_nil(world_map.goldTrackerWindowFocusHooked)
+        assert.is_nil(world_map.raised)
+        assert.equals("HIGH", world_map.strata)
+        assert.equals(10, world_map.level)
+    end)
 end)

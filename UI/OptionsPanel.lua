@@ -30,13 +30,8 @@ function GoldTracker:RefreshOptionsControls()
     local source = self:GetCurrentValueSource()
     UIDropDownMenu_SetSelectedValue(controls.valueSourceDropdown, source.id)
     UIDropDownMenu_SetText(controls.valueSourceDropdown, source.label)
-    local fallbackSource = self:GetFallbackValueSource()
-    if fallbackSource then
-        UIDropDownMenu_SetSelectedValue(controls.fallbackValueSourceDropdown, fallbackSource.id)
-        UIDropDownMenu_SetText(controls.fallbackValueSourceDropdown, fallbackSource.label)
-    else
-        UIDropDownMenu_SetSelectedValue(controls.fallbackValueSourceDropdown, "")
-        UIDropDownMenu_SetText(controls.fallbackValueSourceDropdown, "None")
+    if controls.valueSourceFallbackOrderRefresh then
+        controls.valueSourceFallbackOrderRefresh()
     end
     if controls.auctionableInventoryValueSourceDropdown then
         local inventorySource = self:GetAuctionableInventoryValueSource()
@@ -466,7 +461,7 @@ function GoldTracker:CreateOptionsPanel()
         return section
     end
 
-    local generalPricingSection = CreateOptionsSection(generalContent, nil, "Pricing", "Choose how item values are resolved.", 126)
+    local generalPricingSection = CreateOptionsSection(generalContent, nil, "Pricing", "Choose how item values are resolved.", 370)
     local generalDisplaySection = CreateOptionsSection(generalContent, generalPricingSection, "Display", "Tune tracker totals and window presentation.", 218)
     local generalLootSection = CreateOptionsSection(generalContent, generalDisplaySection, "Loot Behavior", "Small filters that affect what the tracker accepts.", 90)
 
@@ -490,7 +485,7 @@ function GoldTracker:CreateOptionsPanel()
 
     local sourceLabel = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", generalPricingSection, "TOPLEFT", 14, generalPricingSection.contentTopOffset)
-    sourceLabel:SetText("Item value source")
+    sourceLabel:SetText("Preferred item value source")
 
     local dropdown = CreateFrame("Frame", "GoldTrackerValueSourceDropdown", generalPricingSection, "UIDropDownMenuTemplate")
     dropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -6)
@@ -515,44 +510,122 @@ function GoldTracker:CreateOptionsPanel()
         end
     end)
 
-    local fallbackSourceLabel = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    fallbackSourceLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", 320, 0)
-    fallbackSourceLabel:SetText("Fallback value source")
+    local pricingHint = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    pricingHint:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", 320, -2)
+    pricingHint:SetPoint("RIGHT", generalPricingSection, "RIGHT", -14, 0)
+    pricingHint:SetJustifyH("LEFT")
+    pricingHint:SetTextColor(0.62, 0.66, 0.74)
+    pricingHint:SetText("Each window's selected source is preferred. This ordered list is checked only when that source has no price; duplicates are skipped.")
 
-    local fallbackDropdown = CreateFrame("Frame", "GoldTrackerFallbackValueSourceDropdown", generalPricingSection, "UIDropDownMenuTemplate")
-    fallbackDropdown:SetPoint("TOPLEFT", fallbackSourceLabel, "BOTTOMLEFT", -16, -6)
-    UIDropDownMenu_SetWidth(fallbackDropdown, 240)
-    UIDropDownMenu_Initialize(fallbackDropdown, function(_, level)
-        local noneInfo = UIDropDownMenu_CreateInfo()
-        noneInfo.text = "None"
-        noneInfo.value = ""
-        noneInfo.checked = (addon.db.fallbackValueSource or "") == ""
-        noneInfo.func = function()
-            addon.db.fallbackValueSource = ""
-            addon:RefreshOptionsControls()
-            addon:UpdateMainWindow()
-        end
-        UIDropDownMenu_AddButton(noneInfo, level)
+    local fallbackOrderLabel = generalPricingSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    fallbackOrderLabel:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", 0, -58)
+    fallbackOrderLabel:SetText("Missing-price fallback order")
 
-        for _, source in ipairs(addon.VALUE_SOURCES) do
-            local info = UIDropDownMenu_CreateInfo()
-            local sourceID = source.id
-            info.text = source.label
-            info.value = sourceID
-            info.checked = addon.db.fallbackValueSource == sourceID
-            info.disabled = addon.db.valueSource == sourceID
-            info.func = function()
-                addon.db.fallbackValueSource = sourceID
-                addon:RefreshOptionsControls()
-                addon:UpdateMainWindow()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
+    local resetFallbackOrderButton = CreateOptionsButton(generalPricingSection, 70, 22, "Reset", "neutral")
+    resetFallbackOrderButton:SetPoint("RIGHT", generalPricingSection, "RIGHT", -14, 0)
+    resetFallbackOrderButton:SetPoint("TOP", fallbackOrderLabel, "TOP", 0, 4)
+    resetFallbackOrderButton:SetScript("OnClick", function()
+        addon:SetValueSourceFallbackOrder(addon.VALUE_SOURCE_FALLBACK_DEFAULT_ORDER)
+        addon:RefreshOptionsControls()
     end)
+
+    local fallbackOrderRows = {}
+    local draggingFallbackSourceID
+
+    local function RefreshValueSourceFallbackOrderRows()
+        local fallbackOrder = addon:GetValueSourceFallbackOrder()
+        for index, sourceID in ipairs(fallbackOrder) do
+            local row = fallbackOrderRows[index]
+            if not row then
+                row = CreateFrame("Button", nil, generalPricingSection)
+                row:SetHeight(26)
+                row:SetPoint("LEFT", generalPricingSection, "LEFT", 14, 0)
+                row:SetPoint("RIGHT", generalPricingSection, "RIGHT", -14, 0)
+                row:EnableMouse(true)
+                row:RegisterForDrag("LeftButton")
+
+                local background = row:CreateTexture(nil, "BACKGROUND")
+                background:SetAllPoints(row)
+                row.background = background
+
+                local handleText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+                handleText:SetPoint("LEFT", row, "LEFT", 10, 0)
+                handleText:SetWidth(32)
+                handleText:SetJustifyH("LEFT")
+                handleText:SetText("drag")
+                row.handleText = handleText
+
+                local priorityText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+                priorityText:SetPoint("LEFT", row, "LEFT", 52, 0)
+                priorityText:SetWidth(24)
+                priorityText:SetJustifyH("LEFT")
+                row.priorityText = priorityText
+
+                local labelText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                labelText:SetPoint("LEFT", row, "LEFT", 82, 0)
+                labelText:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+                labelText:SetJustifyH("LEFT")
+                labelText:SetWordWrap(false)
+                row.labelText = labelText
+
+                row:SetScript("OnDragStart", function(self)
+                    draggingFallbackSourceID = self.sourceID
+                    if self.background then
+                        self.background:SetColorTexture(1.0, 0.82, 0.18, 0.18)
+                    end
+                end)
+                row:SetScript("OnMouseUp", function()
+                    draggingFallbackSourceID = nil
+                    RefreshValueSourceFallbackOrderRows()
+                end)
+                row:SetScript("OnEnter", function(self)
+                    if draggingFallbackSourceID
+                        and draggingFallbackSourceID ~= self.sourceID
+                        and type(self.orderIndex) == "number" then
+                        addon:MoveValueSourceFallback(draggingFallbackSourceID, self.orderIndex)
+                        RefreshValueSourceFallbackOrderRows()
+                    end
+                end)
+                row:SetScript("OnUpdate", function()
+                    if draggingFallbackSourceID
+                        and type(IsMouseButtonDown) == "function"
+                        and not IsMouseButtonDown("LeftButton") then
+                        draggingFallbackSourceID = nil
+                        RefreshValueSourceFallbackOrderRows()
+                    end
+                end)
+                row:SetScript("OnHide", function()
+                    draggingFallbackSourceID = nil
+                end)
+
+                fallbackOrderRows[index] = row
+            end
+
+            local source = addon.VALUE_SOURCE_BY_ID[sourceID]
+            row.sourceID = sourceID
+            row.orderIndex = index
+            row:ClearAllPoints()
+            if index == 1 then
+                row:SetPoint("TOPLEFT", fallbackOrderLabel, "BOTTOMLEFT", 0, -8)
+                row:SetPoint("RIGHT", generalPricingSection, "RIGHT", -14, 0)
+            else
+                row:SetPoint("TOPLEFT", fallbackOrderRows[index - 1], "BOTTOMLEFT", 0, -4)
+                row:SetPoint("TOPRIGHT", fallbackOrderRows[index - 1], "BOTTOMRIGHT", 0, -4)
+            end
+            row.priorityText:SetText(tostring(index) .. ".")
+            row.labelText:SetText(source and source.label or sourceID)
+            row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.025)
+            row:Show()
+        end
+
+        for index = (#fallbackOrder + 1), #fallbackOrderRows do
+            fallbackOrderRows[index]:Hide()
+        end
+    end
 
     local inventoryValueSourceLabel = inventoryDefaultsSection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     inventoryValueSourceLabel:SetPoint("TOPLEFT", inventoryDefaultsSection, "TOPLEFT", 14, inventoryDefaultsSection.contentTopOffset)
-    inventoryValueSourceLabel:SetText("Default value source")
+    inventoryValueSourceLabel:SetText("Default preferred value source")
 
     local inventoryValueSourceDropdown = CreateFrame(
         "Frame",
@@ -1068,7 +1141,7 @@ function GoldTracker:CreateOptionsPanel()
     marketHistoryHint:SetPoint("TOPRIGHT", historyMarketSection, "TOPRIGHT", -14, 0)
     marketHistoryHint:SetJustifyH("LEFT")
     marketHistoryHint:SetTextColor(0.62, 0.66, 0.74)
-    marketHistoryHint:SetText("Snapshots are recorded with the current day and hour when you log in or refresh Auctionable Inventory.")
+    marketHistoryHint:SetText("Snapshots are recorded automatically whenever items are discovered through loot, bags, or farming scans.")
 
     local rawLootLogCheckbox = CreateFrame("CheckButton", nil, trackingLootSection, "UICheckButtonTemplate")
     rawLootLogCheckbox:SetPoint("TOPLEFT", trackingLootSection, "TOPLEFT", 10, trackingLootSection.contentTopOffset + 4)
@@ -1110,7 +1183,7 @@ function GoldTracker:CreateOptionsPanel()
     hint:SetJustifyH("LEFT")
     hint:SetText("Use /gt to open the tracker. Auto-start on loot works only while the tracker window is open.")
 
-    generalContent:SetHeight(476)
+    generalContent:SetHeight(720)
     trackingContent:SetHeight(596)
     inventoryContent:SetHeight(348)
     historyContent:SetHeight(462)
@@ -1486,7 +1559,7 @@ function GoldTracker:CreateOptionsPanel()
 
     self.optionsControls = {
         valueSourceDropdown = dropdown,
-        fallbackValueSourceDropdown = fallbackDropdown,
+        valueSourceFallbackOrderRefresh = RefreshValueSourceFallbackOrderRows,
         auctionableInventoryValueSourceDropdown = inventoryValueSourceDropdown,
         autoOpenAuctionableInventoryOnAuctionHouseCheckbox = autoOpenAuctionHouseCheckbox,
         inventoryCategoryOrderRefresh = RefreshInventoryCategoryOrderRows,

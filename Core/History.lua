@@ -44,6 +44,11 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             instanceName = entry.instanceName,
             zoneName = entry.zoneName,
             mapID = tonumber(entry.mapID),
+            mapX = tonumber(entry.mapX),
+            mapY = tonumber(entry.mapY),
+            coordinateSource = entry.coordinateSource,
+            coordinateCapturedAt = tonumber(entry.coordinateCapturedAt),
+            coordinateRetryCount = tonumber(entry.coordinateRetryCount),
             mapName = entry.mapName,
             mapPath = entry.mapPath,
             continentName = entry.continentName,
@@ -92,6 +97,11 @@ local function BuildLegacyItemLootsFromAggregatedItems(session, fallbackSourceID
             instanceName = session.instanceName,
             zoneName = session.zoneName,
             mapID = tonumber(session.mapID),
+            mapX = tonumber(item and item.mapX),
+            mapY = tonumber(item and item.mapY),
+            coordinateSource = item and item.coordinateSource or nil,
+            coordinateCapturedAt = tonumber(item and item.coordinateCapturedAt),
+            coordinateRetryCount = tonumber(item and item.coordinateRetryCount),
             mapName = session.mapName,
             mapPath = session.mapPath,
             continentName = session.continentName,
@@ -141,6 +151,8 @@ local function CloneMoneyLootEntries(moneyLoots)
             instanceName = entry.instanceName,
             zoneName = entry.zoneName,
             mapID = tonumber(entry.mapID),
+            mapX = tonumber(entry.mapX),
+            mapY = tonumber(entry.mapY),
             mapName = entry.mapName,
             mapPath = entry.mapPath,
             continentName = entry.continentName,
@@ -482,6 +494,13 @@ local function NormalizeLootLocationFields(target, fallbackKey, fallbackLabel, f
         target.mapID = fallbackContext and fallbackContext.mapID or nil
     end
     target.mapID = tonumber(target.mapID)
+    target.mapX = tonumber(target.mapX)
+    target.mapY = tonumber(target.mapY)
+    if type(target.coordinateSource) ~= "string" or target.coordinateSource == "" then
+        target.coordinateSource = (target.mapX ~= nil and target.mapY ~= nil) and "legacy" or "unavailable"
+    end
+    target.coordinateCapturedAt = tonumber(target.coordinateCapturedAt)
+    target.coordinateRetryCount = math.max(0, math.floor((tonumber(target.coordinateRetryCount) or 0) + 0.5))
 
     if type(target.mapName) ~= "string" or target.mapName == "" then
         target.mapName = fallbackContext and fallbackContext.mapName or nil

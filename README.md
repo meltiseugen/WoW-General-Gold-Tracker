@@ -86,7 +86,7 @@ If you enable auto-start in options, sessions can begin automatically.
 ## 🌟 Main Features
 
 - Session-based gold and loot value tracking
-- TSM value source + configurable fallback pricing source
+- Preferred TSM value source + configurable ordered missing-price fallback chain
 - Minimum item quality filter for AH-tracked loot
 - Vendor value tracking (separate from AH quality filter)
 - Highlight notifications once threshold is reached
@@ -107,7 +107,7 @@ If you enable auto-start in options, sessions can begin automatically.
 ## ⚙️ Options You Can Customize
 
 - Item value source (TSM)
-- Fallback value source
+- Reorderable missing-price fallback sources
 - Auctionable inventory default value source
 - Minimum item quality
 - Highlight threshold
@@ -136,11 +136,11 @@ SavedVariables table:
 
 Session history, saved farming scans, favorites, options, and market/observed drop data are stored account-wide, so every character on the same WoW account can see the same saved data. New session history entries also record which character and realm saved the session.
 
-Materials learned from session history and refreshed material drop/hour rates are written by WoW to SavedVariables. To commit those learned material rates into this repo after logging out or reloading the UI, run:
+Materials learned from session history, refreshed material drop/hour rates, profession/category changes made in the Materials item details, and aggregated map/coordinate observations are written by WoW to SavedVariables. Loot coordinates use a fresh map lookup, short retries, and a recent same-map fallback; unresolved captures are retained as unavailable instead of receiving invented coordinates. To commit that curated data into this repo after logging out or reloading the UI, run:
 
 `lua tools/export_crafting_farming_learned.lua "<WoW>/WTF/Account/<Account>/SavedVariables/General-Gold-Tracker.lua"`
 
-That updates `Data/CraftingFarmingLearned.lua`, which is loaded by the addon on startup.
+That updates `Data/CraftingFarmingLearned.lua`, which is loaded by the addon on startup. Its `observations` section is a repository-safe research record containing item, map, aggregated source, and coordinate evidence without character names or complete session history. Commit that generated file so other users receive the curated defaults and the observations remain available for later research. Their own in-game category overrides remain local and take precedence over bundled values.
 
 ---
 

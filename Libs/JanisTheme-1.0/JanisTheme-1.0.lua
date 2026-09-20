@@ -280,6 +280,11 @@ function JanisTheme:UpdateButtonVisual(button)
         border = palette.hoverBorder or border
     end
 
+    if button.forceTransparentBackdrop then
+        bg = { bg[1] or 0, bg[2] or 0, bg[3] or 0, 0 }
+        border = { border[1] or 1, border[2] or 1, border[3] or 1, 0 }
+    end
+
     button:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
     button:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
     if button.label then

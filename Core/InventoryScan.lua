@@ -46,7 +46,10 @@ end
 local function GetInventoryBuildCacheKey(addon, sourceID, minimumQuality)
     local cacheVersion = math.max(0, math.floor(tonumber(addon and addon.inventoryBuildCacheVersion) or 0))
     local normalizedQuality = math.max(0, math.floor(tonumber(minimumQuality) or 0))
-    return string.format("%d|%s|%d", cacheVersion, tostring(sourceID or ""), normalizedQuality)
+    local fallbackSignature = type(addon.GetValueSourceFallbackSignature) == "function"
+        and addon:GetValueSourceFallbackSignature()
+        or INVENTORY_FALLBACK_VALUE_SOURCE_ID
+    return string.format("%d|%s|%d|%s", cacheVersion, tostring(sourceID or ""), normalizedQuality, fallbackSignature)
 end
 
 local function GetContainerSlotCount(bagID)
@@ -277,21 +280,25 @@ local function AddInventoryItem(itemsByLink, itemOrder, item)
 end
 
 local function GetInventoryUnitValue(addon, primarySourceID, itemLink)
+    if type(addon.ResolveItemUnitValue) == "function" then
+        return addon:ResolveItemUnitValue(primarySourceID, itemLink)
+    end
+
     local unitValue, resolvedSourceID, resolvedSourceLabel = addon:GetItemUnitValueFromSource(primarySourceID, itemLink)
     unitValue = tonumber(unitValue) or 0
 
     if unitValue > 0 or primarySourceID == INVENTORY_FALLBACK_VALUE_SOURCE_ID then
-        return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel
+        return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel, false
     end
 
     local fallbackValue, fallbackSourceID, fallbackSourceLabel =
         addon:GetItemUnitValueFromSource(INVENTORY_FALLBACK_VALUE_SOURCE_ID, itemLink)
     fallbackValue = tonumber(fallbackValue) or 0
     if fallbackValue > 0 then
-        return fallbackValue, fallbackSourceID or INVENTORY_FALLBACK_VALUE_SOURCE_ID, fallbackSourceLabel
+        return fallbackValue, fallbackSourceID or INVENTORY_FALLBACK_VALUE_SOURCE_ID, fallbackSourceLabel, true
     end
 
-    return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel
+    return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel, false
 end
 
 local function GetInventoryDemandTier(regionSoldPerDay)
@@ -498,7 +505,7 @@ function GoldTracker:BuildAuctionableInventoryItemList(valueSourceID, minimumQua
                         local itemQuality = tonumber(slotInfo and slotInfo.quality) or tonumber(infoQuality) or self:GetItemQualityFromLink(itemLink)
                         if ItemPassesMinimumQuality(itemQuality, normalizedMinimumQuality) then
                             local itemID = GetInventoryItemID(self, itemLink, slotInfo)
-                            local unitValue, resolvedSourceID, resolvedSourceLabel =
+                            local unitValue, resolvedSourceID, resolvedSourceLabel, valueSourceWasFallback =
                                 GetInventoryUnitValue(self, sourceID, itemLink)
                             local quantity = math.max(1, math.floor(tonumber(slotInfo and slotInfo.stackCount) or 1))
                             local stackValue = math.max(0, math.floor((unitValue * quantity) + 0.5))
@@ -527,7 +534,7 @@ function GoldTracker:BuildAuctionableInventoryItemList(valueSourceID, minimumQua
                                     unitValue = unitValue,
                                     valueSourceID = resolvedSourceID or sourceID,
                                     valueSourceLabel = resolvedSourceLabel,
-                                    valueSourceWasFallback = resolvedSourceID ~= sourceID,
+                                    valueSourceWasFallback = valueSourceWasFallback == true,
                                     totalValue = stackValue,
                                     stackCount = 1,
                                     regionSoldPerDay = demandData.regionSoldPerDay,
@@ -584,5 +591,5 @@ function GoldTracker:BuildAuctionableInventoryItemList(valueSourceID, minimumQua
 
     self:SortInventoryItems(items, sortKey, sortAscending)
 
-    return items, totalValue, totalQuantity, scannedStacks, matchedStacks
+    return items, totalValue, totalQuantity, scannedStacks, matchedStacks, candidateItems
 end

@@ -19,6 +19,9 @@ local ALERTS_TSM_WIDTH = 70
 local ALERTS_QTY_WIDTH = 52
 local ALERTS_UNIT_WIDTH = 118
 local ALERTS_TOTAL_WIDTH = 128
+local ALERTS_ACTIONS_WIDTH = 120
+local ALERTS_DETAILS_BUTTON_WIDTH = 64
+local ALERTS_MAP_BUTTON_WIDTH = 48
 
 local function CreateAlertsPanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)
@@ -59,6 +62,24 @@ local function FormatAlertTimestamp(timestamp)
         return "Unknown"
     end
     return date("%m-%d %H:%M", normalizedTimestamp)
+end
+
+local function ReadAlertsMinimumValueCopper(addon, editBox)
+    local rawText = editBox and editBox:GetText() or ""
+    rawText = tostring(rawText or ""):gsub(",", ".")
+    local goldValue = tonumber(rawText)
+    if not goldValue or goldValue < 0 then
+        goldValue = 0
+    end
+    return math.max(0, math.floor((goldValue * addon.COPPER_PER_GOLD) + 0.5))
+end
+
+local function FormatAlertsGoldInput(addon, copperValue)
+    local normalizedCopper = math.max(0, math.floor(tonumber(copperValue) or 0))
+    if normalizedCopper % addon.COPPER_PER_GOLD == 0 then
+        return tostring(normalizedCopper / addon.COPPER_PER_GOLD)
+    end
+    return string.format("%.2f", normalizedCopper / addon.COPPER_PER_GOLD)
 end
 
 local function SetAlertsRowColumn(fontString, row, leftOffset, width)
@@ -110,7 +131,8 @@ local function ApplyAlertsTableColumnLayout(frame)
     local iconX = 8
     local itemX = iconX + ALERTS_ICON_SIZE + 8
     local rightEdge = availableWidth - ALERTS_ROW_RIGHT_PADDING
-    local totalX = rightEdge - ALERTS_TOTAL_WIDTH
+    local actionsX = rightEdge - ALERTS_ACTIONS_WIDTH
+    local totalX = actionsX - ALERTS_COLUMN_GAP - ALERTS_TOTAL_WIDTH
     local unitX = totalX - ALERTS_COLUMN_GAP - ALERTS_UNIT_WIDTH
     local qtyX = unitX - ALERTS_COLUMN_GAP - ALERTS_QTY_WIDTH
     local tsmX = qtyX - ALERTS_COLUMN_GAP - ALERTS_TSM_WIDTH
@@ -126,6 +148,7 @@ local function ApplyAlertsTableColumnLayout(frame)
         SetAlertsHeaderColumn(frame.qtyHeaderText, frame.listPanel, 20 + qtyX, ALERTS_QTY_WIDTH)
         SetAlertsHeaderColumn(frame.unitHeaderText, frame.listPanel, 20 + unitX, ALERTS_UNIT_WIDTH)
         SetAlertsHeaderColumn(frame.totalHeaderText, frame.listPanel, 20 + totalX, ALERTS_TOTAL_WIDTH)
+        SetAlertsHeaderColumn(frame.actionsHeaderText, frame.listPanel, 20 + actionsX, ALERTS_ACTIONS_WIDTH)
     end
 
     for _, row in ipairs(frame.rows or {}) do
@@ -136,6 +159,14 @@ local function ApplyAlertsTableColumnLayout(frame)
         SetAlertsRowColumn(row.quantityText, row, qtyX, ALERTS_QTY_WIDTH)
         SetAlertsRowColumn(row.unitValueText, row, unitX, ALERTS_UNIT_WIDTH)
         SetAlertsRowColumn(row.totalValueText, row, totalX, ALERTS_TOTAL_WIDTH)
+        if row.detailsButton then
+            row.detailsButton:ClearAllPoints()
+            row.detailsButton:SetPoint("LEFT", row, "LEFT", actionsX, 0)
+        end
+        if row.mapButton then
+            row.mapButton:ClearAllPoints()
+            row.mapButton:SetPoint("LEFT", row.detailsButton or row, row.detailsButton and "RIGHT" or "LEFT", row.detailsButton and 6 or actionsX, 0)
+        end
     end
 end
 
@@ -214,6 +245,42 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     totalValueText:SetWordWrap(false)
     row.totalValueText = totalValueText
 
+    local detailsButton = CreateAlertsButton(row, ALERTS_DETAILS_BUTTON_WIDTH, 20, "Details", "neutral")
+    detailsButton:SetScript("OnClick", function(self)
+        local parentRow = self:GetParent()
+        if type(GoldTracker.OpenInventoryItemDetailsWindow) == "function" then
+            GoldTracker:OpenInventoryItemDetailsWindow(parentRow)
+        end
+    end)
+    row.detailsButton = detailsButton
+
+    local mapButton = CreateAlertsButton(row, ALERTS_MAP_BUTTON_WIDTH, 20, "Map", "neutral")
+    mapButton:SetScript("OnClick", function(self)
+        local parentRow = self:GetParent()
+        if type(GoldTracker.OpenMaterialFarmingMap) == "function" then
+            GoldTracker:OpenMaterialFarmingMap(parentRow.itemID)
+        end
+    end)
+    mapButton:SetScript("OnEnter", function(self)
+        if not GameTooltip then
+            return
+        end
+        local parentRow = self:GetParent()
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        if parentRow and parentRow.hasFarmingMap then
+            GameTooltip:SetText("Open farming map")
+        else
+            GameTooltip:SetText("No farming map data yet")
+        end
+        GameTooltip:Show()
+    end)
+    mapButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    row.mapButton = mapButton
+
     local divider = row:CreateTexture(nil, "ARTWORK")
     divider:SetColorTexture(1, 0.82, 0.18, 0.10)
     divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 6, 0)
@@ -275,6 +342,21 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindowLayout()
     end
 end
 
+function GoldTracker:SavePriceIncreaseAlertsMinimumValueInput(skipRefresh)
+    local frame = self.priceIncreaseAlertsFrame
+    if not frame or not frame.minimumValueInput then
+        return
+    end
+
+    local minimumValue = ReadAlertsMinimumValueCopper(self, frame.minimumValueInput)
+    self:SetPriceIncreaseAlertMinimumValue(minimumValue)
+    frame.minimumValueInput:SetText(FormatAlertsGoldInput(self, minimumValue))
+    frame.itemDataRefreshGeneration = (tonumber(frame.itemDataRefreshGeneration) or 0) + 1
+    if skipRefresh ~= true then
+        self:RefreshPriceIncreaseAlertsWindow(true)
+    end
+end
+
 function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
     local frame = self.priceIncreaseAlertsFrame
     if not frame or not frame.content then
@@ -287,19 +369,21 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
 
     if frame.metaText then
         frame.metaText:SetText(string.format(
-            "%d alerts, %d bag items, %d stacks scanned, >= %d%% over %d days",
+            "%d material alerts, %d bag materials, %d stacks scanned, >= %d%% over %d days, unit value >= %s",
             #rows,
-            tonumber(meta.inventoryItemCount) or 0,
+            tonumber(meta.inventoryMaterialCount) or 0,
             tonumber(meta.scannedStacks) or 0,
             tonumber(meta.thresholdPercent) or 30,
-            tonumber(meta.lookbackDays) or 3
+            tonumber(meta.lookbackDays) or 3,
+            self:FormatMoney(tonumber(meta.minimumValueCopper) or 0)
         ))
     end
 
     if frame.emptyText then
         if #rows == 0 then
             frame.emptyText:SetText(string.format(
-                "No bag items or materials are up by at least %d%% yet.",
+                "No non-poor materials worth at least %s are up by %d%% yet.",
+                self:FormatMoney(tonumber(meta.minimumValueCopper) or 0),
                 tonumber(meta.thresholdPercent) or 30
             ))
             frame.emptyText:Show()
@@ -332,6 +416,12 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             row.regionSoldPerDay = result.regionSoldPerDay
             row.regionSaleRate = result.regionSaleRate
             row.alertBasis = result.alertBasis
+            row.isIndexedMaterial = result.isIndexedMaterial == true
+            row.hasFarmingMap = result.hasFarmingMap == true
+            row.materialExpansionID = result.materialExpansionID
+            row.materialExpansionLabel = result.materialExpansionLabel
+            row.materialProfessionIDs = result.materialProfessionIDs
+            row.materialProfessionLabel = result.materialProfessionLabel
 
             local alertBasis = tostring(result.alertBasis or "Unknown")
             row.itemText:SetText(result.itemLink or result.itemName or ("Item " .. tostring(result.itemID or "?")))
@@ -361,6 +451,22 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             end
             if row.divider then
                 row.divider:SetShown(index < #rows)
+            end
+            if row.detailsButton then
+                row.detailsButton:Show()
+            end
+            if row.mapButton then
+                if result.isIndexedMaterial == true then
+                    if row.mapButton.SetEnabled then
+                        row.mapButton:SetEnabled(result.hasFarmingMap == true)
+                    end
+                    if row.mapButton.SetAlpha then
+                        row.mapButton:SetAlpha(result.hasFarmingMap == true and 1 or 0.42)
+                    end
+                    row.mapButton:Show()
+                else
+                    row.mapButton:Hide()
+                end
             end
 
             row:ClearAllPoints()
@@ -441,9 +547,33 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     titleText:SetTextColor(1.0, 0.82, 0.18)
     frame.titleText = titleText
 
+    local valueLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    valueLabel:SetPoint("LEFT", titleText, "RIGHT", 32, 0)
+    valueLabel:SetText("Min unit value (g)")
+    frame.valueLabel = valueLabel
+
+    local minimumValueInput = CreateFrame("EditBox", nil, controlsPanel, "InputBoxTemplate")
+    minimumValueInput:SetSize(78, 22)
+    minimumValueInput:SetPoint("LEFT", valueLabel, "RIGHT", 10, 0)
+    minimumValueInput:SetAutoFocus(false)
+    minimumValueInput:SetNumeric(false)
+    minimumValueInput:SetText(FormatAlertsGoldInput(self, self:GetPriceIncreaseAlertConfig().minimumValueCopper))
+    minimumValueInput:SetScript("OnEnterPressed", function(editBox)
+        editBox:ClearFocus()
+    end)
+    minimumValueInput:SetScript("OnEscapePressed", function(editBox)
+        editBox:SetText(FormatAlertsGoldInput(addon, addon:GetPriceIncreaseAlertConfig().minimumValueCopper))
+        editBox:ClearFocus()
+    end)
+    minimumValueInput:SetScript("OnEditFocusLost", function()
+        addon:SavePriceIncreaseAlertsMinimumValueInput()
+    end)
+    frame.minimumValueInput = minimumValueInput
+
     local refreshButton = CreateAlertsButton(controlsPanel, 86, 22, "Refresh", "neutral")
     refreshButton:SetPoint("RIGHT", controlsPanel, "RIGHT", -14, 0)
     refreshButton:SetScript("OnClick", function()
+        frame.itemDataRefreshGeneration = (tonumber(frame.itemDataRefreshGeneration) or 0) + 1
         addon:RefreshPriceIncreaseAlertsWindow(true)
     end)
     frame.refreshButton = refreshButton
@@ -460,6 +590,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame.qtyHeaderText = CreateHeaderText(listPanel, "Qty", "RIGHT")
     frame.unitHeaderText = CreateHeaderText(listPanel, "Unit value", "RIGHT")
     frame.totalHeaderText = CreateHeaderText(listPanel, "Stack value", "RIGHT")
+    frame.actionsHeaderText = CreateHeaderText(listPanel, "Actions", "LEFT")
 
     local headerUnderline = listPanel:CreateTexture(nil, "ARTWORK")
     headerUnderline:SetColorTexture(1, 0.82, 0.18, 0.18)
@@ -519,9 +650,34 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
-    frame:SetScript("OnEvent", function(self)
-        if self:IsShown() then
+    frame:RegisterEvent("PLAYER_LOGOUT")
+    frame:SetScript("OnEvent", function(self, event)
+        if event == "PLAYER_LOGOUT" then
+            addon:SavePriceIncreaseAlertsMinimumValueInput(true)
+            return
+        end
+
+        if not self:IsShown() then
+            return
+        end
+
+        if event == "BAG_UPDATE_DELAYED" then
+            self.itemDataRefreshGeneration = (tonumber(self.itemDataRefreshGeneration) or 0) + 1
             addon:RefreshPriceIncreaseAlertsWindow(false)
+            return
+        end
+
+        self.itemDataRefreshGeneration = (tonumber(self.itemDataRefreshGeneration) or 0) + 1
+        local refreshGeneration = self.itemDataRefreshGeneration
+        local function RefreshAfterItemDataSettles()
+            if self.itemDataRefreshGeneration == refreshGeneration and self:IsShown() then
+                addon:RefreshPriceIncreaseAlertsWindow(false)
+            end
+        end
+        if C_Timer and type(C_Timer.After) == "function" then
+            C_Timer.After(0.25, RefreshAfterItemDataSettles)
+        else
+            RefreshAfterItemDataSettles()
         end
     end)
     frame:SetScript("OnSizeChanged", function()
@@ -537,6 +693,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
         addon:RefreshPriceIncreaseAlertsWindow(true)
     end)
     frame:SetScript("OnHide", function()
+        frame.itemDataRefreshGeneration = (tonumber(frame.itemDataRefreshGeneration) or 0) + 1
         if GameTooltip then
             GameTooltip:Hide()
         end

@@ -209,6 +209,11 @@ describe("Core/History management", function()
                         locationLabel = "Zone A",
                         zoneName = "A",
                         mapID = 1,
+                        mapX = 0.25,
+                        mapY = 0.75,
+                        coordinateSource = "live",
+                        coordinateCapturedAt = 110,
+                        coordinateRetryCount = 0,
                         ahTracked = true,
                     },
                     {
@@ -246,6 +251,11 @@ describe("Core/History management", function()
         assert.equals("Mimi - Silvermoon", split_entries[1].savedBy)
         assert.equals(155, split_entries[1].totalValue)
         assert.equals(1, #split_entries[1].itemLoots)
+        assert.equals(0.25, split_entries[1].itemLoots[1].mapX)
+        assert.equals(0.75, split_entries[1].itemLoots[1].mapY)
+        assert.equals("live", split_entries[1].itemLoots[1].coordinateSource)
+        assert.equals(110, split_entries[1].itemLoots[1].coordinateCapturedAt)
+        assert.equals(0, split_entries[1].itemLoots[1].coordinateRetryCount)
         assert.equals(1, #split_entries[1].moneyLoots)
         assert.equals("Zone B", split_entries[2].locationLabel)
         assert.equals("Mimi - Silvermoon", split_entries[2].savedBy)

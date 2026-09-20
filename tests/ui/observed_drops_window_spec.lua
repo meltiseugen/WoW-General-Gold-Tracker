@@ -158,6 +158,30 @@ describe("UI/ObservedDropsWindow row snapshots", function()
         assert.same(require("tests.snapshots.observed_drops_rows"), project_rows(rows))
     end)
 
+    it("keeps a drop when the preferred price is missing but an ordered fallback resolves it", function()
+        local addon, item_links, item_names = build_addon()
+        addon.ResolveItemUnitValue = function(_, source_id, _, item_id)
+            if item_id == 1003 then
+                return 250000, "TSM_DBREGIONMARKETAVG", "Region Market Avg", true
+            end
+            return 400000, source_id, "Market Value", false
+        end
+        addon = load_window(addon, item_links, item_names)
+
+        local rows = addon:BuildObservedDropsRows()
+        local fallback_row
+        for _, row in ipairs(rows) do
+            if row.itemID == 1003 then
+                fallback_row = row
+            end
+        end
+
+        assert.is_table(fallback_row)
+        assert.equals(250000, fallback_row.value)
+        assert.equals("TSM_DBREGIONMARKETAVG", fallback_row.valueSourceID)
+        assert.is_true(fallback_row.valueSourceWasFallback)
+    end)
+
     it("keeps the observed list empty until saved sessions have been scanned", function()
         local addon, item_links, item_names = build_addon()
         addon.db.observedSavedSessionDrops = {}

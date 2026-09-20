@@ -697,21 +697,25 @@ local function BuildInventoryDetailsStats(samples)
 end
 
 local function GetInventoryUnitValue(addon, primarySourceID, itemLink)
+    if type(addon.ResolveItemUnitValue) == "function" then
+        return addon:ResolveItemUnitValue(primarySourceID, itemLink)
+    end
+
     local unitValue, resolvedSourceID, resolvedSourceLabel = addon:GetItemUnitValueFromSource(primarySourceID, itemLink)
     unitValue = tonumber(unitValue) or 0
 
     if unitValue > 0 or primarySourceID == INVENTORY_FALLBACK_VALUE_SOURCE_ID then
-        return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel
+        return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel, false
     end
 
     local fallbackValue, fallbackSourceID, fallbackSourceLabel =
         addon:GetItemUnitValueFromSource(INVENTORY_FALLBACK_VALUE_SOURCE_ID, itemLink)
     fallbackValue = tonumber(fallbackValue) or 0
     if fallbackValue > 0 then
-        return fallbackValue, fallbackSourceID or INVENTORY_FALLBACK_VALUE_SOURCE_ID, fallbackSourceLabel
+        return fallbackValue, fallbackSourceID or INVENTORY_FALLBACK_VALUE_SOURCE_ID, fallbackSourceLabel, true
     end
 
-    return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel
+    return unitValue, resolvedSourceID or primarySourceID, resolvedSourceLabel, false
 end
 
 local function GetInventoryRegionalDemandData(addon, itemLink, demandCache)
@@ -2061,6 +2065,10 @@ function GoldTracker:OpenInventoryItemDetailsWindow(row)
         return
     end
 
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(row)
+    end
+
     self:CreateInventoryItemDetailsWindow()
     local frame = self.inventoryItemDetailsFrame
     if not frame then
@@ -2658,7 +2666,7 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
     local source = ResolveInventoryWindowSource(self, frame)
     local minimumQuality = NormalizeMinimumQuality(self, frame.minimumQuality)
     local minimumValueCopper = tonumber(frame.minimumValueCopper) or 0
-    local items, totalValue, totalQuantity, scannedStacks, matchedStacks =
+    local items, totalValue, totalQuantity, scannedStacks, matchedStacks, scannedItems =
         self:BuildInventoryAuctionItemList(
             source.id,
             minimumQuality,
@@ -2667,6 +2675,9 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
             frame.inventorySortAscending,
             frame.categoryFilterID
         )
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(scannedItems or items)
+    end
     local rowHeight = INVENTORY_ROW_HEIGHT
     local yOffset = 0
 
@@ -2957,7 +2968,7 @@ function GoldTracker:CreateInventoryWindow()
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Value source")
+    sourceLabel:SetText("Preferred value source")
 
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerInventoryValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)

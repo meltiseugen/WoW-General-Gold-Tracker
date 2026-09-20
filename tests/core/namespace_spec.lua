@@ -74,6 +74,40 @@ describe("Core/Namespace custom normalization", function()
         }, addon:NormalizeInventoryCategoryOrder())
     end)
 
+    it("normalizes and reorders the shared value-source fallback chain", function()
+        local addon = load_namespace({
+            valueSourceFallbackOrder = {
+                "TSM_DBREGIONMARKETAVG",
+                "invalid",
+                "TSM_DBMARKET",
+                "TSM_DBREGIONMARKETAVG",
+            },
+        })
+
+        assert.same({
+            "TSM_DBREGIONMARKETAVG",
+            "TSM_DBMARKET",
+            "TSM_DBRECENT",
+            "TSM_DBHISTORICAL",
+            "TSM_DBREGIONHISTORICAL",
+            "TSM_DBREGIONSALEAVG",
+            "TSM_DBMINBUYOUT",
+        }, addon:NormalizeValueSourceFallbackOrder())
+
+        addon:MoveValueSourceFallback("TSM_DBMINBUYOUT", 1)
+
+        assert.equals("TSM_DBMINBUYOUT", addon:GetValueSourceFallbackOrder()[1])
+        assert.same({
+            "TSM_DBMARKET",
+            "TSM_DBMINBUYOUT",
+            "TSM_DBREGIONMARKETAVG",
+            "TSM_DBRECENT",
+            "TSM_DBHISTORICAL",
+            "TSM_DBREGIONHISTORICAL",
+            "TSM_DBREGIONSALEAVG",
+        }, addon:GetValueSourceResolutionOrder("TSM_DBMARKET"))
+    end)
+
     it("deduplicates and repairs custom farming materials", function()
         local addon = load_namespace({
             craftingFarmingCustomItems = {
@@ -200,7 +234,30 @@ describe("Core/Namespace custom normalization", function()
         end)
     end)
 
-    it("seeds committed learned materials and drop rates into saved variables", function()
+    it("migrates a supported legacy fallback source to the front of the ordered chain", function()
+        local saved_db = {
+            valueSource = "TSM_DBMARKET",
+            fallbackValueSource = "TSM_DBREGIONMARKETAVG",
+            pricingDefaultsVersion = 2,
+        }
+
+        with_loaded_namespace(saved_db, function(addon)
+            addon:InitializeDatabase()
+
+            assert.equals("TSM_DBREGIONMARKETAVG", addon.db.valueSourceFallbackOrder[1])
+            assert.equals(7, #addon.db.valueSourceFallbackOrder)
+        end)
+    end)
+
+    it("defaults price alerts to a 30 gold minimum value", function()
+        with_loaded_namespace({}, function(addon)
+            addon:InitializeDatabase()
+
+            assert.equals(300000, addon.db.priceIncreaseAlertMinimumValue)
+        end)
+    end)
+
+    it("seeds committed learned materials, category overrides, and drop rates into saved variables", function()
         local saved_db = {}
 
         with_loaded_namespace(saved_db, function(addon)
@@ -209,6 +266,8 @@ describe("Core/Namespace custom normalization", function()
             assert.equals(990001, addon.db.craftingFarmingCustomItems[1].itemID)
             assert.same({ "herbalism" }, addon.db.craftingFarmingCustomItems[1].professions)
             assert.is_true(addon.db.craftingFarmingCustomItems[1].learnedFromSession)
+            assert.same({ "alchemy" }, addon.db.craftingFarmingItemOverrides["22574"].professions)
+            assert.equals("bundled", addon.db.craftingFarmingItemOverrides["22574"].source)
             assert.equals(8, addon.db.craftingFarmingDropRates.items["990001"].dropPerHour)
             assert.equals(1234, addon.db.craftingFarmingDropRates.updatedAt)
         end, {
@@ -224,6 +283,14 @@ describe("Core/Namespace custom normalization", function()
                         learnedProfessionSource = "lootSourceType",
                     },
                 },
+                itemOverrides = {
+                    ["22574"] = {
+                        itemID = 22574,
+                        professions = { "alchemy" },
+                        source = "manual",
+                        updatedAt = 1200,
+                    },
+                },
                 dropRates = {
                     updatedAt = 1234,
                     items = {
@@ -234,6 +301,67 @@ describe("Core/Namespace custom normalization", function()
                             sessionCount = 1,
                             dropPerHour = 8,
                         },
+                    },
+                },
+            },
+        })
+    end)
+
+    it("keeps a local manual material category over a bundled default", function()
+        local saved_db = {
+            craftingFarmingItemOverrides = {
+                ["22574"] = {
+                    itemID = 22574,
+                    professions = { "mining" },
+                    source = "manual",
+                },
+            },
+        }
+
+        with_loaded_namespace(saved_db, function(addon)
+            addon:InitializeDatabase()
+
+            assert.same({ "mining" }, addon.db.craftingFarmingItemOverrides["22574"].professions)
+            assert.equals("manual", addon.db.craftingFarmingItemOverrides["22574"].source)
+        end, {
+            CraftingFarmingLearnedData = {
+                itemOverrides = {
+                    ["22574"] = {
+                        itemID = 22574,
+                        professions = { "alchemy" },
+                    },
+                },
+            },
+        })
+    end)
+
+    it("refreshes and removes stale bundled material categories", function()
+        local saved_db = {
+            craftingFarmingItemOverrides = {
+                ["22574"] = {
+                    itemID = 22574,
+                    professions = { "mining" },
+                    source = "bundled",
+                },
+                ["22575"] = {
+                    itemID = 22575,
+                    professions = { "mining" },
+                    source = "bundled",
+                },
+            },
+        }
+
+        with_loaded_namespace(saved_db, function(addon)
+            addon:InitializeDatabase()
+
+            assert.same({ "alchemy" }, addon.db.craftingFarmingItemOverrides["22574"].professions)
+            assert.is_nil(addon.db.craftingFarmingItemOverrides["22575"])
+        end, {
+            CraftingFarmingLearnedData = {
+                itemOverrides = {
+                    ["22574"] = {
+                        itemID = 22574,
+                        professions = { "alchemy" },
                     },
                 },
             },

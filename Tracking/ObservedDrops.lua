@@ -354,6 +354,13 @@ function GoldTracker:ScanSavedSessionsForObservedDrops()
         self.db.observedSavedSessionDrops = savedSessionDrops
         self.db.observedSavedSessionDropsScannedAt = type(time) == "function" and time() or nil
     end
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        local discoveredItems = {}
+        for _, item in pairs(savedSessionDrops) do
+            discoveredItems[#discoveredItems + 1] = item
+        end
+        self:RecordDiscoveredItemMarketSnapshots(discoveredItems)
+    end
 
     return result
 end

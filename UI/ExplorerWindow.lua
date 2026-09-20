@@ -24,6 +24,22 @@ for _, tab in ipairs(EXPLORER_TABS) do
     EXPLORER_TAB_LOOKUP[tab.id] = tab
 end
 
+local function IsTSMAvailable()
+    return type(TSM_API) == "table" and type(TSM_API.GetCustomPriceValue) == "function"
+end
+
+local function GetExplorerTabTooltip(tabID)
+    if tabID ~= "inventory" then
+        return nil
+    end
+
+    if IsTSMAvailable() then
+        return "Shows auctionable bag items using TradeSkillMaster (TSM) market data."
+    end
+
+    return "Requires TradeSkillMaster (TSM). Bag values and market data are unavailable until TSM is installed and enabled."
+end
+
 local function NormalizeExplorerTab(tabID)
     if EXPLORER_TAB_LOOKUP[tabID] then
         return tabID
@@ -336,6 +352,10 @@ function GoldTracker:GetExplorerTabDefinitions()
     return EXPLORER_TABS
 end
 
+function GoldTracker:GetExplorerTabTooltip(tabID)
+    return GetExplorerTabTooltip(tabID)
+end
+
 function GoldTracker:RefreshExplorerTabs()
     local frame = self.explorerFrame
     if not frame or type(frame.tabButtons) ~= "table" then
@@ -344,6 +364,7 @@ function GoldTracker:RefreshExplorerTabs()
 
     local activeTabID = frame.activeTabID and NormalizeExplorerTab(frame.activeTabID) or nil
     for tabID, button in pairs(frame.tabButtons) do
+        button.tooltipText = GetExplorerTabTooltip(tabID)
         if button.SetSelected then
             button:SetSelected(tabID == activeTabID)
         end
@@ -495,6 +516,7 @@ function GoldTracker:CreateExplorerWindow()
         button:SetScript("OnClick", function()
             addon:SetExplorerTab(tab.id)
         end)
+        button.tooltipText = GetExplorerTabTooltip(tab.id)
         frame.tabButtons[tab.id] = button
         previousButton = button
     end

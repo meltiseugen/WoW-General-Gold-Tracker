@@ -43,6 +43,108 @@ local function CreateModernButton(parent, width, height, text, paletteKey)
     return Theme:CreateButton(parent, width, height, text, paletteKey)
 end
 
+local MAIN_TRANSPARENT_BUTTON_KEYS = {
+    "closeButton",
+    "minimizeButton",
+    "expandButton",
+    "tinyButton",
+    "opacityButton",
+    "lastHighlightButton",
+    "compactHighlightButton",
+    "sessionStyleSelectorButton",
+    "startStopButton",
+    "mainLastHighlightButton",
+    "optionsButton",
+    "explorerButton",
+    "historyButton",
+    "diagnosisButton",
+    "helpButton",
+    "lootStreamToggleButton",
+}
+
+local function SetMainWindowButtonBackdropTransparent(button, isTransparent)
+    if type(button) ~= "table" then
+        return
+    end
+
+    button.forceTransparentBackdrop = isTransparent == true
+    if button.theme and type(button.theme.UpdateButtonVisual) == "function" then
+        button.theme:UpdateButtonVisual(button)
+    elseif isTransparent and type(button.SetBackdropColor) == "function" then
+        button:SetBackdropColor(0, 0, 0, 0)
+        if type(button.SetBackdropBorderColor) == "function" then
+            button:SetBackdropBorderColor(1, 1, 1, 0)
+        end
+    end
+end
+
+local function ApplyMainWindowButtonTransparency(frame, isTransparent)
+    if type(frame) ~= "table" then
+        return
+    end
+
+    for _, key in ipairs(MAIN_TRANSPARENT_BUTTON_KEYS) do
+        SetMainWindowButtonBackdropTransparent(frame[key], isTransparent)
+    end
+    for _, button in ipairs(frame.sessionStyleOptionButtons or {}) do
+        SetMainWindowButtonBackdropTransparent(button, isTransparent)
+    end
+end
+
+local function SetMainWindowFrameClickThrough(region, isClickThrough)
+    if not region then
+        return
+    end
+
+    if type(region.EnableMouse) == "function" and type(region.IsMouseEnabled) == "function" then
+        if isClickThrough then
+            if region.goldTrackerMouseEnabledBeforeClickThrough == nil then
+                region.goldTrackerMouseEnabledBeforeClickThrough = region:IsMouseEnabled() == true
+            end
+            region:EnableMouse(false)
+        elseif region.goldTrackerMouseEnabledBeforeClickThrough ~= nil then
+            region:EnableMouse(region.goldTrackerMouseEnabledBeforeClickThrough)
+            region.goldTrackerMouseEnabledBeforeClickThrough = nil
+        end
+    end
+
+    if type(region.EnableMouseWheel) == "function" and type(region.IsMouseWheelEnabled) == "function" then
+        if isClickThrough then
+            if region.goldTrackerMouseWheelEnabledBeforeClickThrough == nil then
+                region.goldTrackerMouseWheelEnabledBeforeClickThrough = region:IsMouseWheelEnabled() == true
+            end
+            region:EnableMouseWheel(false)
+        elseif region.goldTrackerMouseWheelEnabledBeforeClickThrough ~= nil then
+            region:EnableMouseWheel(region.goldTrackerMouseWheelEnabledBeforeClickThrough)
+            region.goldTrackerMouseWheelEnabledBeforeClickThrough = nil
+        end
+    end
+
+    if type(region.GetChildren) == "function" then
+        for _, child in ipairs({ region:GetChildren() }) do
+            SetMainWindowFrameClickThrough(child, isClickThrough)
+        end
+    end
+end
+
+local function ApplyMainWindowMouseInteraction(frame, isTransparent)
+    if not frame then
+        return
+    end
+
+    local controlDown = type(IsControlKeyDown) == "function" and IsControlKeyDown() and true or false
+    local isClickThrough = isTransparent == true and not controlDown
+    if frame.mainWindowClickThrough == isClickThrough then
+        return
+    end
+
+    frame.mainWindowClickThrough = isClickThrough
+    if isClickThrough and type(frame.StopMovingOrSizing) == "function" then
+        frame:StopMovingOrSizing()
+    end
+    SetMainWindowFrameClickThrough(frame, isClickThrough)
+end
+
 local function ApplySessionStyleSelectorVisual(button, isOpen)
     if not button or type(button.SetBackdropColor) ~= "function" then
         return
@@ -57,6 +159,11 @@ local function ApplySessionStyleSelectorVisual(button, isOpen)
     else
         button:SetBackdropColor(0.08, 0.09, 0.13, 0.96)
         button:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08)
+    end
+
+    if button.forceTransparentBackdrop then
+        button:SetBackdropColor(0, 0, 0, 0)
+        button:SetBackdropBorderColor(1, 1, 1, 0)
     end
 end
 
@@ -82,6 +189,11 @@ local function ApplySessionStyleOptionVisual(button, isSelected)
         else
             button.text:SetTextColor(0.90, 0.92, 0.98)
         end
+    end
+
+    if button.forceTransparentBackdrop then
+        button:SetBackdropColor(0, 0, 0, 0)
+        button:SetBackdropBorderColor(1, 1, 1, 0)
     end
 end
 
@@ -411,6 +523,10 @@ function GoldTracker:ApplyMainWindowAlpha()
 
     frame:SetAlpha(1)
 
+    if isTransparent and Theme and type(Theme.HideNativeChrome) == "function" then
+        Theme:HideNativeChrome(frame)
+    end
+
     if frame.chrome then
         frame.chrome:SetBackdropColor(0.03, 0.04, 0.06, chromeAlpha)
         frame.chrome:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08 * borderAlpha)
@@ -430,6 +546,14 @@ function GoldTracker:ApplyMainWindowAlpha()
     if frame.compactPanel then
         frame.compactPanel:SetBackdropColor(0.05, 0.06, 0.08, panelAlpha)
         frame.compactPanel:SetBackdropBorderColor(1.0, 0.82, 0.18, 0.10 * borderAlpha)
+    end
+    if frame.sessionStylePanel then
+        frame.sessionStylePanel:SetBackdropColor(0.04, 0.07, 0.10, panelAlpha)
+        frame.sessionStylePanel:SetBackdropBorderColor(0.68, 0.86, 1.0, 0.18 * borderAlpha)
+    end
+    if frame.sessionStylePopup then
+        frame.sessionStylePopup:SetBackdropColor(0.04, 0.05, 0.07, isTransparent and 0 or 0.98)
+        frame.sessionStylePopup:SetBackdropBorderColor(1.0, 1.0, 1.0, 0.08 * borderAlpha)
     end
     if frame.sessionStatusBadge then
         if isTransparent then
@@ -453,11 +577,48 @@ function GoldTracker:ApplyMainWindowAlpha()
         frame.logAccent:SetAlpha(accentAlpha)
     end
     if frame.compactDivider then
-        frame.compactDivider:SetAlpha(isTransparent and 0.18 or 0.36)
+        frame.compactDivider:SetAlpha(isTransparent and 0 or 0.36)
+    end
+    if frame.heroDivider then
+        frame.heroDivider:SetAlpha(isTransparent and 0 or 1)
+    end
+    if frame.actionDivider then
+        frame.actionDivider:SetAlpha(isTransparent and 0 or 1)
+    end
+    if frame.logHeaderUnderline then
+        frame.logHeaderUnderline:SetAlpha(isTransparent and 0 or 1)
+    end
+    if frame.resizeButton then
+        frame.resizeButton:SetAlpha(isTransparent and 0 or 0.7)
+    end
+    if frame.logScrollFrame and frame.logScrollFrame.ScrollBar then
+        frame.logScrollFrame.ScrollBar:SetAlpha(chromeAlpha)
+    end
+    for _, row in ipairs(frame.logRows or {}) do
+        if row.background then
+            row.background:SetAlpha(chromeAlpha)
+        end
+        if row.hover then
+            row.hover:SetAlpha(chromeAlpha)
+        end
+        if row.divider then
+            row.divider:SetAlpha(chromeAlpha)
+        end
     end
     if frame.opacityButton and type(frame.opacityButton.SetSelected) == "function" then
         frame.opacityButton:SetSelected(isTransparent)
     end
+    ApplyMainWindowButtonTransparency(frame, isTransparent)
+    if frame.sessionStyleSelectorButton then
+        ApplySessionStyleSelectorVisual(
+            frame.sessionStyleSelectorButton,
+            frame.sessionStylePopup and frame.sessionStylePopup:IsShown()
+        )
+    end
+    for _, optionButton in ipairs(frame.sessionStyleOptionButtons or {}) do
+        ApplySessionStyleOptionVisual(optionButton, optionButton.styleID == self:GetSessionStyleFilter())
+    end
+    ApplyMainWindowMouseInteraction(frame, isTransparent)
 end
 
 function GoldTracker:ToggleMainWindowTransparency()
@@ -467,6 +628,13 @@ function GoldTracker:ToggleMainWindowTransparency()
 
     self.db.mainWindowTransparent = self.db.mainWindowTransparent ~= true
     self:ApplyMainWindowAlpha()
+
+    if self.db.mainWindowTransparent
+        and UIErrorsFrame
+        and type(UIErrorsFrame.AddMessage) == "function"
+    then
+        UIErrorsFrame:AddMessage("Hold Ctrl to click or drag the transparent window.", 1.0, 0.82, 0.18)
+    end
 end
 
 function GoldTracker:SetMainLootStreamExpanded(isExpanded)
@@ -1151,6 +1319,9 @@ function GoldTracker:GetMainLootLogRow(index)
 
     row = CreateFrame("Button", nil, frame.logContent)
     row:EnableMouse(true)
+    if frame.mainWindowClickThrough == true then
+        SetMainWindowFrameClickThrough(row, true)
+    end
     row:SetHitRectInsets(0, 0, 0, 0)
 
     local background = row:CreateTexture(nil, "BACKGROUND")
@@ -1236,6 +1407,7 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
     local yOffset = 0
     local logLayout = BuildMainLootLogLayoutMetrics(self, frame)
     local showTimestamps = logLayout.showTimestamps
+    local rowChromeAlpha = self.db and self.db.mainWindowTransparent == true and 0 or 1
 
     if frame.logMetaText then
         frame.logMetaText:SetText("")
@@ -1295,6 +1467,13 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
             if row.background then
                 local stripeAlpha = index % 2 == 0 and 0.05 or 0.025
                 row.background:SetColorTexture(1, 1, 1, stripeAlpha)
+                row.background:SetAlpha(rowChromeAlpha)
+            end
+            if row.hover then
+                row.hover:SetAlpha(rowChromeAlpha)
+            end
+            if row.divider then
+                row.divider:SetAlpha(rowChromeAlpha)
             end
             row.divider:SetShown(index < #entries)
             row:Show()
@@ -1852,7 +2031,10 @@ function GoldTracker:CreateMainWindow()
     local isLootStreamExpanded = self:IsMainLootStreamExpanded()
     local initialWidth = ClampMainWindowWidth(self, isLootStreamExpanded and configuredWidth or configuredCollapsedWidth, isLootStreamExpanded)
     local initialHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, configuredHeight)) + 0.5)
-    local frame = CreateFrame("Frame", "GoldTrackerMainFrame", UIParent, "BasicFrameTemplateWithInset")
+    -- The window supplies all of its own chrome. Using BasicFrameTemplateWithInset
+    -- here leaves Blizzard-owned border textures outside our backdrop controls,
+    -- so those textures cannot participate reliably in transparent mode.
+    local frame = CreateFrame("Frame", "GoldTrackerMainFrame", UIParent)
     frame:SetSize(initialWidth, initialHeight)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
@@ -1981,7 +2163,7 @@ function GoldTracker:CreateMainWindow()
 
     local opacityButton = CreateModernButton(headerBar, 22, 22, "O", "neutral")
     opacityButton:SetPoint("RIGHT", tinyButton, "LEFT", -6, 0)
-    opacityButton.tooltipText = "Transparent window"
+    opacityButton.tooltipText = "Transparent click-through window (hold Ctrl to click or drag)"
     opacityButton:SetScript("OnClick", function()
         addon:ToggleMainWindowTransparency()
     end)
@@ -2294,6 +2476,7 @@ function GoldTracker:CreateMainWindow()
     heroDivider:SetPoint("TOPLEFT", totalRawLabel, "BOTTOMLEFT", 0, -10)
     heroDivider:SetPoint("TOPRIGHT", summaryPanel, "TOPRIGHT", -16, -10)
     heroDivider:SetHeight(1)
+    frame.heroDivider = heroDivider
 
     local sourceRow
     sourceRow, _, frame.sourceValue = CreateSummaryRow(summaryPanel, heroDivider, "AH Source")
@@ -2340,6 +2523,7 @@ function GoldTracker:CreateMainWindow()
     actionDivider:SetPoint("BOTTOMLEFT", summaryPanel, "BOTTOMLEFT", 16, 54)
     actionDivider:SetPoint("BOTTOMRIGHT", summaryPanel, "BOTTOMRIGHT", -16, 54)
     actionDivider:SetHeight(1)
+    frame.actionDivider = actionDivider
 
     local startStopButton = CreateModernButton(summaryPanel, 120, 26, "Start Session", "primary")
     startStopButton:SetPoint("BOTTOMLEFT", utilityButtonRow, "TOPLEFT", 0, 8)
@@ -2504,6 +2688,7 @@ function GoldTracker:CreateMainWindow()
     logHeaderUnderline:SetPoint("TOPLEFT", logPanel, "TOPLEFT", 16, -58)
     logHeaderUnderline:SetPoint("TOPRIGHT", logPanel, "TOPRIGHT", -16, -58)
     logHeaderUnderline:SetHeight(1)
+    frame.logHeaderUnderline = logHeaderUnderline
 
     local logScrollFrame = CreateFrame("ScrollFrame", nil, logPanel, "UIPanelScrollFrameTemplate")
     logScrollFrame:SetPoint("TOPLEFT", logPanel, "TOPLEFT", 16, -64)
@@ -2554,6 +2739,7 @@ function GoldTracker:CreateMainWindow()
 
     local elapsedAccumulator = 0
     frame:SetScript("OnUpdate", function(_, elapsed)
+        ApplyMainWindowMouseInteraction(frame, addon.db and addon.db.mainWindowTransparent == true)
         elapsedAccumulator = elapsedAccumulator + elapsed
         if elapsedAccumulator < 1 then
             return

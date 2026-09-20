@@ -61,7 +61,7 @@ local function load_rare_and_instance(addon)
     end)
 end
 
-local function load_instance_with_data(addon, instance_data, globals)
+local function load_instance_with_data(addon, instance_data, globals, att_data)
     local values = {
         LE_ITEM_BIND_ON_ACQUIRE = 1,
         LE_ITEM_BIND_ON_EQUIP = 2,
@@ -74,6 +74,7 @@ local function load_instance_with_data(addon, instance_data, globals)
     return loader.with_globals(values, function()
         return loader.load_module("UI/InstanceFarmingWindow.lua", addon, {
             InstanceDropsData = instance_data,
+            ATTBoEDropsData = att_data,
         })
     end)
 end
@@ -136,6 +137,37 @@ local function build_addon()
 end
 
 describe("UI farming windows shared state", function()
+    it("uses the shared fallback resolver for rare and instance row prices", function()
+        local addon = build_addon()
+        addon.VALUE_SOURCE_BY_ID.TSM_DBREGIONMARKETAVG = {
+            id = "TSM_DBREGIONMARKETAVG",
+            label = "Region Market Avg",
+            tsmKey = "DBRegionMarketAvg",
+        }
+        addon.ResolveItemUnitValue = function(_, _, _, item_id)
+            return item_id == 40001 and 125000 or 0,
+                "TSM_DBREGIONMARKETAVG",
+                "Region Market Avg",
+                true
+        end
+        addon.GetTSMItemValueForItemID = function()
+            return 0
+        end
+        addon = load_rare_and_instance(addon)
+
+        local rare_rows = { { itemID = 40001 } }
+        local instance_rows = { { itemID = 40001 } }
+        addon:UpdateRareFarmingRowsPrices(rare_rows, "TSM_DBMARKET")
+        addon:UpdateInstanceFarmingRowsPrices(instance_rows, "TSM_DBMARKET")
+
+        for _, row in ipairs({ rare_rows[1], instance_rows[1] }) do
+            assert.equals(125000, row.value)
+            assert.equals("TSM_DBREGIONMARKETAVG", row.valueSourceID)
+            assert.equals("Region Market Avg", row.valueSourceLabel)
+            assert.is_true(row.valueSourceWasFallback)
+        end
+    end)
+
     it("shares favorites between rare and instance farming windows by item ID", function()
         local addon = load_rare_and_instance(build_addon())
 
@@ -466,6 +498,168 @@ describe("UI farming windows shared state", function()
             assert.equals(1, #addon.instanceFarmingFrame.lastResults)
             assert.equals(70001, addon.instanceFarmingFrame.lastResults[1].itemID)
             assert.matches("unavailable%-binding items skipped", status_text[#status_text])
+        end)
+    end)
+
+    it("includes ATT instance BoE rows in instance farming scans", function()
+        local worker
+        local status_text = {}
+        local addon = build_addon()
+        addon.db.instanceFarmingExpansionFilter = "2"
+        addon.db.instanceFarmingContentTypeFilter = "dungeon"
+        addon.db.instanceFarmingMinimumValue = 0
+        addon.db.instanceFarmingScanMode = "foreground"
+        addon.GetTSMItemValueForItemID = function()
+            return 5000
+        end
+        addon.GetMarketHistoryItemKey = function(_, _, item_id)
+            return "item:" .. tostring(item_id)
+        end
+        addon.IsLootItemBindingRestricted = function()
+            return false
+        end
+        addon.IsInstanceFarmingFavorite = function()
+            return false
+        end
+        addon.RecordInstanceFarmingMarketSnapshots = noop
+        addon.Print = noop
+        addon.COPPER_PER_GOLD = 10000
+        local function get_test_item_info(item_id)
+            local id = tonumber(item_id)
+            if id == 80001 or id == 80002 then
+                return "Drop " .. tostring(id),
+                    "item:" .. tostring(id),
+                    2,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    134400,
+                    nil,
+                    nil,
+                    nil,
+                    2
+            end
+            return nil
+        end
+
+        addon = load_instance_with_data(addon, {
+            sourceVersion = "test",
+            expansions = {
+                currentID = 2,
+                options = {
+                    { id = 2, label = "Burning Crusade", current = true },
+                },
+            },
+            instances = {
+                {
+                    name = "TBCDungeon",
+                    expansionID = 2,
+                    expansion = "Burning Crusade",
+                    contentType = "dungeon",
+                    encounterJournalID = 777,
+                    mapID = 100,
+                    bosses = {
+                        { name = "Trash Mobs", loot = { { itemID = 80001 } } },
+                    },
+                },
+            },
+        }, {
+            CreateFrame = function()
+                worker = {
+                    SetScript = function(self, _, script)
+                        self.on_update = script
+                    end,
+                    Hide = function(self)
+                        self.hidden = true
+                    end,
+                    Show = function(self)
+                        self.hidden = false
+                    end,
+                }
+                return worker
+            end,
+            GetItemInfo = get_test_item_info,
+        }, {
+            instances = {
+                [777] = {
+                    journalInstanceID = 777,
+                    name = "TBCDungeon",
+                    expansionID = 2,
+                    expansion = "Burning Crusade",
+                    contentType = "dungeon",
+                    mapID = 100,
+                    items = {
+                        { itemID = 80001 },
+                        { itemID = 80002 },
+                    },
+                },
+            },
+        })
+        addon.RefreshInstanceFarmingWindowControls = noop
+        addon.RefreshInstanceFarmingWindow = noop
+        addon.RefreshInstanceFarmingLibraryWindow = noop
+        addon.instanceFarmingFrame = {
+            valueSourceID = "TSM_DBMARKET",
+            expansionFilterID = "2",
+            contentTypeFilterID = "dungeon",
+            scanModeID = "foreground",
+            minimumValueCopper = 0,
+            lastResults = {},
+            minimumValueInput = {
+                GetText = function()
+                    return "0"
+                end,
+                SetText = noop,
+                HasFocus = function()
+                    return false
+                end,
+            },
+            progressBar = {
+                SetMinMaxValues = noop,
+                SetValue = noop,
+            },
+            statusText = {
+                SetText = function(_, text)
+                    status_text[#status_text + 1] = text
+                end,
+            },
+            IsShown = function()
+                return false
+            end,
+        }
+
+        loader.with_globals({
+            CreateFrame = function()
+                worker = {
+                    SetScript = function(self, _, script)
+                        self.on_update = script
+                    end,
+                    Hide = function(self)
+                        self.hidden = true
+                    end,
+                    Show = function(self)
+                        self.hidden = false
+                    end,
+                }
+                return worker
+            end,
+            GetItemInfo = get_test_item_info,
+        }, function()
+            addon:StartInstanceFarmingScan()
+            assert.is_table(addon.instanceFarmingFrame.scanState)
+            assert.equals(2, addon.instanceFarmingFrame.scanState.total)
+
+            worker.on_update(worker, 0.1)
+
+            assert.is_nil(addon.instanceFarmingFrame.scanState)
+            assert.equals(2, #addon.instanceFarmingFrame.lastResults)
+            assert.equals(80001, addon.instanceFarmingFrame.lastResults[1].itemID)
+            assert.equals(80002, addon.instanceFarmingFrame.lastResults[2].itemID)
+            assert.equals("att-instance", addon.instanceFarmingFrame.lastResults[2].farmingSourceType)
+            assert.matches("2 auctionable instance drops matched", status_text[#status_text])
         end)
     end)
 

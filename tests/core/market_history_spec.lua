@@ -1,6 +1,6 @@
 local loader = require("tests.helpers.addon_loader")
 
-local function load_market_history(tsm_values)
+local function load_market_history(tsm_values, ns_overrides)
     tsm_values = tsm_values or {
         DBMarket = 150000,
         DBHistorical = 175000,
@@ -48,7 +48,7 @@ local function load_market_history(tsm_values)
         end,
     }
 
-    return loader.load_module("Core/MarketHistory.lua", addon)
+    return loader.load_module("Core/MarketHistory.lua", addon, ns_overrides)
 end
 
 local function with_time(timestamp, callback)
@@ -130,6 +130,56 @@ describe("Core/MarketHistory", function()
         assert.equals(222222, snapshots[1].selectedUnitValue)
     end)
 
+    it("captures every graph price source as soon as an item is discovered", function()
+        local addon = load_market_history({
+            DBMarket = 101000,
+            DBRecent = 102000,
+            DBMinBuyout = 103000,
+            DBHistorical = 104000,
+            DBRegionMarketAvg = 105000,
+            DBRegionHistorical = 106000,
+            DBRegionSaleAvg = 107000,
+            DBRegionSaleRate = 0.25,
+            DBRegionSoldPerDay = 4.5,
+            AuctioningOpMin = 108000,
+            AuctioningOpNormal = 109000,
+            AuctioningOpMax = 110000,
+        })
+
+        with_time(1710000000, function()
+            local count = addon:RecordDiscoveredItemMarketSnapshots({
+                {
+                    itemID = 12345,
+                    itemLink = item_link,
+                    itemName = "Test Green",
+                    valueSourceID = "TSM_DBMARKET",
+                    unitValue = 101000,
+                },
+                {
+                    itemID = 12345,
+                    itemLink = item_link,
+                    itemName = "Duplicate scan row",
+                    unitValue = 999999,
+                },
+            })
+            assert.equals(1, count)
+        end)
+
+        local snapshot = addon.db.marketHistory.items["i:12345"].snapshots[1]
+        assert.equals(101000, snapshot.dbMarket)
+        assert.equals(102000, snapshot.dbRecent)
+        assert.equals(103000, snapshot.dbMinBuyout)
+        assert.equals(104000, snapshot.dbHistorical)
+        assert.equals(105000, snapshot.dbRegionMarketAvg)
+        assert.equals(106000, snapshot.dbRegionHistorical)
+        assert.equals(107000, snapshot.dbRegionSaleAvg)
+        assert.equals(0.25, snapshot.dbRegionSaleRate)
+        assert.equals(4.5, snapshot.dbRegionSoldPerDay)
+        assert.equals(108000, snapshot.auctioningMin)
+        assert.equals(109000, snapshot.auctioningNormal)
+        assert.equals(110000, snapshot.auctioningMax)
+    end)
+
     it("appends a new snapshot in a later hour", function()
         local addon = load_market_history()
 
@@ -201,7 +251,7 @@ describe("Core/MarketHistory", function()
         end
 
         local result = with_time(now, function()
-            return { addon:BuildPriceIncreaseAlertRows() }
+            return { addon:BuildPriceIncreaseAlertRows({ minimumValueCopper = 0 }) }
         end)
         local rows, meta = result[1], result[2]
 
@@ -266,17 +316,290 @@ describe("Core/MarketHistory", function()
                     itemName = "Test Green",
                     unitValue = 160000,
                     totalValue = 160000,
+                    isCraftingReagent = true,
                 },
             }, 160000, 1, 1, 1
         end
 
         local rows = with_time(1710200000, function()
-            return addon:BuildPriceIncreaseAlertRows()
+            return addon:BuildPriceIncreaseAlertRows({ minimumValueCopper = 0 })
         end)
 
         assert.equals(1, #rows)
         assert.equals("TSM recent", rows[1].alertBasis)
         assert.equals(60, rows[1].tsmChangePercent)
         assert.equals(1, rows[1].localSampleCount)
+    end)
+
+    it("excludes non-material bag items from price increase alerts", function()
+        local addon = load_market_history({
+            DBMarket = 160000,
+            DBRecent = 100000,
+            DBHistorical = 120000,
+        })
+        addon.BuildInventoryAuctionItemList = function()
+            return {
+                {
+                    itemID = 12345,
+                    itemLink = item_link,
+                    itemName = "Test Green",
+                    unitValue = 160000,
+                    totalValue = 160000,
+                },
+            }, 160000, 1, 1, 1
+        end
+
+        local result = with_time(1710200000, function()
+            return { addon:BuildPriceIncreaseAlertRows() }
+        end)
+        local rows, meta = result[1], result[2]
+
+        assert.equals(0, #rows)
+        assert.equals(1, meta.inventoryItemCount)
+        assert.equals(0, meta.inventoryMaterialCount)
+    end)
+
+    it("includes indexed materials when TSM market is above historical", function()
+        local addon = load_market_history({}, {
+            MaterialFarmingSpots = {
+                items = {
+                    [123918] = {
+                        itemID = 123918,
+                        itemName = "Leystone Ore",
+                        expansion = "legion",
+                        professions = { "mining" },
+                        category = "Ore",
+                        spots = {
+                            {
+                                mapName = "Val'sharah",
+                                coords = {
+                                    { x = 0.45, y = 0.52 },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        })
+        addon.BuildInventoryAuctionItemList = function()
+            return {}, 0, 0, 0, 0
+        end
+
+        local result = with_time(1710200000, function()
+            return { loader.with_globals({
+                TSM_API = {
+                    GetCustomPriceValue = function(source, item_string)
+                        assert.equals("i:123918", item_string)
+                        return ({
+                            DBMarket = 141000,
+                            DBHistorical = 100000,
+                        })[source]
+                    end,
+                },
+            }, function()
+                return addon:BuildPriceIncreaseAlertRows({ minimumValueCopper = 0 })
+            end) }
+        end)
+        local rows, meta = result[1], result[2]
+
+        assert.equals(1, #rows)
+        assert.equals(123918, rows[1].itemID)
+        assert.equals("Leystone Ore", rows[1].itemName)
+        assert.equals("TSM historical", rows[1].alertBasis)
+        assert.equals(41, rows[1].tsmChangePercent)
+        assert.is_true(rows[1].isIndexedMaterial)
+        assert.is_true(rows[1].hasFarmingMap)
+        assert.equals(1, meta.indexedMaterialCount)
+    end)
+
+    it("marks bag alert rows as indexed materials when their item ID has farming data", function()
+        local leystone_link = "|cffffffff|Hitem:123918::::::::|h[Leystone Ore]|h|r"
+        local addon = load_market_history({
+            DBMarket = 141000,
+            DBHistorical = 100000,
+        }, {
+            MaterialFarmingSpots = {
+                items = {
+                    [123918] = {
+                        itemID = 123918,
+                        itemName = "Leystone Ore",
+                        expansion = "legion",
+                        professions = { "mining" },
+                        category = "Ore",
+                        spots = {
+                            {
+                                mapName = "Val'sharah",
+                                coords = {
+                                    { x = 0.45, y = 0.52 },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        })
+        addon.BuildInventoryAuctionItemList = function()
+            return {
+                {
+                    itemID = 123918,
+                    itemLink = leystone_link,
+                    itemName = "Leystone Ore",
+                    unitValue = 141000,
+                    totalValue = 141000,
+                },
+            }, 141000, 1, 1, 1
+        end
+
+        local rows = with_time(1710200000, function()
+            return addon:BuildPriceIncreaseAlertRows({ minimumValueCopper = 0 })
+        end)
+
+        assert.equals(1, #rows)
+        assert.is_true(rows[1].isIndexedMaterial)
+        assert.is_true(rows[1].hasFarmingMap)
+        assert.equals("legion", rows[1].materialExpansionLabel)
+    end)
+
+    it("requires common quality and a default unit value of at least 30 gold", function()
+        local addon = load_market_history({
+            DBMarket = 300000,
+            DBRecent = 200000,
+            DBHistorical = 200000,
+        })
+        local receivedMinimumQuality
+        local receivedMinimumValue
+        addon.BuildInventoryAuctionItemList = function(_, _, minimumQuality, minimumValue)
+            receivedMinimumQuality = minimumQuality
+            receivedMinimumValue = minimumValue
+            return {
+                {
+                    itemID = 12345,
+                    itemLink = item_link,
+                    itemName = "Test Green",
+                    itemQuality = 1,
+                    unitValue = 300000,
+                    totalValue = 300000,
+                    isCraftingReagent = true,
+                },
+            }, 300000, 1, 1, 1
+        end
+
+        local result = with_time(1710200000, function()
+            return { addon:BuildPriceIncreaseAlertRows() }
+        end)
+        local rows, meta = result[1], result[2]
+
+        assert.equals(1, #rows)
+        assert.equals(1, receivedMinimumQuality)
+        assert.equals(299999, receivedMinimumValue)
+        assert.equals(300000, meta.minimumValueCopper)
+    end)
+
+    it("excludes poor-quality materials before reading their prices", function()
+        local priceReads = 0
+        local addon = load_market_history()
+        addon.GetTSMRawCustomValue = function()
+            priceReads = priceReads + 1
+            return 500000
+        end
+        addon.BuildInventoryAuctionItemList = function()
+            return {
+                {
+                    itemID = 12345,
+                    itemLink = item_link,
+                    itemName = "Poor Material",
+                    itemQuality = 0,
+                    unitValue = 500000,
+                    totalValue = 500000,
+                    isCraftingReagent = true,
+                },
+            }, 500000, 1, 1, 1
+        end
+
+        local rows = with_time(1710200000, function()
+            return addon:BuildPriceIncreaseAlertRows()
+        end)
+
+        assert.equals(0, #rows)
+        assert.equals(0, priceReads)
+    end)
+
+    it("excludes poor-quality indexed materials before querying TSM", function()
+        local priceReads = 0
+        local addon = load_market_history({}, {
+            MaterialFarmingSpots = {
+                items = {
+                    [123918] = {
+                        itemID = 123918,
+                        itemName = "Poor Ore",
+                        category = "Ore",
+                    },
+                },
+            },
+        })
+        addon.BuildInventoryAuctionItemList = function()
+            return {}, 0, 0, 0, 0
+        end
+
+        local result = with_time(1710200000, function()
+            return { loader.with_globals({
+                C_Item = {
+                    GetItemInfo = function()
+                        return "Poor Ore", "|cff9d9d9d|Hitem:123918::::::::|h[Poor Ore]|h|r", 0
+                    end,
+                },
+                TSM_API = {
+                    GetCustomPriceValue = function()
+                        priceReads = priceReads + 1
+                        return 500000
+                    end,
+                },
+            }, function()
+                return addon:BuildPriceIncreaseAlertRows()
+            end) }
+        end)
+        local rows, meta = result[1], result[2]
+
+        assert.equals(0, #rows)
+        assert.equals(0, priceReads)
+        assert.equals(0, meta.indexedMaterialCount)
+    end)
+
+    it("stops indexed-material pricing after the cheap value check fails", function()
+        local priceReads = 0
+        local addon = load_market_history({}, {
+            MaterialFarmingSpots = {
+                items = {
+                    [123918] = {
+                        itemID = 123918,
+                        itemName = "Leystone Ore",
+                        category = "Ore",
+                    },
+                },
+            },
+        })
+        addon.BuildInventoryAuctionItemList = function()
+            return {}, 0, 0, 0, 0
+        end
+
+        local rows = with_time(1710200000, function()
+            return loader.with_globals({
+                TSM_API = {
+                    GetCustomPriceValue = function(source, itemString)
+                        priceReads = priceReads + 1
+                        assert.equals("i:123918", itemString)
+                        if source == "DBMarket" then
+                            return 299999
+                        end
+                        return 200000
+                    end,
+                },
+            }, function()
+                return addon:BuildPriceIncreaseAlertRows()
+            end)
+        end)
+
+        assert.equals(0, #rows)
+        assert.equals(1, priceReads)
     end)
 end)

@@ -128,3 +128,59 @@ Register({
         },
     },
 })
+
+local function RegisterRaidGem(itemID, itemName)
+    Register({
+        itemID = itemID,
+        itemName = itemName,
+        expansion = "burningCrusade",
+        professions = { "jewelcrafting" },
+        category = "Gem",
+        researchStatus = "researched",
+        sourceUrls = {
+            "https://www.wowhead.com/item=" .. itemID,
+            "https://www.wowhead.com/zone=3959/black-temple",
+            "https://www.wowhead.com/zone=4075/sunwell-plateau",
+        },
+        summary = itemName .. " is an epic Burning Crusade raid gem found in Black Temple and Sunwell Plateau. Instance creatures have no usable outdoor spawn coordinates, so each raid entrance remains a separate overlay destination.",
+        spots = {
+            {
+                id = "bc-raid-gem-" .. itemID .. "-black-temple",
+                source = "Retail Wowhead item and Black Temple source tables",
+                sourceUrls = { "https://www.wowhead.com/item=" .. itemID, "https://www.wowhead.com/zone=3959/black-temple" },
+                mapName = "Shadowmoon Valley",
+                location = "Black Temple",
+                routeType = "raid-entrance",
+                density = "Instanced trash and containers",
+                dropDifficulty = "Raid lockout and instance reset rules limit repetition.",
+                tips = { "Clear eligible trash and open gem containers before leaving the raid." },
+                coords = { { x = 0.710, y = 0.460, label = "Black Temple entrance" } },
+                confidence = "high",
+            },
+            {
+                id = "bc-raid-gem-" .. itemID .. "-sunwell",
+                source = "Retail Wowhead item and Sunwell Plateau source tables",
+                sourceUrls = { "https://www.wowhead.com/item=" .. itemID, "https://www.wowhead.com/zone=4075/sunwell-plateau" },
+                mapName = "Isle of Quel'Danas",
+                location = "Sunwell Plateau",
+                routeType = "raid-entrance",
+                density = "Instanced trash and containers",
+                dropDifficulty = "Raid lockout and instance reset rules limit repetition.",
+                tips = { "Clear eligible trash and open gem containers before leaving the raid." },
+                coords = { { x = 0.442, y = 0.455, label = "Sunwell Plateau entrance" } },
+                confidence = "high",
+            },
+        },
+    })
+end
+
+for _, gem in ipairs({
+    { 32227, "Crimson Spinel" },
+    { 32228, "Empyrean Sapphire" },
+    { 32229, "Lionseye" },
+    { 32230, "Shadowsong Amethyst" },
+    { 32231, "Pyrestone" },
+    { 32249, "Seaspray Emerald" },
+}) do
+    RegisterRaidGem(gem[1], gem[2])
+end

@@ -1,5 +1,6 @@
 local _, NS = ...
 local Register = NS.RegisterMaterialFarmingSpot
+local Pins = NS.GetBurningCrusadeNpcCoords
 
 local function RegisterEnchanting(itemID, itemName, summary, spots)
     Register({
@@ -18,12 +19,7 @@ local function RegisterEnchanting(itemID, itemName, summary, spots)
     })
 end
 
-local LEGION_HOLD = {
-    { x = 0.222, y = 0.384, label = "North Legion Hold warlock" },
-    { x = 0.224, y = 0.396, label = "Central Legion Hold warlock" },
-    { x = 0.230, y = 0.384, label = "East Legion Hold warlock" },
-    { x = 0.236, y = 0.400, label = "South Legion Hold warlock" },
-}
+local LEGION_HOLD = Pins({ 21302 }, 104)
 
 local OUTLAND_INSTANCE_ENTRANCES = {
     { x = 0.395, y = 0.580, label = "Auchindoun entrance area" },

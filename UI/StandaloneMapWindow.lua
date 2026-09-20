@@ -1,6 +1,7 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
+local MapAreaOverlay = GoldTracker.MapAreaOverlay
 
 local DEFAULT_MAP_ID = 107
 local DEFAULT_PIN_X = 41.4
@@ -8,7 +9,7 @@ local DEFAULT_PIN_Y = 41.4
 local MIN_ZOOM = 1
 local MAX_ZOOM = 3
 local ZOOM_STEP = 0.25
-local MAP_DROPDOWN_WIDTH = 190
+local MAP_DROPDOWN_WIDTH = 280
 local DETAILS_PANEL_WIDTH = 292
 local DETAILS_PANEL_GAP = 10
 local DETAILS_CONTENT_PADDING = 12
@@ -16,6 +17,13 @@ local SOURCE_BUTTON_WIDTH = 54
 local SOURCE_ROW_HEIGHT = 24
 local DETAIL_TEXT_HEIGHT_PADDING = 4
 local DETAIL_TEXT_MEASURE_HEIGHT = 1000
+local ROUTE_LINE_THICKNESS = 3
+local MAP_DISPLAY_MODE_OVERLAY = "overlay"
+local MAP_DISPLAY_MODE_ICONS = "icons"
+local MAP_DISPLAY_MODE_BUTTON_WIDTH = 72
+local MAP_PIN_SIZE = 18
+local MAP_PIN_ICON_SIZE = 14
+local MAP_PIN_RING_SIZE = 24
 
 local GetSelectedMapOption
 
@@ -193,12 +201,131 @@ local function AddSourceUrls(group, sourceUrls)
     end
 end
 
+local function GetUserPinSourceName(pinData)
+    local sourceName = pinData and (pinData.spotLocation or pinData.label)
+    if not HasText(sourceName) then
+        return nil
+    end
+    sourceName = sourceName:gsub("^AOE Unit:%s*", ""):gsub("^Unit:%s*", "")
+    return HasText(sourceName) and sourceName or nil
+end
+
+local function GetPinTargetName(pinData)
+    if HasText(pinData and pinData.targetName) then
+        return pinData.targetName
+    end
+    if not pinData or pinData.sourceType ~= "user" then
+        return nil
+    end
+    if pinData.sourceKind == "NPC" or pinData.sourceKind == "AOE" then
+        return GetUserPinSourceName(pinData)
+    end
+    local sourceText = pinData.spotLocation or pinData.label
+    if HasText(sourceText)
+        and (sourceText:find("^Unit:%s*") or sourceText:find("^AOE Unit:%s*"))
+    then
+        return GetUserPinSourceName(pinData)
+    end
+    return nil
+end
+
+local function AddTargetName(group, targetName)
+    if not group or not HasText(targetName) then
+        return
+    end
+    group.targetLookup = group.targetLookup or {}
+    if group.targetLookup[targetName] then
+        return
+    end
+    group.targetLookup[targetName] = true
+    group.targets = group.targets or {}
+    group.targets[#group.targets + 1] = targetName
+end
+
+local function GetSecondaryAreaText(location, hasTargets)
+    if not HasText(location) then
+        return nil
+    end
+    local area = location
+    if hasTargets then
+        area = area:gsub(",%s*[Kk]illing%s+.+$", "")
+    end
+    return "Area: " .. area
+end
+
+local function BuildUserClusterDetailGroup(areaGroup)
+    local firstPin = areaGroup and areaGroup.pins and areaGroup.pins[1]
+    if not firstPin then
+        return nil
+    end
+
+    local group = {
+        title = GetPinTitle(firstPin),
+        routeType = firstPin.routeType,
+        sourceType = firstPin.sourceType,
+        sourceLabel = firstPin.sourceLabel,
+        targets = {},
+        targetLookup = {},
+        tips = {},
+        sources = {},
+        sourceUrlLookup = {},
+    }
+    local tipLookup = {}
+    local totalX = 0
+    local totalY = 0
+    local totalSeen = 0
+    local totalLooted = 0
+
+    for _, pinData in ipairs(areaGroup.pins or {}) do
+        totalX = totalX + (tonumber(pinData.x) or 0)
+        totalY = totalY + (tonumber(pinData.y) or 0)
+        totalSeen = totalSeen + math.max(0, tonumber(pinData.seenCount) or 0)
+        totalLooted = totalLooted + math.max(0, tonumber(pinData.totalQuantity) or 0)
+        AddTargetName(group, GetPinTargetName(pinData))
+        for _, tip in ipairs(CopyTips(pinData.tips) or {}) do
+            if not tipLookup[tip] then
+                tipLookup[tip] = true
+                group.tips[#group.tips + 1] = tip
+            end
+        end
+        AddSourceUrls(group, pinData.sourceUrls)
+    end
+
+    local pointCount = #areaGroup.pins
+    local centerX = pointCount > 0 and (totalX / pointCount) or 0
+    local centerY = pointCount > 0 and (totalY / pointCount) or 0
+    group.location = string.format("Near %.1f, %.1f", centerX * 100, centerY * 100)
+    group.density = string.format(
+        "%d nearby %s, %d seen, %d looted",
+        pointCount,
+        pointCount == 1 and "point" or "points",
+        totalSeen,
+        totalLooted
+    )
+    return group
+end
+
 local function BuildVisiblePinGroups(pins, mapID)
     local groups = {}
     local byKey = {}
     local selectedMapID = tonumber(mapID)
+    local clusteredUserPins = {}
+    if MapAreaOverlay and type(MapAreaOverlay.BuildGroups) == "function" then
+        for _, areaGroup in ipairs(MapAreaOverlay:BuildGroups(pins, selectedMapID)) do
+            if areaGroup.isUserCluster == true then
+                local group = BuildUserClusterDetailGroup(areaGroup)
+                if group then
+                    groups[#groups + 1] = group
+                end
+                for _, pinData in ipairs(areaGroup.pins or {}) do
+                    clusteredUserPins[pinData] = true
+                end
+            end
+        end
+    end
+
     for _, pinData in ipairs(pins or {}) do
-        if pinData and tonumber(pinData.mapID) == selectedMapID then
+        if pinData and tonumber(pinData.mapID) == selectedMapID and not clusteredUserPins[pinData] then
             local tips = CopyTips(pinData.tips)
             local key = table.concat({
                 GetPinTitle(pinData),
@@ -206,6 +333,8 @@ local function BuildVisiblePinGroups(pins, mapID)
                 pinData.routeType or "",
                 pinData.density or "",
                 pinData.dropDifficulty or "",
+                pinData.sourceType or "",
+                pinData.sourceLabel or "",
                 tips and table.concat(tips, "\n") or "",
             }, "\031")
             local group = byKey[key]
@@ -216,6 +345,10 @@ local function BuildVisiblePinGroups(pins, mapID)
                     routeType = pinData.routeType,
                     density = pinData.density,
                     dropDifficulty = pinData.dropDifficulty,
+                    sourceType = pinData.sourceType,
+                    sourceLabel = pinData.sourceLabel,
+                    targets = {},
+                    targetLookup = {},
                     tips = tips,
                     sources = {},
                     sourceUrlLookup = {},
@@ -223,6 +356,7 @@ local function BuildVisiblePinGroups(pins, mapID)
                 byKey[key] = group
                 groups[#groups + 1] = group
             end
+            AddTargetName(group, GetPinTargetName(pinData))
             AddSourceUrls(group, pinData.sourceUrls)
         end
     end
@@ -242,12 +376,18 @@ function GoldTracker.BuildStandaloneMapDetailLines(_, pins, mapID, mapLabel)
 
     for groupIndex, group in ipairs(groups) do
         AppendDetailLine(lines, group.title, 1.0, 0.82, 0.18, 6, "GameFontNormalLarge")
-        AppendDetailLine(lines, group.location, 0.92, 0.95, 1.0, 6, "GameFontHighlight")
+        local hasTargets = type(group.targets) == "table" and #group.targets > 0
+        local targetText = hasTargets and ("Kill: " .. table.concat(group.targets, ", ")) or nil
+        local areaText = GetSecondaryAreaText(group.location, hasTargets)
+        AppendDetailLine(lines, targetText, 1.0, 0.45, 0.20, 6, "GameFontNormalLarge")
+        AppendDetailLine(lines, areaText, 0.68, 0.72, 0.80, 6, "GameFontHighlight")
         local routeText = HasText(group.routeType) and ("Route: " .. group.routeType) or nil
         local densityText = HasText(group.density) and ("Density: " .. group.density) or nil
+        local sourceText = HasText(group.sourceLabel) and ("Source: " .. group.sourceLabel) or nil
         local difficultyText = HasText(group.dropDifficulty) and ("Difficulty: " .. group.dropDifficulty) or nil
         AppendDetailLine(lines, routeText, 0.72, 0.86, 1.0, 5, "GameFontHighlight")
         AppendDetailLine(lines, densityText, 0.72, 0.86, 1.0, 5, "GameFontHighlight")
+        AppendDetailLine(lines, sourceText, 0.72, 0.86, 1.0, 5, "GameFontHighlight")
         AppendDetailLine(lines, difficultyText, 0.72, 0.86, 1.0, 7, "GameFontHighlight")
 
         if type(group.tips) == "table" and #group.tips > 0 then
@@ -289,6 +429,117 @@ local function HidePins(frame)
     end
 end
 
+local function NormalizeMapDisplayMode(mode)
+    if mode == MAP_DISPLAY_MODE_ICONS then
+        return MAP_DISPLAY_MODE_ICONS
+    end
+    return MAP_DISPLAY_MODE_OVERLAY
+end
+
+local function RefreshMapDisplayModeButton(frame)
+    if not frame or not frame.displayModeButton then
+        return
+    end
+
+    local mode = NormalizeMapDisplayMode(frame.mapDisplayMode)
+    frame.displayModeButton:SetText(mode == MAP_DISPLAY_MODE_ICONS and "Overlay" or "Icons")
+    frame.displayModeButton.tooltipText = mode == MAP_DISPLAY_MODE_ICONS
+        and "Switch to the farming area overlay."
+        or "Switch to individual farming location icons."
+end
+
+local function TrySetMapPinAtlas(texture, atlas)
+    return texture
+        and type(texture.SetAtlas) == "function"
+        and pcall(texture.SetAtlas, texture, atlas, true)
+end
+
+local function ApplyMapPinTexture(texture, atlas, fallbackTexture)
+    if not texture then
+        return nil
+    end
+    if atlas and TrySetMapPinAtlas(texture, atlas) then
+        return "atlas"
+    end
+    if fallbackTexture and type(texture.SetTexture) == "function" then
+        texture:SetTexture(fallbackTexture)
+        return "texture"
+    end
+    return nil
+end
+
+local function GetMapPin(frame, index)
+    frame.mapPinFrames = frame.mapPinFrames or {}
+    local pin = frame.mapPinFrames[index]
+    if not pin then
+        if type(CreateFrame) ~= "function" or not frame.mapContent then
+            return nil
+        end
+        pin = CreateFrame("Button", nil, frame.mapContent)
+        pin:SetSize(MAP_PIN_SIZE, MAP_PIN_SIZE)
+        if pin.RegisterForClicks then
+            pin:RegisterForClicks("LeftButtonUp")
+        end
+
+        local ring = pin:CreateTexture(nil, "OVERLAY", nil, 6)
+        ring:SetPoint("CENTER", pin, "CENTER")
+        ring:SetSize(MAP_PIN_RING_SIZE, MAP_PIN_RING_SIZE)
+        ApplyMapPinTexture(ring, "worldquest-icon-ring", "Interface\\Minimap\\MiniMap-TrackingBorder")
+        if ring.SetVertexColor then
+            ring:SetVertexColor(0.28, 0.68, 1.0, 0.95)
+        end
+        pin.ring = ring
+
+        local icon = pin:CreateTexture(nil, "OVERLAY", nil, 7)
+        icon:SetPoint("CENTER", pin, "CENTER")
+        icon:SetSize(MAP_PIN_ICON_SIZE, MAP_PIN_ICON_SIZE)
+        local textureKind = ApplyMapPinTexture(icon, "VignetteLoot", "Interface\\Icons\\INV_Misc_Map02")
+        if textureKind ~= "atlas" and icon.SetTexCoord then
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        end
+        pin.icon = icon
+
+        pin:SetScript("OnEnter", function(self)
+            if not GameTooltip or not self.pinData then
+                return
+            end
+            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+            GameTooltip:SetText(self.pinData.label or GetPinTitle(self.pinData), 1.0, 0.82, 0.18)
+            if HasText(self.pinData.spotLocation) then
+                GameTooltip:AddLine(self.pinData.spotLocation, 0.82, 0.86, 0.92, true)
+            end
+            GameTooltip:AddDoubleLine(
+                "Coordinates",
+                string.format("%.1f, %.1f", (self.pinData.x or 0) * 100, (self.pinData.y or 0) * 100),
+                0.72, 0.86, 1.0,
+                1, 1, 1
+            )
+            GameTooltip:Show()
+        end)
+        pin:SetScript("OnLeave", function()
+            if GameTooltip then
+                GameTooltip:Hide()
+            end
+        end)
+        frame.mapPinFrames[index] = pin
+    elseif pin.SetParent then
+        pin:SetParent(frame.mapContent)
+    end
+    return pin
+end
+
+local function HideRouteLines(frame)
+    for _, line in ipairs(frame.mapRouteLines or {}) do
+        line:Hide()
+    end
+end
+
+local function HideMapAreas(frame)
+    if MapAreaOverlay then
+        MapAreaOverlay:Hide(frame, "standaloneMapArea")
+    end
+end
+
 local function GetTile(frame, index)
     frame.mapTileTextures = frame.mapTileTextures or {}
     local texture = frame.mapTileTextures[index]
@@ -314,60 +565,20 @@ local function GetExploredTile(frame, index)
     return texture
 end
 
-local function SetUserWaypoint(frame, mapID, x, y)
-    if not C_Map or not C_Map.SetUserWaypoint or not UiMapPoint or not UiMapPoint.CreateFromCoordinates then
-        SetStatus(frame, "This client cannot set user waypoints from addons.")
-        return false
-    end
-
-    if C_Map.CanSetUserWaypointOnMap and not C_Map.CanSetUserWaypointOnMap(mapID) then
-        SetStatus(frame, "This map cannot accept a user waypoint.")
-        return false
-    end
-
-    C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(mapID, x, y))
-    if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-        C_SuperTrack.SetSuperTrackedUserWaypoint(true)
-    end
-    SetStatus(frame, "Waypoint set.")
-    return true
-end
-
-local function GetPin(frame, index)
-    frame.mapPinFrames = frame.mapPinFrames or {}
-    local pin = frame.mapPinFrames[index]
-    if not pin then
-        pin = CreateFrame("Button", nil, frame.mapContent, "BackdropTemplate")
-        pin:SetSize(28, 28)
-        pin.icon = pin:CreateTexture(nil, "OVERLAY")
-        pin.icon:SetPoint("CENTER")
-        pin.icon:SetSize(24, 24)
-        if not pin.icon.SetAtlas or not pcall(pin.icon.SetAtlas, pin.icon, "VignetteLoot", true) then
-            pin.icon:SetTexture("Interface\\Icons\\INV_Misc_Map02")
+local function GetRouteLine(frame, index)
+    frame.mapRouteLines = frame.mapRouteLines or {}
+    local line = frame.mapRouteLines[index]
+    if not line then
+        if not frame.mapContent or type(frame.mapContent.CreateLine) ~= "function" then
+            return nil
         end
-        pin.ring = pin:CreateTexture(nil, "ARTWORK")
-        pin.ring:SetPoint("CENTER")
-        pin.ring:SetSize(30, 30)
-        pin.ring:SetColorTexture(1.0, 0.82, 0.18, 0.18)
-        pin:SetScript("OnEnter", function(target)
-            if not GameTooltip then
-                return
-            end
-            GameTooltip:SetOwner(target, "ANCHOR_RIGHT")
-            GameTooltip:SetText(GetPinTitle(target), 1, 0.82, 0.18)
-            GameTooltip:Show()
-        end)
-        pin:SetScript("OnLeave", function()
-            if GameTooltip then
-                GameTooltip:Hide()
-            end
-        end)
-        pin:SetScript("OnClick", function(target)
-            SetUserWaypoint(frame, target.mapID, target.x, target.y)
-        end)
-        frame.mapPinFrames[index] = pin
+        line = frame.mapContent:CreateLine(nil, "ARTWORK", nil, 1)
+        frame.mapRouteLines[index] = line
     end
-    return pin
+    if line.SetParent then
+        line:SetParent(frame.mapContent)
+    end
+    return line
 end
 
 local function LoadMapArt(frame, mapID)
@@ -666,7 +877,7 @@ local function RefreshStandaloneMapDetails(frame)
     end
 
     local option = GetSelectedMapOption(frame)
-    local mapLabel = (option and option.label) or GetMapName(frame.mapID)
+    local mapLabel = (option and (option.mapLabel or option.label)) or GetMapName(frame.mapID)
     local lines = GoldTracker:BuildStandaloneMapDetailLines(frame.mapPins, frame.mapID, mapLabel)
     local scrollWidth = frame.detailsScrollFrame:GetWidth() or 0
     if scrollWidth <= 1 then
@@ -738,35 +949,105 @@ local function RefreshStandaloneMapDetails(frame)
     end
 end
 
-local function RenderPins(frame)
+local function RenderRouteLines(frame)
+    HideRouteLines(frame)
     if not frame.mapLayer or not frame.mapContent then
-        return
+        return 0
     end
 
-    HidePins(frame)
     local scale = frame.mapCurrentScale or 1
     local layerWidth = frame.mapLayer.layerWidth or 1
     local layerHeight = frame.mapLayer.layerHeight or 1
-    local pinIndex = 1
+    local previousPin
+    local lineIndex = 1
     for _, pinData in ipairs(frame.mapPins or {}) do
-        if pinData.mapID == frame.mapID then
-            local pin = GetPin(frame, pinIndex)
-            pin.mapID = pinData.mapID
-            pin.x = pinData.x
-            pin.y = pinData.y
-            pin.label = pinData.label
-            pin.itemName = pinData.itemName
-            pin.spotLocation = pinData.spotLocation
-            pin.routeType = pinData.routeType
-            pin.density = pinData.density
-            pin.dropDifficulty = pinData.dropDifficulty
-            pin.tips = pinData.tips
-            pin:ClearAllPoints()
-            pin:SetPoint("CENTER", frame.mapContent, "TOPLEFT", pinData.x * layerWidth * scale, -(pinData.y * layerHeight * scale))
-            pin:Show()
-            pinIndex = pinIndex + 1
+        if tonumber(pinData.mapID) == tonumber(frame.mapID) then
+            if pinData.isRoute == true
+                and previousPin
+                and previousPin.isRoute == true
+                and previousPin.routeID == pinData.routeID
+            then
+                local line = GetRouteLine(frame, lineIndex)
+                if line then
+                    line:ClearAllPoints()
+                    line:SetStartPoint("TOPLEFT", frame.mapContent, previousPin.x * layerWidth * scale, -(previousPin.y * layerHeight * scale))
+                    line:SetEndPoint("TOPLEFT", frame.mapContent, pinData.x * layerWidth * scale, -(pinData.y * layerHeight * scale))
+                    if line.SetThickness then
+                        line:SetThickness(ROUTE_LINE_THICKNESS)
+                    end
+                    if line.SetColorTexture then
+                        line:SetColorTexture(1.0, 0.82, 0.18, 0.62)
+                    elseif line.SetVertexColor then
+                        line:SetVertexColor(1.0, 0.82, 0.18, 0.62)
+                    end
+                    line:Show()
+                    lineIndex = lineIndex + 1
+                end
+            end
+            previousPin = pinData.isRoute == true and pinData or nil
+        else
+            previousPin = nil
         end
     end
+    return lineIndex - 1
+end
+
+local function RenderMapPins(frame)
+    HidePins(frame)
+    if not frame.mapLayer or not frame.mapContent then
+        return 0
+    end
+
+    local scale = frame.mapCurrentScale or 1
+    local width = (frame.mapLayer.layerWidth or 1) * scale
+    local height = (frame.mapLayer.layerHeight or 1) * scale
+    local pinIndex = 1
+    for _, pinData in ipairs(frame.mapPins or {}) do
+        local x = tonumber(pinData and pinData.x)
+        local y = tonumber(pinData and pinData.y)
+        if tonumber(pinData and pinData.mapID) == tonumber(frame.mapID)
+            and x and y
+            and x >= 0 and x <= 1
+            and y >= 0 and y <= 1
+        then
+            local pin = GetMapPin(frame, pinIndex)
+            if pin then
+                pin.pinData = pinData
+                pin:ClearAllPoints()
+                pin:SetPoint("CENTER", frame.mapContent, "TOPLEFT", x * width, -(y * height))
+                pin:Show()
+                pinIndex = pinIndex + 1
+            end
+        end
+    end
+    return pinIndex - 1
+end
+
+local function RenderMapAreas(frame)
+    HidePins(frame)
+    HideMapAreas(frame)
+    if not MapAreaOverlay or not frame.mapLayer or not frame.mapContent then
+        return 0
+    end
+
+    local scale = frame.mapCurrentScale or 1
+    local width = (frame.mapLayer.layerWidth or 1) * scale
+    local height = (frame.mapLayer.layerHeight or 1) * scale
+    local polygons = MapAreaOverlay:BuildPolygons(frame.mapPins, frame.mapID)
+    return MapAreaOverlay:Render(
+        frame,
+        frame.mapContent,
+        "standaloneMapArea",
+        polygons,
+        width,
+        height,
+        {
+            layer = "OVERLAY",
+            fillSubLevel = -3,
+            glowSubLevel = -2,
+            borderSubLevel = -1,
+        }
+    )
 end
 
 function GetSelectedMapOption(frame)
@@ -820,6 +1101,7 @@ function GoldTracker:RefreshStandaloneMapWindow()
     end
 
     RefreshStandaloneMapDropdown(frame)
+    RefreshMapDisplayModeButton(frame)
     frame.mapTitle:SetText(GetStandaloneMapToolbarTitle(frame))
     RefreshStandaloneMapDetails(frame)
     local layer, textureFileIDs = LoadMapArt(frame, frame.mapID)
@@ -828,6 +1110,9 @@ function GoldTracker:RefreshStandaloneMapWindow()
 
     if not layer then
         frame.mapContent:Hide()
+        HideRouteLines(frame)
+        HidePins(frame)
+        HideMapAreas(frame)
         return
     end
 
@@ -835,18 +1120,62 @@ function GoldTracker:RefreshStandaloneMapWindow()
     UpdateCanvasPosition(frame)
     RenderTiles(frame)
     RenderExploredTiles(frame)
-    RenderPins(frame)
-    local pinCount = 0
+    local displayMode = NormalizeMapDisplayMode(frame.mapDisplayMode)
+    local routeLineCount = 0
+    local areaCount = 0
+    local iconCount = 0
+    if displayMode == MAP_DISPLAY_MODE_ICONS then
+        HideRouteLines(frame)
+        HideMapAreas(frame)
+        iconCount = RenderMapPins(frame)
+    else
+        routeLineCount = RenderRouteLines(frame)
+        areaCount = RenderMapAreas(frame)
+    end
+    local routePointCount = 0
     for _, pinData in ipairs(frame.mapPins or {}) do
-        if tonumber(pinData.mapID) == tonumber(frame.mapID) then
-            pinCount = pinCount + 1
+        if tonumber(pinData.mapID) == tonumber(frame.mapID) and pinData.isRoute == true then
+            routePointCount = routePointCount + 1
         end
     end
-    if pinCount > 0 then
-        SetStatus(frame, string.format("Click a pin to set a waypoint. Zoom %.2fx", frame.mapZoom or 1))
+    if displayMode == MAP_DISPLAY_MODE_ICONS and iconCount > 0 then
+        SetStatus(frame, string.format("%d farming location %s visible. Zoom %.2fx", iconCount, iconCount == 1 and "icon" or "icons", frame.mapZoom or 1))
+    elseif displayMode == MAP_DISPLAY_MODE_ICONS then
+        SetStatus(frame, string.format("No farming locations on this map. Zoom %.2fx", frame.mapZoom or 1))
+    elseif routeLineCount > 0 and areaCount > 0 then
+        SetStatus(frame, string.format("Route line and %d farming %s visible. Zoom %.2fx", areaCount, areaCount == 1 and "area" or "areas", frame.mapZoom or 1))
+    elseif routeLineCount > 0 then
+        SetStatus(frame, string.format("Route line visible. Zoom %.2fx", frame.mapZoom or 1))
+    elseif areaCount > 0 then
+        SetStatus(frame, string.format("%d farming %s visible. Zoom %.2fx", areaCount, areaCount == 1 and "area" or "areas", frame.mapZoom or 1))
+    elseif routePointCount == 1 then
+        SetStatus(frame, string.format("Need at least two route points for a line. Zoom %.2fx", frame.mapZoom or 1))
     else
-        SetStatus(frame, string.format("No route pins on this map. Zoom %.2fx", frame.mapZoom or 1))
+        SetStatus(frame, string.format("No farming locations on this map. Zoom %.2fx", frame.mapZoom or 1))
     end
+end
+
+function GoldTracker:SetStandaloneMapDisplayMode(mode)
+    local frame = self.standaloneMapFrame
+    if not frame then
+        return false
+    end
+
+    frame.mapDisplayMode = NormalizeMapDisplayMode(mode)
+    self:RefreshStandaloneMapWindow()
+    return true
+end
+
+function GoldTracker:ToggleStandaloneMapDisplayMode()
+    local frame = self.standaloneMapFrame
+    if not frame then
+        return false
+    end
+
+    local currentMode = NormalizeMapDisplayMode(frame.mapDisplayMode)
+    return self:SetStandaloneMapDisplayMode(
+        currentMode == MAP_DISPLAY_MODE_ICONS and MAP_DISPLAY_MODE_OVERLAY or MAP_DISPLAY_MODE_ICONS
+    )
 end
 
 function GoldTracker:AdjustStandaloneMapZoom(delta)
@@ -885,8 +1214,9 @@ function GoldTracker:ProjectStandaloneMapToWorldMap()
     local option = GetSelectedMapOption(frame)
     local projected, message = self:ProjectMapRouteToWorldMap({
         title = frame.windowTitle or "Projected Farming Route",
+        projectionKey = frame.projectionKey,
         mapID = frame.mapID,
-        mapLabel = option and option.label or GetMapName(frame.mapID),
+        mapLabel = option and (option.mapLabel or option.label) or GetMapName(frame.mapID),
         pins = frame.mapPins,
         mapOptions = frame.mapOptions,
         selectedMapOptionIndex = frame.selectedMapOptionIndex,
@@ -906,11 +1236,19 @@ function GoldTracker:ProjectStandaloneMapToWorldMap()
 end
 
 function GoldTracker:ClearStandaloneWorldMapProjection()
-    if type(self.ClearWorldMapProjection) == "function" then
-        self:ClearWorldMapProjection()
+    local frame = self.standaloneMapFrame
+    if not frame or frame.projectionKey == nil or type(self.ClearWorldMapProjectionByKey) ~= "function" then
+        SetStatus(frame, "This map's projected pins could not be cleared.")
+        return false
     end
-    SetStatus(self.standaloneMapFrame, "Cleared projected pins from the Blizzard world map.")
-    return true
+
+    local cleared = self:ClearWorldMapProjectionByKey(frame.projectionKey)
+    if cleared then
+        SetStatus(frame, "Cleared this map's projected pins from the Blizzard world map.")
+    else
+        SetStatus(frame, "This map has no projected pins on the Blizzard world map.")
+    end
+    return cleared
 end
 
 function GoldTracker:CreateStandaloneMapWindow()
@@ -954,7 +1292,7 @@ function GoldTracker:CreateStandaloneMapWindow()
 
     local mapTitle = toolbar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     mapTitle:SetPoint("LEFT", toolbar, "LEFT", 12, 0)
-    mapTitle:SetPoint("RIGHT", toolbar, "RIGHT", -546, 0)
+    mapTitle:SetPoint("RIGHT", toolbar, "RIGHT", -714, 0)
     mapTitle:SetJustifyH("LEFT")
     mapTitle:SetWordWrap(false)
 
@@ -970,8 +1308,11 @@ function GoldTracker:CreateStandaloneMapWindow()
     local projectButton = CreateButton(toolbar, 72, 24, "Project", "neutral")
     projectButton:SetPoint("RIGHT", zoomOutButton, "LEFT", -6, 0)
 
+    local displayModeButton = CreateButton(toolbar, MAP_DISPLAY_MODE_BUTTON_WIDTH, 24, "Icons", "neutral")
+    displayModeButton:SetPoint("RIGHT", projectButton, "LEFT", -6, 0)
+
     local clearProjectionButton = CreateButton(toolbar, 92, 24, "Clear Pins", "neutral")
-    clearProjectionButton:SetPoint("RIGHT", projectButton, "LEFT", -6, 0)
+    clearProjectionButton:SetPoint("RIGHT", displayModeButton, "LEFT", -6, 0)
 
     local mapDropdown = CreateFrame("Frame", "GoldTrackerStandaloneMapSelectorDropdown", toolbar, "UIDropDownMenuTemplate")
     mapDropdown:SetPoint("RIGHT", clearProjectionButton, "LEFT", -8, 0)
@@ -1035,10 +1376,12 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame.mapPins = {}
     frame.mapTileTextures = {}
     frame.mapExploredTileTextures = {}
+    frame.mapRouteLines = {}
     frame.mapPinFrames = {}
     frame.mapZoom = 1
     frame.mapPanX = 0
     frame.mapPanY = 0
+    frame.mapDisplayMode = MAP_DISPLAY_MODE_OVERLAY
     frame.body = body
     frame.mapTitle = mapTitle
     frame.mapViewport = mapViewport
@@ -1050,6 +1393,7 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame.detailSourceRows = {}
     frame.statusText = statusText
     frame.mapDropdown = mapDropdown
+    frame.displayModeButton = displayModeButton
 
     mapViewport:SetScript("OnMouseWheel", function(_, delta)
         GoldTracker:AdjustStandaloneMapZoom(delta > 0 and ZOOM_STEP or -ZOOM_STEP)
@@ -1105,6 +1449,22 @@ function GoldTracker:CreateStandaloneMapWindow()
         GoldTracker:ProjectStandaloneMapToWorldMap()
     end)
 
+    displayModeButton:SetScript("OnClick", function()
+        GoldTracker:ToggleStandaloneMapDisplayMode()
+    end)
+    displayModeButton:SetScript("OnEnter", function(self)
+        if GameTooltip and HasText(self.tooltipText) then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(self.tooltipText, 1.0, 0.82, 0.18)
+            GameTooltip:Show()
+        end
+    end)
+    displayModeButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+
     clearProjectionButton:SetScript("OnClick", function()
         GoldTracker:ClearStandaloneWorldMapProjection()
     end)
@@ -1118,6 +1478,8 @@ function GoldTracker:OpenStandaloneMapWindow(options)
     options = type(options) == "table" and options or {}
 
     frame.windowTitle = options.title
+    frame.projectionKey = options.projectionKey or options.title
+    frame.mapDisplayMode = NormalizeMapDisplayMode(options.displayMode or frame.mapDisplayMode)
     frame.mapOptions = type(options.mapOptions) == "table" and options.mapOptions or nil
     frame.selectedMapOptionIndex = tonumber(options.selectedMapOptionIndex) or 1
     if frame.mapOptions and frame.mapOptions[frame.selectedMapOptionIndex] then

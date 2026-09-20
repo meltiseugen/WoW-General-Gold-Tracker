@@ -1,9 +1,13 @@
 local _, NS = ...
 local Register = NS.RegisterMaterialFarmingSpot
+local Pins = NS.GetBurningCrusadeNpcCoords
 
 local function C(x, y, label)
     return { x = x, y = y, label = label }
 end
+
+local DREADFANG_COORDS = Pins({ 18466, 18467 }, 108)
+DREADFANG_COORDS[#DREADFANG_COORDS + 1] = C(0.440, 0.320, "Retail Wowhead comment northern spider pack")
 
 Register({
     itemID = 21877,
@@ -37,12 +41,7 @@ Register({
                 "Use this when Aldor marks and Fel Armaments also have value.",
                 "If Legion Hold feels nerfed or crowded, swap to Oshu'gun Voidspawns.",
             },
-            coords = {
-                { x = 0.222, y = 0.384, label = "North Legion Hold warlock" },
-                { x = 0.224, y = 0.396, label = "Central Legion Hold warlock" },
-                { x = 0.230, y = 0.384, label = "East Legion Hold warlock" },
-                { x = 0.236, y = 0.400, label = "South Legion Hold warlock" },
-            },
+            coords = Pins({ 21302 }, 104),
             confidence = "high",
         },
         {
@@ -61,13 +60,7 @@ Register({
                 "Comments repeatedly praise Voidspawns for Netherweave plus shadow motes.",
                 "Move around Oshu'gun instead of camping a single side.",
             },
-            coords = {
-                { x = 0.314, y = 0.696, label = "Northwest Oshu'gun Voidspawn" },
-                { x = 0.332, y = 0.756, label = "West Oshu'gun Voidspawn" },
-                { x = 0.374, y = 0.666, label = "North Oshu'gun Voidspawn" },
-                { x = 0.394, y = 0.702, label = "Central Oshu'gun Voidspawn" },
-                { x = 0.432, y = 0.704, label = "East Oshu'gun Voidspawn" },
-            },
+            coords = Pins({ 17981 }, 107),
             confidence = "high",
         },
     },
@@ -106,14 +99,7 @@ Register({
                 "Run north-south between Allerian Stronghold and Netherweb Ridge instead of camping one spawn.",
                 "Watch for Deathskitter around the Allerian route if farming on a low-level character.",
             },
-            coords = {
-                C(0.440, 0.320, "Northern Terokkar spider pack"),
-                C(0.550, 0.580, "Allerian Stronghold spider route"),
-                C(0.510, 0.700, "Netherweb Ridge north edge"),
-                C(0.470, 0.760, "Netherweb Ridge south edge"),
-                C(0.360, 0.780, "Bone Wastes west spider route"),
-                C(0.289, 0.788, "Sha'tari Base Camp southwest spider group"),
-            },
+            coords = DREADFANG_COORDS,
             confidence = "high",
         },
     },

@@ -5,6 +5,7 @@ local LootSourceService = NS.LootSourceService
 
 local lootChatParser = LootChatParser:New(GoldTracker)
 local lootSourceService = LootSourceService:New(GoldTracker)
+local MAILBOX_LOOT_IGNORE_GRACE_SECONDS = 2
 
 local function SyncLegacyLootState(addon)
     addon.lootSourceNameCache = lootSourceService.lootSourceNameCache
@@ -15,6 +16,24 @@ local function SyncLegacyLootState(addon)
 end
 
 SyncLegacyLootState(GoldTracker)
+
+local function GetCurrentLootEventTime()
+    if type(_G.GetTimePreciseSec) == "function" then
+        return _G.GetTimePreciseSec()
+    end
+    if type(_G.GetTime) == "function" then
+        return _G.GetTime()
+    end
+    if type(_G.time) == "function" then
+        return _G.time()
+    end
+    return 0
+end
+
+function GoldTracker:MarkMailboxLootIgnoreWindow(durationSeconds)
+    local duration = tonumber(durationSeconds) or MAILBOX_LOOT_IGNORE_GRACE_SECONDS
+    self.mailboxLootIgnoreUntil = GetCurrentLootEventTime() + math.max(0, duration)
+end
 
 function GoldTracker:CleanupLootSourceNameCache()
     if not self:IsLootSourceTrackingEnabled() then
@@ -90,14 +109,37 @@ function GoldTracker:ShouldAutoStartSessionOnLoot()
 end
 
 function GoldTracker:IsMailWindowOpen()
-    return MailFrame and MailFrame.IsShown and MailFrame:IsShown()
+    if self.mailWindowOpen == true then
+        return true
+    end
+    local mailFrame = _G.MailFrame
+    if mailFrame and type(mailFrame.IsShown) == "function" then
+        return mailFrame:IsShown() == true
+    end
+    return false
 end
 
 function GoldTracker:ShouldIgnoreMailboxLoot()
     if not self:IsIgnoreMailboxLootWhenMailOpenEnabled() then
         return false
     end
-    return self:IsMailWindowOpen()
+    if self:IsMailWindowOpen() then
+        self:MarkMailboxLootIgnoreWindow()
+        return true
+    end
+
+    local ignoreUntil = tonumber(self.mailboxLootIgnoreUntil) or 0
+    return ignoreUntil > GetCurrentLootEventTime()
+end
+
+function GoldTracker:OnMailShow()
+    self.mailWindowOpen = true
+    self:MarkMailboxLootIgnoreWindow()
+end
+
+function GoldTracker:OnMailClosed()
+    self.mailWindowOpen = false
+    self:MarkMailboxLootIgnoreWindow()
 end
 
 function GoldTracker:EnsureSessionForTrackedLoot()
@@ -178,7 +220,7 @@ function GoldTracker:TryTrackMoneyAmount(amount)
         return false
     end
 
-    local now = (GetTimePreciseSec and GetTimePreciseSec()) or GetTime()
+    local now = GetCurrentLootEventTime()
     if self.lastTrackedMoneyAmount == amount
         and self.lastTrackedMoneyAt
         and (now - self.lastTrackedMoneyAt) <= 0.05 then

@@ -30,7 +30,7 @@ local BACKGROUND_SCAN_ITEMS_PER_TICK = 120
 local FOREGROUND_SCAN_ITEMS_PER_TICK = 2200
 local SCAN_REFRESH_INTERVAL = 0.35
 local ITEM_REFRESH_DELAY = 0.5
-local SCAN_CACHE_VERSION = 1
+local SCAN_CACHE_VERSION = 2
 local SCAN_CACHE_MAX_ENTRIES = 30
 local MAX_PENDING_BINDING_RETRIES = 12
 local DEFAULT_SORT_KEY = "value"
@@ -116,6 +116,14 @@ local function GetData()
     local data = NS.InstanceDropsData
     if type(data) ~= "table" then
         return { expansions = { currentID = nil, options = {} }, instances = {} }
+    end
+    return data
+end
+
+local function GetATTBoEData()
+    local data = NS.ATTBoEDropsData
+    if type(data) ~= "table" then
+        return { instances = {} }
     end
     return data
 end
@@ -219,12 +227,21 @@ end
 
 local function GetPriceSnapshot(addon, itemID, valueSource)
     local selectedValue = 0
-    if valueSource and valueSource.tsmKey then
+    local resolvedSourceID = valueSource and valueSource.id
+    local resolvedSourceLabel = valueSource and valueSource.label
+    local valueSourceWasFallback = false
+    if valueSource and type(addon.ResolveItemUnitValue) == "function" then
+        selectedValue, resolvedSourceID, resolvedSourceLabel, valueSourceWasFallback =
+            addon:ResolveItemUnitValue(valueSource.id, nil, itemID, true)
+    elseif valueSource and valueSource.tsmKey then
         selectedValue = GetTSMValue(addon, valueSource.tsmKey, itemID)
     end
 
     return {
         value = selectedValue,
+        valueSourceID = resolvedSourceID,
+        valueSourceLabel = resolvedSourceLabel,
+        valueSourceWasFallback = valueSourceWasFallback == true,
         marketValue = GetTSMValue(addon, "DBMarket", itemID),
         regionMarketValue = GetTSMValue(addon, "DBRegionMarketAvg", itemID),
         averageValue = GetTSMValue(addon, "DBRegionSaleAvg", itemID),
@@ -607,6 +624,7 @@ local function CloneResultForCache(row)
         averageValue = tonumber(row.averageValue) or 0,
         valueSourceID = row.valueSourceID,
         valueSourceLabel = row.valueSourceLabel,
+        valueSourceWasFallback = row.valueSourceWasFallback == true,
         marketHistoryItemKey = row.marketHistoryItemKey,
         farmingSourceType = row.farmingSourceType,
     }
@@ -700,6 +718,9 @@ local function ResolveItemCache(addon, state, source, itemID)
         marketValue = prices.marketValue,
         regionMarketValue = prices.regionMarketValue,
         averageValue = prices.averageValue,
+        valueSourceID = prices.valueSourceID or (source and source.id),
+        valueSourceLabel = prices.valueSourceLabel or (source and source.label),
+        valueSourceWasFallback = prices.valueSourceWasFallback == true,
         marketHistoryItemKey = type(addon.GetMarketHistoryItemKey) == "function" and addon:GetMarketHistoryItemKey(itemLink, itemID) or nil,
     }
     state.itemCache[cacheKey] = cached
@@ -708,10 +729,10 @@ end
 
 local function AddResult(state, sourceRow, itemCache)
     if not itemCache or itemCache.restricted then
-        return
+        return nil
     end
     if (tonumber(itemCache.value) or 0) < (tonumber(state.minimumValueCopper) or 0) then
-        return
+        return nil
     end
 
     local row = {
@@ -738,12 +759,15 @@ local function AddResult(state, sourceRow, itemCache)
         marketValue = itemCache.marketValue,
         regionMarketValue = itemCache.regionMarketValue,
         averageValue = itemCache.averageValue,
-        valueSourceID = state.valueSourceID,
-        valueSourceLabel = state.valueSourceLabel,
+        valueSourceID = itemCache.valueSourceID or state.valueSourceID,
+        valueSourceLabel = itemCache.valueSourceLabel or state.valueSourceLabel,
+        valueSourceWasFallback = itemCache.valueSourceWasFallback == true,
         marketHistoryItemKey = itemCache.marketHistoryItemKey,
+        farmingSourceType = sourceRow.farmingSourceType,
     }
     row.favoriteKey = GetFavoriteKey(row)
     state.results[#state.results + 1] = row
+    return row
 end
 
 local function BuildSourceRows(expansionFilterID, contentTypeFilterID)
@@ -773,6 +797,32 @@ local function BuildSourceRows(expansionFilterID, contentTypeFilterID)
                             bossX = boss.x or boss.coordX,
                             bossY = boss.y or boss.coordY,
                             difficulties = loot.difficulties,
+                        }
+                    end
+                end
+            end
+        end
+    end
+    for _, instance in pairs(GetATTBoEData().instances or {}) do
+        if InstanceMatchesExpansion(instance, expansionFilterID) and InstanceMatchesContentType(instance, contentTypeFilterID) then
+            local instanceKey = tostring(instance.journalInstanceID or instance.mapID or instance.name or "?")
+            for _, item in ipairs(instance.items or {}) do
+                local itemID = tonumber(item and item.itemID)
+                if itemID then
+                    local normalizedItemID = math.floor(itemID + 0.5)
+                    local seenKey = instanceKey .. ":" .. tostring(normalizedItemID)
+                    if not seenByInstanceAndItem[seenKey] then
+                        seenByInstanceAndItem[seenKey] = true
+                        rows[#rows + 1] = {
+                            itemID = normalizedItemID,
+                            expansionID = instance.expansionID,
+                            expansionLabel = instance.expansion or GetExpansionFilterLabel(instance.expansionID),
+                            contentType = instance.contentType,
+                            instanceName = instance.name,
+                            instanceEncounterJournalID = instance.journalInstanceID,
+                            instanceMapID = instance.mapID,
+                            bossName = "Instance BoE Drops",
+                            farmingSourceType = "att-instance",
                         }
                     end
                 end
@@ -838,6 +888,12 @@ local function SetItemTooltip(row)
     else
         GameTooltip:AddLine(row.itemName or ("Item " .. tostring(row.itemID or "")), 1, 1, 1)
     end
+    local sourceLabel = row.valueSourceLabel or row.valueSourceID or "Unknown"
+    if row.valueSourceWasFallback then
+        sourceLabel = sourceLabel .. " (fallback)"
+    end
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddDoubleLine("Price source", sourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
     GameTooltip:Show()
 end
 
@@ -967,6 +1023,12 @@ function GoldTracker:OpenInstanceFarmingMap(row)
 
     self:OpenStandaloneMapWindow({
         title = (row.itemName or ("Item " .. tostring(row.itemID or ""))) .. " Instance Map",
+        projectionKey = table.concat({
+            "instance",
+            tostring(row.itemID or "unknown"),
+            tostring(row.instanceMapID or row.instanceID or row.instanceName or "unknown"),
+            tostring(row.bossID or row.encounterID or row.bossName or "all"),
+        }, ":"),
         mapOptions = mapOptions,
         selectedMapOptionIndex = 1,
     })
@@ -1745,8 +1807,9 @@ function GoldTracker:UpdateInstanceFarmingRowsPrices(rows, valueSourceID)
         row.marketValue = prices.marketValue
         row.regionMarketValue = prices.regionMarketValue
         row.averageValue = prices.averageValue
-        row.valueSourceID = source.id
-        row.valueSourceLabel = source.label
+        row.valueSourceID = prices.valueSourceID or source.id
+        row.valueSourceLabel = prices.valueSourceLabel or source.label
+        row.valueSourceWasFallback = prices.valueSourceWasFallback == true
     end
     if type(self.RecordInstanceFarmingMarketSnapshots) == "function" then
         self:RecordInstanceFarmingMarketSnapshots(rows)
@@ -1856,6 +1919,9 @@ function GoldTracker:CancelInstanceFarmingScan()
     end
     self:StopInstanceFarmingScanWorker()
     frame.lastResults = frame.scanState.results or {}
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(frame.lastResults)
+    end
     frame.scanState = nil
     frame.statusText:SetText(string.format("Scan stopped. Showing %d partial matches.", #frame.lastResults))
     self:RefreshInstanceFarmingWindowControls()
@@ -1926,6 +1992,7 @@ local function ProcessScanFrame(worker, elapsed)
     local processed = 0
     local batchSize = tonumber(state.scanBatchSize) or BACKGROUND_SCAN_ITEMS_PER_TICK
     local waitingForPendingItems = false
+    local discoveredRows = {}
     while processed < batchSize do
         local sourceRow
         sourceRow, waitingForPendingItems = GetNextInstanceScanSourceRow(state, elapsed)
@@ -1937,9 +2004,16 @@ local function ProcessScanFrame(worker, elapsed)
         if itemCache and itemCache.pending then
             QueuePendingBindingSourceRow(state, sourceRow)
         else
-            AddResult(state, sourceRow, itemCache)
+            local discoveredRow = AddResult(state, sourceRow, itemCache)
+            if discoveredRow then
+                discoveredRows[#discoveredRows + 1] = discoveredRow
+            end
         end
         processed = processed + 1
+    end
+
+    if #discoveredRows > 0 and type(addon.RecordDiscoveredItemMarketSnapshots) == "function" then
+        addon:RecordDiscoveredItemMarketSnapshots(discoveredRows)
     end
 
     state.refreshElapsed = (state.refreshElapsed or 0) + (elapsed or 0)
@@ -2543,6 +2617,7 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             row.averageValue = data.averageValue
             row.valueSourceID = data.valueSourceID
             row.valueSourceLabel = data.valueSourceLabel
+            row.valueSourceWasFallback = data.valueSourceWasFallback == true
             row.marketHistoryItemKey = data.marketHistoryItemKey
             row.tracked = self:IsInstanceFarmingFavorite(data)
             row.favoriteKey = GetFavoriteKey(data)
@@ -2722,7 +2797,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Value source")
+    sourceLabel:SetText("Preferred value source")
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerInstanceFarmingValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)
     UIDropDownMenu_SetWidth(valueSourceDropdown, 190)

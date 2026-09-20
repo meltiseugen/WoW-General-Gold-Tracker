@@ -283,6 +283,36 @@ describe("UI/InventoryWindow auctionable rows", function()
         end)
     end)
 
+    it("uses the shared resolver for bag item values when it is available", function()
+        local addon = build_addon()
+        addon.ResolveItemUnitValue = function(_, source_id, item_link)
+            local item_id = get_item_id(item_link)
+            if item_id == 2003 then
+                return 4200, "TSM_DBREGIONMARKETAVG", "Region Market Avg", true
+            end
+            return 5000, source_id, "Market Value", false
+        end
+        addon.VALUE_SOURCE_BY_ID.TSM_DBREGIONMARKETAVG = {
+            id = "TSM_DBREGIONMARKETAVG",
+            label = "Region Market Avg",
+        }
+
+        with_loaded_inventory(addon, function(loaded_addon)
+            local rows = loaded_addon:BuildInventoryAuctionItemList("TSM_DBMARKET", 1, 0, "itemName", true, "all")
+            local fallback_row
+            for _, row in ipairs(rows) do
+                if get_item_id(row.itemLink) == 2003 then
+                    fallback_row = row
+                end
+            end
+
+            assert.is_table(fallback_row)
+            assert.equals(4200, fallback_row.unitValue)
+            assert.equals("TSM_DBREGIONMARKETAVG", fallback_row.valueSourceID)
+            assert.is_true(fallback_row.valueSourceWasFallback)
+        end)
+    end)
+
     it("marks bag items that have indexed material farming maps", function()
         with_loaded_inventory(build_addon(), function(addon)
             local rows = addon:BuildInventoryAuctionItemList("TSM_DBMARKET", 1, 0, "itemName", true, "all")

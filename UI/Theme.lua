@@ -31,7 +31,6 @@ local STRATA_ORDER = {
 }
 
 local COMMON_EXTERNAL_WINDOW_NAMES = {
-    "WorldMapFrame",
     "AuctionHouseFrame",
     "CharacterFrame",
     "CollectionsJournal",
@@ -46,6 +45,13 @@ local COMMON_EXTERNAL_WINDOW_NAMES = {
     "SettingsPanel",
     "SpellBookFrame",
     "TradeSkillFrame",
+}
+
+-- Blizzard's world map is a composite UI panel whose children and third-party
+-- overlays manage their own frame levels. Raising the root frame independently
+-- can put it above its own controls, so it must never enter our focus system.
+local EXCLUDED_EXTERNAL_WINDOW_NAMES = {
+    WorldMapFrame = true,
 }
 
 local BaseApplyWindowChrome = Theme.ApplyWindowChrome
@@ -117,6 +123,9 @@ function Theme:IsKnownExternalWindow(frame)
     if type(frameName) ~= "string" or frameName == "" then
         return false
     end
+    if EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
+        return false
+    end
 
     self:EnsureWindowFocusState()
     if self.externalFocusWindowNames[frameName] then
@@ -176,13 +185,19 @@ function Theme:RegisterWindowForFocus(frame, role, options)
 end
 
 function Theme:RegisterExternalWindowForFocus(frame)
+    local frameName = GetFrameName(frame)
+    if frameName and EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
+        return nil
+    end
     return self:RegisterWindowForFocus(frame, "external")
 end
 
 function Theme:RegisterExternalFocusFrames(frameNames)
     self:EnsureWindowFocusState()
     for _, frameName in ipairs(frameNames or COMMON_EXTERNAL_WINDOW_NAMES) do
-        if type(frameName) == "string" and frameName ~= "" then
+        if type(frameName) == "string"
+            and frameName ~= ""
+            and not EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
             self.externalFocusWindowNames[frameName] = true
         end
     end

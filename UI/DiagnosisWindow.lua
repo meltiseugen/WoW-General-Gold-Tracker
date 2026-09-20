@@ -40,6 +40,14 @@ local LOOT_COUNTERS = {
     { key = "item_filtered_quality", label = "AH filtered by quality" },
     { key = "item_filtered_soulbound", label = "AH filtered soulbound" },
     { key = "loot_source_attached", label = "Loot source attached" },
+    { key = "loot_coordinates_live", label = "Loot coordinates captured live" },
+    { key = "loot_coordinates_cached", label = "Loot coordinates recovered from recent cache" },
+    { key = "loot_coordinates_pending", label = "Loot coordinate retries scheduled" },
+    { key = "loot_coordinates_recovered", label = "Loot coordinates recovered by retry" },
+    { key = "loot_coordinates_unavailable", label = "Loot coordinates unavailable after retries" },
+    { key = "material_pin_recorded", label = "Material locations recorded" },
+    { key = "material_pin_missing_coordinates", label = "Material locations missing coordinates" },
+    { key = "material_pin_rejected", label = "Material locations rejected" },
 }
 
 local TIMING_METRICS = {

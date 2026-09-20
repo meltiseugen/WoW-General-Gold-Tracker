@@ -1,10 +1,10 @@
 local _, NS = ...
 
 NS.MaterialFarmingSpots = {
-    dataVersion = 12,
-    schemaVersion = 1,
-    researchedAt = "2026-09-02",
-    sourceNote = "Curated farming-spot seed data summarized from public farming guides, item/object database pages, and high-signal Wowhead comments. Comments are paraphrased, not copied. Items are only present when researched; missingItems tracks catalog entries still waiting on real research.",
+    dataVersion = 14,
+    schemaVersion = 2,
+    researchedAt = "2026-09-19",
+    sourceNote = "Curated farming-spot data summarized from current retail item, NPC, object, instance, housing-guide, and high-signal comment sources. Burning Crusade mob and fishing-school routes retain every published coordinate without proximity deduplication. Dynamic sources use explicitly labeled route anchors. Comments are paraphrased, not copied.",
     sources = {
         wowhead = "https://www.wowhead.com/",
         wowProfessions = "https://www.wow-professions.com/farming",

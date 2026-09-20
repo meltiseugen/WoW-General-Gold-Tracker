@@ -28,6 +28,7 @@ local item_names = {
     [3004] = "Custom Ore",
     [3005] = "Composed Bar",
     [3009] = "Session Meat",
+    [3010] = "Nested Alloy",
 }
 
 local item_values = {
@@ -37,6 +38,7 @@ local item_values = {
     [3004] = 7000,
     [3005] = 10000,
     [3009] = 2500,
+    [3010] = 20000,
 }
 
 local market_data = {
@@ -104,6 +106,7 @@ local function build_addon(frame_overrides)
             craftingFarmingExpansionID = "classic",
             craftingFarmingProfessionID = "mining",
             craftingFarmingCustomItems = custom_items,
+            farmingItemFavorites = {},
         },
         VALUE_SOURCE_BY_ID = {
             TSM_DBMARKET = {
@@ -250,6 +253,32 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals(0.31, rows[1].regionSaleRate)
         assert.equals("Fast", rows[1].demandLabel)
         assert.equals(-50, rows[1].marketTrendPercent)
+    end)
+
+    it("saves and removes material favorites in the shared item store", function()
+        local addon = load_window(build_addon())
+        local material_row
+        for _, row in ipairs(addon:BuildCraftingFarmingRows()) do
+            if row.itemID == 3001 then
+                material_row = row
+                break
+            end
+        end
+
+        assert.is_false(addon:IsCraftingFarmingFavorite(material_row))
+        assert.is_true(addon:SetCraftingFarmingFavorite(material_row, true))
+
+        local favorite = addon.db.farmingItemFavorites["item:3001"]
+        assert.is_table(favorite)
+        assert.equals(3001, favorite.itemID)
+        assert.equals("Old Ore", favorite.itemName)
+        assert.equals("material", favorite.farmingSourceType)
+        assert.equals("Mining", favorite.materialProfessionLabel)
+        assert.equals("Classic", favorite.expansionFilterLabel)
+        assert.is_true(addon:IsCraftingFarmingFavorite(3001))
+
+        assert.is_true(addon:SetCraftingFarmingFavorite(material_row, false))
+        assert.is_nil(addon.db.farmingItemFavorites["item:3001"])
     end)
 
     it("uses the primary profession when legacy state contains multiple selected professions", function()
@@ -414,6 +443,67 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals(3003, rows[6].itemID)
         assert.equals(2, rows[6].componentQuantity)
         assert.equals(200, rows[6].componentCost)
+    end)
+
+    it("expands composed components recursively to their base recipe inputs", function()
+        local data = copy_farming_data({
+            {
+                itemID = 3005,
+                expansion = "classic",
+                professions = { "mining" },
+                tag = "Bar",
+                outputQuantity = 2,
+                recipeSpellID = 5005,
+                recipeSourceLabel = "Mining trainer",
+                components = {
+                    { itemID = 3001, quantity = 3 },
+                },
+            },
+            {
+                itemID = 3010,
+                expansion = "classic",
+                professions = { "mining" },
+                tag = "Alloy",
+                outputQuantity = 1,
+                recipeSpellID = 5010,
+                recipeSourceLabel = "World-drop recipe",
+                components = {
+                    { itemID = 3005, quantity = 3 },
+                },
+            },
+        })
+        local addon = load_window(build_addon({
+            expansionID = "classic",
+            professionID = "mining",
+            expandedComposedMaterials = {
+                [3005] = true,
+                [3010] = true,
+            },
+        }), data)
+
+        local rows = addon:BuildCraftingFarmingRows()
+        local alloyIndex
+        for index, row in ipairs(rows) do
+            if row.itemID == 3010 and row.rowType ~= "component" then
+                alloyIndex = index
+                break
+            end
+        end
+
+        assert.is_number(alloyIndex)
+        assert.equals("World-drop recipe", rows[alloyIndex].recipeSourceLabel)
+        assert.equals("component", rows[alloyIndex + 1].rowType)
+        assert.equals(3005, rows[alloyIndex + 1].itemID)
+        assert.equals(3, rows[alloyIndex + 1].componentQuantity)
+        assert.equals(1, rows[alloyIndex + 1].componentDepth)
+        assert.is_true(rows[alloyIndex + 1].isComposedMaterial)
+        assert.equals("Mining trainer", rows[alloyIndex + 1].recipeSourceLabel)
+        assert.equals("component", rows[alloyIndex + 2].rowType)
+        assert.equals(3001, rows[alloyIndex + 2].itemID)
+        assert.equals(6, rows[alloyIndex + 2].componentQuantity)
+        assert.equals(6000, rows[alloyIndex + 2].componentCost)
+        assert.equals(2, rows[alloyIndex + 2].componentDepth)
+        assert.equals(3010, rows[alloyIndex + 2].rootItemID)
     end)
 
     it("calculates material drop per hour from live and saved sessions where the item appeared", function()
@@ -584,17 +674,33 @@ describe("UI/CraftingFarmingWindow rows", function()
                     itemName = "Old Ore",
                     spots = {
                         {
+                            id = "nagrand-main",
                             mapName = "Nagrand",
                             location = "Twilight Ridge",
                             density = "High",
                             dropDifficulty = "Easy loop",
                             tips = { "Stay on the ridge." },
                             coords = {
-                                { x = 0.10, y = 0.20, label = "West ridge" },
+                                {
+                                    x = 0.10,
+                                    y = 0.20,
+                                    label = "West ridge",
+                                    targetName = "Twilight Serpent",
+                                    targetType = "kill",
+                                },
                                 { x = 14, y = 24, label = "Central ridge" },
                             },
                         },
                         {
+                            id = "nagrand-alt",
+                            mapName = "Nagrand",
+                            location = "Warmaul Hill",
+                            coords = {
+                                { x = 0.30, y = 0.40, label = "Hill camp" },
+                            },
+                        },
+                        {
+                            id = "shadowmoon-main",
                             mapName = "Shadowmoon Valley",
                             location = "Coilskar Cistern",
                             coords = {
@@ -616,15 +722,88 @@ describe("UI/CraftingFarmingWindow rows", function()
 
         local options = addon:BuildMaterialFarmingMapOptions(3001)
 
-        assert.equals(2, #options)
-        assert.equals("Nagrand", options[1].label)
+        assert.equals(3, #options)
+        assert.equals("Nagrand: Twilight Ridge", options[1].label)
+        assert.equals("Nagrand", options[1].mapLabel)
+        assert.equals("nagrand-main", options[1].id)
         assert.equals(107, options[1].mapID)
         assert.equals(2, #options[1].pins)
+        assert.equals(1, options[1].spotCount)
         assert.equals(0.14, options[1].pins[2].x)
         assert.equals("Old Ore", options[1].pins[1].itemName)
         assert.equals("Twilight Ridge", options[1].pins[1].spotLocation)
-        assert.equals("Shadowmoon Valley", options[2].label)
-        assert.equals(104, options[2].mapID)
+        assert.equals("Twilight Serpent", options[1].pins[1].targetName)
+        assert.equals("kill", options[1].pins[1].targetType)
+        assert.equals("static", options[1].sourceType)
+        assert.equals("Addon seed data", options[1].pins[1].sourceLabel)
+        assert.is_false(options[1].pins[1].isRoute)
+        assert.equals("nagrand-main", options[1].pins[1].routeID)
+        assert.equals("Nagrand: Warmaul Hill", options[2].label)
+        assert.equals(107, options[2].mapID)
+        assert.equals(1, #options[2].pins)
+        assert.equals("nagrand-alt", options[2].pins[1].routeID)
+        assert.equals("Shadowmoon Valley: Coilskar Cistern", options[3].label)
+        assert.equals(104, options[3].mapID)
+    end)
+
+    it("keeps addon seed pins and user-discovered material pins as separate map options", function()
+        local addon = build_addon()
+        addon.materialFarmingSpots = {
+            items = {
+                [3001] = {
+                    itemID = 3001,
+                    itemName = "Old Ore",
+                    spots = {
+                        {
+                            id = "nagrand-main",
+                            mapName = "Nagrand",
+                            location = "Twilight Ridge",
+                            coords = {
+                                { x = 0.10, y = 0.20, label = "West ridge" },
+                            },
+                        },
+                    },
+                },
+            },
+        }
+        addon.BuildUserMaterialFarmingMapOptions = function()
+            return {
+                {
+                    mapID = 107,
+                    label = "Nagrand (User)",
+                    sourceType = "user",
+                    sourceLabel = "User discoveries",
+                    spotCount = 1,
+                    pins = {
+                        {
+                            mapID = 107,
+                            x = 0.33,
+                            y = 0.44,
+                            label = "Clefthoof",
+                            itemName = "Old Ore",
+                            sourceType = "user",
+                            sourceLabel = "User discoveries",
+                        },
+                    },
+                },
+            }
+        end
+        addon = load_window(addon)
+
+        local options = addon:BuildMaterialFarmingMapOptions(3001)
+
+        assert.equals(2, #options)
+        assert.equals("Nagrand (User)", options[1].label)
+        assert.equals("user", options[1].sourceType)
+        assert.equals("User discoveries", options[1].sourceLabel)
+        assert.equals(1, #options[1].pins)
+        assert.equals("user", options[1].pins[1].sourceType)
+        assert.equals("Nagrand: Twilight Ridge", options[2].label)
+        assert.equals("static", options[2].sourceType)
+        assert.equals("Addon seed data", options[2].sourceLabel)
+        assert.equals(1, #options[2].pins)
+        assert.equals("static", options[2].pins[1].sourceType)
+        assert.is_nil(addon.materialFarmingSpots.items[3001].spots[1].sourceType)
     end)
 
     it("opens material farming maps with the material name as the toolbar title", function()
@@ -638,8 +817,10 @@ describe("UI/CraftingFarmingWindow rows", function()
                 [3001] = {
                     itemID = 3001,
                     itemName = "Old Ore",
+                    isRoute = true,
                     spots = {
                         {
+                            id = "old-ore-nagrand-route",
                             mapName = "Nagrand",
                             coords = {
                                 { x = 0.10, y = 0.20, label = "West ridge" },
@@ -653,7 +834,10 @@ describe("UI/CraftingFarmingWindow rows", function()
 
         assert.is_true(addon:OpenMaterialFarmingMap(3001))
         assert.equals("Old Ore", capturedOptions.title)
+        assert.equals("Nagrand", capturedOptions.mapOptions[1].mapLabel)
         assert.equals("Nagrand", capturedOptions.mapOptions[1].label)
+        assert.is_true(capturedOptions.mapOptions[1].pins[1].isRoute)
+        assert.equals("old-ore-nagrand-route", capturedOptions.mapOptions[1].pins[1].routeID)
     end)
 
     it("marks rows that have material farming map data", function()
@@ -683,5 +867,32 @@ describe("UI/CraftingFarmingWindow rows", function()
 
         assert.is_true(by_id[3001].hasFarmingMap)
         assert.is_false(by_id[3002].hasFarmingMap)
+    end)
+
+    it("marks rows that only have user-discovered material pins", function()
+        local addon = build_addon()
+        addon.BuildUserMaterialFarmingMapOptions = function(_, itemID)
+            if itemID == 3002 then
+                return {
+                    {
+                        mapID = 1,
+                        label = "User map",
+                        sourceType = "user",
+                        pins = {
+                            { mapID = 1, x = 0.2, y = 0.3, sourceType = "user" },
+                        },
+                    },
+                }
+            end
+            return {}
+        end
+        addon = load_window(addon)
+
+        local by_id = {}
+        for _, row in ipairs(addon:BuildCraftingFarmingRows()) do
+            by_id[row.itemID] = row
+        end
+
+        assert.is_true(by_id[3002].hasFarmingMap)
     end)
 end)

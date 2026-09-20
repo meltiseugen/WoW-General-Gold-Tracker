@@ -32,7 +32,7 @@ local RARE_FARMING_BACKGROUND_SCAN_ITEMS_PER_TICK = 150
 local RARE_FARMING_FOREGROUND_SCAN_ITEMS_PER_TICK = 3000
 local RARE_FARMING_SCAN_REFRESH_INTERVAL = 0.35
 local RARE_FARMING_ITEM_REFRESH_DELAY = 0.5
-local RARE_FARMING_SCAN_CACHE_VERSION = 1
+local RARE_FARMING_SCAN_CACHE_VERSION = 2
 local RARE_FARMING_SCAN_CACHE_MAX_ENTRIES = 30
 local RARE_FARMING_SORT_KEY_DEFAULT = "value"
 local RARE_FARMING_EXPANSION_CURRENT_ID = "current"
@@ -242,12 +242,21 @@ end
 
 local function GetRareFarmingPriceSnapshot(addon, itemID, valueSource)
     local selectedValue = 0
-    if valueSource and valueSource.tsmKey then
+    local resolvedSourceID = valueSource and valueSource.id
+    local resolvedSourceLabel = valueSource and valueSource.label
+    local valueSourceWasFallback = false
+    if valueSource and type(addon.ResolveItemUnitValue) == "function" then
+        selectedValue, resolvedSourceID, resolvedSourceLabel, valueSourceWasFallback =
+            addon:ResolveItemUnitValue(valueSource.id, nil, itemID, true)
+    elseif valueSource and valueSource.tsmKey then
         selectedValue = GetRareFarmingTSMValue(addon, valueSource.tsmKey, itemID)
     end
 
     return {
         value = selectedValue,
+        valueSourceID = resolvedSourceID,
+        valueSourceLabel = resolvedSourceLabel,
+        valueSourceWasFallback = valueSourceWasFallback == true,
         marketValue = GetRareFarmingTSMValue(addon, "DBMarket", itemID),
         regionMarketValue = GetRareFarmingTSMValue(addon, "DBRegionMarketAvg", itemID),
         averageValue = GetRareFarmingTSMValue(addon, "DBRegionSaleAvg", itemID),
@@ -293,6 +302,11 @@ local function SetRareFarmingItemTooltip(row)
     GameTooltip:AddLine(" ")
     GameTooltip:AddDoubleLine("Rare", row.rareName or tostring(row.npcID), 0.72, 0.86, 1.0, 1, 1, 1)
     GameTooltip:AddDoubleLine("Location", row.locationLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+    local sourceLabel = row.valueSourceLabel or row.valueSourceID or "Unknown"
+    if row.valueSourceWasFallback then
+        sourceLabel = sourceLabel .. " (fallback)"
+    end
+    GameTooltip:AddDoubleLine("Price source", sourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
     GameTooltip:Show()
     return true
 end
@@ -1615,8 +1629,9 @@ local function ResolveRareFarmingItemCache(addon, state, itemID)
         marketValue = prices.marketValue,
         regionMarketValue = prices.regionMarketValue,
         averageValue = prices.averageValue,
-        valueSourceID = source and source.id,
-        valueSourceLabel = source and source.label,
+        valueSourceID = prices.valueSourceID or (source and source.id),
+        valueSourceLabel = prices.valueSourceLabel or (source and source.label),
+        valueSourceWasFallback = prices.valueSourceWasFallback == true,
         itemName = itemName,
         itemLink = itemLink,
         itemQuality = tonumber(itemQuality),
@@ -1640,7 +1655,7 @@ end
 local function AddRareFarmingResult(state, rare, itemID, itemCache)
     local resultKey = GetRareFarmingResultItemKey(itemID)
     if not resultKey then
-        return
+        return nil, false
     end
     local source = BuildRareFarmingSource(
         rare.npcID,
@@ -1651,7 +1666,7 @@ local function AddRareFarmingResult(state, rare, itemID, itemCache)
     local existing = state.resultsByKey[resultKey]
     if type(existing) == "table" then
         AddRareFarmingSourceToRow(existing, source)
-        return
+        return existing, false
     end
 
     local row = {
@@ -1668,6 +1683,7 @@ local function AddRareFarmingResult(state, rare, itemID, itemCache)
         averageValue = itemCache.averageValue,
         valueSourceID = itemCache.valueSourceID,
         valueSourceLabel = itemCache.valueSourceLabel,
+        valueSourceWasFallback = itemCache.valueSourceWasFallback == true,
         locationLabel = BuildRareFarmingLocationLabel(rare.locations),
         expansionFilterID = state.expansionFilterID,
         expansionFilterLabel = state.expansionFilterLabel,
@@ -1676,6 +1692,7 @@ local function AddRareFarmingResult(state, rare, itemID, itemCache)
     AddRareFarmingSourceToRow(row, source)
     state.resultsByKey[resultKey] = row
     state.results[#state.results + 1] = row
+    return row, true
 end
 
 local function BuildRareFarmingScanCacheKey(addon, expansionFilterID, valueSourceID, minimumValueCopper)
@@ -1687,6 +1704,7 @@ local function BuildRareFarmingScanCacheKey(addon, expansionFilterID, valueSourc
         normalizedExpansionFilterID,
         normalizedValueSourceID,
         tostring(normalizedMinimumValue),
+        type(addon.GetValueSourceFallbackSignature) == "function" and addon:GetValueSourceFallbackSignature() or "legacy",
         tostring(GetRareScannerRuntimeVersion() or "unknown"),
     }, "|")
 end
@@ -1713,6 +1731,7 @@ local function CloneRareFarmingResultForCache(row)
         averageValue = math.max(0, math.floor((tonumber(row.averageValue) or 0) + 0.5)),
         valueSourceID = row.valueSourceID,
         valueSourceLabel = row.valueSourceLabel,
+        valueSourceWasFallback = row.valueSourceWasFallback == true,
         locationLabel = row.locationLabel,
         expansionFilterID = row.expansionFilterID,
         expansionFilterLabel = row.expansionFilterLabel,
@@ -1975,8 +1994,9 @@ function GoldTracker:UpdateRareFarmingRowsPrices(rows, valueSourceID)
             row.marketValue = prices.marketValue
             row.regionMarketValue = prices.regionMarketValue
             row.averageValue = prices.averageValue
-            row.valueSourceID = source.id
-            row.valueSourceLabel = source.label
+            row.valueSourceID = prices.valueSourceID or source.id
+            row.valueSourceLabel = prices.valueSourceLabel or source.label
+            row.valueSourceWasFallback = prices.valueSourceWasFallback == true
             updated = updated + 1
         end
     end
@@ -2551,6 +2571,7 @@ function GoldTracker:OpenRareFarmingMap(row)
 
     self:OpenStandaloneMapWindow({
         title = (row.itemName or row.itemLink or ("Item " .. tostring(row.itemID or ""))) .. " Rare Map",
+        projectionKey = "rare:" .. tostring(row.itemID or row.rareID or row.npcID or row.rareName or "unknown"),
         mapOptions = mapOptions,
         selectedMapOptionIndex = 1,
     })
@@ -2764,6 +2785,8 @@ function GoldTracker:RefreshRareFarmingLibraryWindow()
             local sourceLabel = favorite.rareName
                 or favorite.bossName
                 or favorite.instanceName
+                or favorite.materialProfessionLabel
+                or favorite.professionLabel
                 or "Unknown source"
 
             row.npcID = favorite.npcID
@@ -3562,6 +3585,9 @@ function GoldTracker:CancelRareFarmingScan()
     local scanned = tonumber(state.scannedDrops) or 0
     local total = math.max(1, tonumber(state.totalDrops) or 1)
     local resultCount = #(state.results or {})
+    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
+        self:RecordDiscoveredItemMarketSnapshots(state.results or {})
+    end
     if frame.progressBar then
         frame.progressBar:SetMinMaxValues(0, total)
         frame.progressBar:SetValue(math.min(scanned, total))
@@ -3594,6 +3620,7 @@ local function ProcessRareFarmingScanFrame(worker, elapsed)
     end
 
     local processed = 0
+    local discoveredRows = {}
     local batchSize = tonumber(state.scanBatchSize) or RARE_FARMING_BACKGROUND_SCAN_ITEMS_PER_TICK
     while processed < batchSize and state.rareIndex <= #state.rareIDs do
         local npcID = state.rareIDs[state.rareIndex]
@@ -3612,7 +3639,10 @@ local function ProcessRareFarmingScanFrame(worker, elapsed)
                 itemID = math.floor(itemID + 0.5)
                 local itemCache = ResolveRareFarmingItemCache(addon, state, itemID)
                 if itemCache.value > state.minimumValueCopper and itemCache.auctionable ~= false then
-                    AddRareFarmingResult(state, rare, itemID, itemCache)
+                    local discoveredRow, wasAdded = AddRareFarmingResult(state, rare, itemID, itemCache)
+                    if wasAdded then
+                        discoveredRows[#discoveredRows + 1] = discoveredRow
+                    end
                 end
             end
 
@@ -3621,6 +3651,10 @@ local function ProcessRareFarmingScanFrame(worker, elapsed)
                 state.lootIndex = 1
             end
         end
+    end
+
+    if #discoveredRows > 0 and type(addon.RecordDiscoveredItemMarketSnapshots) == "function" then
+        addon:RecordDiscoveredItemMarketSnapshots(discoveredRows)
     end
 
     addon:UpdateRareFarmingScanProgress()
@@ -3815,6 +3849,7 @@ function GoldTracker:RefreshRareFarmingWindow(scrollToTop)
             row.averageValue = result.averageValue
             row.valueSourceID = result.valueSourceID
             row.valueSourceLabel = result.valueSourceLabel
+            row.valueSourceWasFallback = result.valueSourceWasFallback == true
             row.favorite = self:IsRareFarmingFavorite(result)
 
             row.favoriteButton:SetText(row.favorite and "-" or "+")
@@ -4063,7 +4098,7 @@ function GoldTracker:CreateRareFarmingWindow()
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Value source")
+    sourceLabel:SetText("Preferred value source")
 
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerRareFarmingValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)
