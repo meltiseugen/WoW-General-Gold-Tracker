@@ -28,15 +28,19 @@ Register({
             sourceUrls = {
                 "https://www.wow-professions.com/farming/crystallized-shadow-farming",
                 "https://www.wowhead.com/item=37703/crystallized-shadow",
+                "https://www.wowhead.com/npc=27382/deathbringer-revenant",
             },
             mapName = "Dragonblight",
-            location = "Frostmourne Cavern Deathbringer Revenants",
-            routeType = "open-world-cave-loop",
-            density = "High",
-            dropDifficulty = "Excellent targeted farm because the cave keeps a small number of revenants active.",
+            location = "Frostmourne Cavern (entrance near 74, 24)",
+            targetName = "Deathbringer Revenant",
+            targetType = "kill",
+            routeType = "Small cave mob loop",
+            density = "Four Deathbringer Revenants kept active by fast respawns",
+            dropDifficulty = "Straightforward solo farm; the material is not guaranteed on every kill.",
             tips = {
-                "Anchor at /way 74 24 and stay in the first leg of the cave.",
-                "Do not overextend deeper if the front cave respawns are keeping pace.",
+                "Enter Frostmourne Cavern at /way Dragonblight 74 24.",
+                "Kill Deathbringer Revenants inside and rotate through the small cave as they respawn.",
+                "If the front revenants respawn quickly enough, stay near the entrance instead of running deeper.",
             },
             coords = {
                 C(0.740, 0.240, "Frostmourne Cavern entrance"),
@@ -117,3 +121,47 @@ end
 RegisterEnchantingMaterial(34054, "Infinite Dust", "Main Wrath dust from disenchanting Northrend uncommon gear, especially armor.")
 RegisterEnchantingMaterial(34052, "Dream Shard", "Wrath shard from disenchanting Northrend rare-quality gear and some crafted/disenchant routes.")
 RegisterEnchantingMaterial(34055, "Greater Cosmic Essence", "Wrath essence from disenchanting higher-level Northrend uncommon gear, especially weapons.")
+
+Register({
+    itemID = 34057,
+    itemName = "Abyss Crystal",
+    expansion = "wrath",
+    professions = { "enchanting" },
+    category = "Enchanting",
+    sourceUrls = { ItemUrl(34057) },
+    summary = "Wrath crystal from disenchanting Northrend epic-quality gear. Legacy raids provide a repeatable supply of epic candidates, subject to raid lockouts.",
+    spots = {
+        {
+            id = "wrath-abyss-crystal-ulduar-disenchant",
+            source = "Retail Wowhead Abyss Crystal and Ulduar item-source pages",
+            sourceUrls = { ItemUrl(34057), "https://www.wowhead.com/zone=4273/ulduar" },
+            mapName = "The Storm Peaks",
+            location = "Ulduar legacy-raid epic disenchant route",
+            routeType = "disenchant-raid-gear-farm",
+            density = "Raid-lockout source",
+            dropDifficulty = "Indirect farm: clear legacy raid bosses and disenchant eligible Northrend epic gear.",
+            tips = {
+                "The pin marks Ulduar's outdoor entrance.",
+                "Compare transmog, vendor, auction, and disenchant values before destroying a drop.",
+            },
+            coords = { C(0.416, 0.178, "Ulduar entrance") },
+            confidence = "high",
+        },
+        {
+            id = "wrath-abyss-crystal-icecrown-citadel-disenchant",
+            source = "Retail Wowhead Abyss Crystal and Icecrown Citadel item-source pages",
+            sourceUrls = { ItemUrl(34057), "https://www.wowhead.com/zone=4812/icecrown-citadel" },
+            mapName = "Icecrown",
+            location = "Icecrown Citadel legacy-raid epic disenchant route",
+            routeType = "disenchant-raid-gear-farm",
+            density = "Raid-lockout source",
+            dropDifficulty = "Indirect farm: clear legacy raid bosses and disenchant eligible Northrend epic gear.",
+            tips = {
+                "The pin marks Icecrown Citadel's outdoor entrance.",
+                "Keep valuable appearances and bind-on-equip drops before disenchanting the remainder.",
+            },
+            coords = { C(0.536, 0.863, "Icecrown Citadel entrance") },
+            confidence = "high",
+        },
+    },
+})

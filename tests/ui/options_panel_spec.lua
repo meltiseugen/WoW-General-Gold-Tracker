@@ -159,4 +159,35 @@ describe("UI/OptionsPanel numeric inputs", function()
         assert.equals("150%", displayed_text)
         assert.equals(1, refresh_count)
     end)
+
+    it("saves the farming map pin icon and refreshes every active map", function()
+        local world_map_refreshes = 0
+        local minimap_refreshes = 0
+        local standalone_refreshes = 0
+        local addon = load_options({
+            db = {},
+            NormalizeMapPinIcon = function(_, icon_id)
+                return icon_id == "ore" and icon_id or "loot"
+            end,
+            worldMapRouteDataProvider = {
+                RefreshAllData = function()
+                    world_map_refreshes = world_map_refreshes + 1
+                end,
+            },
+            RefreshMinimapProjectionPins = function(_, force)
+                assert.is_true(force)
+                minimap_refreshes = minimap_refreshes + 1
+            end,
+            standaloneMapFrame = {},
+            RefreshStandaloneMapWindow = function()
+                standalone_refreshes = standalone_refreshes + 1
+            end,
+        })
+
+        assert.equals("ore", addon:SetMapPinIconOption("ore"))
+        assert.equals("ore", addon.db.mapPinIcon)
+        assert.equals(1, world_map_refreshes)
+        assert.equals(1, minimap_refreshes)
+        assert.equals(1, standalone_refreshes)
+    end)
 end)

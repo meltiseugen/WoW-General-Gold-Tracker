@@ -79,6 +79,11 @@ function GoldTracker:RefreshOptionsControls()
     if controls.worldMapProjectionPinScaleValueText then
         controls.worldMapProjectionPinScaleValueText:SetText(string.format("%d%%", math.floor((self:GetWorldMapProjectionPinScale() * 100) + 0.5)))
     end
+    if controls.mapPinIconDropdown then
+        local iconOption = self:GetMapPinIconOption()
+        UIDropDownMenu_SetSelectedValue(controls.mapPinIconDropdown, iconOption.id)
+        UIDropDownMenu_SetText(controls.mapPinIconDropdown, iconOption.label)
+    end
     if controls.marketHistoryRetentionDaysInput and not controls.marketHistoryRetentionDaysInput:HasFocus() then
         controls.marketHistoryRetentionDaysInput:SetText(tostring(self.db.marketHistoryRetentionDays))
     end
@@ -890,6 +895,29 @@ function GoldTracker:CreateOptionsPanel()
         addon:SetWorldMapProjectionPinScaleOption(value)
     end)
 
+    local mapPinIconLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    mapPinIconLabel:SetPoint("TOPLEFT", worldMapPinScaleValueText, "BOTTOMLEFT", -6, -12)
+    mapPinIconLabel:SetText("Farming map pin icon")
+
+    local mapPinIconDropdown = CreateFrame("Frame", "GoldTrackerMapPinIconDropdown", generalDisplaySection, "UIDropDownMenuTemplate")
+    mapPinIconDropdown:SetPoint("TOPLEFT", mapPinIconLabel, "BOTTOMLEFT", -16, -5)
+    UIDropDownMenu_SetWidth(mapPinIconDropdown, 220)
+    UIDropDownMenu_Initialize(mapPinIconDropdown, function(_, level)
+        for _, option in ipairs(addon.MAP_PIN_ICON_OPTIONS or {}) do
+            local iconOption = option
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = iconOption.label
+            info.value = iconOption.id
+            info.icon = iconOption.texture
+            info.checked = addon:GetMapPinIconOption().id == iconOption.id
+            info.func = function()
+                addon:SetMapPinIconOption(iconOption.id)
+                addon:RefreshOptionsControls()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+
     local resumeHistorySessionCheckbox = CreateFrame("CheckButton", nil, historyCoreSection, "UICheckButtonTemplate")
     resumeHistorySessionCheckbox:SetPoint("TOPLEFT", historyCoreSection, "TOPLEFT", 10, historyCoreSection.contentTopOffset + 34)
     resumeHistorySessionCheckbox:SetScript("OnClick", function(button)
@@ -1575,6 +1603,7 @@ function GoldTracker:CreateOptionsPanel()
         historyDetailsFontSizeValueText = historyDetailsFontSizeValueText,
         worldMapProjectionPinScaleSlider = worldMapPinScaleSlider,
         worldMapProjectionPinScaleValueText = worldMapPinScaleValueText,
+        mapPinIconDropdown = mapPinIconDropdown,
         marketHistoryRetentionDaysInput = marketHistoryRetentionDaysInput,
         marketHistoryMaxItemsInput = marketHistoryMaxItemsInput,
         marketHistoryMaxSnapshotsPerItemInput = marketHistoryMaxSnapshotsPerItemInput,
@@ -1663,4 +1692,29 @@ function GoldTracker:SetWorldMapProjectionPinScaleOption(value)
     if self.worldMapRouteDataProvider and type(self.worldMapRouteDataProvider.RefreshAllData) == "function" then
         self.worldMapRouteDataProvider:RefreshAllData()
     end
+end
+
+function GoldTracker:SetMapPinIconOption(iconID)
+    local normalizedIconID
+    if type(self.NormalizeMapPinIcon) == "function" then
+        normalizedIconID = self:NormalizeMapPinIcon(iconID)
+    else
+        normalizedIconID = type(iconID) == "string" and iconID or "loot"
+    end
+
+    if self.db then
+        self.db.mapPinIcon = normalizedIconID
+    end
+
+    if self.worldMapRouteDataProvider and type(self.worldMapRouteDataProvider.RefreshAllData) == "function" then
+        self.worldMapRouteDataProvider:RefreshAllData()
+    end
+    if type(self.RefreshMinimapProjectionPins) == "function" then
+        self:RefreshMinimapProjectionPins(true)
+    end
+    if self.standaloneMapFrame and type(self.RefreshStandaloneMapWindow) == "function" then
+        self:RefreshStandaloneMapWindow()
+    end
+
+    return normalizedIconID
 end

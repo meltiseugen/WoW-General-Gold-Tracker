@@ -232,7 +232,7 @@ function Theme:FindFocusableWindow(frame)
     return nil
 end
 
-function Theme:DemoteInactiveAddonWindows(activeFrame)
+function Theme:DemoteInactiveAddonWindows(activeFrame, strataOverride)
     self:EnsureWindowFocusState()
     for frame in pairs(self.addonFocusFrames) do
         local managedFrame = frame.goldTrackerManagedWindow or frame
@@ -240,7 +240,9 @@ function Theme:DemoteInactiveAddonWindows(activeFrame)
             and managedFrame ~= activeFrame
             and IsFrameShown(frame)
             and type(frame.SetFrameStrata) == "function" then
-            frame:SetFrameStrata(frame.goldTrackerWindowRestingStrata or ADDON_WINDOW_RESTING_STRATA)
+            frame:SetFrameStrata(
+                strataOverride or frame.goldTrackerWindowRestingStrata or ADDON_WINDOW_RESTING_STRATA
+            )
         end
     end
 end

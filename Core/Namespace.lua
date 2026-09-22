@@ -14,6 +14,23 @@ GoldTracker.OLDER_DEFAULT_WINDOW_WIDTH = 790
 GoldTracker.WORLD_MAP_PROJECTION_PIN_SCALE_MIN = 0.6
 GoldTracker.WORLD_MAP_PROJECTION_PIN_SCALE_MAX = 2.0
 GoldTracker.WORLD_MAP_PROJECTION_PIN_SCALE_STEP = 0.1
+GoldTracker.MAP_PIN_ICON_OPTIONS = {
+    {
+        id = "loot",
+        label = "Loot marker",
+        atlas = "VignetteLoot",
+        texture = "Interface\\Icons\\INV_Misc_Map02",
+    },
+    { id = "map", label = "Map", texture = "Interface\\Icons\\INV_Misc_Map02" },
+    { id = "coin", label = "Coin", texture = "Interface\\Icons\\INV_Misc_Coin_01" },
+    { id = "treasure", label = "Treasure chest", texture = "Interface\\Icons\\INV_Misc_TreasureChest04b" },
+    { id = "herb", label = "Herb", texture = "Interface\\Icons\\INV_Misc_Herb_07" },
+    { id = "ore", label = "Ore", texture = "Interface\\Icons\\INV_Ore_Copper_01" },
+}
+GoldTracker.MAP_PIN_ICON_BY_ID = {}
+for _, option in ipairs(GoldTracker.MAP_PIN_ICON_OPTIONS) do
+    GoldTracker.MAP_PIN_ICON_BY_ID[option.id] = option
+end
 -- Code-only feature flag. This is intentionally not mirrored to saved variables or options.
 local ENABLE_TOTAL_WINDOW_FEATURE = false
 
@@ -149,6 +166,7 @@ GoldTracker.DEFAULTS = {
     priceIncreaseAlertMinimumSamples = 2,
     priceIncreaseAlertMinimumValue = 30 * GoldTracker.COPPER_PER_GOLD,
     worldMapProjectionPinScale = 1.0,
+    mapPinIcon = "loot",
 }
 
 GoldTracker.VALUE_SOURCES = {
@@ -1727,6 +1745,7 @@ function GoldTracker:InitializeDatabase()
     self.db.minimapButtonAngle = self.db.minimapButtonAngle % 360
 
     self.db.worldMapProjectionPinScale = self:NormalizeWorldMapProjectionPinScale(self.db.worldMapProjectionPinScale)
+    self.db.mapPinIcon = self:NormalizeMapPinIcon(self.db.mapPinIcon)
 
     if type(self.db.sessionHistory) ~= "table" then
         self.db.sessionHistory = {}
@@ -1997,6 +2016,18 @@ end
 
 function GoldTracker:GetWorldMapProjectionPinScale()
     return self:NormalizeWorldMapProjectionPinScale(self.db and self.db.worldMapProjectionPinScale)
+end
+
+function GoldTracker:NormalizeMapPinIcon(iconID)
+    if type(iconID) == "string" and self.MAP_PIN_ICON_BY_ID[iconID] then
+        return iconID
+    end
+    return self.DEFAULTS.mapPinIcon
+end
+
+function GoldTracker:GetMapPinIconOption()
+    local iconID = self:NormalizeMapPinIcon(self.db and self.db.mapPinIcon)
+    return self.MAP_PIN_ICON_BY_ID[iconID] or self.MAP_PIN_ICON_OPTIONS[1]
 end
 
 function GoldTracker:IsResumeSessionAfterReloadEnabled()

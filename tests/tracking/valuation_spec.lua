@@ -7,6 +7,28 @@ local function load_valuation(addon, globals)
 end
 
 describe("Tracking/Valuation", function()
+    it("rejects On Looted items before valuation or session updates", function()
+        local valuation_calls = 0
+        local addon = load_valuation({
+            counters = {},
+            IsOnLootedItem = function()
+                return true
+            end,
+            IncrementDiagnosticCounter = function(self, key, amount)
+                self.counters[key] = (self.counters[key] or 0) + (amount or 1)
+            end,
+            GetItemUnitValue = function()
+                valuation_calls = valuation_calls + 1
+                return 5000
+            end,
+        })
+
+        addon:TrackLootItem("|Hitem:12345::::::::|h[Triggered Item]|h", 3)
+
+        assert.equals(0, valuation_calls)
+        assert.equals(3, addon.counters.item_filtered_on_looted)
+    end)
+
     it("uses TSM ToItemString first and falls back to item ID strings", function()
         local calls = {}
         local addon = {

@@ -103,6 +103,22 @@ local function build_addon()
 end
 
 describe("Tracking/LootEvents", function()
+    it("ignores On Looted items before starting a session", function()
+        local addon = build_addon()
+        addon.session.active = false
+        addon.IsOnLootedItem = function()
+            return true
+        end
+        load_loot_events(addon)
+
+        addon:OnChatMsgLoot("item")
+
+        assert.is_false(addon.session.active)
+        assert.equals(0, addon.tracked_items)
+        assert.equals(1, addon.counters.loot_chat_ignored)
+        assert.equals(1, addon.counters.item_filtered_on_looted)
+    end)
+
     it("ignores loot chat while the mailbox is open", function()
         local addon = build_addon()
         load_loot_events(addon)

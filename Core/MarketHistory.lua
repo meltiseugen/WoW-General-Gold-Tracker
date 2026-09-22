@@ -472,6 +472,90 @@ local function GetPriceIncreaseAlertMaterialData(addon)
     return type(materialItems) == "table" and materialItems or nil
 end
 
+local farmingItemLookupSource = nil
+local farmingItemLookup = {}
+
+local function GetPriceIncreaseFarmingData(addon)
+    local farmingData = addon and addon.farmingItems or NS.FarmingItems
+    return type(farmingData) == "table" and farmingData or nil
+end
+
+local function GetPriceIncreaseFarmingItem(addon, itemID)
+    local normalizedItemID = tonumber(itemID)
+    if not normalizedItemID then
+        return nil
+    end
+
+    local farmingData = GetPriceIncreaseFarmingData(addon)
+    local source = farmingData and farmingData.items or nil
+    if source ~= farmingItemLookupSource then
+        farmingItemLookupSource = source
+        farmingItemLookup = {}
+        for _, material in ipairs(type(source) == "table" and source or {}) do
+            local materialItemID = tonumber(material and material.itemID)
+            if materialItemID then
+                farmingItemLookup[math.floor(materialItemID + 0.5)] = material
+            end
+        end
+    end
+
+    return farmingItemLookup[math.floor(normalizedItemID + 0.5)]
+end
+
+local function GetPriceIncreaseMaterialOptionLabel(addon, optionKey, optionID)
+    if optionID == nil then
+        return nil
+    end
+
+    local farmingData = GetPriceIncreaseFarmingData(addon)
+    for _, option in ipairs(farmingData and farmingData[optionKey] or {}) do
+        if option and option.id == optionID and type(option.label) == "string" and option.label ~= "" then
+            return option.label
+        end
+    end
+    return nil
+end
+
+local function GetPriceIncreasePrimaryProfessionID(professionIDs)
+    if type(professionIDs) ~= "table" then
+        return nil
+    end
+
+    for _, professionID in ipairs(professionIDs) do
+        if type(professionID) == "string" and professionID ~= "" then
+            return professionID
+        end
+    end
+    return nil
+end
+
+local function ResolvePriceIncreaseMaterialMetadata(addon, item, itemID, indexedMaterialData)
+    local farmingItem = GetPriceIncreaseFarmingItem(addon, itemID)
+    local expansionID = item and item.materialExpansionID
+        or indexedMaterialData and (indexedMaterialData.expansionID or indexedMaterialData.expansion)
+        or farmingItem and (farmingItem.expansionID or farmingItem.expansion)
+    local rawExpansionLabel = item and item.materialExpansionLabel
+        or indexedMaterialData and indexedMaterialData.expansionLabel
+        or farmingItem and farmingItem.expansionLabel
+    local expansionLabel = GetPriceIncreaseMaterialOptionLabel(addon, "expansions", expansionID)
+        or GetPriceIncreaseMaterialOptionLabel(addon, "expansions", rawExpansionLabel)
+        or rawExpansionLabel
+        or expansionID
+
+    local professionIDs = item and item.materialProfessionIDs
+        or indexedMaterialData and indexedMaterialData.professions
+        or farmingItem and farmingItem.professions
+    local primaryProfessionID = GetPriceIncreasePrimaryProfessionID(professionIDs)
+    local professionLabel = GetPriceIncreaseMaterialOptionLabel(addon, "professions", primaryProfessionID)
+        or item and item.materialProfessionLabel
+        or indexedMaterialData and indexedMaterialData.professionLabel
+        or farmingItem and farmingItem.professionLabel
+        or indexedMaterialData and indexedMaterialData.category
+        or farmingItem and farmingItem.tag
+
+    return expansionID, expansionLabel, professionIDs, professionLabel
+end
+
 local function GetPriceIncreaseIndexedMaterialItem(addon, itemID)
     local normalizedItemID = tonumber(itemID)
     if not normalizedItemID then
@@ -540,10 +624,10 @@ local function BuildPriceIncreaseIndexedMaterialCandidate(materialData)
             categoryLabel = materialData.category or "Material",
             quantity = 1,
             isIndexedMaterial = true,
-            materialExpansionID = materialData.expansionID,
-            materialExpansionLabel = materialData.expansion,
+            materialExpansionID = materialData.expansionID or materialData.expansion,
+            materialExpansionLabel = materialData.expansionLabel or materialData.expansion,
             materialProfessionIDs = materialData.professions,
-            materialProfessionLabel = materialData.category,
+            materialProfessionLabel = materialData.professionLabel,
         }
     end
 
@@ -556,10 +640,10 @@ local function BuildPriceIncreaseIndexedMaterialCandidate(materialData)
         categoryLabel = materialData.category or "Material",
         quantity = 1,
         isIndexedMaterial = true,
-        materialExpansionID = materialData.expansionID,
-        materialExpansionLabel = materialData.expansion,
+        materialExpansionID = materialData.expansionID or materialData.expansion,
+        materialExpansionLabel = materialData.expansionLabel or materialData.expansion,
         materialProfessionIDs = materialData.professions,
-        materialProfessionLabel = materialData.category,
+        materialProfessionLabel = materialData.professionLabel,
     }
 end
 
@@ -606,6 +690,15 @@ local function BuildPriceIncreaseAlertRow(addon, item, itemKey, history, config,
     local isIndexedMaterial = item and item.isIndexedMaterial == true or indexedMaterialData ~= nil
     local hasFarmingMap = (item and item.hasFarmingMap == true)
         or (isIndexedMaterial and HasPriceIncreaseAlertMaterialMap(addon, normalizedItemID) == true)
+    local materialExpansionID,
+        materialExpansionLabel,
+        materialProfessionIDs,
+        materialProfessionLabel = ResolvePriceIncreaseMaterialMetadata(
+            addon,
+            item,
+            normalizedItemID,
+            indexedMaterialData
+        )
 
     return {
         itemKey = itemKey,
@@ -638,10 +731,10 @@ local function BuildPriceIncreaseAlertRow(addon, item, itemKey, history, config,
         isMaterial = IsPriceIncreaseAlertMaterialItem(addon, item),
         isIndexedMaterial = isIndexedMaterial,
         hasFarmingMap = hasFarmingMap,
-        materialExpansionID = item and item.materialExpansionID or indexedMaterialData and indexedMaterialData.expansionID,
-        materialExpansionLabel = item and item.materialExpansionLabel or indexedMaterialData and indexedMaterialData.expansion,
-        materialProfessionIDs = item and item.materialProfessionIDs or indexedMaterialData and indexedMaterialData.professions,
-        materialProfessionLabel = item and item.materialProfessionLabel or indexedMaterialData and indexedMaterialData.category,
+        materialExpansionID = materialExpansionID,
+        materialExpansionLabel = materialExpansionLabel,
+        materialProfessionIDs = materialProfessionIDs,
+        materialProfessionLabel = materialProfessionLabel,
         alertBasis = basis,
         marketHistorySnapshot = snapshot,
     }

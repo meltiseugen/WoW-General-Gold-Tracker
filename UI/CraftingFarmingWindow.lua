@@ -97,10 +97,12 @@ end
 
 local MATERIAL_FARMING_MAP_IDS = {
     ["Arathi Highlands"] = 14,
+    ["Ashenvale"] = 63,
     ["Azuremyst Isle"] = 97,
     ["Blade's Edge Mountains"] = 105,
     ["Badlands"] = 15,
     ["Bloodmyst Isle"] = 106,
+    ["Burning Steppes"] = 36,
     ["Deadwind Pass"] = 42,
     ["Durotar"] = 1,
     ["Duskwood"] = 47,
@@ -110,6 +112,7 @@ local MATERIAL_FARMING_MAP_IDS = {
     ["Feralas"] = 69,
     ["Ghostlands"] = 95,
     ["Hellfire Peninsula"] = 100,
+    ["Hillsbrad Foothills"] = 25,
     ["Borean Tundra"] = 114,
     ["Dragonblight"] = 115,
     ["Grizzly Hills"] = 116,
@@ -123,6 +126,7 @@ local MATERIAL_FARMING_MAP_IDS = {
     ["Loch Modan"] = 48,
     ["Nagrand"] = 107,
     ["Netherstorm"] = 109,
+    ["Northern Stranglethorn"] = 50,
     ["Searing Gorge"] = 32,
     ["Shadowmoon Valley"] = 104,
     ["Silithus"] = 81,
@@ -221,6 +225,7 @@ local function CreateMaterialsHeaderButton(parent, label, width, justifyH)
     text:SetWordWrap(false)
     text:SetText(label)
     button.text = text
+    button.sortLabel = label
 
     local sortIcon = button:CreateTexture(nil, "ARTWORK")
     sortIcon:SetSize(MATERIALS_SORT_ICON_SIZE, MATERIALS_SORT_ICON_SIZE)
@@ -421,7 +426,8 @@ local function BuildMaterialFarmingPin(item, spot, coord, mapID)
         spotLocation = spot.location,
         targetName = coord.targetName or spot.targetName,
         targetType = coord.targetType or spot.targetType,
-        isRoute = item.isRoute == true,
+        farmAction = spot.farmAction,
+        isRoute = spot.isRoute == true or item.isRoute == true,
         routeID = spot.id,
         routeType = spot.routeType,
         density = spot.density,
@@ -451,6 +457,7 @@ local function BuildMaterialFarmingMapOptionsFromData(item)
                         local locationLabel = type(spot.location) == "string" and spot.location or nil
                         option = {
                             id = spot.id,
+                            sortOrder = tonumber(spot.sortOrder),
                             mapID = mapID,
                             mapLabel = mapLabel,
                             label = locationLabel and (mapLabel .. ": " .. locationLabel) or mapLabel,
@@ -469,6 +476,15 @@ local function BuildMaterialFarmingMapOptionsFromData(item)
     end
 
     table.sort(options, function(left, right)
+        local leftOrder = tonumber(left.sortOrder)
+        local rightOrder = tonumber(right.sortOrder)
+        if leftOrder or rightOrder then
+            leftOrder = leftOrder or math.huge
+            rightOrder = rightOrder or math.huge
+            if leftOrder ~= rightOrder then
+                return leftOrder < rightOrder
+            end
+        end
         return tostring(left.label or "") < tostring(right.label or "")
     end)
     return options
@@ -488,6 +504,15 @@ local function BuildMaterialFarmingMapOptions(addon, itemID)
     end
 
     table.sort(mapOptions, function(left, right)
+        local leftOrder = tonumber(left.sortOrder)
+        local rightOrder = tonumber(right.sortOrder)
+        if leftOrder or rightOrder then
+            leftOrder = leftOrder or math.huge
+            rightOrder = rightOrder or math.huge
+            if leftOrder ~= rightOrder then
+                return leftOrder < rightOrder
+            end
+        end
         local leftLabel = tostring(left.label or "")
         local rightLabel = tostring(right.label or "")
         if leftLabel ~= rightLabel then
@@ -1034,21 +1059,27 @@ local function GetMaterialsSortValue(row, sortKey)
     return tonumber(row and row.value) or 0
 end
 
-local function SortMaterialsRows(rows, sortKey, sortAscending)
-    local normalizedSortKey = NormalizeMaterialsSortKey(sortKey)
-    local ascending = sortAscending == true
+local function SortMaterialsRows(rows, sortKey, sortAscending, sortCriteria)
+    local criteria = type(sortCriteria) == "table" and sortCriteria or {
+        { key = NormalizeMaterialsSortKey(sortKey), ascending = sortAscending == true },
+    }
+    local primarySortKey = criteria[1] and NormalizeMaterialsSortKey(criteria[1].key)
+        or NormalizeMaterialsSortKey(sortKey)
 
     table.sort(rows, function(left, right)
-        local leftValue = GetMaterialsSortValue(left, normalizedSortKey)
-        local rightValue = GetMaterialsSortValue(right, normalizedSortKey)
-        if leftValue ~= rightValue then
-            if ascending then
-                return leftValue < rightValue
+        for _, criterion in ipairs(criteria) do
+            local normalizedSortKey = NormalizeMaterialsSortKey(criterion.key)
+            local leftValue = GetMaterialsSortValue(left, normalizedSortKey)
+            local rightValue = GetMaterialsSortValue(right, normalizedSortKey)
+            if leftValue ~= rightValue then
+                if criterion.ascending == true then
+                    return leftValue < rightValue
+                end
+                return leftValue > rightValue
             end
-            return leftValue > rightValue
         end
 
-        if normalizedSortKey == "demand" or normalizedSortKey == "sellRate" then
+        if primarySortKey == "demand" or primarySortKey == "sellRate" then
             local leftRate = tonumber(left and left.regionSaleRate) or 0
             local rightRate = tonumber(right and right.regionSaleRate) or 0
             if leftRate ~= rightRate then
@@ -1222,6 +1253,43 @@ local function GetComposedMaterialExpandedStore(frame)
     return frame.expandedComposedMaterials
 end
 
+local function NormalizeMaterialsSearchText(value)
+    return string.lower(tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function MaterialItemMatchesSearch(addon, frame, source, itemID, normalizedSearchText)
+    if normalizedSearchText == "" then
+        return true
+    end
+
+    local cacheKey = tostring(itemID) .. "|" .. tostring(source and source.id or "")
+    local cached = frame.itemCache and frame.itemCache[cacheKey]
+    local itemName = cached and cached.itemName
+    if not itemName then
+        itemName = GetItemInfoByID(itemID)
+    end
+    if not itemName then
+        frame.searchItemDataRequested = frame.searchItemDataRequested or {}
+        if not frame.searchItemDataRequested[itemID] then
+            frame.searchItemDataRequested[itemID] = true
+            RequestMaterialsItemData(addon, itemID)
+        end
+        return false
+    end
+
+    return string.find(string.lower(itemName), normalizedSearchText, 1, true) ~= nil
+end
+
+local function GetComposedMaterialLoadedStore(frame)
+    if not frame then
+        return {}
+    end
+    if type(frame.loadedComposedMaterials) ~= "table" then
+        frame.loadedComposedMaterials = {}
+    end
+    return frame.loadedComposedMaterials
+end
+
 local function BuildMaterialRow(addon, frame, source, expansionLookup, item)
     local itemID = tonumber(item and item.itemID)
     if not itemID then
@@ -1253,6 +1321,7 @@ local function BuildMaterialRow(addon, frame, source, expansionLookup, item)
         professionLabel = GetPrimaryProfessionLabel(item),
         professionIDs = item.professions,
         tag = item.tag or "Material",
+        acquisitionType = item.acquisitionType,
         learnedFromSession = item.learnedFromSession == true,
         manualProfessionOverride = item.manualProfessionOverride == true,
         outputQuantity = outputQuantity,
@@ -1279,6 +1348,17 @@ local function BuildMaterialRow(addon, frame, source, expansionLookup, item)
     }
 
     if row.isComposedMaterial then
+        row.expanded = GetComposedMaterialExpandedStore(frame)[row.itemID] == true
+        local loadedStore = GetComposedMaterialLoadedStore(frame)
+        if row.expanded then
+            loadedStore[row.itemID] = true
+        end
+        row.componentsLoaded = loadedStore[row.itemID] == true
+
+        if not row.componentsLoaded then
+            return row
+        end
+
         row.componentCost = 0
         for _, component in ipairs(item.components) do
             local componentItemID = tonumber(component and component.itemID)
@@ -1290,7 +1370,6 @@ local function BuildMaterialRow(addon, frame, source, expansionLookup, item)
         end
         row.craftValue = math.max(0, tonumber(row.value) or 0) * outputQuantity
         row.profitValue = row.craftValue - row.componentCost
-        row.expanded = GetComposedMaterialExpandedStore(frame)[row.itemID] == true
     end
 
     return row
@@ -1473,9 +1552,11 @@ function GoldTracker:BuildCraftingFarmingRows()
     local source = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetCraftingFarmingValueSource()
     local expansionID = NormalizeExpansionID(frame.expansionID)
     local professionIDs = NormalizeProfessionSelections(frame.professionIDs, frame.professionID)
+    local searchText = NormalizeMaterialsSearchText(frame.searchText)
     local expansionLookup = GetExpansionLookup()
     local rows = {}
     local baseRows = {}
+    local instanceRows = {}
     local composedRows = {}
     local seenItems = {}
     local itemLookup = BuildMaterialsItemLookup(self)
@@ -1485,12 +1566,15 @@ function GoldTracker:BuildCraftingFarmingRows()
         if itemID
             and not seenItems[itemID]
             and (expansionID == "all" or item.expansion == expansionID)
-            and ItemMatchesProfessionSelection(item, professionIDs) then
+            and ItemMatchesProfessionSelection(item, professionIDs)
+            and MaterialItemMatchesSearch(self, frame, source, itemID, searchText) then
             seenItems[itemID] = true
             local row = BuildMaterialRow(self, frame, source, expansionLookup, item)
             if row then
                 if row.isComposedMaterial then
                     composedRows[#composedRows + 1] = row
+                elseif row.acquisitionType == "instance" then
+                    instanceRows[#instanceRows + 1] = row
                 else
                     baseRows[#baseRows + 1] = row
                 end
@@ -1498,11 +1582,22 @@ function GoldTracker:BuildCraftingFarmingRows()
         end
     end
 
-    SortMaterialsRows(baseRows, frame.sortKey, frame.sortAscending)
-    SortMaterialsRows(composedRows, frame.sortKey, frame.sortAscending)
+    local sortCriteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", MATERIALS_SORT_KEYS)
+    SortMaterialsRows(baseRows, frame.sortKey, frame.sortAscending, sortCriteria)
+    SortMaterialsRows(instanceRows, frame.sortKey, frame.sortAscending, sortCriteria)
+    SortMaterialsRows(composedRows, frame.sortKey, frame.sortAscending, sortCriteria)
 
     for _, row in ipairs(baseRows) do
         rows[#rows + 1] = row
+    end
+    if #instanceRows > 0 then
+        rows[#rows + 1] = {
+            rowType = "divider",
+            label = "Raid and dungeon mining materials",
+        }
+        for _, row in ipairs(instanceRows) do
+            rows[#rows + 1] = row
+        end
     end
     if #composedRows > 0 then
         rows[#rows + 1] = {
@@ -1866,8 +1961,8 @@ function GoldTracker:UpdateCraftingFarmingSortHeaderState()
         return
     end
 
-    local sortKey = NormalizeMaterialsSortKey(frame.sortKey)
-    local sortAscending = frame.sortAscending == true
+    local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", MATERIALS_SORT_KEYS)
+    local showPriority = #criteria > 1
     local headers = {
         expansion = { button = frame.expansionHeaderButton, label = "Expansion" },
         profession = { button = frame.professionHeaderButton, label = "Profession" },
@@ -1885,11 +1980,13 @@ function GoldTracker:UpdateCraftingFarmingSortHeaderState()
     for headerSortKey, header in pairs(headers) do
         local button = header.button
         if button and button.text then
-            button.text:SetText(header.label)
-            if headerSortKey == sortKey then
+            self:AttachTableSortHeaderTooltip(button, header.label)
+            local criterion, priority = self:GetTableSortCriterion(criteria, headerSortKey)
+            button.text:SetText(showPriority and criterion and (header.label .. " " .. priority) or header.label)
+            if criterion then
                 button.text:SetTextColor(1, 1, 1)
                 if button.sortIcon then
-                    Theme:SetTexture(button.sortIcon, sortAscending and "sortAscending" or "sortDescending")
+                    Theme:SetTexture(button.sortIcon, criterion.ascending and "sortAscending" or "sortDescending")
                     button.sortIcon:Show()
                 end
             else
@@ -1908,12 +2005,9 @@ function GoldTracker:ToggleCraftingFarmingSort(sortKey)
         return
     end
 
-    if frame.sortKey == sortKey then
-        frame.sortAscending = not frame.sortAscending
-    else
-        frame.sortKey = sortKey
-        frame.sortAscending = sortKey ~= "value"
-    end
+    self:ToggleTableSortCriterion(frame, sortKey, sortKey ~= "value", {
+        validKeys = MATERIALS_SORT_KEYS,
+    })
 
     self:RefreshCraftingFarmingWindow(true)
 end
@@ -1989,7 +2083,8 @@ local function ApplyMaterialsTableColumnLayout(frame)
 
     local availableWidth = GetMaterialsTableAvailableWidth(frame)
     local favoriteX = 8
-    local toggleX = favoriteX + MATERIALS_FAVORITE_WIDTH
+    local mapX = favoriteX + MATERIALS_FAVORITE_WIDTH + MATERIALS_COLUMN_GAP
+    local toggleX = mapX + MATERIALS_MAP_BUTTON_WIDTH + MATERIALS_COLUMN_GAP
     local iconX = toggleX + MATERIALS_TOGGLE_WIDTH
     local itemX = iconX + MATERIALS_ICON_SIZE + 8
     local minimumTableWidth =
@@ -2011,7 +2106,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         + MATERIALS_MARGIN_WIDTH
         + MATERIALS_MAP_BUTTON_WIDTH
         + MATERIALS_MAP_ITEM_WIDTH
-        + (MATERIALS_COLUMN_GAP * 12)
+        + (MATERIALS_COLUMN_GAP * 13)
         + MATERIALS_ROW_RIGHT_PADDING
     local tableWidth = math.max(availableWidth, minimumTableWidth)
     if frame.content then
@@ -2023,8 +2118,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
     local horizontalOffset = GetMaterialsHorizontalOffset(frame)
     local rightEdge = tableWidth - MATERIALS_ROW_RIGHT_PADDING
     local mapItemX = rightEdge - MATERIALS_MAP_ITEM_WIDTH
-    local mapX = mapItemX - MATERIALS_COLUMN_GAP - MATERIALS_MAP_BUTTON_WIDTH
-    local profitX = mapX - MATERIALS_COLUMN_GAP - MATERIALS_MARGIN_WIDTH
+    local profitX = mapItemX - MATERIALS_COLUMN_GAP - MATERIALS_MARGIN_WIDTH
     local componentCostX = profitX - MATERIALS_COLUMN_GAP - MATERIALS_COMPONENT_COST_WIDTH
     local valueX = componentCostX - MATERIALS_COLUMN_GAP - MATERIALS_VALUE_WIDTH
     local trendX = valueX - MATERIALS_COLUMN_GAP - MATERIALS_TREND_WIDTH
@@ -2039,6 +2133,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
     if frame.listPanel then
         local headerX = MATERIALS_HEADER_LEFT_INSET
         SetMaterialsHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, MATERIALS_FAVORITE_WIDTH)
+        SetMaterialsHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
         SetMaterialsHeaderColumn(frame.expansionHeaderButton, frame.listPanel, headerX + expansionX - horizontalOffset, MATERIALS_EXPANSION_WIDTH)
         SetMaterialsHeaderColumn(frame.professionHeaderButton, frame.listPanel, headerX + professionX - horizontalOffset, MATERIALS_PROFESSION_WIDTH)
@@ -2050,7 +2145,6 @@ local function ApplyMaterialsTableColumnLayout(frame)
         SetMaterialsHeaderColumn(frame.valueHeaderButton, frame.listPanel, headerX + valueX - horizontalOffset, MATERIALS_VALUE_WIDTH)
         SetMaterialsHeaderColumn(frame.componentCostHeaderButton, frame.listPanel, headerX + componentCostX - horizontalOffset, MATERIALS_COMPONENT_COST_WIDTH)
         SetMaterialsHeaderColumn(frame.profitHeaderButton, frame.listPanel, headerX + profitX - horizontalOffset, MATERIALS_MARGIN_WIDTH)
-        SetMaterialsHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.mapItemHeaderButton, frame.listPanel, headerX + mapItemX - horizontalOffset, MATERIALS_MAP_ITEM_WIDTH)
     end
 
@@ -2072,6 +2166,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
             row.toggleText:SetPoint("LEFT", row, "LEFT", toggleX + rowIndent - horizontalOffset, 0)
             row.toggleText:SetWidth(MATERIALS_TOGGLE_WIDTH)
         end
+        SetMaterialsRowButton(row.mapButton, row, mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         if row.icon then
             row.icon:ClearAllPoints()
             row.icon:SetPoint("LEFT", row, "LEFT", iconX + rowIndent - horizontalOffset, 0)
@@ -2087,7 +2182,6 @@ local function ApplyMaterialsTableColumnLayout(frame)
         SetMaterialsRowColumn(row.valueText, row, valueX - horizontalOffset, MATERIALS_VALUE_WIDTH)
         SetMaterialsRowColumn(row.componentCostText, row, componentCostX - horizontalOffset, MATERIALS_COMPONENT_COST_WIDTH)
         SetMaterialsRowColumn(row.profitText, row, profitX - horizontalOffset, MATERIALS_MARGIN_WIDTH)
-        SetMaterialsRowButton(row.mapButton, row, mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsRowColumn(row.mapItemText, row, mapItemX - horizontalOffset, MATERIALS_MAP_ITEM_WIDTH)
     end
 end
@@ -2387,8 +2481,12 @@ function GoldTracker:GetCraftingFarmingWindowRow(index)
             end
         elseif self.isComposedMaterial then
             GameTooltip:AddDoubleLine("Output", tostring(self.outputQuantity or 1), 0.72, 0.86, 1.0, 1, 1, 1)
-            GameTooltip:AddDoubleLine("Material cost", GoldTracker:FormatMoney(self.componentCost or 0), 0.72, 0.86, 1.0, 1, 1, 1)
-            GameTooltip:AddDoubleLine("Margin", FormatMaterialsSignedMoney(GoldTracker, self.profitValue or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+            if self.componentsLoaded then
+                GameTooltip:AddDoubleLine("Material cost", GoldTracker:FormatMoney(self.componentCost or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+                GameTooltip:AddDoubleLine("Margin", FormatMaterialsSignedMoney(GoldTracker, self.profitValue or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+            else
+                GameTooltip:AddLine("Component prices load when this recipe is expanded.", 0.72, 0.86, 1.0)
+            end
             GameTooltip:AddLine("Click to expand or collapse components.", 0.72, 0.86, 1.0)
         end
         if self.recipeSourceLabel then
@@ -2412,6 +2510,7 @@ function GoldTracker:GetCraftingFarmingWindowRow(index)
         end
         if self.isComposedMaterial then
             local store = GetComposedMaterialExpandedStore(GoldTracker.craftingFarmingFrame)
+            GetComposedMaterialLoadedStore(GoldTracker.craftingFarmingFrame)[self.itemID] = true
             store[self.itemID] = not store[self.itemID]
             GoldTracker:RefreshCraftingFarmingWindow(false)
             return
@@ -2492,6 +2591,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop)
             row.profitValue = result.profitValue
             row.outputQuantity = result.outputQuantity
             row.isComposedMaterial = result.isComposedMaterial == true
+            row.componentsLoaded = result.componentsLoaded == true
             row.expanded = result.expanded == true
             row.recipeSpellID = result.recipeSpellID
             row.recipeSource = result.recipeSource
@@ -2755,6 +2855,10 @@ function GoldTracker:CreateCraftingFarmingWindow()
     frame.dropRateByItemID, frame.dropRateUpdatedAt = self:GetSavedCraftingFarmingDropRateLookup()
     frame.sortKey = MATERIALS_DEFAULT_SORT_KEY
     frame.sortAscending = false
+    frame.sortCriteria = {
+        { key = MATERIALS_DEFAULT_SORT_KEY, ascending = false },
+    }
+    frame.searchText = ""
 
     local chrome = Theme:ApplyWindowChrome(frame, "Materials Farming")
     Theme:RegisterSpecialFrame("GoldTrackerCraftingFarmingFrame")
@@ -2869,6 +2973,40 @@ function GoldTracker:CreateCraftingFarmingWindow()
         addon:RefreshCraftingFarmingWindow(true)
     end)
     frame.learnButton = learnButton
+
+    local searchInput = CreateFrame("EditBox", nil, controlsPanel, "InputBoxTemplate")
+    searchInput:SetSize(280, 22)
+    searchInput:SetPoint("BOTTOMLEFT", controlsPanel, "BOTTOMLEFT", 112, 12)
+    searchInput:SetAutoFocus(false)
+    searchInput:SetMaxLetters(80)
+    searchInput:SetText(frame.searchText)
+    searchInput:SetScript("OnTextChanged", function(editBox)
+        local searchText = editBox:GetText() or ""
+        if frame.searchText == searchText then
+            return
+        end
+        frame.searchText = searchText
+        addon:RefreshCraftingFarmingWindow(false)
+        if frame.scrollFrame then
+            frame.scrollFrame:SetVerticalScroll(0)
+        end
+    end)
+    searchInput:SetScript("OnEnterPressed", function(editBox)
+        editBox:ClearFocus()
+    end)
+    searchInput:SetScript("OnEscapePressed", function(editBox)
+        if editBox:GetText() ~= "" then
+            editBox:SetText("")
+        else
+            editBox:ClearFocus()
+        end
+    end)
+    frame.searchInput = searchInput
+
+    local searchLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    searchLabel:SetPoint("RIGHT", searchInput, "LEFT", -8, 0)
+    searchLabel:SetText("Search material")
+    frame.searchLabel = searchLabel
 
     local listPanel = CreateMaterialsPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
     listPanel:SetPoint("TOPLEFT", controlsPanel, "BOTTOMLEFT", 0, -10)

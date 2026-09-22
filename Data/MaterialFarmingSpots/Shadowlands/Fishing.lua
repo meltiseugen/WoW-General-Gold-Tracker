@@ -170,3 +170,44 @@ RegisterFish(173037, "Elysian Thade", {
 }, "Rare Shadowlands fish from all four covenant zones; best treated as a bonus while farming zone fish.")
 RegisterFish(187702, "Precursor Placoderm", { ZERETH_MORTIS_PLACODERM_ROUTE },
     "Patch 9.2 Zereth Mortis fish from open water and pools.")
+
+Register({
+    itemID = 187662,
+    itemName = "Strange Goop",
+    expansion = "shadowlands",
+    professions = { "fishing", "miscellaneous" },
+    category = "Mount Reagent",
+    researchStatus = "researched",
+    sourceUrls = {
+        ItemUrl(187662),
+        "https://www.wowhead.com/item=187662/strange-goop",
+        "https://www.wowhead.com/npc=180978/hirukon",
+    },
+    summary = "Extremely rare, auctionable fishing object used to begin the Aurelid Lure chain for Hirukon's mount.",
+    spots = {
+        {
+            id = "shadowlands-zereth-mortis-strange-goop",
+            source = "Retail Wowhead Strange Goop fishing locations and current Dimensional Falls comments",
+            sourceUrls = {
+                "https://www.wowhead.com/item=187662/strange-goop",
+                "https://www.wowhead.com/npc=180978/hirukon",
+            },
+            mapName = "Zereth Mortis",
+            location = "Dimensional Falls lake around Hirukon",
+            routeType = "rare-open-water-fishing",
+            density = "Stationary fishing",
+            dropDifficulty = "Extreme RNG. Reports range from a handful of casts to several thousand.",
+            tips = {
+                "Fish anywhere in the Dimensional Falls lake; standing directly above Hirukon is not required.",
+                "The quiet western shore works and avoids the waterfall noise.",
+                "Loot carefully: the unique goop is the auctionable input for the mount-lure chain.",
+            },
+            coords = {
+                C(0.518, 0.745, "Hirukon lake"),
+                C(0.480, 0.720, "Quiet western lake shore"),
+                C(0.5072, 0.7417, "Comment-reported catch point"),
+            },
+            confidence = "high",
+        },
+    },
+})

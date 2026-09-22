@@ -524,11 +524,15 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         return
     end
 
+    quantity = math.max(1, math.floor(tonumber(quantity) or 1))
+    if type(self.IsOnLootedItem) == "function" and self:IsOnLootedItem(itemLink) then
+        self:IncrementDiagnosticCounter("item_filtered_on_looted", quantity)
+        return
+    end
+
     local trackItemStart = self:BeginDiagnosticTimer()
     local previousSessionTotal = self:GetSessionTotalValue()
     local lootTimestamp = time()
-
-    quantity = math.max(1, math.floor(tonumber(quantity) or 1))
 
     local resolveStart = self:BeginDiagnosticTimer()
     local selectedUnitValue, selectedValueSourceID, selectedValueSourceLabel = self:GetItemUnitValue(itemLink)

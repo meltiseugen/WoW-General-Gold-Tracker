@@ -252,6 +252,37 @@ local function make_icon()
 end
 
 describe("UI/InventoryWindow auctionable rows", function()
+    it("does not capture market history synchronously while refreshing the bag view", function()
+        with_loaded_inventory(build_addon(), function(addon)
+            local snapshot_calls = 0
+            addon.inventoryFrame = {
+                inventoryContent = {
+                    SetHeight = function() end,
+                },
+                inventoryRows = {},
+                valueSourceID = "TSM_DBMARKET",
+                minimumQuality = 1,
+                minimumValueCopper = 0,
+                categoryFilterID = "all",
+                inventorySortKey = "itemName",
+                inventorySortAscending = true,
+            }
+            addon.BuildInventoryAuctionItemList = function()
+                return {}, 0, 0, 0, 0
+            end
+            addon.RecordDiscoveredItemMarketSnapshots = function()
+                snapshot_calls = snapshot_calls + 1
+            end
+            addon.RefreshInventoryWindowControls = function() end
+            addon.UpdateInventorySortHeaderState = function() end
+            addon.RefreshInventoryWindowLayout = function() end
+
+            addon:RefreshInventoryWindow(true)
+
+            assert.equals(0, snapshot_calls)
+        end)
+    end)
+
     it("aggregates sellable stacks and excludes restricted bag items", function()
         with_loaded_inventory(build_addon(), function(addon)
             local rows, total_value, total_quantity, scanned_stacks, matched_stacks =

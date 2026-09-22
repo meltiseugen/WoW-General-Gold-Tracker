@@ -3,6 +3,16 @@ local Register = NS.RegisterMaterialFarmingSpot
 
 local ORE_GUIDE = "https://www.wowhead.com/guide/classic-mining-best-farming-basics-early-ores"
 local MINING_GUIDE = "https://www.wowhead.com/guide/mining-leveling-1-300-wow-classic"
+local COPPER_GUIDE = "https://www.wow-professions.com/farming/copper-ore-farming"
+local TIN_GUIDE = "https://www.wow-professions.com/farming/tin-ore-farming"
+local IRON_GUIDE = "https://www.wow-professions.com/farming/iron-ore-farming"
+local MITHRIL_GUIDE = "https://www.wow-professions.com/farming/mithril-ore-farming"
+local THORIUM_GUIDE = "https://www.wow-professions.com/farming/thorium-ore-farming"
+local DARK_IRON_GUIDE = "https://www.wow-professions.com/farming/dark-iron-ore-farming"
+local ARTISANS_COPPER = "https://artisansofazeroth.com/copper-ore-farming/"
+local ARTISANS_TIN = "https://artisansofazeroth.com/tin-ore-farming/"
+local ARTISANS_MITHRIL = "https://artisansofazeroth.com/mithril-ore-farming/"
+local ARTISANS_THORIUM = "https://artisansofazeroth.com/thorium-ore-farming/"
 
 local function C(x, y, label)
     return { x = x, y = y, label = label }
@@ -12,7 +22,7 @@ local function ItemUrl(itemID)
     return "https://www.wowhead.com/item=" .. tostring(itemID)
 end
 
-local IMPORTED_ROUTES_SOURCE = "Retail Routes addon import strings supplied by the user and decoded into static route pins"
+local IMPORTED_ROUTES_SOURCE = "Supplied Retail Routes exports decoded into ordered static route pins and cross-checked against public farming guides"
 
 local function ImportedRouteCoords(labelPrefix, pins)
     local coords = {}
@@ -274,15 +284,18 @@ local function AddImportedMiningRoute(routeKey, route)
 end
 
 AddImportedMiningRoute("copperDurotarRoutesMain", {
+    urls = { COPPER_GUIDE, ARTISANS_COPPER, "https://www.wowhead.com/object=1731/copper-vein" },
+    mapID = 1,
     mapName = "Durotar",
-    location = "Durotar Copper Ore - Horde imported loop",
+    location = "Main - straightforward Durotar Copper loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Straightforward low-terrain Copper loop; best when hugging ridges, hills, cliffs, and zone edges.",
     tips = {
-        "Complete the full circuit before changing zones because Copper respawns are distributed across the route.",
-        "Favor outer mountain walls over shortcuts through the middle of the zone.",
-        "Mine every Copper node to keep Rough Stone and starter gem turnover moving.",
+        "Good route if you want a simple uninterrupted circuit.",
+        "Stay close to hills, ridges, cliffs, and zone edges; Copper nodes heavily favor terrain boundaries.",
+        "If the route feels empty, complete the full circuit before changing zones because node respawns are distributed across the zone.",
+        "Works well with fast ground movement or flying in Retail.",
     },
     coords = ImportedRouteCoords("Routes Durotar Copper", {
         { 0.4391, 0.1401 },
@@ -309,15 +322,17 @@ AddImportedMiningRoute("copperDurotarRoutesMain", {
 })
 
 AddImportedMiningRoute("copperDurotarWitAlt", {
+    urls = { COPPER_GUIDE, ARTISANS_COPPER, "https://www.wowhead.com/object=1731/copper-vein" },
+    mapID = 1,
     mapName = "Durotar",
-    location = "Durotar alternate WIT Copper loop",
+    location = "Alternative - Durotar Copper loop for crowded main-route conditions",
     routeType = "imported-mining-loop",
     density = "Medium-High",
     difficulty = "Alternative Durotar Copper geometry for crowded main-route conditions.",
     tips = {
-        "Use this when the main Durotar route is being heavily farmed.",
-        "Compare routes over two or three complete laps instead of judging after a short pass.",
-        "Stay close to rocky edges and outer terrain walls.",
+        "This is useful when you want to avoid following the exact same path as other farmers.",
+        "Because both routes use Durotar, compare them over 2-3 complete laps rather than judging after only a few minutes.",
+        "Favor outer mountain walls over cutting directly through the middle of the zone.",
     },
     coords = ImportedRouteCoords("WIT Durotar Copper", {
         { 0.5401, 0.1143 },
@@ -341,15 +356,18 @@ AddImportedMiningRoute("copperDurotarWitAlt", {
 })
 
 AddImportedMiningRoute("tinHillsbradRoutesMain", {
+    urls = { TIN_GUIDE, ARTISANS_TIN, "https://www.wowhead.com/object=1732/tin-vein" },
+    mapID = 25,
     mapName = "Hillsbrad Foothills",
-    location = "Hillsbrad Foothills Tin and Silver turnover loop",
+    location = "Main - Hillsbrad Foothills Tin and Silver turnover loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Compact Tin route that also supports rare Silver replacement chances.",
     tips = {
         "Follow mountain faces closely instead of flying through flat open fields.",
-        "Mine every Tin node because Silver shares the same general spawn ecosystem.",
-        "Clear other eligible nodes along the route to keep the spawn pool cycling.",
+        "Tin commonly shares its spawn ecosystem with Silver, so mine every node you see.",
+        "Do not skip Copper or other eligible nodes along the route; clearing nodes helps cycle the spawn pool.",
+        "Hillsbrad is compact enough that repeated loops are efficient.",
     },
     coords = ImportedRouteCoords("Routes Hillsbrad Tin", {
         { 0.4687, 0.1045 },
@@ -375,15 +393,17 @@ AddImportedMiningRoute("tinHillsbradRoutesMain", {
 })
 
 AddImportedMiningRoute("tinAshenvaleWitAlt", {
+    urls = { TIN_GUIDE, ARTISANS_TIN, "https://www.wowhead.com/object=1732/tin-vein" },
+    mapID = 63,
     mapName = "Ashenvale",
-    location = "Ashenvale WIT Tin and Silver alternate loop",
+    location = "Alternative - longer Ashenvale Tin and Silver loop",
     routeType = "imported-mining-loop",
     density = "Medium",
     difficulty = "Longer, less compact Tin route with irregular terrain and tree cover.",
     tips = {
-        "Use Ashenvale when Hillsbrad is crowded or you want a longer farming session.",
-        "Keep close to cliff bases and rocky transitions.",
-        "Do not fly too high because tree cover can hide minimap node context.",
+        "Ashenvale terrain is irregular; use the route as a guide, but prioritize cliff bases and rocky transitions.",
+        "Do not fly too high because tree cover can make node spotting annoying even with minimap tracking.",
+        "This route is more suitable for longer farming sessions than short 10-minute runs.",
     },
     coords = ImportedRouteCoords("WIT Ashenvale Tin", {
         { 0.9355, 0.3717 },
@@ -409,8 +429,10 @@ AddImportedMiningRoute("tinAshenvaleWitAlt", {
 })
 
 AddImportedMiningRoute("tinNorthernStranglethornAlt", {
+    urls = { TIN_GUIDE, ARTISANS_TIN, "https://www.wowhead.com/object=1732/tin-vein" },
+    mapID = 50,
     mapName = "Northern Stranglethorn",
-    location = "Northern Stranglethorn alternate Tin and Silver wall loop",
+    location = "Alternative - Northern Stranglethorn Tin and Silver wall loop",
     routeType = "imported-mining-loop",
     density = "Medium",
     difficulty = "Alternative Tin and Silver route with different competition from Hillsbrad or Ashenvale.",
@@ -452,15 +474,18 @@ AddImportedMiningRoute("tinNorthernStranglethornAlt", {
 })
 
 AddImportedMiningRoute("ironFeralasRoutesMain", {
+    urls = { IRON_GUIDE, "https://www.wowhead.com/object=1735/iron-deposit" },
+    mapID = 69,
     mapName = "Feralas",
-    location = "Feralas broad Iron and Gold outer mountain loop",
+    location = "Main - broad Feralas Iron and Gold outer-mountain loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Broad Iron farming route with Gold bonus potential; flying makes a significant difference.",
     tips = {
         "Follow mountain ranges and high terrain rather than crossing open central areas.",
+        "Feralas is large, so flying makes a significant difference.",
         "Mine Mithril and Gold-compatible nodes you encounter instead of selectively skipping them.",
-        "Use this when you want a mixture of mid-tier Vanilla mining materials.",
+        "This is a good route if you want a mixture of mid-tier Vanilla mining materials.",
     },
     coords = ImportedRouteCoords("Routes Feralas Iron", {
         { 0.4376, 0.0890 },
@@ -501,15 +526,17 @@ AddImportedMiningRoute("ironFeralasRoutesMain", {
 })
 
 AddImportedMiningRoute("ironWesternPlaguelandsWitAlt", {
+    urls = { IRON_GUIDE, "https://www.wowhead.com/object=1735/iron-deposit" },
+    mapID = 22,
     mapName = "Western Plaguelands",
-    location = "Western Plaguelands compact WIT Iron and Gold loop",
+    location = "Alternative - compact Western Plaguelands Iron and Gold loop",
     routeType = "imported-mining-loop",
     density = "Medium-High",
     difficulty = "Shorter, more compact Iron route for repeated spawn cycling.",
     tips = {
-        "Use this when you prefer short loops over wide Feralas laps.",
+        "This is better than Feralas if you prefer short loops.",
+        "The zone is good for repeatedly clearing the same spawn areas.",
         "Check terrain edges and hills rather than staying exactly on roads.",
-        "Treat Gold as a bonus while clearing the Iron-family route.",
     },
     coords = ImportedRouteCoords("WIT Western Plaguelands Iron", {
         { 0.5533, 0.4767 },
@@ -532,14 +559,17 @@ AddImportedMiningRoute("ironWesternPlaguelandsWitAlt", {
 })
 
 AddImportedMiningRoute("mithrilBurningSteppesCompact", {
+    urls = { MITHRIL_GUIDE, ARTISANS_MITHRIL, "https://www.wowhead.com/object=2040/mithril-deposit" },
+    mapID = 36,
     mapName = "Burning Steppes",
-    location = "Burning Steppes compact Mithril and Truesilver mountain loop",
+    location = "Main - compact Burning Steppes Mithril and Truesilver mountain loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Compact Mithril farm with Truesilver potential and little wasted open space.",
     tips = {
-        "Hug the mountains around the zone.",
-        "Check caves and rocky formations when they sit close to the route.",
+        "Hug the mountains surrounding the zone.",
+        "Check around caves and rocky formations when they are close to the route.",
+        "Burning Steppes has relatively little wasted open space, making it efficient for repeated loops.",
         "Mine Truesilver and Thorium-compatible nodes you see rather than skipping them.",
     },
     coords = ImportedRouteCoords("Routes Burning Steppes Mithril compact", {
@@ -565,15 +595,17 @@ AddImportedMiningRoute("mithrilBurningSteppesCompact", {
 })
 
 AddImportedMiningRoute("mithrilBurningSteppesCoverage", {
+    urls = { MITHRIL_GUIDE, ARTISANS_MITHRIL, "https://www.wowhead.com/object=2040/mithril-deposit" },
+    mapID = 36,
     mapName = "Burning Steppes",
-    location = "Burning Steppes extended Mithril coverage sweep",
+    location = "Alternative - denser Burning Steppes Mithril coverage sweep",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "More exhaustive Mithril sweep with extra turns for broader node coverage.",
     tips = {
-        "Use this when nodes are sparse and you want maximum coverage.",
-        "Expect more direction changes than the compact Burning Steppes route.",
-        "Clear each viable node to improve Mithril and Truesilver turnover.",
+        "More route points means better coverage but slightly more turning.",
+        "Prefer this if you want maximum node coverage rather than the shortest lap time.",
+        "This route is useful when nodes are sparse because it checks more of the viable terrain.",
     },
     coords = ImportedRouteCoords("Routes Burning Steppes Mithril coverage", {
         { 0.5726, 0.2841 },
@@ -610,15 +642,18 @@ AddImportedMiningRoute("mithrilBurningSteppesCoverage", {
 })
 
 AddImportedMiningRoute("thoriumWinterspringRoutesMain", {
+    urls = { THORIUM_GUIDE, ARTISANS_THORIUM, "https://www.wowhead.com/object=324/small-thorium-vein", "https://www.wowhead.com/object=175404/rich-thorium-vein" },
+    mapID = 83,
     mapName = "Winterspring",
-    location = "Winterspring Thorium and Truesilver mountain loop",
+    location = "Main - Winterspring Thorium and Truesilver mountain loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Reliable Thorium route that benefits from flying speed due to Winterspring size.",
     tips = {
-        "Hug mountain chains and cliff bases.",
-        "Prioritize Rich Thorium Deposit areas while also clearing Small Thorium nodes.",
-        "Use this as the primary Thorium and Truesilver loop when Burning Steppes is not the goal.",
+        "Hug mountain chains.",
+        "Prioritize Rich Thorium Deposit areas.",
+        "Do not skip standard Thorium nodes because cycling all nodes improves overall throughput.",
+        "Winterspring's large size means flying is strongly recommended.",
     },
     coords = ImportedRouteCoords("Routes Winterspring Thorium", {
         { 0.5093, 0.2243 },
@@ -661,15 +696,18 @@ AddImportedMiningRoute("thoriumWinterspringRoutesMain", {
 })
 
 AddImportedMiningRoute("thoriumSilithusWitAlt", {
+    urls = { THORIUM_GUIDE, ARTISANS_THORIUM, "https://www.wowhead.com/object=324/small-thorium-vein", "https://www.wowhead.com/object=175404/rich-thorium-vein" },
+    mapID = 81,
     mapName = "Silithus",
-    location = "Silithus WIT Thorium outer-zone loop",
+    location = "Alternative - Silithus Thorium outer-zone loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Excellent Thorium alternative for dense outer-zone mining when Winterspring has competition.",
     tips = {
         "Circle the outside of the zone and major rocky formations.",
+        "Silithus terrain naturally suits circular mining routes.",
+        "Use this route if Winterspring has competition.",
         "Check hive and mountain areas when they do not require a large detour.",
-        "Mine both Small and Rich Thorium nodes to keep the route productive.",
     },
     coords = ImportedRouteCoords("WIT Silithus Thorium", {
         { 0.3038, 0.1430 },
@@ -695,15 +733,18 @@ AddImportedMiningRoute("thoriumSilithusWitAlt", {
 })
 
 AddImportedMiningRoute("thoriumWinterspringCoverage", {
+    urls = { THORIUM_GUIDE, ARTISANS_THORIUM, "https://www.wowhead.com/object=324/small-thorium-vein", "https://www.wowhead.com/object=175404/rich-thorium-vein" },
+    mapID = 83,
     mapName = "Winterspring",
-    location = "Winterspring maximum-coverage Thorium loop",
+    location = "Alternative - exhaustive 56-point Winterspring Thorium loop",
     routeType = "imported-mining-loop",
     density = "High",
     difficulty = "Denser Winterspring coverage route with more direction changes than the main loop.",
     tips = {
-        "Use this when you care more about node coverage than smooth flying.",
-        "Expect more turns than the shorter Winterspring circuit.",
-        "Follow mountain walls and high-value Rich Thorium pockets.",
+        "This route is much denser than the main Winterspring route.",
+        "Use it when you care more about node coverage than smooth flying.",
+        "Expect more direction changes.",
+        "Test this route if the shorter Winterspring circuit consistently misses nodes.",
     },
     coords = ImportedRouteCoords("Routes Winterspring Thorium coverage", {
         { 0.2310, 0.4701 },
@@ -711,7 +752,7 @@ AddImportedMiningRoute("thoriumWinterspringCoverage", {
         { 0.3423, 0.4800 },
         { 0.4031, 0.4588 },
         { 0.4297, 0.4725 },
-        { 0.0416, 0.3505 },
+        { 0.4163, 0.5050 },
         { 0.4601, 0.5328 },
         { 0.5078, 0.4866 },
         { 0.4869, 0.4406 },
@@ -724,6 +765,8 @@ AddImportedMiningRoute("thoriumWinterspringCoverage", {
         { 0.4712, 0.3366 },
         { 0.4752, 0.2837 },
         { 0.4572, 0.2359 },
+        { 0.4453, 0.1833 },
+        { 0.4454, 0.2148 },
         { 0.4868, 0.1581 },
         { 0.5146, 0.2060 },
         { 0.5264, 0.1869 },
@@ -763,27 +806,209 @@ AddImportedMiningRoute("thoriumWinterspringCoverage", {
     }),
 })
 
+ROUTES.tinHillsbradRoutesMain.itemVariants = {
+    [2775] = {
+        location = "Main - Hillsbrad Foothills Tin route for Silver turnover",
+        difficulty = "Best supplied Silver option; Silver is a rare bonus while cycling the full Tin route.",
+        tips = {
+            "Mine all Tin nodes; do not only search for Silver.",
+            "Clearing Tin helps keep the node ecosystem cycling.",
+            "One full Hillsbrad loop is generally better than randomly jumping between reported Silver spawn points.",
+            "If Silver is the goal, run this route first.",
+        },
+    },
+}
+
+ROUTES.tinAshenvaleWitAlt.itemVariants = {
+    [2775] = {
+        location = "Alternative - Ashenvale Tin route for Silver turnover",
+        difficulty = "Longer Silver-turnover alternative when Hillsbrad is heavily farmed.",
+        tips = {
+            "Use this route if Hillsbrad is heavily farmed.",
+            "Keep close to rocky terrain.",
+            "Treat Silver as a bonus spawn while aggressively clearing Tin.",
+        },
+    },
+}
+
+ROUTES.ironFeralasRoutesMain.itemVariants = {
+    [2776] = {
+        location = "Main - Feralas Iron route for Gold turnover",
+        difficulty = "Best supplied combination of Iron and Gold potential; Gold remains a rare bonus node.",
+        tips = {
+            "Mine Iron and Mithril too.",
+            "Do not fly from known Gold coordinate to Gold coordinate; that usually wastes time.",
+            "Treat Gold as a high-value bonus while cycling the whole zone.",
+            "Outer Feralas mountain chains are more important than open ground.",
+        },
+    },
+}
+
+ROUTES.ironWesternPlaguelandsWitAlt.itemVariants = {
+    [2776] = {
+        location = "Alternative - Western Plaguelands Iron route for Gold turnover",
+        difficulty = "Faster full-loop option for repeatedly cycling Iron and Gold spawn opportunities.",
+        tips = {
+            "This route has a faster full-loop time than Feralas.",
+            "Use it when your goal is repeatedly cycling Iron and Gold spawn points.",
+            "It is a good alternative when Feralas feels too spread out.",
+        },
+    },
+}
+
+ROUTES.mithrilBurningSteppesCompact.itemVariants = {
+    [7911] = {
+        location = "Main - Burning Steppes Mithril route for Truesilver turnover",
+        difficulty = "Compact mountainous route for Mithril and rare Truesilver replacement opportunities.",
+        tips = {
+            "Mine every Mithril node.",
+            "Do not ignore Thorium nodes if present.",
+            "Burning Steppes is particularly convenient because the route is compact and mountainous.",
+            "If Truesilver is your only goal, repeat full laps rather than waiting around known coordinates.",
+        },
+    },
+}
+
+ROUTES.thoriumWinterspringRoutesMain.itemVariants = {
+    [7911] = {
+        location = "Alternative - Winterspring Thorium route for Truesilver turnover",
+        difficulty = "Longer Truesilver-turnover route that also targets Small and Rich Thorium nodes.",
+        tips = {
+            "Use this route if you also want Thorium.",
+            "Mine both Small Thorium and Rich Thorium nodes where available.",
+            "Winterspring is larger than Burning Steppes, so this route benefits more from flying speed.",
+            "Stay close to mountains and cliff bases.",
+        },
+    },
+}
+
+ROUTES.darkIronInstances = {
+    source = "Supplied Classic mining notes cross-checked against public Dark Iron and Blackrock instance pages",
+    urls = {
+        DARK_IRON_GUIDE,
+        "https://www.wowhead.com/item=11370/dark-iron-ore",
+        "https://www.wowhead.com/zone=1584/blackrock-depths",
+        "https://www.wowhead.com/zone=2717/molten-core",
+    },
+    mapID = 36,
+    mapName = "Burning Steppes",
+    location = "Blackrock Depths and Molten Core entrance anchors - no verified in-instance route",
+    routeType = "instance-mining-target",
+    density = "Instance-specific",
+    difficulty = "No trustworthy Retail Routes import exists; dungeon geometry, doors, packs, and resets determine efficiency.",
+    tips = {
+        "Treat Dark Iron as an instance farming material, not an outdoor Routes-addon material.",
+        "Blackrock Depths is the main practical mining environment.",
+        "Mine every Dark Iron Deposit you can access during the dungeon circuit.",
+        "If farming purely for ore, optimize your dungeon path around deposits instead of clearing unnecessary bosses or trash.",
+    },
+    coords = {
+        C(0.210, 0.382, "Blackrock Mountain entrance"),
+        C(0.270, 0.240, "Blackrock instance entrance area"),
+    },
+    confidence = "high",
+    isRoute = false,
+}
+
+ROUTES.elementiumBwl = {
+    source = "Supplied Classic mining notes cross-checked against Wowhead's Elementium Ore and Blackwing Lair pages",
+    urls = {
+        "https://www.wowhead.com/item=18562/elementium-ore",
+        "https://www.wowhead.com/zone=2677/blackwing-lair",
+    },
+    mapID = 36,
+    mapName = "Burning Steppes",
+    location = "Blackwing Lair entrance anchor - no outdoor mining route",
+    routeType = "instance-mining-target",
+    density = "Instance-specific",
+    difficulty = "The original Vanilla material is tied to Blackwing Lair rather than normal outdoor mining.",
+    tips = {
+        "Do not confuse this with Cataclysm Elementium Ore.",
+        "The original Vanilla material is associated with Blackwing Lair rather than normal outdoor mining.",
+        "A Routes-addon line provides little practical value for this material.",
+        "Use an instance-specific farming path rather than a continent mining loop.",
+    },
+    coords = { C(0.210, 0.382, "Blackrock Mountain and Blackwing Lair approach") },
+    confidence = "high",
+    isRoute = false,
+}
+
+ROUTES.obsidianAq = {
+    source = "Supplied Classic mining notes cross-checked against Wowhead's Obsidian Shard and Ahn'Qiraj pages",
+    urls = {
+        "https://www.wowhead.com/zone=3429/ruins-of-ahnqiraj",
+        "https://www.wowhead.com/zone=3428/temple-of-ahnqiraj",
+    },
+    mapID = 81,
+    mapName = "Silithus",
+    location = "Ruins and Temple of Ahn'Qiraj entrance anchor - no verified in-instance route",
+    routeType = "instance-mining-target",
+    density = "Instance-specific",
+    difficulty = "Obsidian chunks are tied to Ahn'Qiraj content and instance mechanics, not predictable outdoor mountain nodes.",
+    coords = { C(0.289, 0.920, "Ahn'Qiraj gate and instance entrances") },
+    confidence = "high",
+    isRoute = false,
+    itemVariants = {
+        [22202] = {
+            urls = {
+                "https://www.wowhead.com/item=22202/small-obsidian-shard",
+                "https://www.wowhead.com/zone=3429/ruins-of-ahnqiraj",
+                "https://www.wowhead.com/zone=3428/temple-of-ahnqiraj",
+            },
+            tips = {
+                "Treat this as an Ahn'Qiraj-specific mining material.",
+                "Do not treat it like Thorium with predictable outdoor mountain-node circuits.",
+                "The relevant Obsidian chunks are tied to Ahn'Qiraj content and instance mechanics.",
+                "Instance routing and reset efficiency matter more than a Routes-addon overlay.",
+            },
+        },
+        [22203] = {
+            urls = {
+                "https://www.wowhead.com/item=22203/large-obsidian-shard",
+                "https://www.wowhead.com/zone=3429/ruins-of-ahnqiraj",
+                "https://www.wowhead.com/zone=3428/temple-of-ahnqiraj",
+            },
+            tips = {
+                "Use the same Ahn'Qiraj farming category as Small Obsidian Shard.",
+                "Prioritize an Ahn'Qiraj instance path rather than trying to construct an outdoor route.",
+                "If farming both shard sizes, treat them as one farming session rather than separate routes.",
+            },
+        },
+    },
+}
+
 local function RegisterMiningItem(itemID, itemName, professions, category, summary, routeKeys)
     local spots = {}
     local sourceUrls = { ItemUrl(itemID), ORE_GUIDE, MINING_GUIDE }
     for _, routeKey in ipairs(routeKeys) do
         local route = ROUTES[routeKey]
-        for _, url in ipairs(route.urls) do
+        local variant = route.itemVariants and route.itemVariants[itemID] or nil
+        local routeUrls = variant and variant.urls or route.urls
+        local function Field(name)
+            if variant and variant[name] ~= nil then
+                return variant[name]
+            end
+            return route[name]
+        end
+
+        for _, url in ipairs(routeUrls) do
             sourceUrls[#sourceUrls + 1] = url
         end
         spots[#spots + 1] = {
             id = "classic-mining-" .. routeKey .. "-" .. tostring(itemID),
-            source = route.source
+            source = Field("source")
                 or "Wowhead retail object pages, Wowhead mining guides, wow-professions route guides, Artisans of Azeroth route pins, and Classic database notes",
-            sourceUrls = route.urls,
-            mapName = route.mapName,
-            location = route.location,
-            routeType = route.routeType,
-            density = route.density,
-            dropDifficulty = route.difficulty,
-            tips = route.tips,
-            coords = route.coords,
-            confidence = route.confidence or "high",
+            sourceUrls = routeUrls,
+            mapID = Field("mapID"),
+            mapName = Field("mapName"),
+            location = Field("location"),
+            routeType = Field("routeType"),
+            density = Field("density"),
+            dropDifficulty = Field("difficulty"),
+            tips = Field("tips"),
+            coords = Field("coords"),
+            confidence = Field("confidence") or "high",
+            isRoute = Field("isRoute") ~= false,
         }
     end
 
@@ -800,18 +1025,21 @@ local function RegisterMiningItem(itemID, itemName, professions, category, summa
     })
 end
 
-RegisterMiningItem(2770, "Copper Ore", { "mining" }, "Ore", "Starter ore from low-level rocky zones. Durotar is a dense coordinate-backed route.", { "copper", "copperDurotarRoutesMain", "copperDurotarWitAlt" })
-RegisterMiningItem(2771, "Tin Ore", { "mining" }, "Ore", "Low-mid ore from 10-30 zones. Hillsbrad and Alterac foothills have practical Tin density and rare Silver replacement chances.", { "tin", "tinHillsbradRoutesMain", "tinAshenvaleWitAlt", "tinNorthernStranglethornAlt" })
-RegisterMiningItem(2772, "Iron Ore", { "mining" }, "Ore", "Mid-level ore from Arathi-style ridge routes with Heavy Stone and gem side value.", { "iron", "ironFeralasRoutesMain", "ironWesternPlaguelandsWitAlt" })
-RegisterMiningItem(2775, "Silver Ore", { "mining" }, "Ore", "Rare Tin-node replacement. Farm Tin routes and treat Silver as premium turnover value.", { "tin", "tinHillsbradRoutesMain", "tinAshenvaleWitAlt", "tinNorthernStranglethornAlt" })
-RegisterMiningItem(2776, "Gold Ore", { "mining" }, "Ore", "Rare Iron-node replacement. Farm Iron routes rather than camping old Gold points.", { "iron", "ironFeralasRoutesMain", "ironWesternPlaguelandsWitAlt" })
-RegisterMiningItem(3858, "Mithril Ore", { "mining" }, "Ore", "High-mid ore from Badlands-style loops, with Truesilver and valuable gems as side value.", { "mithril", "mithrilBurningSteppesCompact", "mithrilBurningSteppesCoverage" })
-RegisterMiningItem(7911, "Truesilver Ore", { "mining" }, "Ore", "Rare Mithril-node replacement. Use compact Mithril loops and maintain node turnover.", { "mithril", "mithrilBurningSteppesCompact", "mithrilBurningSteppesCoverage", "thoriumWinterspringRoutesMain" })
-RegisterMiningItem(10620, "Thorium Ore", { "mining" }, "Ore", "Endgame ore from Small and Rich Thorium nodes. Winterspring has a dense coordinate-backed mountain route.", { "thorium", "thoriumWinterspringRoutesMain", "thoriumSilithusWitAlt", "thoriumWinterspringCoverage" })
-RegisterMiningItem(11370, "Dark Iron Ore", { "mining" }, "Ore", "Specialty Blackrock-area ore. Searing Gorge is the open-world route; BRD/MC are controlled alternatives.", { "darkIron" })
+RegisterMiningItem(2770, "Copper Ore", { "mining" }, "Ore", "Two supplied Durotar routes provide distinct geometry for straightforward Copper farming.", { "copperDurotarRoutesMain", "copperDurotarWitAlt" })
+RegisterMiningItem(2771, "Tin Ore", { "mining" }, "Ore", "Hillsbrad is the main supplied Tin route; Ashenvale and Northern Stranglethorn are alternatives with different competition.", { "tinHillsbradRoutesMain", "tinAshenvaleWitAlt", "tinNorthernStranglethornAlt" })
+RegisterMiningItem(2772, "Iron Ore", { "mining" }, "Ore", "Feralas is the broad main Iron route; Western Plaguelands is the shorter alternative.", { "ironFeralasRoutesMain", "ironWesternPlaguelandsWitAlt" })
+RegisterMiningItem(2775, "Silver Ore", { "mining" }, "Ore", "Farm strong Tin routes and treat Silver as a rarer bonus in the same general node tier.", { "tinHillsbradRoutesMain", "tinAshenvaleWitAlt" })
+RegisterMiningItem(2776, "Gold Ore", { "mining" }, "Ore", "Farm strong Iron and Mithril-tier routes instead of chasing isolated Gold spawn reports.", { "ironFeralasRoutesMain", "ironWesternPlaguelandsWitAlt" })
+RegisterMiningItem(3858, "Mithril Ore", { "mining" }, "Ore", "Burning Steppes has both a compact main route and a denser maximum-coverage alternative.", { "mithrilBurningSteppesCompact", "mithrilBurningSteppesCoverage" })
+RegisterMiningItem(7911, "Truesilver Ore", { "mining" }, "Ore", "Use the compact Burning Steppes Mithril loop first or the Winterspring Thorium loop when Thorium is also valuable.", { "mithrilBurningSteppesCompact", "thoriumWinterspringRoutesMain" })
+RegisterMiningItem(10620, "Thorium Ore", { "mining" }, "Ore", "Winterspring is the main Thorium route, with Silithus and an exhaustive Winterspring sweep as alternatives.", { "thoriumWinterspringRoutesMain", "thoriumSilithusWitAlt", "thoriumWinterspringCoverage" })
+RegisterMiningItem(11370, "Dark Iron Ore", { "mining" }, "Dungeon Ore", "Instance-specific Blackrock mining material with no trustworthy Retail Routes import.", { "darkIronInstances" })
+RegisterMiningItem(18562, "Elementium Ore", { "mining" }, "Raid Ore", "Original Vanilla Blackwing Lair material; it is not the Cataclysm ore and has no outdoor mining route.", { "elementiumBwl" })
+RegisterMiningItem(22202, "Small Obsidian Shard", { "mining" }, "Obsidian Shard", "Ahn'Qiraj-specific mining material without a trustworthy Retail Routes import.", { "obsidianAq" })
+RegisterMiningItem(22203, "Large Obsidian Shard", { "mining" }, "Obsidian Shard", "Ahn'Qiraj-specific mining material best farmed in the same sessions as Small Obsidian Shards.", { "obsidianAq" })
 
-RegisterMiningItem(2835, "Rough Stone", { "mining", "engineering" }, "Stone", "Common side material from Copper nodes; farm dense Copper routes for volume.", { "copper", "copperDurotarRoutesMain", "copperDurotarWitAlt" })
-RegisterMiningItem(2836, "Coarse Stone", { "mining", "engineering" }, "Stone", "Common side material from Tin nodes; Barrens Tin loops are the practical route.", { "tin", "tinHillsbradRoutesMain", "tinAshenvaleWitAlt", "tinNorthernStranglethornAlt" })
-RegisterMiningItem(2838, "Heavy Stone", { "mining", "engineering" }, "Stone", "Side material from Iron nodes; farm Arathi Iron loops.", { "iron", "ironFeralasRoutesMain", "ironWesternPlaguelandsWitAlt" })
-RegisterMiningItem(7912, "Solid Stone", { "mining", "engineering" }, "Stone", "Side material from Mithril nodes; Badlands is a compact route.", { "mithril", "mithrilBurningSteppesCompact", "mithrilBurningSteppesCoverage" })
-RegisterMiningItem(12365, "Dense Stone", { "mining", "engineering" }, "Stone", "Side material from Thorium nodes; Winterspring, Un'Goro, and Silithus are the main families.", { "thorium", "thoriumWinterspringRoutesMain", "thoriumSilithusWitAlt", "thoriumWinterspringCoverage" })
+RegisterMiningItem(2835, "Rough Stone", { "mining", "engineering" }, "Stone", "Common side material from Copper nodes; farm the supplied Durotar Copper routes for volume.", { "copperDurotarRoutesMain", "copperDurotarWitAlt" })
+RegisterMiningItem(2836, "Coarse Stone", { "mining", "engineering" }, "Stone", "Common side material from Tin nodes; use the supplied Tin loops.", { "tinHillsbradRoutesMain", "tinAshenvaleWitAlt", "tinNorthernStranglethornAlt" })
+RegisterMiningItem(2838, "Heavy Stone", { "mining", "engineering" }, "Stone", "Side material from Iron nodes; use the supplied Feralas or Western Plaguelands loops.", { "ironFeralasRoutesMain", "ironWesternPlaguelandsWitAlt" })
+RegisterMiningItem(7912, "Solid Stone", { "mining", "engineering" }, "Stone", "Side material from Mithril nodes; use either supplied Burning Steppes loop.", { "mithrilBurningSteppesCompact", "mithrilBurningSteppesCoverage" })
+RegisterMiningItem(12365, "Dense Stone", { "mining", "engineering" }, "Stone", "Side material from Thorium nodes; Winterspring and Silithus have supplied route options.", { "thoriumWinterspringRoutesMain", "thoriumSilithusWitAlt", "thoriumWinterspringCoverage" })

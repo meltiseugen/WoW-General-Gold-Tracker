@@ -10,6 +10,7 @@ local WINDOW_MAX_WIDTH = 1480
 local WINDOW_MAX_HEIGHT = 900
 local ROW_HEIGHT = 24
 local ROW_SPACING = 2
+local ROWS_PER_PAGE = 30
 local ICON_SIZE = 18
 local COLUMN_GAP = 10
 local ROW_RIGHT_PADDING = 6
@@ -26,7 +27,7 @@ local ITEM_MIN_WIDTH = 150
 local SORT_ICON_SIZE = 10
 local HORIZONTAL_SCROLL_HEIGHT = 14
 local DEFAULT_SORT_KEY = "value"
-local OBSERVED_DROPS_BACKGROUND_SCAN_ITEMS_PER_TICK = 150
+local OBSERVED_DROPS_BACKGROUND_SCAN_ITEMS_PER_TICK = 30
 local OBSERVED_DROPS_SCAN_REFRESH_INTERVAL = 0.20
 local OBSERVED_DROPS_SCAN_CACHE_VERSION = 2
 local OBSERVED_DROPS_SCAN_CACHE_MAX_ENTRIES = 30
@@ -242,6 +243,7 @@ local function CreateObservedHeaderButton(parent, label, width, justifyH)
     text:SetWordWrap(false)
     text:SetText(label)
     button.text = text
+    button.sortLabel = label
 
     local sortIcon = button:CreateTexture(nil, "ARTWORK")
     sortIcon:SetSize(SORT_ICON_SIZE, SORT_ICON_SIZE)
@@ -814,19 +816,23 @@ local function GetSortValue(row, sortKey)
     return tonumber(row.value) or 0
 end
 
-local function SortRows(rows, sortKey, sortAscending)
-    local normalizedSortKey = NormalizeSortKey(sortKey)
-    local ascending = sortAscending == true
+local function SortRows(rows, sortKey, sortAscending, sortCriteria)
+    local criteria = type(sortCriteria) == "table" and sortCriteria or {
+        { key = NormalizeSortKey(sortKey), ascending = sortAscending == true },
+    }
     table.sort(rows, function(left, right)
-        local leftValue = GetSortValue(left, normalizedSortKey)
-        local rightValue = GetSortValue(right, normalizedSortKey)
-        if leftValue == rightValue then
-            return string.lower(tostring(left.itemName or "")) < string.lower(tostring(right.itemName or ""))
+        for _, criterion in ipairs(criteria) do
+            local normalizedSortKey = NormalizeSortKey(criterion.key)
+            local leftValue = GetSortValue(left, normalizedSortKey)
+            local rightValue = GetSortValue(right, normalizedSortKey)
+            if leftValue ~= rightValue then
+                if criterion.ascending == true then
+                    return leftValue < rightValue
+                end
+                return leftValue > rightValue
+            end
         end
-        if ascending then
-            return leftValue < rightValue
-        end
-        return leftValue > rightValue
+        return string.lower(tostring(left.itemName or "")) < string.lower(tostring(right.itemName or ""))
     end)
 end
 
@@ -1229,7 +1235,12 @@ function GoldTracker:BuildObservedDropsRows()
     for _, row in ipairs(rows) do
         row.tracked = type(self.IsFarmingItemFavorite) == "function" and self:IsFarmingItemFavorite(row)
     end
-    SortRows(rows, frame and frame.sortKey, frame and frame.sortAscending)
+    SortRows(
+        rows,
+        frame and frame.sortKey,
+        frame and frame.sortAscending,
+        frame and self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS) or nil
+    )
     return rows
 end
 
@@ -1516,6 +1527,7 @@ function GoldTracker:ClearObservedDropsScanResults()
     frame.loadedObservedDropsScanCache = nil
     frame.loadedObservedDropsScanCacheKey = nil
     frame.editingObservedDropsScanCacheKey = nil
+    frame.currentPage = 1
     frame.itemCache = {}
     frame.priceCache = {}
     if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
@@ -1972,6 +1984,7 @@ function GoldTracker:OpenObservedDropsSavedScan(cacheKey)
     frame.loadedObservedDropsScanCacheKey = cacheKey
     frame.editingObservedDropsScanCacheKey = cacheKey
     frame.hasObservedDropsScanRun = true
+    frame.currentPage = 1
     frame.valueSourceID = entry.valueSourceID or frame.valueSourceID
     frame.minimumValueCopper = tonumber(entry.minimumValueCopper) or frame.minimumValueCopper or 0
     frame.expansionFilterID = NormalizeExpansionFilter(self, entry.expansionFilterID)
@@ -2041,6 +2054,7 @@ function GoldTracker:OpenObservedDropsNewScan()
     frame.loadedObservedDropsScanCacheKey = nil
     frame.editingObservedDropsScanCacheKey = nil
     frame.observedDropsNavigationTab = "new"
+    frame.currentPage = 1
     if frame.progressBar then
         frame.progressBar:SetMinMaxValues(0, 1)
         frame.progressBar:SetValue(0)
@@ -2145,6 +2159,11 @@ function GoldTracker:SetObservedDropsWindowView(viewID)
     end
     if frame.metaText then
         frame.metaText:SetShown(showScan)
+    end
+    if not showScan then
+        SetObservedControlShown(frame.prevPageButton, false)
+        SetObservedControlShown(frame.nextPageButton, false)
+        SetObservedControlShown(frame.pageText, false)
     end
     self:RefreshObservedDropsNavigationTabs()
 
@@ -2441,11 +2460,18 @@ function GoldTracker:UpdateObservedDropsSortHeaderState()
         averageValue = frame.averageHeaderButton,
     }
 
+    local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS)
+    local showPriority = #criteria > 1
     for sortKey, button in pairs(headerBySortKey) do
+        self:AttachTableSortHeaderTooltip(button, button and button.sortLabel)
+        local criterion, priority = self:GetTableSortCriterion(criteria, sortKey)
+        if button and button.text and button.sortLabel then
+            button.text:SetText(showPriority and criterion and (button.sortLabel .. " " .. priority) or button.sortLabel)
+        end
         if button and button.sortIcon then
-            if sortKey == frame.sortKey then
-                button.sortIcon:SetTexture(frame.sortAscending and "Interface\\Buttons\\UI-SortArrow" or "Interface\\Buttons\\UI-SortArrow")
-                button.sortIcon:SetTexCoord(0, 1, frame.sortAscending and 0 or 1, frame.sortAscending and 1 or 0)
+            if criterion then
+                button.sortIcon:SetTexture("Interface\\Buttons\\UI-SortArrow")
+                button.sortIcon:SetTexCoord(0, 1, criterion.ascending and 0 or 1, criterion.ascending and 1 or 0)
                 button.sortIcon:Show()
             else
                 button.sortIcon:Hide()
@@ -2461,14 +2487,37 @@ function GoldTracker:ToggleObservedDropsSort(sortKey)
     end
 
     local normalizedSortKey = NormalizeSortKey(sortKey)
-    if frame.sortKey == normalizedSortKey then
-        frame.sortAscending = not frame.sortAscending
-    else
-        frame.sortKey = normalizedSortKey
-        frame.sortAscending = normalizedSortKey == "itemName" or normalizedSortKey == "expansion"
+    self:ToggleTableSortCriterion(
+        frame,
+        normalizedSortKey,
+        normalizedSortKey == "itemName" or normalizedSortKey == "expansion",
+        { validKeys = SORT_KEYS }
+    )
+
+    frame.currentPage = 1
+    self:RefreshObservedDropsWindow(false)
+end
+
+function GoldTracker:GetObservedDropsPageCount(rowCount)
+    local totalRows = math.max(0, math.floor(tonumber(rowCount) or 0))
+    return math.max(1, math.ceil(totalRows / ROWS_PER_PAGE))
+end
+
+function GoldTracker:SetObservedDropsPage(page)
+    local frame = self.observedDropsFrame
+    if not frame then
+        return
     end
 
-    self:RefreshObservedDropsWindow(false)
+    local rows = frame.hasObservedDropsScanRun and (frame.scannedObservedDropsRows or {}) or {}
+    local totalPages = self:GetObservedDropsPageCount(#rows)
+    local clampedPage = math.max(1, math.min(totalPages, math.floor(tonumber(page) or 1)))
+    if frame.currentPage == clampedPage then
+        return
+    end
+
+    frame.currentPage = clampedPage
+    self:RefreshObservedDropsWindow(true)
 end
 
 function GoldTracker:GetObservedDropsWindowRow(index)
@@ -2608,17 +2657,22 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
     for _, row in ipairs(rows) do
         row.tracked = type(self.IsFarmingItemFavorite) == "function" and self:IsFarmingItemFavorite(row)
     end
-    SortRows(rows, frame.sortKey, frame.sortAscending)
-    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
-        self:RecordDiscoveredItemMarketSnapshots(rows)
-    elseif type(self.RecordInventoryMarketSnapshots) == "function" then
-        self:RecordInventoryMarketSnapshots(rows)
-    end
+    SortRows(rows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
 
+    local totalPages = self:GetObservedDropsPageCount(#rows)
+    frame.currentPage = math.max(1, math.min(frame.currentPage or 1, totalPages))
+    local startIndex = ((frame.currentPage - 1) * ROWS_PER_PAGE) + 1
+    local endIndex = math.min(#rows, startIndex + ROWS_PER_PAGE - 1)
+    local visibleRowCount = math.max(0, endIndex - startIndex + 1)
     local yOffset = 0
     local totalValue = 0
-    for index, result in ipairs(rows) do
-        local row = self:GetObservedDropsWindowRow(index)
+    for _, result in ipairs(rows) do
+        totalValue = totalValue + math.max(0, tonumber(result.value) or 0)
+    end
+    for resultIndex = startIndex, endIndex do
+        local result = rows[resultIndex]
+        local visibleIndex = resultIndex - startIndex + 1
+        local row = self:GetObservedDropsWindowRow(visibleIndex)
         if row then
             row.observedDropKey = result.observedDropKey
             row.itemID = result.itemID
@@ -2667,10 +2721,10 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
                 row.icon:Hide()
             end
             if row.background then
-                row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.022)
+                row.background:SetColorTexture(1, 1, 1, resultIndex % 2 == 0 and 0.045 or 0.022)
             end
             if row.divider then
-                row.divider:SetShown(index < #rows)
+                row.divider:SetShown(visibleIndex < visibleRowCount)
             end
 
             row:ClearAllPoints()
@@ -2680,14 +2734,13 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             row:Show()
 
             yOffset = yOffset + ROW_HEIGHT
-            if index < #rows then
+            if visibleIndex < visibleRowCount then
                 yOffset = yOffset + ROW_SPACING
             end
-            totalValue = totalValue + math.max(0, tonumber(result.value) or 0)
         end
     end
 
-    for index = (#rows + 1), #(frame.rows or {}) do
+    for index = (visibleRowCount + 1), #(frame.rows or {}) do
         if frame.rows[index] then
             frame.rows[index]:Hide()
         end
@@ -2711,13 +2764,32 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             storedCount = storedCount + 1
         end
         local source = GetObservedValueSource(self)
+        local shownFrom = #rows == 0 and 0 or startIndex
+        local shownTo = #rows == 0 and 0 or endIndex
         frame.metaText:SetText(string.format(
-            "%d shown | %d captured | %s | Total selected value %s",
+            "Showing %d-%d of %d | %d captured | %s | Total selected value %s",
+            shownFrom,
+            shownTo,
             #rows,
             storedCount,
             source and source.label or "Unknown source",
             self:FormatMoney(totalValue)
         ))
+    end
+    local showPagination = frame.observedDropsViewID == "scan" and #rows > ROWS_PER_PAGE
+    if frame.prevPageButton then
+        frame.prevPageButton:SetShown(showPagination)
+        frame.prevPageButton:SetEnabled(frame.currentPage > 1)
+        frame.prevPageButton:SetAlpha(frame.currentPage > 1 and 1 or 0.45)
+    end
+    if frame.nextPageButton then
+        frame.nextPageButton:SetShown(showPagination)
+        frame.nextPageButton:SetEnabled(frame.currentPage < totalPages)
+        frame.nextPageButton:SetAlpha(frame.currentPage < totalPages and 1 or 0.45)
+    end
+    if frame.pageText then
+        frame.pageText:SetShown(showPagination)
+        frame.pageText:SetText(string.format("Page %d / %d", frame.currentPage, totalPages))
     end
 
     self:RefreshObservedDropsWindowLayout()
@@ -2779,6 +2851,10 @@ function GoldTracker:CreateObservedDropsWindow()
     frame.observedDropsNavigationTab = "saved"
     frame.sortKey = DEFAULT_SORT_KEY
     frame.sortAscending = false
+    frame.sortCriteria = {
+        { key = DEFAULT_SORT_KEY, ascending = false },
+    }
+    frame.currentPage = 1
 
     local chrome = Theme:ApplyWindowChrome(frame, "Observed BoE Drops")
     Theme:RegisterSpecialFrame("GoldTrackerObservedDropsFrame")
@@ -3158,11 +3234,34 @@ function GoldTracker:CreateObservedDropsWindow()
 
     local metaText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     metaText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 16, 14)
-    metaText:SetPoint("RIGHT", frame, "RIGHT", -40, 14)
+    metaText:SetPoint("RIGHT", frame, "RIGHT", -260, 14)
     metaText:SetJustifyH("LEFT")
     metaText:SetTextColor(0.72, 0.76, 0.84)
     metaText:SetText("")
     frame.metaText = metaText
+
+    local nextPageButton = CreateObservedButton(frame, 34, 20, ">", "neutral")
+    nextPageButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -22, 9)
+    nextPageButton:SetScript("OnClick", function()
+        addon:SetObservedDropsPage((frame.currentPage or 1) + 1)
+    end)
+    nextPageButton:Hide()
+    frame.nextPageButton = nextPageButton
+
+    local prevPageButton = CreateObservedButton(frame, 34, 20, "<", "neutral")
+    prevPageButton:SetPoint("RIGHT", nextPageButton, "LEFT", -6, 0)
+    prevPageButton:SetScript("OnClick", function()
+        addon:SetObservedDropsPage((frame.currentPage or 1) - 1)
+    end)
+    prevPageButton:Hide()
+    frame.prevPageButton = prevPageButton
+
+    local pageText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    pageText:SetPoint("RIGHT", prevPageButton, "LEFT", -10, 0)
+    pageText:SetJustifyH("RIGHT")
+    pageText:SetText("Page 1 / 1")
+    pageText:Hide()
+    frame.pageText = pageText
 
     Theme:CreateResizeButton(frame, {
         minWidth = WINDOW_MIN_WIDTH,

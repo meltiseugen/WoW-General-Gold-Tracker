@@ -29,6 +29,7 @@ local item_names = {
     [3005] = "Composed Bar",
     [3009] = "Session Meat",
     [3010] = "Nested Alloy",
+    [3011] = "Lazy Ore",
 }
 
 local item_values = {
@@ -39,6 +40,7 @@ local item_values = {
     [3005] = 10000,
     [3009] = 2500,
     [3010] = 20000,
+    [3011] = 4000,
 }
 
 local market_data = {
@@ -238,6 +240,53 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals(2, #rows)
         assert.equals(3004, rows[1].itemID)
         assert.equals(3001, rows[2].itemID)
+    end)
+
+    it("filters materials by a case-insensitive item name search", function()
+        local addon = load_window(build_addon({
+            expansionID = "all",
+            professionID = "all",
+            searchText = "  OLD o  ",
+        }))
+
+        local rows = project_rows(addon:BuildCraftingFarmingRows())
+
+        assert.equals(1, #rows)
+        assert.equals(3001, rows[1].itemID)
+        assert.equals("Old Ore", rows[1].itemName)
+    end)
+
+    it("treats search punctuation as literal text", function()
+        local addon = load_window(build_addon({
+            searchText = "%",
+        }))
+
+        assert.same({}, addon:BuildCraftingFarmingRows())
+    end)
+
+    it("separates raid and dungeon mining materials from gathered ore", function()
+        local data = copy_farming_data({
+            {
+                itemID = 3011,
+                expansion = "classic",
+                professions = { "mining" },
+                tag = "Dungeon Ore",
+                acquisitionType = "instance",
+            },
+        })
+        local addon = load_window(build_addon({
+            expansionID = "classic",
+            professionID = "mining",
+        }), data)
+
+        local rows = addon:BuildCraftingFarmingRows()
+
+        assert.equals(3004, rows[1].itemID)
+        assert.equals(3001, rows[2].itemID)
+        assert.equals("divider", rows[3].rowType)
+        assert.equals("Raid and dungeon mining materials", rows[3].label)
+        assert.equals(3011, rows[4].itemID)
+        assert.equals("instance", rows[4].acquisitionType)
     end)
 
     it("adds sortable regional demand, sell rate, and market trend data", function()
@@ -443,6 +492,61 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals(3003, rows[6].itemID)
         assert.equals(2, rows[6].componentQuantity)
         assert.equals(200, rows[6].componentCost)
+    end)
+
+    it("defers composed component pricing until the recipe is expanded", function()
+        local data = copy_farming_data({
+            {
+                itemID = 3005,
+                expansion = "classic",
+                professions = { "mining" },
+                tag = "Bar",
+                components = {
+                    { itemID = 3011, quantity = 2 },
+                },
+            },
+        })
+        local addon = build_addon({
+            expansionID = "classic",
+            professionID = "mining",
+        })
+        addon.craftingFarmingFrame.itemCache["3011|TSM_DBMARKET"] = nil
+        local componentValueLookups = 0
+        addon.GetTSMItemValueForItemID = function(_, _, itemID)
+            if itemID == 3011 then
+                componentValueLookups = componentValueLookups + 1
+            end
+            return item_values[itemID] or 0
+        end
+        addon = load_window(addon, data)
+
+        local collapsedRows = addon:BuildCraftingFarmingRows()
+        local collapsedComposed
+        for _, row in ipairs(collapsedRows) do
+            if row.itemID == 3005 then
+                collapsedComposed = row
+                break
+            end
+        end
+
+        assert.is_table(collapsedComposed)
+        assert.is_false(collapsedComposed.componentsLoaded)
+        assert.is_nil(collapsedComposed.componentCost)
+        assert.equals(0, componentValueLookups)
+
+        addon.craftingFarmingFrame.expandedComposedMaterials = { [3005] = true }
+        local expandedRows = addon:BuildCraftingFarmingRows()
+        local expandedComposed
+        for _, row in ipairs(expandedRows) do
+            if row.itemID == 3005 and row.rowType ~= "component" then
+                expandedComposed = row
+                break
+            end
+        end
+
+        assert.is_true(expandedComposed.componentsLoaded)
+        assert.equals(8000, expandedComposed.componentCost)
+        assert.equals(1, componentValueLookups)
     end)
 
     it("expands composed components recursively to their base recipe inputs", function()
@@ -677,6 +781,9 @@ describe("UI/CraftingFarmingWindow rows", function()
                             id = "nagrand-main",
                             mapName = "Nagrand",
                             location = "Twilight Ridge",
+                            targetName = "Twilight Serpent",
+                            targetType = "kill",
+                            farmAction = "Kill: Twilight Serpent and loot Old Ore.",
                             density = "High",
                             dropDifficulty = "Easy loop",
                             tips = { "Stay on the ridge." },
@@ -685,8 +792,6 @@ describe("UI/CraftingFarmingWindow rows", function()
                                     x = 0.10,
                                     y = 0.20,
                                     label = "West ridge",
-                                    targetName = "Twilight Serpent",
-                                    targetType = "kill",
                                 },
                                 { x = 14, y = 24, label = "Central ridge" },
                             },
@@ -695,6 +800,7 @@ describe("UI/CraftingFarmingWindow rows", function()
                             id = "nagrand-alt",
                             mapName = "Nagrand",
                             location = "Warmaul Hill",
+                            isRoute = true,
                             coords = {
                                 { x = 0.30, y = 0.40, label = "Hill camp" },
                             },
@@ -734,6 +840,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("Twilight Ridge", options[1].pins[1].spotLocation)
         assert.equals("Twilight Serpent", options[1].pins[1].targetName)
         assert.equals("kill", options[1].pins[1].targetType)
+        assert.equals("Kill: Twilight Serpent and loot Old Ore.", options[1].pins[1].farmAction)
         assert.equals("static", options[1].sourceType)
         assert.equals("Addon seed data", options[1].pins[1].sourceLabel)
         assert.is_false(options[1].pins[1].isRoute)
@@ -741,6 +848,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("Nagrand: Warmaul Hill", options[2].label)
         assert.equals(107, options[2].mapID)
         assert.equals(1, #options[2].pins)
+        assert.is_true(options[2].pins[1].isRoute)
         assert.equals("nagrand-alt", options[2].pins[1].routeID)
         assert.equals("Shadowmoon Valley: Coilskar Cistern", options[3].label)
         assert.equals(104, options[3].mapID)

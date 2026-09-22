@@ -14,7 +14,7 @@ local RARE_FARMING_ROW_STRIDE = RARE_FARMING_ROW_HEIGHT + RARE_FARMING_ROW_SPACI
 local RARE_FARMING_ICON_SIZE = 18
 local RARE_FARMING_COLUMN_GAP = 12
 local RARE_FARMING_FAVORITE_WIDTH = 58
-local RARE_FARMING_LOCATION_WIDTH = 150
+local RARE_FARMING_LOCATION_WIDTH = 190
 local RARE_FARMING_RARE_WIDTH = 150
 local RARE_FARMING_VALUE_WIDTH = 96
 local RARE_FARMING_ITEM_MIN_WIDTH = 150
@@ -34,7 +34,7 @@ local RARE_FARMING_SCAN_REFRESH_INTERVAL = 0.35
 local RARE_FARMING_ITEM_REFRESH_DELAY = 0.5
 local RARE_FARMING_SCAN_CACHE_VERSION = 2
 local RARE_FARMING_SCAN_CACHE_MAX_ENTRIES = 30
-local RARE_FARMING_SORT_KEY_DEFAULT = "value"
+local RARE_FARMING_SORT_KEY_DEFAULT = "location"
 local RARE_FARMING_EXPANSION_CURRENT_ID = "current"
 local RARE_FARMING_EXPANSION_ALL_ID = "all"
 local RARE_FARMING_CURRENT_EXPANSION_ID = 16
@@ -114,6 +114,7 @@ local function CreateRareFarmingHeaderButton(parent, label, width, justifyH)
     text:SetWordWrap(false)
     text:SetText(label)
     button.text = text
+    button.sortLabel = label
 
     local sortIcon = button:CreateTexture(nil, "ARTWORK")
     sortIcon:SetSize(RARE_FARMING_SORT_ICON_SIZE, RARE_FARMING_SORT_ICON_SIZE)
@@ -277,6 +278,9 @@ local function GetRareFarmingFavoriteKey(rowOrNpcID, itemID)
     return "item:" .. tostring(math.floor(normalizedItemID + 0.5))
 end
 
+local AddRareFarmingLocationTooltipLines
+local GetRareFarmingLocationCount
+
 local function SetRareFarmingItemTooltip(row)
     local itemLink = type(row.itemLink) == "string" and row.itemLink ~= "" and row.itemLink or nil
     local itemID = tonumber(row.itemID)
@@ -301,7 +305,20 @@ local function SetRareFarmingItemTooltip(row)
     end
     GameTooltip:AddLine(" ")
     GameTooltip:AddDoubleLine("Rare", row.rareName or tostring(row.npcID), 0.72, 0.86, 1.0, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Location", row.locationLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+    local locationCount = GetRareFarmingLocationCount and GetRareFarmingLocationCount(row) or 0
+    GameTooltip:AddDoubleLine(
+        "Spawn locations",
+        locationCount > 0 and tostring(locationCount) or "Unknown",
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    if AddRareFarmingLocationTooltipLines then
+        AddRareFarmingLocationTooltipLines(row)
+    end
     local sourceLabel = row.valueSourceLabel or row.valueSourceID or "Unknown"
     if row.valueSourceWasFallback then
         sourceLabel = sourceLabel .. " (fallback)"
@@ -335,6 +352,9 @@ local function FormatRareFarmingCoord(value)
     end
     if normalizedValue > 0 and normalizedValue <= 1 then
         return string.format("%.1f", normalizedValue * 100)
+    end
+    if normalizedValue >= 0 and normalizedValue <= 100 then
+        return string.format("%.1f", normalizedValue)
     end
     return string.format("%.1f", normalizedValue / 100)
 end
@@ -452,42 +472,56 @@ local function BuildRareFarmingLocationLabel(locations)
 
     local labels = {}
     local seen = {}
+    local previousMapName
     for _, location in ipairs(locations) do
         local mapName = GetRareFarmingMapName(location and location.mapID)
-        if mapName and not seen[mapName] then
+        local locationKey = table.concat({
+            tostring(location and location.mapID or ""),
+            tostring(location and location.x or ""),
+            tostring(location and location.y or ""),
+        }, ":")
+        if mapName and not seen[locationKey] then
             local label = mapName
             local x = FormatRareFarmingCoord(location.x)
             local y = FormatRareFarmingCoord(location.y)
             if x and y then
-                label = string.format("%s %s,%s", mapName, x, y)
+                label = previousMapName == mapName
+                    and string.format("%s,%s", x, y)
+                    or string.format("%s %s,%s", mapName, x, y)
             end
             labels[#labels + 1] = label
-            seen[mapName] = true
+            seen[locationKey] = true
+            previousMapName = mapName
         end
     end
 
     if #labels == 0 then
         return "Unknown"
     end
-    if #labels == 1 then
-        return labels[1]
-    end
-    return string.format("%s +%d", labels[1], #labels - 1)
+    return table.concat(labels, " / ")
 end
 
 local function CloneRareFarmingLocations(locations)
     local cloned = {}
+    local seen = {}
     if type(locations) ~= "table" then
         return cloned
     end
 
     for _, location in ipairs(locations) do
         if type(location) == "table" then
-            cloned[#cloned + 1] = {
-                mapID = tonumber(location.mapID),
-                x = tonumber(location.x),
-                y = tonumber(location.y),
-            }
+            local mapID = tonumber(location.mapID)
+            local x = tonumber(location.x)
+            local y = tonumber(location.y)
+            local locationKey = table.concat({ tostring(mapID or ""), tostring(x or ""), tostring(y or "") }, ":")
+            if not seen[locationKey] then
+                cloned[#cloned + 1] = {
+                    mapID = mapID,
+                    x = x,
+                    y = y,
+                }
+                seen[locationKey] = true
+            end
         end
     end
     return cloned
@@ -518,15 +552,64 @@ local function GetRareFarmingSourceKey(source)
     if type(source) ~= "table" then
         return nil
     end
-    local firstLocation = type(source.locations) == "table" and source.locations[1] or nil
-    return table.concat({
+    local keyParts = {
         tostring(source.npcID or ""),
         tostring(source.rareName or ""),
-        tostring(firstLocation and firstLocation.mapID or ""),
-        tostring(firstLocation and firstLocation.x or ""),
-        tostring(firstLocation and firstLocation.y or ""),
         tostring(source.locationLabel or ""),
-    }, "|")
+    }
+    for _, location in ipairs(source.locations or {}) do
+        keyParts[#keyParts + 1] = table.concat({
+            tostring(location and location.mapID or ""),
+            tostring(location and location.x or ""),
+            tostring(location and location.y or ""),
+        }, ":")
+    end
+    return table.concat(keyParts, "|")
+end
+
+local function BuildRareFarmingCombinedLocations(sources)
+    local combined = {}
+    local seen = {}
+    for _, source in ipairs(sources or {}) do
+        for _, location in ipairs(source.locations or {}) do
+            local mapID = tonumber(location and location.mapID)
+            local x = tonumber(location and location.x)
+            local y = tonumber(location and location.y)
+            local locationKey = table.concat({ tostring(mapID or ""), tostring(x or ""), tostring(y or "") }, ":")
+            if mapID and not seen[locationKey] then
+                combined[#combined + 1] = { mapID = mapID, x = x, y = y }
+                seen[locationKey] = true
+            end
+        end
+    end
+    table.sort(combined, function(left, right)
+        local leftName = string.lower(tostring(GetRareFarmingMapName(left.mapID) or left.mapID or ""))
+        local rightName = string.lower(tostring(GetRareFarmingMapName(right.mapID) or right.mapID or ""))
+        if leftName ~= rightName then
+            return leftName < rightName
+        end
+        if left.mapID ~= right.mapID then
+            return (left.mapID or 0) < (right.mapID or 0)
+        end
+        if left.x ~= right.x then
+            return (left.x or 0) < (right.x or 0)
+        end
+        return (left.y or 0) < (right.y or 0)
+    end)
+    return combined
+end
+
+local function BuildRareFarmingCombinedLocationFallback(sources)
+    local labels = {}
+    local seen = {}
+    for _, candidate in ipairs(sources or {}) do
+        local label = type(candidate.locationLabel) == "string" and candidate.locationLabel or nil
+        if label and label ~= "" and not seen[label] then
+            labels[#labels + 1] = label
+            seen[label] = true
+        end
+    end
+    return #labels > 0 and table.concat(labels, " / ") or "Unknown"
 end
 
 local function AddRareFarmingSourceToRow(row, source)
@@ -554,16 +637,62 @@ local function AddRareFarmingSourceToRow(row, source)
     if sourceCount == 1 then
         row.npcID = source.npcID
         row.rareName = source.rareName
-        row.locationLabel = source.locationLabel
-        row.locations = source.locations
     else
         row.npcID = nil
         row.rareName = string.format("%d rares", sourceCount)
-        row.locationLabel = string.format("%d locations", sourceCount)
-        row.locations = nil
     end
+    row.locations = BuildRareFarmingCombinedLocations(row.rareSources)
+    row.locationLabel = #row.locations > 0
+        and BuildRareFarmingLocationLabel(row.locations)
+        or BuildRareFarmingCombinedLocationFallback(row.rareSources)
     row.rareSourceCount = sourceCount
     return true
+end
+
+GetRareFarmingLocationCount = function(row)
+    if type(row) ~= "table" then
+        return 0
+    end
+    return #BuildRareFarmingCombinedLocations(
+        type(row.rareSources) == "table" and #row.rareSources > 0
+            and row.rareSources
+            or { { locations = row.locations } }
+    )
+end
+
+AddRareFarmingLocationTooltipLines = function(row)
+    if type(row) ~= "table" then
+        return
+    end
+
+    local sources = type(row.rareSources) == "table" and row.rareSources or nil
+    if not sources or #sources == 0 then
+        sources = { {
+            rareName = row.rareName,
+            locationLabel = row.locationLabel,
+            locations = row.locations,
+        } }
+    end
+
+    local showSourceNames = #sources > 1
+    for _, source in ipairs(sources) do
+        if showSourceNames then
+            GameTooltip:AddLine(source.rareName or "Unknown rare", 0.92, 0.95, 1.0)
+        end
+        local locations = source.locations or {}
+        if #locations > 0 then
+            for _, location in ipairs(locations) do
+                GameTooltip:AddLine(
+                    (showSourceNames and "  " or "") .. BuildRareFarmingLocationLabel({ location }),
+                    0.72,
+                    0.76,
+                    0.84
+                )
+            end
+        elseif source.locationLabel then
+            GameTooltip:AddLine((showSourceNames and "  " or "") .. source.locationLabel, 0.72, 0.76, 0.84)
+        end
+    end
 end
 
 local function GetRareFarmingResultItemKey(rowOrItemID)
@@ -1050,12 +1179,40 @@ local function NormalizeRareFarmingSortKey(sortKey)
     return RARE_FARMING_SORT_KEY_DEFAULT
 end
 
+local function GetRareFarmingLocationGroupLabel(row)
+    local labels = {}
+    local seen = {}
+    local sources = type(row and row.rareSources) == "table" and row.rareSources or nil
+    local locations = sources and BuildRareFarmingCombinedLocations(sources) or (row and row.locations)
+
+    for _, location in ipairs(locations or {}) do
+        local mapName = GetRareFarmingMapName(location and location.mapID)
+        local normalizedName = NormalizeRareFarmingMapName(mapName)
+        if normalizedName and not seen[normalizedName] then
+            labels[#labels + 1] = mapName
+            seen[normalizedName] = true
+        end
+    end
+    table.sort(labels, function(left, right)
+        return string.lower(left) < string.lower(right)
+    end)
+    if #labels > 0 then
+        return labels[1]
+    end
+
+    local locationLabel = tostring(row and row.locationLabel or "")
+    local parsedLabel = locationLabel:match("^%s*(.-)%s+[%d%.]+%s*,%s*[%d%.]+")
+    return parsedLabel and parsedLabel ~= "" and parsedLabel or "Unknown location"
+end
+
 local function GetRareFarmingSortValue(row, sortKey)
     if sortKey == "favorite" then
         return row and row.favorite and 1 or 0
     end
     if sortKey == "location" then
-        return string.lower(tostring(row and row.locationLabel or ""))
+        return string.lower(GetRareFarmingLocationGroupLabel(row))
+            .. "\0"
+            .. string.lower(tostring(row and row.locationLabel or ""))
     end
     if sortKey == "rareName" then
         return string.lower(tostring(row and row.rareName or ""))
@@ -1085,21 +1242,27 @@ local function CompareRareFarmingRowsByItem(left, right)
     return (tonumber(left and left.itemID) or 0) < (tonumber(right and right.itemID) or 0)
 end
 
-local function SortRareFarmingRows(rows, sortKey, sortAscending)
-    local normalizedSortKey = NormalizeRareFarmingSortKey(sortKey)
-    local ascending = sortAscending == true
+local function SortRareFarmingRows(rows, sortKey, sortAscending, sortCriteria)
+    local criteria = type(sortCriteria) == "table" and sortCriteria or {
+        { key = NormalizeRareFarmingSortKey(sortKey), ascending = sortAscending == true },
+    }
+    local primarySortKey = criteria[1] and NormalizeRareFarmingSortKey(criteria[1].key)
+        or NormalizeRareFarmingSortKey(sortKey)
 
     table.sort(rows, function(left, right)
-        local leftValue = GetRareFarmingSortValue(left, normalizedSortKey)
-        local rightValue = GetRareFarmingSortValue(right, normalizedSortKey)
-        if leftValue ~= rightValue then
-            if ascending then
-                return leftValue < rightValue
+        for _, criterion in ipairs(criteria) do
+            local normalizedSortKey = NormalizeRareFarmingSortKey(criterion.key)
+            local leftValue = GetRareFarmingSortValue(left, normalizedSortKey)
+            local rightValue = GetRareFarmingSortValue(right, normalizedSortKey)
+            if leftValue ~= rightValue then
+                if criterion.ascending == true then
+                    return leftValue < rightValue
+                end
+                return leftValue > rightValue
             end
-            return leftValue > rightValue
         end
 
-        if normalizedSortKey ~= "value" then
+        if primarySortKey ~= "value" then
             local leftGold = tonumber(left and left.value) or 0
             local rightGold = tonumber(right and right.value) or 0
             if leftGold ~= rightGold then
@@ -1109,6 +1272,14 @@ local function SortRareFarmingRows(rows, sortKey, sortAscending)
 
         return CompareRareFarmingRowsByItem(left, right)
     end)
+end
+
+function GoldTracker:SortRareFarmingRows(rows, sortKey, sortAscending, sortCriteria)
+    SortRareFarmingRows(rows or {}, sortKey, sortAscending, sortCriteria)
+end
+
+function GoldTracker:GetRareFarmingLocationGroupLabel(row)
+    return GetRareFarmingLocationGroupLabel(row)
 end
 
 local function AddUniqueLoot(loot, seen, itemID)
@@ -1283,7 +1454,10 @@ local function BuildRareFarmingRareList(expansionFilterID)
                 and #rareData.loot > 0 then
                 local rare = EnsureRareFarmingRare(rares, normalizedNpcID)
                 rare.name = rareData.name or rare.name
-                rare.locations = rareData.locations or rare.locations or {}
+                rare.locations = BuildRareFarmingCombinedLocations({
+                    { locations = rareData.locations },
+                    { locations = rare.locations },
+                })
                 AddRareFarmingLootList(rare, rareData.loot)
             end
         end
@@ -2955,27 +3129,30 @@ function GoldTracker:RefreshRareFarmingWindowControls()
     end
 
     local isScanning = IsRareFarmingScanStateActive(frame.scanState)
+    local hasLoadedSavedScan = type(frame.loadedRareFarmingCache) == "table"
     if frame.scanButton then
+        frame.scanButton:SetShown(not hasLoadedSavedScan and not isScanning)
         frame.scanButton:SetEnabled(not isScanning)
         frame.scanButton:SetText(isScanning and "Scanning" or "Scan")
     end
     if frame.stopScanButton then
+        frame.stopScanButton:SetShown(isScanning)
         frame.stopScanButton:SetEnabled(isScanning)
         frame.stopScanButton:SetAlpha(isScanning and 1 or 0.45)
     end
     local hasRows = type(frame.lastResults) == "table" and #frame.lastResults > 0
-    local hasLoadedSavedScan = type(frame.loadedRareFarmingCache) == "table"
     if frame.updateScanPricesButton then
-        frame.updateScanPricesButton:SetShown(hasLoadedSavedScan)
+        frame.updateScanPricesButton:SetShown(hasLoadedSavedScan and not isScanning)
         frame.updateScanPricesButton:SetEnabled(hasLoadedSavedScan and not isScanning and hasRows)
         frame.updateScanPricesButton:SetAlpha((hasLoadedSavedScan and not isScanning and hasRows) and 1 or 0.45)
     end
     if frame.rescanScanButton then
-        frame.rescanScanButton:SetShown(hasLoadedSavedScan)
+        frame.rescanScanButton:SetShown(hasLoadedSavedScan and not isScanning)
         frame.rescanScanButton:SetEnabled(hasLoadedSavedScan and not isScanning)
         frame.rescanScanButton:SetAlpha((hasLoadedSavedScan and not isScanning) and 1 or 0.45)
     end
     if frame.savedScansButton then
+        frame.savedScansButton:SetShown(not hasLoadedSavedScan and not isScanning)
         frame.savedScansButton:SetText("Save")
         frame.savedScansButton:SetEnabled(not isScanning)
         frame.savedScansButton:SetAlpha(not isScanning and 1 or 0.45)
@@ -2988,8 +3165,8 @@ function GoldTracker:UpdateRareFarmingSortHeaderState()
         return
     end
 
-    local sortKey = NormalizeRareFarmingSortKey(frame.sortKey)
-    local sortAscending = frame.sortAscending == true
+    local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", RARE_FARMING_SORT_KEYS)
+    local showPriority = #criteria > 1
     local headers = {
         favorite = { button = frame.favoriteHeaderButton, label = "Tracked" },
         location = { button = frame.locationHeaderButton, label = "Location" },
@@ -3003,10 +3180,12 @@ function GoldTracker:UpdateRareFarmingSortHeaderState()
 
     for key, header in pairs(headers) do
         if header.button then
-            header.button.text:SetText(header.label)
+            self:AttachTableSortHeaderTooltip(header.button, header.label)
+            local criterion, priority = self:GetTableSortCriterion(criteria, key)
+            header.button.text:SetText(showPriority and criterion and (header.label .. " " .. priority) or header.label)
             if header.button.sortIcon then
-                if key == sortKey then
-                    local asset = sortAscending and "sortAscending" or "sortDescending"
+                if criterion then
+                    local asset = criterion.ascending and "sortAscending" or "sortDescending"
                     Theme:SetTexture(header.button.sortIcon, asset)
                     header.button.sortIcon:Show()
                 else
@@ -3024,16 +3203,14 @@ function GoldTracker:ToggleRareFarmingSort(sortKey)
     end
 
     local normalizedSortKey = NormalizeRareFarmingSortKey(sortKey)
-    if frame.sortKey == normalizedSortKey then
-        frame.sortAscending = not frame.sortAscending
-    else
-        frame.sortKey = normalizedSortKey
-        frame.sortAscending = normalizedSortKey ~= "value"
-            and normalizedSortKey ~= "marketValue"
-            and normalizedSortKey ~= "regionMarketValue"
-            and normalizedSortKey ~= "averageValue"
-            and normalizedSortKey ~= "favorite"
-    end
+    local defaultAscending = normalizedSortKey ~= "value"
+        and normalizedSortKey ~= "marketValue"
+        and normalizedSortKey ~= "regionMarketValue"
+        and normalizedSortKey ~= "averageValue"
+        and normalizedSortKey ~= "favorite"
+    self:ToggleTableSortCriterion(frame, normalizedSortKey, defaultAscending, {
+        validKeys = RARE_FARMING_SORT_KEYS,
+    })
 
     self:RefreshRareFarmingWindow(false)
 end
@@ -3172,7 +3349,8 @@ local function ApplyRareFarmingTableColumnLayout(frame)
 
     local availableWidth = GetRareFarmingTableViewportWidth(frame)
     local favoriteX = RARE_FARMING_ROW_RIGHT_PADDING
-    local locationX = favoriteX + RARE_FARMING_FAVORITE_WIDTH + RARE_FARMING_COLUMN_GAP
+    local mapX = favoriteX + RARE_FARMING_FAVORITE_WIDTH + RARE_FARMING_COLUMN_GAP
+    local locationX = mapX + RARE_FARMING_MAP_BUTTON_WIDTH + RARE_FARMING_COLUMN_GAP
     local rareX = locationX + RARE_FARMING_LOCATION_WIDTH + RARE_FARMING_COLUMN_GAP
     local fixedWidth =
         RARE_FARMING_FAVORITE_WIDTH
@@ -3191,8 +3369,7 @@ local function ApplyRareFarmingTableColumnLayout(frame)
     UpdateRareFarmingHorizontalScroll(frame)
 
     local horizontalOffset = GetRareFarmingHorizontalOffset(frame)
-    local mapX = tableWidth - RARE_FARMING_MAP_BUTTON_WIDTH - RARE_FARMING_ROW_RIGHT_PADDING
-    local wowheadX = mapX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_WOWHEAD_BUTTON_WIDTH
+    local wowheadX = tableWidth - RARE_FARMING_WOWHEAD_BUTTON_WIDTH - RARE_FARMING_ROW_RIGHT_PADDING
     local averageX = wowheadX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
     local regionMarketX = averageX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
     local marketX = regionMarketX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
@@ -3202,6 +3379,7 @@ local function ApplyRareFarmingTableColumnLayout(frame)
 
     local headerX = RARE_FARMING_HEADER_LEFT_INSET
     SetRareFarmingHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, RARE_FARMING_FAVORITE_WIDTH)
+    SetRareFarmingHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, RARE_FARMING_MAP_BUTTON_WIDTH)
     SetRareFarmingHeaderColumn(frame.locationHeaderButton, frame.listPanel, headerX + locationX - horizontalOffset, RARE_FARMING_LOCATION_WIDTH)
     SetRareFarmingHeaderColumn(frame.rareHeaderButton, frame.listPanel, headerX + rareX - horizontalOffset, RARE_FARMING_RARE_WIDTH)
     SetRareFarmingHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
@@ -3210,7 +3388,6 @@ local function ApplyRareFarmingTableColumnLayout(frame)
     SetRareFarmingHeaderColumn(frame.regionMarketHeaderButton, frame.listPanel, headerX + regionMarketX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
     SetRareFarmingHeaderColumn(frame.averageHeaderButton, frame.listPanel, headerX + averageX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
     SetRareFarmingHeaderColumn(frame.wowheadHeaderButton, frame.listPanel, headerX + wowheadX - horizontalOffset, RARE_FARMING_WOWHEAD_BUTTON_WIDTH)
-    SetRareFarmingHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, RARE_FARMING_MAP_BUTTON_WIDTH)
 
     for _, row in ipairs(frame.rows or {}) do
         if row.favoriteButton then
@@ -3224,6 +3401,7 @@ local function ApplyRareFarmingTableColumnLayout(frame)
             )
             row.favoriteButton:SetSize(RARE_FARMING_TRACKED_BUTTON_WIDTH, RARE_FARMING_TRACKED_BUTTON_HEIGHT)
         end
+        SetRareFarmingColumn(row.mapButton, row, mapX - horizontalOffset, RARE_FARMING_MAP_BUTTON_WIDTH)
         SetRareFarmingColumn(row.locationButton, row, locationX - horizontalOffset, RARE_FARMING_LOCATION_WIDTH)
         SetRareFarmingColumn(row.locationText, row, locationX - horizontalOffset, RARE_FARMING_LOCATION_WIDTH)
         SetRareFarmingColumn(row.rareText, row, rareX - horizontalOffset, RARE_FARMING_RARE_WIDTH)
@@ -3233,7 +3411,6 @@ local function ApplyRareFarmingTableColumnLayout(frame)
         SetRareFarmingColumn(row.regionMarketText, row, regionMarketX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
         SetRareFarmingColumn(row.averageText, row, averageX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
         SetRareFarmingColumn(row.wowheadButton, row, wowheadX - horizontalOffset, RARE_FARMING_WOWHEAD_BUTTON_WIDTH)
-        SetRareFarmingColumn(row.mapButton, row, mapX - horizontalOffset, RARE_FARMING_MAP_BUTTON_WIDTH)
         if row.icon then
             row.icon:ClearAllPoints()
             row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
@@ -3375,8 +3552,12 @@ function GoldTracker:GetRareFarmingWindowRow(index)
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
         GameTooltip:AddLine("Set waypoint", 1, 1, 1)
         local parent = self:GetParent()
-        if parent and parent.locationLabel then
-            GameTooltip:AddLine(parent.locationLabel, 0.72, 0.76, 0.84)
+        if parent then
+            local locationCount = GetRareFarmingLocationCount(parent)
+            if locationCount > 1 then
+                GameTooltip:AddLine(string.format("%d known spawn locations; Map shows all pins.", locationCount), 1.0, 0.82, 0.18)
+            end
+            AddRareFarmingLocationTooltipLines(parent)
         end
         GameTooltip:Show()
     end)
@@ -3779,7 +3960,12 @@ function GoldTracker:RefreshRareFarmingWindow(scrollToTop)
             row.favorite = self:IsRareFarmingFavorite(row)
             displayRows[#displayRows + 1] = row
         end
-        SortRareFarmingRows(displayRows, frame.sortKey, frame.sortAscending)
+        SortRareFarmingRows(
+            displayRows,
+            frame.sortKey,
+            frame.sortAscending,
+            self:GetTableSortCriteria(frame, "sortKey", "sortAscending", RARE_FARMING_SORT_KEYS)
+        )
         frame.lastResults = displayRows
     end
     local resultCount = #displayRows
@@ -3888,7 +4074,18 @@ function GoldTracker:RefreshRareFarmingWindow(scrollToTop)
                 row.background:SetColorTexture(1, 1, 1, resultIndex % 2 == 0 and 0.045 or 0.022)
             end
             if row.divider then
+                local nextResult = displayRows[resultIndex + 1]
+                local endsLocationGroup = NormalizeRareFarmingSortKey(frame.sortKey) == "location"
+                    and nextResult
+                    and GetRareFarmingLocationGroupLabel(result) ~= GetRareFarmingLocationGroupLabel(nextResult)
                 row.divider:SetShown(resultIndex < resultCount)
+                if endsLocationGroup then
+                    row.divider:SetColorTexture(1.0, 0.82, 0.18, 0.42)
+                    row.divider:SetHeight(2)
+                else
+                    row.divider:SetColorTexture(1, 1, 1, 0.045)
+                    row.divider:SetHeight(1)
+                end
             end
 
             row:ClearAllPoints()
@@ -3976,7 +4173,10 @@ function GoldTracker:CreateRareFarmingWindow()
     frame.scanModeID = self:GetRareFarmingScanMode()
     frame.rows = {}
     frame.sortKey = RARE_FARMING_SORT_KEY_DEFAULT
-    frame.sortAscending = false
+    frame.sortAscending = frame.sortKey == "location"
+    frame.sortCriteria = {
+        { key = frame.sortKey, ascending = frame.sortAscending },
+    }
 
     local chrome = Theme:ApplyWindowChrome(frame, "Rare Farming")
     Theme:RegisterSpecialFrame("GoldTrackerRareFarmingFrame")
@@ -4093,16 +4293,16 @@ function GoldTracker:CreateRareFarmingWindow()
     SetRareFarmingFrameLevel(controlsPanel, chrome, 1)
     controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -86)
     controlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -86)
-    controlsPanel:SetHeight(178)
+    controlsPanel:SetHeight(116)
     frame.controlsPanel = controlsPanel
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Preferred value source")
+    sourceLabel:SetText("Value source")
 
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerRareFarmingValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)
-    UIDropDownMenu_SetWidth(valueSourceDropdown, 210)
+    UIDropDownMenu_SetWidth(valueSourceDropdown, 170)
     UIDropDownMenu_Initialize(valueSourceDropdown, function(_, level)
         for _, valueSource in ipairs(addon.VALUE_SOURCES) do
             if valueSource.tsmKey then
@@ -4122,11 +4322,11 @@ function GoldTracker:CreateRareFarmingWindow()
     frame.valueSourceDropdown = valueSourceDropdown
 
     local valueLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    valueLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", 250, 0)
+    valueLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", 204, 0)
     valueLabel:SetText("Min value (g)")
 
     local minimumValueInput = CreateFrame("EditBox", nil, controlsPanel, "InputBoxTemplate")
-    minimumValueInput:SetSize(92, 22)
+    minimumValueInput:SetSize(78, 22)
     minimumValueInput:SetPoint("TOPLEFT", valueLabel, "BOTTOMLEFT", 0, -8)
     minimumValueInput:SetAutoFocus(false)
     minimumValueInput:SetNumeric(false)
@@ -4149,12 +4349,12 @@ function GoldTracker:CreateRareFarmingWindow()
     frame.minimumValueInput = minimumValueInput
 
     local expansionLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    expansionLabel:SetPoint("TOPLEFT", valueLabel, "TOPLEFT", 150, 0)
+    expansionLabel:SetPoint("TOPLEFT", valueLabel, "TOPLEFT", 96, 0)
     expansionLabel:SetText("Expansion")
 
     local expansionDropdown = CreateFrame("Frame", "GoldTrackerRareFarmingExpansionDropdown", controlsPanel, "UIDropDownMenuTemplate")
     expansionDropdown:SetPoint("TOPLEFT", expansionLabel, "BOTTOMLEFT", -16, -5)
-    UIDropDownMenu_SetWidth(expansionDropdown, 150)
+    UIDropDownMenu_SetWidth(expansionDropdown, 126)
     UIDropDownMenu_Initialize(expansionDropdown, function(_, level)
         for _, option in ipairs(GetRareFarmingExpansionOptions()) do
             local info = UIDropDownMenu_CreateInfo()
@@ -4172,12 +4372,12 @@ function GoldTracker:CreateRareFarmingWindow()
     frame.expansionDropdown = expansionDropdown
 
     local scanModeLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    scanModeLabel:SetPoint("TOPLEFT", expansionLabel, "TOPLEFT", 165, 0)
+    scanModeLabel:SetPoint("TOPLEFT", expansionLabel, "TOPLEFT", 146, 0)
     scanModeLabel:SetText("Mode")
 
     local scanModeDropdown = CreateFrame("Frame", "GoldTrackerRareFarmingScanModeDropdown", controlsPanel, "UIDropDownMenuTemplate")
     scanModeDropdown:SetPoint("TOPLEFT", scanModeLabel, "BOTTOMLEFT", -16, -5)
-    UIDropDownMenu_SetWidth(scanModeDropdown, 130)
+    UIDropDownMenu_SetWidth(scanModeDropdown, 96)
     UIDropDownMenu_Initialize(scanModeDropdown, function(_, level)
         for _, option in ipairs(RARE_FARMING_SCAN_MODE_OPTIONS) do
             local info = UIDropDownMenu_CreateInfo()
@@ -4194,15 +4394,15 @@ function GoldTracker:CreateRareFarmingWindow()
     end)
     frame.scanModeDropdown = scanModeDropdown
 
-    local scanButton = CreateRareFarmingButton(controlsPanel, 92, 24, "Scan", "primary")
-    scanButton:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -62)
+    local scanButton = CreateRareFarmingButton(controlsPanel, 64, 24, "Scan", "primary")
+    scanButton:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -31)
     scanButton:SetScript("OnClick", function()
         addon:StartRareFarmingScan()
     end)
     frame.scanButton = scanButton
 
-    local stopScanButton = CreateRareFarmingButton(controlsPanel, 82, 24, "Stop", "danger")
-    stopScanButton:SetPoint("RIGHT", scanButton, "LEFT", -8, 0)
+    local stopScanButton = CreateRareFarmingButton(controlsPanel, 64, 24, "Stop", "danger")
+    stopScanButton:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -31)
     stopScanButton:SetEnabled(false)
     stopScanButton:SetAlpha(0.45)
     stopScanButton:SetScript("OnClick", function()
@@ -4210,24 +4410,21 @@ function GoldTracker:CreateRareFarmingWindow()
     end)
     frame.stopScanButton = stopScanButton
 
-    local savedScansButton = CreateRareFarmingButton(controlsPanel, 82, 24, "Save", "neutral")
+    local savedScansButton = CreateRareFarmingButton(controlsPanel, 64, 24, "Save", "neutral")
     savedScansButton:SetPoint("RIGHT", scanButton, "LEFT", -8, 0)
     savedScansButton:SetScript("OnClick", function()
         addon:SaveCurrentRareFarmingScan()
     end)
     frame.savedScansButton = savedScansButton
 
-    stopScanButton:ClearAllPoints()
-    stopScanButton:SetPoint("RIGHT", savedScansButton, "LEFT", -8, 0)
-
-    local updatePricesButton = CreateRareFarmingButton(controlsPanel, 116, 24, "Update Prices", "neutral")
-    updatePricesButton:SetPoint("RIGHT", stopScanButton, "LEFT", -8, 0)
+    local updatePricesButton = CreateRareFarmingButton(controlsPanel, 104, 24, "Update Prices", "neutral")
+    updatePricesButton:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -31)
     updatePricesButton:SetScript("OnClick", function()
         addon:UpdateCurrentRareFarmingScanPrices()
     end)
     frame.updateScanPricesButton = updatePricesButton
 
-    local rescanButton = CreateRareFarmingButton(controlsPanel, 126, 24, "Rescan Expansion", "primary")
+    local rescanButton = CreateRareFarmingButton(controlsPanel, 88, 24, "Rescan", "primary")
     rescanButton:SetPoint("RIGHT", updatePricesButton, "LEFT", -8, 0)
     rescanButton:SetScript("OnClick", function()
         addon:RescanCurrentRareFarmingSelection()
@@ -4235,17 +4432,17 @@ function GoldTracker:CreateRareFarmingWindow()
     frame.rescanScanButton = rescanButton
 
     local hintText = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hintText:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -104)
-    hintText:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -104)
+    hintText:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -61)
+    hintText:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -61)
     hintText:SetJustifyH("LEFT")
     hintText:SetTextColor(0.84, 0.78, 0.58)
     hintText:SetText("Background lets you keep playing; Foreground is faster but can lower FPS. All expansions can take quite a while.")
     frame.scanHintText = hintText
 
     local progressBackdrop = CreateRareFarmingPanel(controlsPanel, { 0.03, 0.04, 0.06, 0.96 }, { 1, 1, 1, 0.08 })
-    progressBackdrop:SetPoint("TOPLEFT", hintText, "BOTTOMLEFT", 0, -8)
-    progressBackdrop:SetPoint("TOPRIGHT", hintText, "BOTTOMRIGHT", 0, -8)
-    progressBackdrop:SetHeight(14)
+    progressBackdrop:SetPoint("TOPLEFT", hintText, "BOTTOMLEFT", 0, -5)
+    progressBackdrop:SetPoint("TOPRIGHT", hintText, "BOTTOMRIGHT", 0, -5)
+    progressBackdrop:SetHeight(10)
     frame.progressBackdrop = progressBackdrop
 
     local progressBar = CreateFrame("StatusBar", nil, progressBackdrop)
@@ -4258,8 +4455,8 @@ function GoldTracker:CreateRareFarmingWindow()
     frame.progressBar = progressBar
 
     local statusText = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusText:SetPoint("TOPLEFT", progressBackdrop, "BOTTOMLEFT", 0, -8)
-    statusText:SetPoint("TOPRIGHT", progressBackdrop, "BOTTOMRIGHT", 0, -8)
+    statusText:SetPoint("TOPLEFT", progressBackdrop, "BOTTOMLEFT", 0, -4)
+    statusText:SetPoint("TOPRIGHT", progressBackdrop, "BOTTOMRIGHT", 0, -4)
     statusText:SetJustifyH("LEFT")
     statusText:SetTextColor(0.72, 0.76, 0.84)
     statusText:SetText("Ready.")

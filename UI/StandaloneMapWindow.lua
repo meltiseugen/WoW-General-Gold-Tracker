@@ -229,7 +229,7 @@ local function GetPinTargetName(pinData)
     return nil
 end
 
-local function AddTargetName(group, targetName)
+local function AddTargetName(group, targetName, targetType)
     if not group or not HasText(targetName) then
         return
     end
@@ -240,6 +240,90 @@ local function AddTargetName(group, targetName)
     group.targetLookup[targetName] = true
     group.targets = group.targets or {}
     group.targets[#group.targets + 1] = targetName
+    if HasText(targetType) then
+        if not group.targetType then
+            group.targetType = targetType
+        elseif group.targetType ~= targetType then
+            group.targetType = "farm"
+        end
+    end
+end
+
+local TARGET_ACTION_LABELS = {
+    collect = "Collect",
+    farm = "Farm",
+    fish = "Fish",
+    gather = "Gather",
+    kill = "Kill",
+    loot = "Loot",
+    mine = "Mine",
+    open = "Open",
+    skin = "Kill and skin",
+}
+
+local function FormatRouteType(routeType)
+    if not HasText(routeType) then
+        return nil
+    end
+    local text = routeType:gsub("[_%-]+", " "):gsub("%s+", " ")
+    text = text:gsub("^%s+", ""):gsub("%s+$", "")
+    return text:gsub("^%l", string.upper)
+end
+
+local function InferFarmAction(group)
+    if HasText(group and group.farmAction) then
+        return group.farmAction
+    end
+
+    local hasTargets = type(group and group.targets) == "table" and #group.targets > 0
+    if hasTargets then
+        local label = TARGET_ACTION_LABELS[group.targetType] or "Farm"
+        return label .. ": " .. table.concat(group.targets, ", ")
+    end
+
+    local routeType = string.lower(group and group.routeType or "")
+    if routeType:find("skinning", 1, true) and routeType:find("fishing", 1, true) then
+        return "Farm: Fish the marked waters and skin suitable creatures along the route."
+    elseif routeType:find("herbable%-mob") then
+        return "Gather: Kill herbable creatures, then harvest their corpses."
+    elseif routeType:find("skinning", 1, true) then
+        return HasText(group.location)
+            and ("Kill and skin here: " .. group.location)
+            or "Kill and skin: Farm skinnable creatures throughout the marked area."
+    elseif routeType:find("fishing", 1, true) or routeType:find("fish", 1, true) then
+        return "Fish: Cast in the marked waters and prioritize visible fishing pools."
+    elseif routeType:find("herbalism", 1, true) or routeType:find("herb", 1, true) then
+        return "Gather: Harvest herb nodes while following the marked route."
+    elseif routeType:find("gather", 1, true) then
+        return "Gather: Collect the relevant resources throughout the marked area."
+    elseif routeType:find("prospect", 1, true) then
+        return "Mine and prospect: Gather the indicated ore, then prospect it for this material."
+    elseif routeType:find("mining", 1, true) or routeType:find("mineable", 1, true) then
+        return "Mine: Gather ore nodes while following the marked route."
+    elseif routeType:find("disenchant", 1, true) then
+        return "Disenchant: Farm eligible gear here, then disenchant it for this material."
+    elseif routeType:find("vendor", 1, true) then
+        return "Buy: Visit the marked vendor and purchase or exchange for this item."
+    elseif routeType:find("container", 1, true) or routeType:find("cache", 1, true)
+        or routeType:find("object", 1, true) or routeType:find("lumber", 1, true)
+    then
+        return "Collect: Open or gather the marked objects throughout this area."
+    elseif routeType:find("grind", 1, true) or routeType:find("mob", 1, true)
+        or routeType:find("creature", 1, true) or routeType:find("beast", 1, true)
+        or routeType:find("humanoid", 1, true) or routeType:find("undead", 1, true)
+        or routeType:find("elemental", 1, true) or routeType:find("kill", 1, true)
+        or routeType:find("cloth", 1, true) or routeType:find("meat", 1, true)
+    then
+        return HasText(group.location)
+            and ("Kill here: " .. group.location)
+            or "Kill: Farm creatures throughout the marked area."
+    elseif routeType:find("dungeon", 1, true) or routeType:find("raid", 1, true)
+        or routeType:find("instance", 1, true) or routeType:find("delve", 1, true)
+    then
+        return "Farm: Clear the marked instance, boss, or delve route."
+    end
+
+    return "Farm: Follow the marked route and the instructions below."
 end
 
 local function GetSecondaryAreaText(location, hasTargets)
@@ -262,6 +346,7 @@ local function BuildUserClusterDetailGroup(areaGroup)
     local group = {
         title = GetPinTitle(firstPin),
         routeType = firstPin.routeType,
+        farmAction = firstPin.farmAction,
         sourceType = firstPin.sourceType,
         sourceLabel = firstPin.sourceLabel,
         targets = {},
@@ -281,7 +366,8 @@ local function BuildUserClusterDetailGroup(areaGroup)
         totalY = totalY + (tonumber(pinData.y) or 0)
         totalSeen = totalSeen + math.max(0, tonumber(pinData.seenCount) or 0)
         totalLooted = totalLooted + math.max(0, tonumber(pinData.totalQuantity) or 0)
-        AddTargetName(group, GetPinTargetName(pinData))
+        local targetName = GetPinTargetName(pinData)
+        AddTargetName(group, targetName, pinData.targetType or (targetName and "kill"))
         for _, tip in ipairs(CopyTips(pinData.tips) or {}) do
             if not tipLookup[tip] then
                 tipLookup[tip] = true
@@ -333,6 +419,8 @@ local function BuildVisiblePinGroups(pins, mapID)
                 pinData.routeType or "",
                 pinData.density or "",
                 pinData.dropDifficulty or "",
+                pinData.farmAction or "",
+                pinData.targetType or "",
                 pinData.sourceType or "",
                 pinData.sourceLabel or "",
                 tips and table.concat(tips, "\n") or "",
@@ -345,6 +433,7 @@ local function BuildVisiblePinGroups(pins, mapID)
                     routeType = pinData.routeType,
                     density = pinData.density,
                     dropDifficulty = pinData.dropDifficulty,
+                    farmAction = pinData.farmAction,
                     sourceType = pinData.sourceType,
                     sourceLabel = pinData.sourceLabel,
                     targets = {},
@@ -356,7 +445,8 @@ local function BuildVisiblePinGroups(pins, mapID)
                 byKey[key] = group
                 groups[#groups + 1] = group
             end
-            AddTargetName(group, GetPinTargetName(pinData))
+            local targetName = GetPinTargetName(pinData)
+            AddTargetName(group, targetName, pinData.targetType or (targetName and "kill"))
             AddSourceUrls(group, pinData.sourceUrls)
         end
     end
@@ -377,14 +467,15 @@ function GoldTracker.BuildStandaloneMapDetailLines(_, pins, mapID, mapLabel)
     for groupIndex, group in ipairs(groups) do
         AppendDetailLine(lines, group.title, 1.0, 0.82, 0.18, 6, "GameFontNormalLarge")
         local hasTargets = type(group.targets) == "table" and #group.targets > 0
-        local targetText = hasTargets and ("Kill: " .. table.concat(group.targets, ", ")) or nil
+        local actionText = InferFarmAction(group)
         local areaText = GetSecondaryAreaText(group.location, hasTargets)
-        AppendDetailLine(lines, targetText, 1.0, 0.45, 0.20, 6, "GameFontNormalLarge")
+        AppendDetailLine(lines, actionText, 1.0, 0.45, 0.20, 6, "GameFontNormalLarge")
         AppendDetailLine(lines, areaText, 0.68, 0.72, 0.80, 6, "GameFontHighlight")
-        local routeText = HasText(group.routeType) and ("Route: " .. group.routeType) or nil
+        local formattedRouteType = FormatRouteType(group.routeType)
+        local routeText = formattedRouteType and ("Method: " .. formattedRouteType) or nil
         local densityText = HasText(group.density) and ("Density: " .. group.density) or nil
         local sourceText = HasText(group.sourceLabel) and ("Source: " .. group.sourceLabel) or nil
-        local difficultyText = HasText(group.dropDifficulty) and ("Difficulty: " .. group.dropDifficulty) or nil
+        local difficultyText = HasText(group.dropDifficulty) and ("Notes: " .. group.dropDifficulty) or nil
         AppendDetailLine(lines, routeText, 0.72, 0.86, 1.0, 5, "GameFontHighlight")
         AppendDetailLine(lines, densityText, 0.72, 0.86, 1.0, 5, "GameFontHighlight")
         AppendDetailLine(lines, sourceText, 0.72, 0.86, 1.0, 5, "GameFontHighlight")
@@ -468,6 +559,23 @@ local function ApplyMapPinTexture(texture, atlas, fallbackTexture)
     return nil
 end
 
+local function ApplyConfiguredMapPinIcon(texture, addon)
+    local iconOption
+    if addon and type(addon.GetMapPinIconOption) == "function" then
+        iconOption = addon:GetMapPinIconOption()
+    end
+    iconOption = type(iconOption) == "table" and iconOption or {
+        atlas = "VignetteLoot",
+        texture = "Interface\\Icons\\INV_Misc_Map02",
+    }
+
+    local textureKind = ApplyMapPinTexture(texture, iconOption.atlas, iconOption.texture)
+    if textureKind ~= "atlas" and texture and texture.SetTexCoord then
+        texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
+    return textureKind
+end
+
 local function GetMapPin(frame, index)
     frame.mapPinFrames = frame.mapPinFrames or {}
     local pin = frame.mapPinFrames[index]
@@ -478,7 +586,7 @@ local function GetMapPin(frame, index)
         pin = CreateFrame("Button", nil, frame.mapContent)
         pin:SetSize(MAP_PIN_SIZE, MAP_PIN_SIZE)
         if pin.RegisterForClicks then
-            pin:RegisterForClicks("LeftButtonUp")
+            pin:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         end
 
         local ring = pin:CreateTexture(nil, "OVERLAY", nil, 6)
@@ -493,10 +601,6 @@ local function GetMapPin(frame, index)
         local icon = pin:CreateTexture(nil, "OVERLAY", nil, 7)
         icon:SetPoint("CENTER", pin, "CENTER")
         icon:SetSize(MAP_PIN_ICON_SIZE, MAP_PIN_ICON_SIZE)
-        local textureKind = ApplyMapPinTexture(icon, "VignetteLoot", "Interface\\Icons\\INV_Misc_Map02")
-        if textureKind ~= "atlas" and icon.SetTexCoord then
-            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        end
         pin.icon = icon
 
         pin:SetScript("OnEnter", function(self)
@@ -505,6 +609,13 @@ local function GetMapPin(frame, index)
             end
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
             GameTooltip:SetText(self.pinData.label or GetPinTitle(self.pinData), 1.0, 0.82, 0.18)
+            local targetName = GetPinTargetName(self.pinData)
+            GameTooltip:AddLine(InferFarmAction({
+                farmAction = self.pinData.farmAction,
+                routeType = self.pinData.routeType,
+                targetType = self.pinData.targetType,
+                targets = targetName and { targetName } or nil,
+            }), 1.0, 0.45, 0.20, true)
             if HasText(self.pinData.spotLocation) then
                 GameTooltip:AddLine(self.pinData.spotLocation, 0.82, 0.86, 0.92, true)
             end
@@ -521,10 +632,16 @@ local function GetMapPin(frame, index)
                 GameTooltip:Hide()
             end
         end)
+        pin:SetScript("OnClick", function(_, button)
+            if button == "RightButton" then
+                GoldTracker:NavigateStandaloneMapToParent()
+            end
+        end)
         frame.mapPinFrames[index] = pin
     elseif pin.SetParent then
         pin:SetParent(frame.mapContent)
     end
+    ApplyConfiguredMapPinIcon(pin.icon, GoldTracker)
     return pin
 end
 
@@ -1200,6 +1317,32 @@ function GoldTracker:ResetStandaloneMapView()
     self:RefreshStandaloneMapWindow()
 end
 
+function GoldTracker:NavigateStandaloneMapToParent()
+    local frame = self.standaloneMapFrame
+    local mapID = frame and tonumber(frame.mapID)
+    if not mapID or not C_Map or type(C_Map.GetMapInfo) ~= "function" then
+        return false
+    end
+
+    local ok, mapInfo = pcall(C_Map.GetMapInfo, mapID)
+    local parentMapID = ok and tonumber(mapInfo and mapInfo.parentMapID) or nil
+    if not parentMapID or parentMapID <= 0 or parentMapID == mapID then
+        SetStatus(frame, "This map has no parent map.")
+        return false
+    end
+
+    frame.mapID = parentMapID
+    frame.mapZoom = 1
+    frame.mapPanX = 0
+    frame.mapPanY = 0
+    frame.mapDragging = false
+    if frame.detailsScrollFrame then
+        frame.detailsScrollFrame:SetVerticalScroll(0)
+    end
+    self:RefreshStandaloneMapWindow()
+    return true
+end
+
 function GoldTracker:ProjectStandaloneMapToWorldMap()
     local frame = self.standaloneMapFrame
     if not frame then
@@ -1400,6 +1543,10 @@ function GoldTracker:CreateStandaloneMapWindow()
     end)
 
     mapViewport:SetScript("OnMouseDown", function(_, button)
+        if button == "RightButton" then
+            GoldTracker:NavigateStandaloneMapToParent()
+            return
+        end
         if button ~= "LeftButton" or type(GetCursorPosition) ~= "function" then
             return
         end

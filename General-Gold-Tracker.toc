@@ -7,6 +7,7 @@
 ## OptionalDeps: TradeSkillMaster, JanisTheme-1.0, RareScanner
 
 Core/Namespace.lua
+Core/TableSort.lua
 Core/ItemBinding.lua
 Libs/JanisTheme-1.0/JanisTheme-1.0.lua
 UI/Theme.lua
@@ -44,6 +45,9 @@ Data/MaterialFarmingSpots/Classic/Jewelcrafting.lua
 Data/MaterialFarmingSpots/Classic/Mining.lua
 Data/MaterialFarmingSpots/Classic/Skinning.lua
 Data/MaterialFarmingSpots/Classic/Tailoring.lua
+Data/MaterialFarmingSpots/Classic/Fishing.lua
+Data/MaterialFarmingSpots/Classic/Reagents.lua
+Data/MaterialFarmingSpots/Classic/Housing.lua
 Data/MaterialFarmingSpots/BurningCrusade/Alchemy.lua
 Data/MaterialFarmingSpots/BurningCrusade/Cooking.lua
 Data/MaterialFarmingSpots/BurningCrusade/Enchanting.lua
@@ -64,6 +68,9 @@ Data/MaterialFarmingSpots/Wrath/Jewelcrafting.lua
 Data/MaterialFarmingSpots/Wrath/Mining.lua
 Data/MaterialFarmingSpots/Wrath/Skinning.lua
 Data/MaterialFarmingSpots/Wrath/Tailoring.lua
+Data/MaterialFarmingSpots/Wrath/Reagents.lua
+Data/MaterialFarmingSpots/Wrath/Miscellaneous.lua
+Data/MaterialFarmingSpots/Wrath/Housing.lua
 Data/MaterialFarmingSpots/Cataclysm/Alchemy.lua
 Data/MaterialFarmingSpots/Cataclysm/Cooking.lua
 Data/MaterialFarmingSpots/Cataclysm/Enchanting.lua
@@ -82,6 +89,7 @@ Data/MaterialFarmingSpots/Mists/Jewelcrafting.lua
 Data/MaterialFarmingSpots/Mists/Mining.lua
 Data/MaterialFarmingSpots/Mists/Skinning.lua
 Data/MaterialFarmingSpots/Mists/Tailoring.lua
+Data/MaterialFarmingSpots/Mists/Reagents.lua
 Data/MaterialFarmingSpots/Warlords/Alchemy.lua
 Data/MaterialFarmingSpots/Warlords/Cooking.lua
 Data/MaterialFarmingSpots/Warlords/Enchanting.lua
@@ -126,6 +134,7 @@ Data/MaterialFarmingSpots/Dragonflight/Enchanting.lua
 Data/MaterialFarmingSpots/Dragonflight/Fishing.lua
 Data/MaterialFarmingSpots/Dragonflight/Tailoring.lua
 Data/MaterialFarmingSpots/Dragonflight/Elemental.lua
+Data/MaterialFarmingSpots/Dragonflight/Reagents.lua
 Data/MaterialFarmingSpots/WarWithin/Herbalism.lua
 Data/MaterialFarmingSpots/WarWithin/Mining.lua
 Data/MaterialFarmingSpots/WarWithin/Jewelcrafting.lua

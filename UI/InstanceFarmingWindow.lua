@@ -102,6 +102,7 @@ local function CreateHeaderButton(parent, label, width, justifyH)
     text:SetWordWrap(false)
     text:SetText(label)
     button.text = text
+    button.sortLabel = label
 
     local sortIcon = button:CreateTexture(nil, "ARTWORK")
     sortIcon:SetSize(SORT_ICON_SIZE, SORT_ICON_SIZE)
@@ -496,6 +497,88 @@ local function BuildStaticEntrancePin(row, mapID)
     }
 end
 
+local function FindBossOnMap(row, mapID)
+    local normalizedMapID = tonumber(mapID)
+    local encounterID = tonumber(row and row.bossEncounterJournalID)
+    if not normalizedMapID or not encounterID then
+        return nil
+    end
+
+    LoadEncounterJournal()
+    if not C_EncounterJournal or type(C_EncounterJournal.GetEncountersOnMap) ~= "function" then
+        return nil
+    end
+
+    local ok, encounters = pcall(C_EncounterJournal.GetEncountersOnMap, normalizedMapID)
+    if not ok or type(encounters) ~= "table" then
+        return nil
+    end
+
+    for _, encounterInfo in pairs(encounters) do
+        if type(encounterInfo) == "table" and tonumber(encounterInfo.encounterID) == encounterID then
+            local x = NormalizeMapCoord(encounterInfo.mapX)
+            local y = NormalizeMapCoord(encounterInfo.mapY)
+            if x and y then
+                return {
+                    mapID = normalizedMapID,
+                    x = x,
+                    y = y,
+                    label = GetBossDisplayName(row),
+                    itemName = row.itemName,
+                    spotLocation = GetInstanceDisplayName(row),
+                    routeType = "Boss drop",
+                }
+            end
+        end
+    end
+
+    return nil
+end
+
+local function FindBossOnInstanceMaps(row, mapID)
+    local mapIDs = {}
+    local seen = {}
+    local function AddMapID(candidateMapID)
+        candidateMapID = tonumber(candidateMapID)
+        if candidateMapID and not seen[candidateMapID] then
+            seen[candidateMapID] = true
+            mapIDs[#mapIDs + 1] = candidateMapID
+        end
+    end
+
+    AddMapID(mapID)
+
+    if C_Map and type(C_Map.GetMapGroupID) == "function" and type(C_Map.GetMapGroupMembersInfo) == "function" then
+        local groupOK, mapGroupID = pcall(C_Map.GetMapGroupID, tonumber(mapID))
+        if groupOK and mapGroupID then
+            local membersOK, members = pcall(C_Map.GetMapGroupMembersInfo, mapGroupID)
+            if membersOK and type(members) == "table" then
+                for _, memberInfo in pairs(members) do
+                    AddMapID(memberInfo and memberInfo.mapID)
+                end
+            end
+        end
+    end
+
+    if C_Map and type(C_Map.GetMapChildrenInfo) == "function" then
+        local childrenOK, children = pcall(C_Map.GetMapChildrenInfo, tonumber(mapID), nil, true)
+        if childrenOK and type(children) == "table" then
+            for _, childInfo in pairs(children) do
+                AddMapID(childInfo and childInfo.mapID)
+            end
+        end
+    end
+
+    for _, candidateMapID in ipairs(mapIDs) do
+        local pin = FindBossOnMap(row, candidateMapID)
+        if pin then
+            return pin
+        end
+    end
+
+    return nil
+end
+
 local function IsTrashInstanceDrop(row)
     local bossName = string.lower(tostring(row and row.bossName or ""))
     return bossName:find("trash", 1, true) ~= nil
@@ -861,17 +944,21 @@ local function GetSortValue(row, sortKey)
     return tonumber(row and row[sortKey]) or 0
 end
 
-local function SortRows(rows, sortKey, sortAscending)
-    local normalizedSortKey = NormalizeSortKey(sortKey)
-    local ascending = sortAscending == true
+local function SortRows(rows, sortKey, sortAscending, sortCriteria)
+    local criteria = type(sortCriteria) == "table" and sortCriteria or {
+        { key = NormalizeSortKey(sortKey), ascending = sortAscending == true },
+    }
     table.sort(rows, function(left, right)
-        local leftValue = GetSortValue(left, normalizedSortKey)
-        local rightValue = GetSortValue(right, normalizedSortKey)
-        if leftValue ~= rightValue then
-            if ascending then
-                return leftValue < rightValue
+        for _, criterion in ipairs(criteria) do
+            local normalizedSortKey = NormalizeSortKey(criterion.key)
+            local leftValue = GetSortValue(left, normalizedSortKey)
+            local rightValue = GetSortValue(right, normalizedSortKey)
+            if leftValue ~= rightValue then
+                if criterion.ascending == true then
+                    return leftValue < rightValue
+                end
+                return leftValue > rightValue
             end
-            return leftValue > rightValue
         end
         local leftName = string.lower(tostring(left and (left.itemName or left.itemID) or ""))
         local rightName = string.lower(tostring(right and (right.itemName or right.itemID) or ""))
@@ -998,6 +1085,12 @@ function GoldTracker:BuildInstanceFarmingMapOptions(row)
                 spotLocation = GetInstanceDisplayName(row),
                 routeType = "Boss drop",
             }
+        else
+            local bossPin = FindBossOnInstanceMaps(row, bossMapID)
+            if bossPin then
+                bossMapID = bossPin.mapID
+                pins[1] = bossPin
+            end
         end
         AddInstanceMapOption(options, seen, {
             mapID = bossMapID,
@@ -2098,12 +2191,9 @@ function GoldTracker:ToggleInstanceFarmingSort(sortKey)
         return
     end
     local normalizedSortKey = NormalizeSortKey(sortKey)
-    if frame.sortKey == normalizedSortKey then
-        frame.sortAscending = not frame.sortAscending
-    else
-        frame.sortKey = normalizedSortKey
-        frame.sortAscending = normalizedSortKey ~= DEFAULT_SORT_KEY
-    end
+    self:ToggleTableSortCriterion(frame, normalizedSortKey, normalizedSortKey ~= DEFAULT_SORT_KEY, {
+        validKeys = SORT_KEYS,
+    })
     self:RefreshInstanceFarmingWindow(false)
 end
 
@@ -2112,13 +2202,20 @@ function GoldTracker:UpdateInstanceFarmingSortHeaderState()
     if not frame then
         return
     end
+    local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS)
+    local showPriority = #criteria > 1
     for key, button in pairs(frame.sortHeaders or {}) do
+        self:AttachTableSortHeaderTooltip(button, button.sortLabel)
+        local criterion, priority = self:GetTableSortCriterion(criteria, key)
+        if button.text and button.sortLabel then
+            button.text:SetText(showPriority and criterion and (button.sortLabel .. " " .. priority) or button.sortLabel)
+        end
         if button.sortIcon then
-            local active = key == frame.sortKey
+            local active = criterion ~= nil
             button.sortIcon:SetShown(active)
             if active then
-                button.sortIcon:SetTexture(frame.sortAscending and "Interface\\Buttons\\UI-SortArrow" or "Interface\\Buttons\\UI-SortArrow")
-                button.sortIcon:SetTexCoord(0, 1, frame.sortAscending and 0 or 1, frame.sortAscending and 1 or 0)
+                button.sortIcon:SetTexture("Interface\\Buttons\\UI-SortArrow")
+                button.sortIcon:SetTexCoord(0, 1, criterion.ascending and 0 or 1, criterion.ascending and 1 or 0)
             end
         end
     end
@@ -2482,7 +2579,8 @@ ApplyTableColumnLayout = function(frame)
     local itemWidth = math.max(ITEM_MIN_WIDTH, ITEM_MIN_WIDTH + extraWidth - itemExtraUsed)
 
     local trackX = HEADER_LEFT_INSET
-    local expansionX = trackX + TRACK_WIDTH + COLUMN_GAP
+    local mapX = trackX + TRACK_WIDTH + COLUMN_GAP
+    local expansionX = mapX + MAP_WIDTH + COLUMN_GAP
     local typeX = expansionX + expansionWidth + COLUMN_GAP
     local instanceX = typeX + TYPE_WIDTH + COLUMN_GAP
     local bossX = instanceX + instanceWidth + COLUMN_GAP
@@ -2492,10 +2590,10 @@ ApplyTableColumnLayout = function(frame)
     local regionX = marketX + valueWidth + COLUMN_GAP
     local averageX = regionX + valueWidth + COLUMN_GAP
     local detailsX = averageX + valueWidth + COLUMN_GAP
-    local mapX = detailsX + DETAILS_WIDTH + COLUMN_GAP
     local horizontalOffset = math.max(0, tonumber(frame.horizontalScrollOffset) or 0)
 
     SetHeaderColumn(frame.trackHeaderButton, frame.listPanel, trackX - horizontalOffset, TRACK_WIDTH)
+    SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, MAP_WIDTH)
     SetHeaderColumn(frame.expansionHeaderButton, frame.listPanel, expansionX - horizontalOffset, expansionWidth)
     SetHeaderColumn(frame.typeHeaderButton, frame.listPanel, typeX - horizontalOffset, TYPE_WIDTH)
     SetHeaderColumn(frame.instanceHeaderButton, frame.listPanel, instanceX - horizontalOffset, instanceWidth)
@@ -2506,7 +2604,6 @@ ApplyTableColumnLayout = function(frame)
     SetHeaderColumn(frame.regionHeaderButton, frame.listPanel, regionX - horizontalOffset, valueWidth)
     SetHeaderColumn(frame.averageHeaderButton, frame.listPanel, averageX - horizontalOffset, valueWidth)
     SetHeaderColumn(frame.detailsHeaderButton, frame.listPanel, detailsX - horizontalOffset, DETAILS_WIDTH)
-    SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, MAP_WIDTH)
 
     for _, row in ipairs(frame.rowPool or {}) do
         if row.trackButton then
@@ -2520,6 +2617,7 @@ ApplyTableColumnLayout = function(frame)
             )
             row.trackButton:SetSize(TRACKED_BUTTON_WIDTH, TRACKED_BUTTON_HEIGHT)
         end
+        SetColumn(row.mapButton, row, mapX - horizontalOffset, MAP_WIDTH)
         SetColumn(row.expansionText, row, expansionX - horizontalOffset, expansionWidth)
         SetColumn(row.typeText, row, typeX - horizontalOffset, TYPE_WIDTH)
         SetColumn(row.instanceText, row, instanceX - horizontalOffset, instanceWidth)
@@ -2532,7 +2630,6 @@ ApplyTableColumnLayout = function(frame)
         SetColumn(row.regionText, row, regionX - horizontalOffset, valueWidth)
         SetColumn(row.averageText, row, averageX - horizontalOffset, valueWidth)
         SetColumn(row.detailsButton, row, detailsX - horizontalOffset, DETAILS_WIDTH)
-        SetColumn(row.mapButton, row, mapX - horizontalOffset, MAP_WIDTH)
     end
 end
 
@@ -2554,7 +2651,7 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             displayRows[#displayRows + 1] = row
         end
     end
-    SortRows(displayRows, frame.sortKey, frame.sortAscending)
+    SortRows(displayRows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
     frame.displayRows = displayRows
 
     local scrollFrame = frame.scrollFrame
@@ -2708,6 +2805,9 @@ function GoldTracker:CreateInstanceFarmingWindow()
     frame.scanModeID = self:GetInstanceFarmingScanMode()
     frame.sortKey = DEFAULT_SORT_KEY
     frame.sortAscending = false
+    frame.sortCriteria = {
+        { key = DEFAULT_SORT_KEY, ascending = false },
+    }
     frame.lastResults = {}
     frame.instanceFarmingLibraryTab = "saved"
     frame.instanceFarmingNavigationTab = "saved"

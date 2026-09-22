@@ -135,6 +135,33 @@ describe("UI/Theme focus management", function()
         assert.is_true(parent.level > 10)
     end)
 
+    it("can demote addon windows below a native composite frame without changing that frame", function()
+        local addon_window = frame("GoldTrackerStandaloneMapFrame", "DIALOG", 500)
+        local native_frame = frame("WorldMapFrame", "MEDIUM", 10)
+
+        local theme = nil
+        loader.with_globals({
+            CreateFrame = function()
+                return {
+                    SetScript = function() end,
+                }
+            end,
+        }, function()
+            theme = load_theme()
+            theme.windowFocusFrames = nil
+            theme.addonFocusFrames = nil
+            theme.windowFocusWatcher = nil
+            theme.windowFocusLevel = nil
+            theme:RegisterWindowForFocus(addon_window, "addon")
+        end)
+
+        theme:DemoteInactiveAddonWindows(native_frame, "LOW")
+
+        assert.equals("LOW", addon_window.strata)
+        assert.equals("MEDIUM", native_frame.strata)
+        assert.is_nil(native_frame.raised)
+    end)
+
     it("never manages the Blizzard world map as an external focus window", function()
         local world_map = frame("WorldMapFrame", "HIGH", 10)
         local theme = nil

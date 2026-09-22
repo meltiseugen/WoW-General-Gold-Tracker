@@ -26,6 +26,48 @@ local function load_item_binding(addon)
 end
 
 describe("Core/ItemBinding", function()
+    it("identifies On Looted tooltip effects", function()
+        local addon = load_item_binding()
+
+        assert.is_true(addon:IsOnLootedTooltipLine("On Looted: Grants 25 Resonance."))
+        assert.is_true(addon:IsOnLootedTooltipLine("  |cff00ff00On Looted: Grants a temporary effect.|r"))
+        assert.is_false(addon:IsOnLootedTooltipLine("Use: Grants 25 Resonance."))
+
+        local saw_text, is_on_looted = addon:GetTooltipOnLootedState({
+            lines = {
+                { leftText = "Some Item" },
+                { leftText = "On Looted: Grants 25 Resonance." },
+            },
+        })
+
+        assert.is_true(saw_text)
+        assert.is_true(is_on_looted)
+    end)
+
+    it("caches On Looted item detection by item ID", function()
+        local addon = load_item_binding()
+        local tooltip_calls = 0
+
+        loader.with_globals({
+            C_TooltipInfo = {
+                GetHyperlink = function()
+                    tooltip_calls = tooltip_calls + 1
+                    return {
+                        lines = {
+                            { leftText = "Some Item" },
+                            { leftText = "On Looted: Activates immediately." },
+                        },
+                    }
+                end,
+            },
+        }, function()
+            assert.is_true(addon:IsOnLootedItem("|Hitem:12345::::::::|h[Some Item]|h"))
+            assert.is_true(addon:IsOnLootedItem("|Hitem:12345::::::::|h[Some Item]|h"))
+        end)
+
+        assert.equals(1, tooltip_calls)
+    end)
+
     it("does not treat Warband appearance collection text as a binding restriction", function()
         local addon = load_item_binding()
 

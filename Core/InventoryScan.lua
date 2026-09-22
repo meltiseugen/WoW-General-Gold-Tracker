@@ -591,5 +591,5 @@ function GoldTracker:BuildAuctionableInventoryItemList(valueSourceID, minimumQua
 
     self:SortInventoryItems(items, sortKey, sortAscending)
 
-    return items, totalValue, totalQuantity, scannedStacks, matchedStacks, candidateItems
+    return items, totalValue, totalQuantity, scannedStacks, matchedStacks
 end

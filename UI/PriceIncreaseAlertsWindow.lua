@@ -11,14 +11,16 @@ local ALERTS_WINDOW_MAX_HEIGHT = 900
 local ALERTS_ROW_HEIGHT = 26
 local ALERTS_ROW_SPACING = 2
 local ALERTS_ICON_SIZE = 18
-local ALERTS_COLUMN_GAP = 12
+local ALERTS_COLUMN_GAP = 8
 local ALERTS_ROW_RIGHT_PADDING = 6
-local ALERTS_BASIS_WIDTH = 104
-local ALERTS_LOCAL_WIDTH = 70
-local ALERTS_TSM_WIDTH = 70
-local ALERTS_QTY_WIDTH = 52
-local ALERTS_UNIT_WIDTH = 118
-local ALERTS_TOTAL_WIDTH = 128
+local ALERTS_EXPANSION_WIDTH = 130
+local ALERTS_PROFESSION_WIDTH = 104
+local ALERTS_BASIS_WIDTH = 90
+local ALERTS_LOCAL_WIDTH = 60
+local ALERTS_TSM_WIDTH = 60
+local ALERTS_QTY_WIDTH = 42
+local ALERTS_UNIT_WIDTH = 104
+local ALERTS_TOTAL_WIDTH = 110
 local ALERTS_ACTIONS_WIDTH = 120
 local ALERTS_DETAILS_BUTTON_WIDTH = 64
 local ALERTS_MAP_BUTTON_WIDTH = 48
@@ -102,6 +104,12 @@ local function SetAlertsHeaderColumn(fontString, panel, leftOffset, width)
     fontString:SetWidth(math.max(1, width))
 end
 
+local function SetAlertsColumnShown(fontString, shown)
+    if fontString and fontString.SetShown then
+        fontString:SetShown(shown == true)
+    end
+end
+
 local function GetAlertsTableAvailableWidth(frame)
     if not frame then
         return 0
@@ -131,34 +139,56 @@ local function ApplyAlertsTableColumnLayout(frame)
     local iconX = 8
     local itemX = iconX + ALERTS_ICON_SIZE + 8
     local rightEdge = availableWidth - ALERTS_ROW_RIGHT_PADDING
+    local showDetailedColumns = availableWidth >= 1000
     local actionsX = rightEdge - ALERTS_ACTIONS_WIDTH
-    local totalX = actionsX - ALERTS_COLUMN_GAP - ALERTS_TOTAL_WIDTH
-    local unitX = totalX - ALERTS_COLUMN_GAP - ALERTS_UNIT_WIDTH
-    local qtyX = unitX - ALERTS_COLUMN_GAP - ALERTS_QTY_WIDTH
-    local tsmX = qtyX - ALERTS_COLUMN_GAP - ALERTS_TSM_WIDTH
-    local localX = tsmX - ALERTS_COLUMN_GAP - ALERTS_LOCAL_WIDTH
-    local basisX = localX - ALERTS_COLUMN_GAP - ALERTS_BASIS_WIDTH
-    local itemWidth = math.max(1, basisX - ALERTS_COLUMN_GAP - itemX)
+    local totalX = showDetailedColumns and (actionsX - ALERTS_COLUMN_GAP - ALERTS_TOTAL_WIDTH) or nil
+    local unitRightX = totalX or actionsX
+    local unitX = unitRightX - ALERTS_COLUMN_GAP - ALERTS_UNIT_WIDTH
+    local qtyX = showDetailedColumns and (unitX - ALERTS_COLUMN_GAP - ALERTS_QTY_WIDTH) or nil
+    local tsmX = showDetailedColumns and (qtyX - ALERTS_COLUMN_GAP - ALERTS_TSM_WIDTH) or nil
+    local localRightX = tsmX or unitX
+    local localX = localRightX - ALERTS_COLUMN_GAP - ALERTS_LOCAL_WIDTH
+    local basisX = showDetailedColumns and (localX - ALERTS_COLUMN_GAP - ALERTS_BASIS_WIDTH) or nil
+    local professionRightX = basisX or localX
+    local professionX = professionRightX - ALERTS_COLUMN_GAP - ALERTS_PROFESSION_WIDTH
+    local expansionX = professionX - ALERTS_COLUMN_GAP - ALERTS_EXPANSION_WIDTH
+    local itemWidth = math.max(1, expansionX - ALERTS_COLUMN_GAP - itemX)
 
     if frame.listPanel then
+        SetAlertsColumnShown(frame.basisHeaderText, showDetailedColumns)
+        SetAlertsColumnShown(frame.tsmHeaderText, showDetailedColumns)
+        SetAlertsColumnShown(frame.qtyHeaderText, showDetailedColumns)
+        SetAlertsColumnShown(frame.totalHeaderText, showDetailedColumns)
         SetAlertsHeaderColumn(frame.itemHeaderText, frame.listPanel, 20 + itemX, itemWidth)
-        SetAlertsHeaderColumn(frame.basisHeaderText, frame.listPanel, 20 + basisX, ALERTS_BASIS_WIDTH)
+        SetAlertsHeaderColumn(frame.expansionHeaderText, frame.listPanel, 20 + expansionX, ALERTS_EXPANSION_WIDTH)
+        SetAlertsHeaderColumn(frame.professionHeaderText, frame.listPanel, 20 + professionX, ALERTS_PROFESSION_WIDTH)
+        if showDetailedColumns then
+            SetAlertsHeaderColumn(frame.basisHeaderText, frame.listPanel, 20 + basisX, ALERTS_BASIS_WIDTH)
+            SetAlertsHeaderColumn(frame.tsmHeaderText, frame.listPanel, 20 + tsmX, ALERTS_TSM_WIDTH)
+            SetAlertsHeaderColumn(frame.qtyHeaderText, frame.listPanel, 20 + qtyX, ALERTS_QTY_WIDTH)
+            SetAlertsHeaderColumn(frame.totalHeaderText, frame.listPanel, 20 + totalX, ALERTS_TOTAL_WIDTH)
+        end
         SetAlertsHeaderColumn(frame.localHeaderText, frame.listPanel, 20 + localX, ALERTS_LOCAL_WIDTH)
-        SetAlertsHeaderColumn(frame.tsmHeaderText, frame.listPanel, 20 + tsmX, ALERTS_TSM_WIDTH)
-        SetAlertsHeaderColumn(frame.qtyHeaderText, frame.listPanel, 20 + qtyX, ALERTS_QTY_WIDTH)
         SetAlertsHeaderColumn(frame.unitHeaderText, frame.listPanel, 20 + unitX, ALERTS_UNIT_WIDTH)
-        SetAlertsHeaderColumn(frame.totalHeaderText, frame.listPanel, 20 + totalX, ALERTS_TOTAL_WIDTH)
         SetAlertsHeaderColumn(frame.actionsHeaderText, frame.listPanel, 20 + actionsX, ALERTS_ACTIONS_WIDTH)
     end
 
     for _, row in ipairs(frame.rows or {}) do
+        SetAlertsColumnShown(row.basisText, showDetailedColumns)
+        SetAlertsColumnShown(row.tsmText, showDetailedColumns)
+        SetAlertsColumnShown(row.quantityText, showDetailedColumns)
+        SetAlertsColumnShown(row.totalValueText, showDetailedColumns)
         SetAlertsRowColumn(row.itemText, row, itemX, itemWidth)
-        SetAlertsRowColumn(row.basisText, row, basisX, ALERTS_BASIS_WIDTH)
+        SetAlertsRowColumn(row.expansionText, row, expansionX, ALERTS_EXPANSION_WIDTH)
+        SetAlertsRowColumn(row.professionText, row, professionX, ALERTS_PROFESSION_WIDTH)
+        if showDetailedColumns then
+            SetAlertsRowColumn(row.basisText, row, basisX, ALERTS_BASIS_WIDTH)
+            SetAlertsRowColumn(row.tsmText, row, tsmX, ALERTS_TSM_WIDTH)
+            SetAlertsRowColumn(row.quantityText, row, qtyX, ALERTS_QTY_WIDTH)
+            SetAlertsRowColumn(row.totalValueText, row, totalX, ALERTS_TOTAL_WIDTH)
+        end
         SetAlertsRowColumn(row.localText, row, localX, ALERTS_LOCAL_WIDTH)
-        SetAlertsRowColumn(row.tsmText, row, tsmX, ALERTS_TSM_WIDTH)
-        SetAlertsRowColumn(row.quantityText, row, qtyX, ALERTS_QTY_WIDTH)
         SetAlertsRowColumn(row.unitValueText, row, unitX, ALERTS_UNIT_WIDTH)
-        SetAlertsRowColumn(row.totalValueText, row, totalX, ALERTS_TOTAL_WIDTH)
         if row.detailsButton then
             row.detailsButton:ClearAllPoints()
             row.detailsButton:SetPoint("LEFT", row, "LEFT", actionsX, 0)
@@ -214,6 +244,16 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     itemText:SetJustifyH("LEFT")
     itemText:SetWordWrap(false)
     row.itemText = itemText
+
+    local expansionText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    expansionText:SetJustifyH("LEFT")
+    expansionText:SetWordWrap(false)
+    row.expansionText = expansionText
+
+    local professionText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    professionText:SetJustifyH("LEFT")
+    professionText:SetWordWrap(false)
+    row.professionText = professionText
 
     local basisText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     basisText:SetJustifyH("LEFT")
@@ -296,11 +336,15 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
         GameTooltip:SetHyperlink(self.itemLink)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("Price increase alert", 1.0, 0.82, 0.18)
+        GameTooltip:AddDoubleLine("Expansion", tostring(self.materialExpansionLabel or self.materialExpansionID or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Profession", tostring(self.materialProfessionLabel or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Alert basis", tostring(self.alertBasis or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Local change", FormatAlertPercent(self.localChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
         GameTooltip:AddDoubleLine("TSM change", FormatAlertPercent(self.tsmChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
         GameTooltip:AddDoubleLine("Baseline", self.baselinePrice and GoldTracker:FormatMoney(self.baselinePrice) or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Current", self.latestPrice and GoldTracker:FormatMoney(self.latestPrice) or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Quantity", tostring(self.quantity or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Stack value", GoldTracker:FormatMoney(self.totalValue or 0), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Local samples", tostring(self.localSampleCount or 0), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("First sample", FormatAlertTimestamp(self.baselineTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Latest sample", FormatAlertTimestamp(self.latestTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
@@ -425,6 +469,8 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
 
             local alertBasis = tostring(result.alertBasis or "Unknown")
             row.itemText:SetText(result.itemLink or result.itemName or ("Item " .. tostring(result.itemID or "?")))
+            row.expansionText:SetText(tostring(result.materialExpansionLabel or result.materialExpansionID or "Unknown"))
+            row.professionText:SetText(tostring(result.materialProfessionLabel or "Unknown"))
             row.basisText:SetText(result.isMaterial and (alertBasis .. " material") or alertBasis)
             row.localText:SetText(FormatAlertPercent(result.localChangePercent))
             row.tsmText:SetText(FormatAlertPercent(result.tsmChangePercent))
@@ -433,6 +479,8 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             row.totalValueText:SetText(self:FormatMoney(result.totalValue or 0))
 
             row.basisText:SetTextColor(result.isMaterial and 0.72 or 1.0, result.isMaterial and 0.86 or 0.82, result.isMaterial and 1.0 or 0.18)
+            row.expansionText:SetTextColor(0.76, 0.82, 0.94)
+            row.professionText:SetTextColor(0.72, 0.86, 1.0)
             row.localText:SetTextColor(0.52, 1.00, 0.56)
             row.tsmText:SetTextColor(0.68, 0.96, 0.72)
             row.quantityText:SetTextColor(0.92, 0.95, 1.0)
@@ -584,6 +632,8 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame.listPanel = listPanel
 
     frame.itemHeaderText = CreateHeaderText(listPanel, "Item", "LEFT")
+    frame.expansionHeaderText = CreateHeaderText(listPanel, "Expansion", "LEFT")
+    frame.professionHeaderText = CreateHeaderText(listPanel, "Profession", "LEFT")
     frame.basisHeaderText = CreateHeaderText(listPanel, "Basis", "LEFT")
     frame.localHeaderText = CreateHeaderText(listPanel, "Local", "RIGHT")
     frame.tsmHeaderText = CreateHeaderText(listPanel, "TSM", "RIGHT")

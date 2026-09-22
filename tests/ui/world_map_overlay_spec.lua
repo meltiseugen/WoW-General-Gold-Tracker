@@ -181,7 +181,14 @@ describe("UI/WorldMapOverlay", function()
             mapLabel = "Nagrand",
             selectedMapOptionIndex = 2,
             pins = {
-                { mapID = 107, x = 14, y = 24, label = "Central ridge", tips = { "Stay moving." } },
+                {
+                    mapID = 107,
+                    x = 14,
+                    y = 24,
+                    label = "Central ridge",
+                    farmAction = "Mine: Gather ore nodes along the ridge.",
+                    tips = { "Stay moving." },
+                },
                 { mapID = 104, x = 0.45, y = 0.29, label = "Wrong map" },
                 { mapID = 107, x = 0.25, y = 125, label = "Invalid" },
             },
@@ -195,6 +202,7 @@ describe("UI/WorldMapOverlay", function()
         assert.equals(0.14, payload.pins[1].x)
         assert.equals(0.24, payload.pins[1].y)
         assert.equals("Central ridge", payload.pins[1].label)
+        assert.equals("Mine: Gather ore nodes along the ridge.", payload.pins[1].farmAction)
         assert.equals("Stay moving.", payload.pins[1].tips[1])
     end)
 
@@ -277,6 +285,7 @@ describe("UI/WorldMapOverlay", function()
     end)
 
     it("keeps route lines while showing filled areas for non-route locations", function()
+        local deferredCallbacks = {}
         local worldMapFrame = {
             AddDataProvider = function(self, provider)
                 self.provider = provider
@@ -290,12 +299,15 @@ describe("UI/WorldMapOverlay", function()
             SetMapID = function() end,
             SetFrameStrata = function(self, strata)
                 self.frameStrata = strata
+                self.frameStrataSetCount = (self.frameStrataSetCount or 0) + 1
             end,
             SetToplevel = function(self, enabled)
                 self.toplevel = enabled
+                self.toplevelSetCount = (self.toplevelSetCount or 0) + 1
             end,
             Raise = function(self)
                 self.raised = true
+                self.raiseCount = (self.raiseCount or 0) + 1
             end,
         }
         loader.with_globals({
@@ -313,6 +325,12 @@ describe("UI/WorldMapOverlay", function()
             },
             MapCanvasDataProviderMixin = {},
             WorldMapFrame = worldMapFrame,
+            C_Timer = {
+                After = function(delay, callback)
+                    assert.equals(0, delay)
+                    deferredCallbacks[#deferredCallbacks + 1] = callback
+                end,
+            },
             CreateFrame = function()
                 return make_frame()
             end,
@@ -346,11 +364,19 @@ describe("UI/WorldMapOverlay", function()
             worldMapFrame.map = map
 
             local messages = {}
-            local addon = load_overlay({
+            local addon, ns = load_overlay({
                 Print = function(_, message)
                     messages[#messages + 1] = message
                 end,
             })
+            local demotionCount = 0
+            ns.JanisTheme = {
+                DemoteInactiveAddonWindows = function(_, activeFrame, strataOverride)
+                    assert.equals(worldMapFrame, activeFrame)
+                    assert.equals("LOW", strataOverride)
+                    demotionCount = demotionCount + 1
+                end,
+            }
 
             assert.is_true(addon:ProjectMapRouteToWorldMap({
                 title = "Ore",
@@ -371,9 +397,17 @@ describe("UI/WorldMapOverlay", function()
             }))
 
             assert.equals(2, #addon.worldMapProjections)
-            assert.equals("FULLSCREEN", worldMapFrame.frameStrata)
-            assert.is_true(worldMapFrame.toplevel)
-            assert.is_true(worldMapFrame.raised)
+            assert.is_nil(worldMapFrame.frameStrataSetCount)
+            assert.is_nil(worldMapFrame.toplevelSetCount)
+            assert.is_nil(worldMapFrame.raiseCount)
+            assert.equals(2, demotionCount)
+            assert.equals(2, #deferredCallbacks)
+
+            deferredCallbacks[#deferredCallbacks]()
+            assert.is_nil(worldMapFrame.frameStrataSetCount)
+            assert.is_nil(worldMapFrame.toplevelSetCount)
+            assert.is_nil(worldMapFrame.raiseCount)
+            assert.equals(3, demotionCount)
 
             worldMapFrame.provider:RefreshAllData()
 
@@ -466,7 +500,11 @@ describe("UI/WorldMapOverlay", function()
         }, function()
             minimap:SetSize(140, 140)
 
-            local addon = load_overlay({})
+            local addon = load_overlay({
+                GetMapPinIconOption = function()
+                    return { id = "herb", texture = "Interface\\Icons\\INV_Misc_Herb_07" }
+                end,
+            })
             addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
                 title = "Ore",
                 mapID = 100,
@@ -483,6 +521,7 @@ describe("UI/WorldMapOverlay", function()
             assert.equals(1, #overlay.pins)
             assert.is_true(overlay.pins[1].shown)
             assert.equals("Near ore", overlay.pins[1].pinData.label)
+            assert.equals("Interface\\Icons\\INV_Misc_Herb_07", overlay.pins[1].icon.texture)
 
             addon:ClearWorldMapProjection()
 

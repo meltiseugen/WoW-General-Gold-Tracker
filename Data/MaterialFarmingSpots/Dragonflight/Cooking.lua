@@ -276,7 +276,3 @@ RegisterMeat(197748, "Burly Bear Haunch", {
 RegisterMeat(197749, "Ohn'ahran Potato", {
     OHNAHRAN_POTATO_VENDOR_ROUTE,
 }, "Dragonflight cooking vendor ingredient; use direct purchase waypoints instead of mob-farm placeholders.")
-
-RegisterMeat(201399, "Primal Bear Spine", {
-    AZURE_SPAN_FRIGIDPELT_BEAR_ROUTE,
-}, "Narrow Dragonflight bear drop from Frigidpelt bear clusters in the Upper Frostlands.")

@@ -131,3 +131,44 @@ RegisterReagent(
     { BFA_MYTHIC_DUNGEON_CORE_ROUTE },
     "Later BFA dungeon reagent from Mythic and Mythic+ final-boss/completion routes."
 )
+
+Register({
+    itemID = 161344,
+    itemName = "Abyssal Fragment",
+    expansion = "battleForAzeroth",
+    professions = { "miscellaneous" },
+    category = "Mount Reagent",
+    researchStatus = "researched",
+    sourceUrls = {
+        ItemUrl(161344),
+        "https://www.wowhead.com/item=161479/nazjatar-blood-serpent",
+    },
+    summary = "Auctionable, ultra-rare BFA world drop; twenty combine into the secret-mount summon reagent.",
+    spots = {
+        {
+            id = "bfa-stormsong-abyssal-fragment-creature-loop",
+            source = "Retail Wowhead Abyssal Fragment comments and Nazjatar Blood Serpent secret guide",
+            sourceUrls = {
+                ItemUrl(161344),
+                "https://www.wowhead.com/item=161479/nazjatar-blood-serpent",
+                "https://www.wowhead.com/zone=9527/shrine-of-the-storm",
+            },
+            mapName = "Stormsong Valley",
+            location = "Shrine of the Storm cultist, naga, and void-creature circuits",
+            routeType = "ultra-rare-world-drop-loop",
+            density = "High mobs, extremely low target rate",
+            dropDifficulty = "Near-zero world-drop chance. This is a lottery side drop, not a deterministic farm.",
+            tips = {
+                "Prioritize dense BFA naga, cultist, and void-creature pulls around Shrine of the Storm.",
+                "Treat cloth, greens, and ordinary drops as the base value; never expect a fragment per session.",
+                "Twenty fragments are required for the secret mount chain, which sustains collector demand.",
+            },
+            coords = {
+                C(0.7366, 0.2330, "Sepulcher of the Abyss entrance"),
+                C(0.700, 0.240, "Shrine coast creature loop"),
+                C(0.760, 0.310, "Northern naga and cultist return"),
+            },
+            confidence = "medium",
+        },
+    },
+})

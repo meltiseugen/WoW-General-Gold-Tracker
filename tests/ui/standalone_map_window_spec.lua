@@ -214,9 +214,10 @@ describe("UI/StandaloneMapWindow", function()
         assert.is_nil(text:find("farming pins visible", 1, true))
         assert.matches("Old Ore", text, 1, true)
         assert.matches("Twilight Ridge", text, 1, true)
-        assert.matches("Route: mining%-loop", text)
+        assert.matches("Mine: Gather ore nodes while following the marked route.", text, 1, true)
+        assert.matches("Method: Mining loop", text, 1, true)
         assert.matches("Density: High", text, 1, true)
-        assert.matches("Difficulty: Easy loop", text, 1, true)
+        assert.matches("Notes: Easy loop", text, 1, true)
         assert.matches("- Stay on the ridge.", text, 1, true)
         assert.matches("Sources", text, 1, true)
         assert.matches("Wowhead", text, 1, true)
@@ -337,6 +338,51 @@ describe("UI/StandaloneMapWindow", function()
         assert.equals("GameFontHighlight", areaLine.fontObject)
     end)
 
+    it("uses the right action verb and supports explicit farm instructions", function()
+        local addon = load_window()
+        local fishingLines = addon:BuildStandaloneMapDetailLines({
+            {
+                mapID = 114,
+                itemName = "Borean Man O' War",
+                spotLocation = "Borean Tundra coastal waters",
+                targetName = "Borean Man O' War Schools and coastal open water",
+                targetType = "fish",
+                routeType = "coastal-fishing-pool-loop",
+            },
+        }, 114, "Borean Tundra")
+        local herbLines = addon:BuildStandaloneMapDetailLines({
+            {
+                mapID = 119,
+                itemName = "Crystallized Life",
+                spotLocation = "Sholazar Basin herb circuit",
+                routeType = "herbalism-loop",
+                farmAction = "Gather: Harvest Adder's Tongue nodes; Crystallized Life is a possible bonus gather.",
+            },
+        }, 119, "Sholazar Basin")
+
+        local fishingText = {}
+        for _, line in ipairs(fishingLines) do
+            fishingText[#fishingText + 1] = line.text or line.siteName
+        end
+        local herbText = {}
+        for _, line in ipairs(herbLines) do
+            herbText[#herbText + 1] = line.text or line.siteName
+        end
+
+        assert.matches(
+            "Fish: Borean Man O' War Schools and coastal open water",
+            table.concat(fishingText, "\n"),
+            1,
+            true
+        )
+        assert.matches(
+            "Gather: Harvest Adder's Tongue nodes; Crystallized Life is a possible bonus gather.",
+            table.concat(herbText, "\n"),
+            1,
+            true
+        )
+    end)
+
     it("clears stale source button data when the next map has no source links", function()
         local addon = load_window()
         local details_content = make_frame()
@@ -379,7 +425,13 @@ describe("UI/StandaloneMapWindow", function()
         }, function()
             addon:RefreshStandaloneMapWindow()
 
-            local staleRow = addon.standaloneMapFrame.detailSourceRows[4]
+            local staleRow
+            for _, row in pairs(addon.standaloneMapFrame.detailSourceRows) do
+                if row.button and row.button.sourceUrl == "https://www.wowhead.com/item=12345/material" then
+                    staleRow = row
+                    break
+                end
+            end
             assert.is_table(staleRow)
             assert.equals("https://www.wowhead.com/item=12345/material", staleRow.button.sourceUrl)
             assert.is_true(staleRow.shown)
@@ -440,7 +492,14 @@ describe("UI/StandaloneMapWindow", function()
 
         addon:RefreshStandaloneMapWindow()
 
-        local locationLine = addon.standaloneMapFrame.detailTextLines[3]
+        local locationLine
+        for _, line in pairs(addon.standaloneMapFrame.detailTextLines) do
+            if line.text == "Area: Adamantite-heavy Nagrand cave and ridge loop" then
+                locationLine = line
+                break
+            end
+        end
+        assert.is_table(locationLine)
         assert.equals("Area: Adamantite-heavy Nagrand cave and ridge loop", locationLine.text)
         assert.is_true(locationLine.wordWrap)
         assert.is_true(locationLine.nonSpaceWrap)
@@ -536,7 +595,11 @@ describe("UI/StandaloneMapWindow", function()
     end)
 
     it("switches the selected farm between its area overlay and coordinate icons", function()
-        local addon = load_window()
+        local addon = load_window({
+            GetMapPinIconOption = function()
+                return { id = "ore", texture = "Interface\\Icons\\INV_Ore_Copper_01" }
+            end,
+        })
         local map_content = make_frame()
         local map_viewport = make_frame()
         map_viewport:SetSize(500, 500)
@@ -604,6 +667,10 @@ describe("UI/StandaloneMapWindow", function()
             assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].shown)
             assert.is_true(addon.standaloneMapFrame.mapPinFrames[2].shown)
             assert.equals("West dragonhawk", addon.standaloneMapFrame.mapPinFrames[1].pinData.label)
+            assert.equals(
+                "Interface\\Icons\\INV_Ore_Copper_01",
+                addon.standaloneMapFrame.mapPinFrames[1].icon.texture
+            )
             assert.same({ "CENTER", map_content, "TOPLEFT", 100, -150 }, addon.standaloneMapFrame.mapPinFrames[1].points[1])
             assert.is_false(addon.standaloneMapFrame.standaloneMapAreaFillLines[1].shown)
             assert.matches("2 farming location icons visible", addon.standaloneMapFrame.statusText.text, 1, true)
@@ -614,6 +681,68 @@ describe("UI/StandaloneMapWindow", function()
             assert.is_false(addon.standaloneMapFrame.mapPinFrames[1].shown)
             assert.is_true(addon.standaloneMapFrame.standaloneMapAreaFillLines[1].shown)
         end)
+    end)
+
+    it("navigates to the current map's parent and resets the view", function()
+        local addon = load_window()
+        local refreshed = false
+        local details_scroll_frame = make_frame()
+        details_scroll_frame.verticalScroll = 80
+        details_scroll_frame.SetVerticalScroll = function(self, value)
+            self.verticalScroll = value
+        end
+        addon.standaloneMapFrame = {
+            mapID = 107,
+            mapZoom = 2,
+            mapPanX = 120,
+            mapPanY = -45,
+            mapDragging = true,
+            detailsScrollFrame = details_scroll_frame,
+            statusText = make_frame(),
+        }
+        addon.RefreshStandaloneMapWindow = function()
+            refreshed = true
+        end
+
+        loader.with_globals({
+            C_Map = {
+                GetMapInfo = function(mapID)
+                    assert.equals(107, mapID)
+                    return { parentMapID = 101 }
+                end,
+            },
+        }, function()
+            assert.is_true(addon:NavigateStandaloneMapToParent())
+        end)
+
+        assert.equals(101, addon.standaloneMapFrame.mapID)
+        assert.equals(1, addon.standaloneMapFrame.mapZoom)
+        assert.equals(0, addon.standaloneMapFrame.mapPanX)
+        assert.equals(0, addon.standaloneMapFrame.mapPanY)
+        assert.is_false(addon.standaloneMapFrame.mapDragging)
+        assert.equals(0, details_scroll_frame.verticalScroll)
+        assert.is_true(refreshed)
+    end)
+
+    it("keeps the current standalone map when it has no parent", function()
+        local addon = load_window()
+        addon.standaloneMapFrame = {
+            mapID = 101,
+            statusText = make_frame(),
+        }
+
+        loader.with_globals({
+            C_Map = {
+                GetMapInfo = function()
+                    return { parentMapID = 0 }
+                end,
+            },
+        }, function()
+            assert.is_false(addon:NavigateStandaloneMapToParent())
+        end)
+
+        assert.equals(101, addon.standaloneMapFrame.mapID)
+        assert.equals("This map has no parent map.", addon.standaloneMapFrame.statusText.text)
     end)
 
     it("clears only the projections owned by the open map", function()

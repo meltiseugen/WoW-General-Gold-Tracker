@@ -101,6 +101,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots/Classic/Mining.lua",
     "Data/MaterialFarmingSpots/Classic/Skinning.lua",
     "Data/MaterialFarmingSpots/Classic/Tailoring.lua",
+    "Data/MaterialFarmingSpots/Classic/Fishing.lua",
+    "Data/MaterialFarmingSpots/Classic/Reagents.lua",
+    "Data/MaterialFarmingSpots/Classic/Housing.lua",
     "Data/MaterialFarmingSpots/BurningCrusade/Alchemy.lua",
     "Data/MaterialFarmingSpots/BurningCrusade/Cooking.lua",
     "Data/MaterialFarmingSpots/BurningCrusade/Enchanting.lua",
@@ -121,6 +124,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots/Wrath/Mining.lua",
     "Data/MaterialFarmingSpots/Wrath/Skinning.lua",
     "Data/MaterialFarmingSpots/Wrath/Tailoring.lua",
+    "Data/MaterialFarmingSpots/Wrath/Reagents.lua",
+    "Data/MaterialFarmingSpots/Wrath/Miscellaneous.lua",
+    "Data/MaterialFarmingSpots/Wrath/Housing.lua",
     "Data/MaterialFarmingSpots/Cataclysm/Alchemy.lua",
     "Data/MaterialFarmingSpots/Cataclysm/Cooking.lua",
     "Data/MaterialFarmingSpots/Cataclysm/Enchanting.lua",
@@ -139,6 +145,7 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots/Mists/Mining.lua",
     "Data/MaterialFarmingSpots/Mists/Skinning.lua",
     "Data/MaterialFarmingSpots/Mists/Tailoring.lua",
+    "Data/MaterialFarmingSpots/Mists/Reagents.lua",
     "Data/MaterialFarmingSpots/Warlords/Alchemy.lua",
     "Data/MaterialFarmingSpots/Warlords/Cooking.lua",
     "Data/MaterialFarmingSpots/Warlords/Enchanting.lua",
@@ -183,6 +190,7 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots/Dragonflight/Fishing.lua",
     "Data/MaterialFarmingSpots/Dragonflight/Tailoring.lua",
     "Data/MaterialFarmingSpots/Dragonflight/Elemental.lua",
+    "Data/MaterialFarmingSpots/Dragonflight/Reagents.lua",
     "Data/MaterialFarmingSpots/WarWithin/Herbalism.lua",
     "Data/MaterialFarmingSpots/WarWithin/Mining.lua",
     "Data/MaterialFarmingSpots/WarWithin/Jewelcrafting.lua",
@@ -350,10 +358,28 @@ describe("Data/FarmingItems", function()
         assert.same({ "skinning", "leatherworking" }, items_by_id[193208].professions)
         assert.equals("Enchanting", items_by_id[194123].tag)
         assert.same({ "enchanting" }, items_by_id[194123].professions)
-        assert.equals("Meat", items_by_id[201399].tag)
-        assert.same({ "cooking" }, items_by_id[201399].professions)
+        assert.equals("Creature Reagent", items_by_id[201399].tag)
+        assert.same({ "miscellaneous" }, items_by_id[201399].professions)
         assert.equals("Herb", items_by_id[191470].tag)
         assert.equals("Gem", items_by_id[192852].tag)
+    end)
+
+    it("distinguishes instance mining materials from outdoor gathered ore", function()
+        local data = load_data("Data/FarmingItems.lua", "FarmingItems")
+        local items_by_id = {}
+
+        for _, item in ipairs(data.items or {}) do
+            items_by_id[item.itemID] = item
+        end
+
+        assert.is_nil(items_by_id[2770].acquisitionType)
+        assert.equals("Dungeon Ore", items_by_id[11370].tag)
+        assert.equals("Raid Ore", items_by_id[18562].tag)
+        assert.equals("Obsidian Shard", items_by_id[22202].tag)
+        assert.equals("Obsidian Shard", items_by_id[22203].tag)
+        for _, item_id in ipairs({ 11370, 18562, 22202, 22203 }) do
+            assert.equals("instance", items_by_id[item_id].acquisitionType)
+        end
     end)
 end)
 
@@ -659,7 +685,7 @@ describe("Data/MaterialFarmingSpots", function()
             7082, 7909, 7910, 7911, 7912, 8153, 8169, 8170, 8171, 8831, 8836,
             8838, 8839, 8845, 8846, 10620, 11370, 12361, 12363, 12364, 12365,
             12799, 12800, 12803, 12808, 13463, 13464, 13465, 13466, 13467,
-            13468, 14047, 14256, 16202, 16203, 2449,
+            13468, 14047, 14256, 16202, 16203, 18562, 22202, 22203, 2449,
         }
         local composed_or_vendor_classic_ids = {
             2840, 2841, 2842, 2996, 2997, 3575, 3576, 3577, 3857, 3859,
@@ -743,6 +769,139 @@ describe("Data/MaterialFarmingSpots", function()
         assert.is_true(item_has_coord(spots.items[4625], 0.542, 0.446))
         assert.is_true(item_has_coord(spots.items[13468], 0.630, 0.536))
         assert.is_true(item_has_coord(spots.items[4232], 0.680, 0.472))
+    end)
+
+    it("includes the non-ore and non-herb Classic specialty-material discovery pass", function()
+        local spots = load_material_farming_spots(true)
+        local specialty_ids = {
+            6470, 6471, 8154, 8165, 8167, 15408, 15412, 15414, 15415, 15416,
+            15417, 15419, 15422, 15423, 17012, 19767, 19768, 20381,
+            3182, 4337, 14227,
+            5523, 5524, 7973, 5498, 5500, 7971, 13926, 5503, 5504, 7974,
+            6358, 6359, 13422,
+            7075, 7077, 7079, 7081, 7972, 11382, 12809, 12811, 17010, 17011,
+            20520, 5784, 5785, 15420, 1475, 1288, 3174, 8151, 12804, 18512,
+            8146, 5635, 5637, 12207, 8150, 245586, 6474, 6475, 6476,
+            10940, 11083, 11137, 11176, 16204, 10938, 10939, 10998, 11082,
+            11134, 11135, 11174, 11175, 10978, 11084, 11138, 11139, 11177,
+            11178, 14343, 14344, 20725,
+        }
+
+        for _, item_id in ipairs(specialty_ids) do
+            local message = "missing Classic specialty farming entry: " .. tostring(item_id)
+            assert.is_table(spots.items[item_id], message)
+            assert.equals("classic", spots.items[item_id].expansion, message)
+            assert.equals("researched", spots.items[item_id].researchStatus, message)
+            assert.is_true(spots.items[item_id].category ~= "Ore", message)
+            assert.is_true(spots.items[item_id].category ~= "Herb", message)
+        end
+    end)
+
+    it("adds unusual auction farms and excludes non-tradeable or vendor-sourced inputs", function()
+        local spots = load_material_farming_spots(true)
+        local catalog = load_data("Data/FarmingItems.lua", "FarmingItems")
+        local items = {}
+        for _, item in ipairs(catalog.items or {}) do
+            items[item.itemID] = item
+        end
+
+        local unusual_ids = {
+            20381, 6474, 6475, 6476,
+            44703, 43299, 92426, 161344, 187662,
+            201399, 201404, 201405, 201883, 200224, 201991,
+        }
+        for _, item_id in ipairs(unusual_ids) do
+            local message = "missing unusual auction farm: " .. tostring(item_id)
+            assert.is_table(items[item_id], message)
+            assert.is_table(spots.items[item_id], message)
+            assert.equals("researched", spots.items[item_id].researchStatus, message)
+        end
+
+        assert.is_nil(items[208015]) -- Stuffed Deviate Scale Pouch is bind-on-pickup.
+        for _, vendor_item_id in ipairs({ 2321, 2325, 2604, 2880, 4289, 4341, 4342, 8925, 14341, 39354 }) do
+            assert.is_nil(items[vendor_item_id])
+        end
+        assert.is_nil(items[236952].components) -- Mote of Pure Void is not an assumed match for "Mote of Night".
+        assert.is_true(item_has_coord(spots.items[25699], 0.300, 0.700))
+        assert.is_true(item_has_coord(spots.items[20381], 0.692, 0.540))
+        assert.is_true(item_has_coord(spots.items[187662], 0.518, 0.745))
+        assert.is_true(item_has_coord(spots.items[201404], 0.770, 0.170))
+        assert.is_true(item_has_coord(spots.items[201883], 0.224, 0.677))
+
+        assert.same({
+            { itemID = 6471, quantity = 6 },
+            { itemID = 6470, quantity = 4 },
+        }, items[6468].components)
+        assert.equals(6, items[20380].components[2].quantity)
+        assert.equals(20381, items[20380].components[2].itemID)
+    end)
+
+    it("models Classic crafted intermediates and Midnight housing decor as expandable compositions", function()
+        local data = load_data("Data/FarmingItems.lua", "FarmingItems")
+        local items = {}
+        for _, item in ipairs(data.items or {}) do
+            items[item.itemID] = item
+        end
+
+        local composed_ids = {
+            4231, 4233, 4236, 8172, 15409, 15407, 14342, 12360, 12810,
+            15994, 16000, 16006, 3470, 3478, 3486, 7966, 12644,
+            6338, 11128, 11144, 16206,
+            4357, 4364, 4377, 10505, 15992, 4361, 4371, 4375, 4382,
+            4387, 10558, 10559, 10560, 18631, 6370, 6371, 13423,
+            43119, 43120, 43121, 43123, 10308,
+        }
+        for _, item_id in ipairs(composed_ids) do
+            local message = "missing expandable Classic intermediate: " .. tostring(item_id)
+            assert.is_table(items[item_id], message)
+            assert.is_table(items[item_id].components, message)
+            assert.is_true(#items[item_id].components > 0, message)
+        end
+
+        local housing_ids = {
+            257100, 257041, 246111, 246489, 263027, 253250, 246410, 246700,
+            245502, 245503, 246420, 258289, 246423, 246488, 246413, 242948,
+            257725, 246685, 243336,
+        }
+        for _, item_id in ipairs(housing_ids) do
+            local message = "missing expandable Classic housing recipe: " .. tostring(item_id)
+            assert.is_table(items[item_id], message)
+            assert.equals("classic", items[item_id].expansion, message)
+            assert.equals("Housing Decor", items[item_id].tag, message)
+            assert.is_table(items[item_id].components, message)
+            assert.is_true(#items[item_id].components >= 2, message)
+        end
+
+        assert.same({ { itemID = 12359, quantity = 1 }, { itemID = 12363, quantity = 1 } }, items[12360].components)
+        assert.same({ { itemID = 12360, quantity = 1 }, { itemID = 14227, quantity = 1 } }, items[16006].components)
+        assert.equals(2, items[10308].outputQuantity)
+        assert.same({ { itemID = 43120, quantity = 1 } }, items[10308].components)
+        assert.equals(40, items[246410].components[1].quantity)
+        assert.equals(245586, items[246410].components[1].itemID)
+    end)
+
+    it("links every Classic Midnight housing recipe back to its researched farm materials", function()
+        local spots, ns = load_material_farming_spots(true)
+        local housing = ns.ClassicHousing
+
+        assert.is_table(housing)
+        assert.equals(19, #housing.recipes)
+        assert.equals(19, #spots.items[245586].housingUses)
+
+        local devilsaur_use
+        for _, use in ipairs(spots.items[15417].housingUses or {}) do
+            if use.outputItemID == 257725 then
+                devilsaur_use = use
+            end
+        end
+        assert.is_table(devilsaur_use)
+        assert.equals(8, devilsaur_use.quantity)
+
+        local core_use_count = 0
+        for _, use in ipairs(spots.items[17011].housingUses or {}) do
+            core_use_count = core_use_count + 1
+        end
+        assert.equals(2, core_use_count)
     end)
 
     it("keeps imported Classic herbalism routes as separate spot entries", function()
@@ -830,13 +989,13 @@ describe("Data/MaterialFarmingSpots", function()
         assert.equals("Use this when Un'Goro has another farmer clearing the cave.", zangarmarsh.tips[2])
     end)
 
-    it("includes sampled Classic route coordinates from Artisans of Azeroth import strings", function()
+    it("includes sampled Classic coordinates from the supplied Retail Routes imports", function()
         local spots = load_material_farming_spots(true)
 
-        assert.is_true(item_has_coord(spots.items[2770], 0.5449, 0.1109))
-        assert.is_true(item_has_coord(spots.items[2771], 0.7357, 0.5904))
-        assert.is_true(item_has_coord(spots.items[3858], 0.1136, 0.3685))
-        assert.is_true(item_has_coord(spots.items[10620], 0.3121, 0.6533))
+        assert.is_true(item_has_coord(spots.items[2770], 0.4391, 0.1401))
+        assert.is_true(item_has_coord(spots.items[2771], 0.4687, 0.1045))
+        assert.is_true(item_has_coord(spots.items[3858], 0.3896, 0.3440))
+        assert.is_true(item_has_coord(spots.items[10620], 0.5093, 0.2243))
     end)
 
     it("keeps imported Classic mining routes as separate spot entries", function()
@@ -872,18 +1031,22 @@ describe("Data/MaterialFarmingSpots", function()
         end
     end)
 
-    it("includes researched Wrath farming data while leaving composed-only Wrath materials pending", function()
+    it("includes researched Wrath farming data while leaving catalog-only Wrath materials pending", function()
         local spots = load_material_farming_spots(true)
         local researched_wrath_ids = {
-            33470, 33568, 34052, 34054, 34055, 34736, 36782, 36901, 36903, 36904,
+            33470, 33568, 34052, 34054, 34055, 34057, 34736, 36781, 36782, 36783, 36784, 36901, 36903, 36904,
             36905, 36906, 36907, 36908, 36909, 36910, 36912, 36917, 36918, 36920,
             36921, 36923, 36924, 36926, 36927, 36929, 36930, 36932, 36933, 37700,
-            37701, 37702, 37703, 37704, 37705, 37921, 38557, 38558, 38561, 41800,
+            37701, 37702, 37703, 37704, 37705, 37921, 38557, 38558, 38561, 39970, 41800,
             41801, 41802, 41803, 41805, 41806, 41807, 41808, 41809, 41810, 41812,
-            41813, 43009, 43010, 43011, 43012, 43013, 43501, 44128,
+            41813, 42780, 43009, 43010, 43011, 43012, 43013, 43102, 43299, 43501, 44128, 44703,
+            45087, 45909, 45912, 47556, 49908, 251762,
         }
         local composed_wrath_ids = {
-            35625, 35627, 41510,
+            33447, 35622, 35623, 35624, 35625, 35627, 36860, 36913, 36916, 36919,
+            36922, 36925, 36928, 36931, 36934, 37663, 38425, 39343, 39681, 39682,
+            39683, 40077, 41163, 41285, 41334,
+            41510, 41511, 41593, 41594, 41595, 42225, 43109, 43126, 43127,
         }
 
         for _, item_id in ipairs(researched_wrath_ids) do
@@ -894,7 +1057,7 @@ describe("Data/MaterialFarmingSpots", function()
         end
 
         for _, item_id in ipairs(composed_wrath_ids) do
-            local message = "composed-only Wrath item should stay pending: " .. tostring(item_id)
+            local message = "catalog-only Wrath item should stay pending: " .. tostring(item_id)
             assert.is_nil(spots.items[item_id], message)
             assert.is_table(spots.missingItems[item_id], message)
             assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
@@ -923,6 +1086,44 @@ describe("Data/MaterialFarmingSpots", function()
                 end
             end
         end
+    end)
+
+    it("keeps the Crystallized Shadow farm explicit about its kill target", function()
+        local spots = load_material_farming_spots(true)
+        local farm = find_spot(
+            spots.items[37703],
+            "crystallized-shadow-dragonblight-frostmourne-cavern"
+        )
+
+        assert.is_table(farm)
+        assert.equals("Deathbringer Revenant", farm.targetName)
+        assert.equals("kill", farm.targetType)
+        assert.equals("Frostmourne Cavern (entrance near 74, 24)", farm.location)
+        assert.matches("Kill Deathbringer Revenants", farm.tips[2], 1, true)
+    end)
+
+    it("explains the direct and herbalism methods for Crystallized Life", function()
+        local spots = load_material_farming_spots(true)
+        local item = spots.items[37704]
+        local direct = find_spot(item, "crystallized-life-howling-fjord-thornvine-creepers")
+        local herbalism = find_spot(item, "wrath-adders-tongue-sholazar-large-main-route")
+
+        assert.equals("Thornvine Creeper", direct.targetName)
+        assert.equals("kill", direct.targetType)
+        assert.equals(0, direct.sortOrder)
+        assert.matches("Harvest Adder's Tongue nodes", herbalism.farmAction, 1, true)
+    end)
+
+    it("identifies Borean Man O' War as a coastal fishing-school farm", function()
+        local spots = load_material_farming_spots(true)
+        local farm = find_spot(spots.items[41805], "wrath-borean-man-o-war-borean-tundra-inland-waters")
+
+        assert.equals("fish", farm.targetType)
+        assert.matches("Borean Man O' War Schools", farm.targetName, 1, true)
+        assert.matches("coastal waters", farm.location, 1, true)
+        assert.equals("coastal-fishing-pool-loop", farm.routeType)
+        assert.equals(0.3275, farm.coords[1].x)
+        assert.equals(0.6916, farm.coords[1].y)
     end)
 
     it("keeps Wrath farming sources on retail-safe pages", function()
@@ -961,7 +1162,7 @@ describe("Data/MaterialFarmingSpots", function()
     it("includes second-pass Wrath material additions and exact sourced coordinates", function()
         local spots = load_material_farming_spots(true)
 
-        assert.is_true(item_has_coord(spots.items[37921], 0.1236, 0.3201))
+        assert.is_true(item_has_coord(spots.items[37921], 0.5850, 0.2578))
         assert.is_true(item_has_coord(spots.items[43010], 0.470, 0.550))
         assert.is_true(item_has_coord(spots.items[43012], 0.430, 0.740))
         assert.is_true(item_has_coord(spots.items[43501], 0.590, 0.280))
@@ -973,8 +1174,8 @@ describe("Data/MaterialFarmingSpots", function()
 
         assert.is_true(item_has_coord(spots.items[36909], 0.2265, 0.1390))
         assert.is_true(item_has_coord(spots.items[36912], 0.3585, 0.1733))
-        assert.is_true(item_has_coord(spots.items[36903], 0.3287, 0.4645))
-        assert.is_true(item_has_coord(spots.items[36906], 0.3517, 0.4279))
+        assert.is_true(item_has_coord(spots.items[36903], 0.2622, 0.5119))
+        assert.is_true(item_has_coord(spots.items[36906], 0.4780, 0.4310))
     end)
 
     it("includes researched Cataclysm farming data while leaving composed-only Cataclysm materials pending", function()
@@ -1091,7 +1292,7 @@ describe("Data/MaterialFarmingSpots", function()
             72238, 72988, 74247, 74248, 74249, 74250, 74833, 74834, 74837, 74838,
             74839, 74856, 74857, 74859, 74860, 74861, 74863, 74864, 74865, 74866,
             75014, 76130, 76131, 76133, 76134, 76135, 76136, 76137, 76138, 76139,
-            76140, 76141, 76142, 79010, 79011, 79101, 83064, 89112,
+            76140, 76141, 76142, 79010, 79011, 79101, 83064, 89112, 92426,
         }
         local composed_mists_ids = {
             76061, 82441,
@@ -1333,7 +1534,7 @@ describe("Data/MaterialFarmingSpots", function()
             154164, 154165, 154722, 154897, 154898, 154899, 160711, 162460,
             162461, 162515, 165703, 165948, 167562, 168185, 168188, 168189,
             168190, 168191, 168192, 168193, 168302, 168303, 168487, 168635,
-            168645, 168646, 168649, 168650, 174327, 174328, 174353,
+            161344, 168645, 168646, 168649, 168650, 174327, 174328, 174353,
         }
 
         for _, item_id in ipairs(researched_bfa_ids) do
@@ -1417,7 +1618,7 @@ describe("Data/MaterialFarmingSpots", function()
             172231, 172232, 173032, 173033, 173034, 173035, 173036, 173037,
             173108, 173109, 173110, 173170, 173171, 173172, 173173, 173202,
             173204, 179314, 179315, 187699, 187700, 187701, 187702, 187703,
-            187704, 187707,
+            187662, 187704, 187707,
         }
 
         for _, item_id in ipairs(researched_shadowlands_ids) do
@@ -1503,7 +1704,8 @@ describe("Data/MaterialFarmingSpots", function()
             193210, 193213, 193214, 193215, 193216, 193217, 193218, 193223,
             193251, 193255, 193922, 194123, 194124, 194545, 194730, 194966,
             194967, 194968, 194969, 194970, 197741, 197742, 197744, 197745,
-            197746, 197747, 197748, 197749, 200113, 201399,
+            197746, 197747, 197748, 197749, 200113, 200224, 201399, 201404,
+            201405, 201883, 201991,
         }
 
         for _, item_id in ipairs(researched_dragonflight_ids) do
@@ -1992,6 +2194,325 @@ describe("Data/MaterialFarmingSpots", function()
         end
 
         assert.is_nil(data.items[2770].isRoute)
+    end)
+
+    it("models Wrath specialty farms, recursive profession intermediates, and Northrend housing decor", function()
+        local data, ns = load_material_farming_spots(true)
+        local farming = ns.FarmingItems
+        local items = {}
+        for _, item in ipairs(farming.items or {}) do
+            items[item.itemID] = item
+        end
+
+        assert.equals("Openable", data.items[36781].category)
+        assert.equals("Pearl", data.items[36784].category)
+        assert.is_true(item_has_spot(data.items[36781], "darkwater-clam-winterfin-retreat"))
+        assert.is_true(item_has_spot(data.items[45909], "giant-darkwater-clam-wintergrasp"))
+        assert.is_true(item_has_coord(data.items[45912], 0.660, 0.510))
+        assert.is_true(item_has_spot(data.items[45087], "runed-orb-ulduar"))
+        assert.is_true(item_has_spot(data.items[49908], "primordial-saronite-icecrown-citadel"))
+
+        local intermediate_ids = {
+            35622, 35623, 35624, 35625, 35627, 36860, 36913, 36916, 37663,
+            38425, 39681, 39682, 39683, 40077, 41163, 41285, 41334, 41510, 41511,
+            41593, 41594, 41595, 43126, 43127,
+        }
+        for _, item_id in ipairs(intermediate_ids) do
+            local message = "missing expandable Wrath intermediate: " .. tostring(item_id)
+            assert.is_table(items[item_id], message)
+            assert.is_table(items[item_id].components, message)
+            assert.is_true(#items[item_id].components > 0, message)
+        end
+
+        assert.same({
+            { itemID = 41163, quantity = 3 },
+            { itemID = 36860, quantity = 1 },
+            { itemID = 35624, quantity = 1 },
+            { itemID = 35627, quantity = 1 },
+        }, items[37663].components)
+        assert.same({ { itemID = 41511, quantity = 1 }, { itemID = 36860, quantity = 2 } }, items[41595].components)
+
+        local housing_ids = {
+            257040, 257094, 257101, 257693, 258203, 258204, 258205, 258206,
+            258207, 258208, 258209, 258210, 258211, 258212, 258213, 258298,
+            264676, 264707, 264708, 264710, 264711,
+        }
+        for _, item_id in ipairs(housing_ids) do
+            local message = "missing expandable Wrath housing recipe: " .. tostring(item_id)
+            assert.is_table(items[item_id], message)
+            assert.equals("wrath", items[item_id].expansion, message)
+            assert.equals("Housing Decor", items[item_id].tag, message)
+            assert.is_true(#items[item_id].components >= 2, message)
+        end
+
+        assert.same({
+            { itemID = 251762, quantity = 8 },
+            { itemID = 37663, quantity = 5 },
+            { itemID = 45087, quantity = 2 },
+            { itemID = 35624, quantity = 2 },
+        }, items[257040].components)
+        assert.same({
+            { itemID = 251762, quantity = 10 },
+            { itemID = 36916, quantity = 6 },
+            { itemID = 42225, quantity = 2 },
+        }, items[258211].components)
+
+        local housing = ns.WrathHousing
+        assert.is_table(housing)
+        assert.equals(21, #housing.recipes)
+        assert.equals(21, #data.items[251762].housingUses)
+        assert.equals("Patch 12.1.5 PTR reductions published 2026-09-15", housing.quantityVersion)
+
+        local runed_orb_uses = data.items[45087].housingUses or {}
+        assert.equals(2, #runed_orb_uses)
+        assert.equals(2, runed_orb_uses[1].quantity)
+        assert.equals(2, runed_orb_uses[2].quantity)
+    end)
+
+    it("keeps every supplied Retail Wrath ore route separate, ordered, and visible to the map window", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        local expected_routes = {
+            { 36909, "wrath-cobalt-howling-fjord-main-route", 117, 29, 0.2265, 0.1390, 0.2334, 0.1993 },
+            { 36909, "wrath-cobalt-grizzly-hills-alternative-route", 116, 35, 0.1490, 0.3900, 0.1400, 0.4490 },
+            { 36912, "wrath-saronite-sholazar-basin-main-route", 119, 38, 0.4735, 0.2034, 0.5314, 0.2094 },
+            { 36912, "wrath-saronite-icecrown-alternative-route", 118, 20, 0.7541, 0.6421, 0.6893, 0.4612 },
+            { 36912, "wrath-saronite-wintergrasp-alternative-route", 123, 53, 0.3585, 0.1733, 0.3189, 0.1399 },
+            { 36910, "wrath-titanium-icecrown-main-route", 118, 14, 0.5618, 0.4450, 0.5046, 0.4530 },
+            { 36910, "wrath-titanium-storm-peaks-alternative-route", 120, 11, 0.4252, 0.3281, 0.2892, 0.4359 },
+        }
+
+        local expected_option_counts = {
+            [36909] = 2,
+            [36912] = 3,
+            [36910] = 2,
+        }
+
+        for item_id, expected_count in pairs(expected_option_counts) do
+            local item = data.items[item_id]
+            local context = "Wrath mining item " .. tostring(item_id)
+            assert.is_table(item, context)
+            assert.is_true(item.isRoute, context)
+            assert.equals(expected_count, #(item.spots or {}), context)
+
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            assert.equals(expected_count, #options, context)
+            for _, option in ipairs(options) do
+                assert.equals(1, option.spotCount, context)
+                assert.is_true(#(option.pins or {}) > 0, context)
+                local pin = option.pins[1]
+                assert.is_true(pin.isRoute, context)
+                assert.equals(option.id, pin.routeID, context)
+                assert.is_table(pin.tips, context)
+                assert.is_true(#pin.tips >= 4, context)
+                assert.is_table(pin.sourceUrls, context)
+                assert.is_true(#pin.sourceUrls >= 2, context)
+            end
+        end
+
+        for _, expected in ipairs(expected_routes) do
+            local spot = find_spot(data.items[expected[1]], expected[2])
+            local context = "missing or invalid Wrath route " .. expected[2]
+            assert.is_table(spot, context)
+            assert.equals(expected[3], spot.mapID, context)
+            assert.equals(expected[4], #spot.coords, context)
+            assert.equals(expected[5], spot.coords[1].x, context)
+            assert.equals(expected[6], spot.coords[1].y, context)
+            assert.equals(expected[7], spot.coords[#spot.coords].x, context)
+            assert.equals(expected[8], spot.coords[#spot.coords].y, context)
+        end
+
+        assert.is_true(data.items[36910].rareNode)
+        assert.equals("Saronite Ore", data.items[36910].sharedSpawn)
+    end)
+
+    it("keeps every supplied Retail Wrath herb route separate, ordered, cited, and visible to the map window", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        local expected_routes = {
+            { 36901, "wrath-goldclover-grizzly-hills-main-route", 116, 19, 0.1236, 0.3201, 0.1095, 0.4624 },
+            { 36901, "wrath-goldclover-howling-fjord-alternative-route", 117, 36, 0.5850, 0.2578, 0.5512, 0.1967 },
+            { 36901, "wrath-goldclover-borean-tundra-alternative-route", 114, 23, 0.3421, 0.6103, 0.3380, 0.6576 },
+            { 36904, "wrath-tiger-lily-grizzly-hills-main-route", 116, 17, 0.0924, 0.3723, 0.1425, 0.5112 },
+            { 36904, "wrath-tiger-lily-howling-fjord-alternative-route", 117, 26, 0.5982, 0.3242, 0.5609, 0.3483 },
+            { 36907, "wrath-talandras-rose-zuldrak-main-route", 121, 28, 0.3530, 0.6340, 0.3520, 0.6940 },
+            { 36907, "wrath-talandras-rose-zuldrak-compact-alternative-route", 121, 10, 0.2946, 0.4046, 0.2901, 0.4699 },
+            { 36903, "wrath-adders-tongue-sholazar-large-main-route", 119, 24, 0.2622, 0.5119, 0.2260, 0.5910 },
+            { 36903, "wrath-adders-tongue-sholazar-compact-alternative-route", 119, 16, 0.2865, 0.5144, 0.3098, 0.5544 },
+            { 36905, "wrath-lichbloom-storm-peaks-main-route", 120, 30, 0.3750, 0.5980, 0.3590, 0.6409 },
+            { 36905, "wrath-lichbloom-icecrown-alternative-route", 118, 26, 0.3720, 0.4640, 0.3905, 0.5260 },
+            { 36906, "wrath-icethorn-icecrown-main-route", 118, 17, 0.4780, 0.4310, 0.4730, 0.5420 },
+            { 36906, "wrath-icethorn-storm-peaks-alternative-route", 120, 20, 0.2730, 0.5900, 0.3070, 0.6450 },
+            { 39970, "wrath-fire-leaf-scalding-pools-main-route", 114, 21, 0.5881, 0.2867, 0.6030, 0.3080 },
+            { 39970, "wrath-fire-leaf-borean-wide-alternative-route", 114, 23, 0.3421, 0.6103, 0.3380, 0.6576 },
+            { 37921, "wrath-deadnettle-howling-fjord-main-route", 117, 36, 0.5850, 0.2578, 0.5512, 0.1967 },
+            { 37921, "wrath-deadnettle-borean-tundra-alternative-route", 114, 23, 0.3421, 0.6103, 0.3380, 0.6576 },
+            { 36908, "wrath-frost-lotus-storm-peaks-main-route", 120, 30, 0.3750, 0.5980, 0.3590, 0.6409 },
+            { 36908, "wrath-frost-lotus-icecrown-alternative-route", 118, 17, 0.4780, 0.4310, 0.4730, 0.5420 },
+        }
+
+        local expected_option_counts = {
+            [36901] = 3,
+            [36903] = 2,
+            [36904] = 2,
+            [36905] = 2,
+            [36906] = 2,
+            [36907] = 2,
+            [36908] = 2,
+            [37921] = 2,
+            [39970] = 2,
+        }
+
+        for item_id, expected_count in pairs(expected_option_counts) do
+            local item = data.items[item_id]
+            local context = "Wrath herbalism item " .. tostring(item_id)
+            assert.is_table(item, context)
+            assert.is_true(item.isRoute, context)
+            assert.equals(expected_count, #(item.spots or {}), context)
+
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            assert.equals(expected_count, #options, context)
+            assert.equals(item.spots[1].id, options[1].id, context .. " should default to its main route")
+            for _, option in ipairs(options) do
+                assert.equals(1, option.spotCount, context)
+                assert.is_true(#(option.pins or {}) > 0, context)
+                local pin = option.pins[1]
+                assert.is_true(pin.isRoute, context)
+                assert.equals(option.id, pin.routeID, context)
+                assert.is_table(pin.tips, context)
+                assert.is_true(#pin.tips >= 3, context)
+                assert.is_table(pin.sourceUrls, context)
+                assert.is_true(#pin.sourceUrls >= 2, context)
+            end
+        end
+
+        for _, expected in ipairs(expected_routes) do
+            local spot = find_spot(data.items[expected[1]], expected[2])
+            local context = "missing or invalid Wrath herb route " .. expected[2]
+            assert.is_table(spot, context)
+            assert.equals(expected[3], spot.mapID, context)
+            assert.equals(expected[4], #spot.coords, context)
+            assert.equals(expected[5], spot.coords[1].x, context)
+            assert.equals(expected[6], spot.coords[1].y, context)
+            assert.equals(expected[7], spot.coords[#spot.coords].x, context)
+            assert.equals(expected[8], spot.coords[#spot.coords].y, context)
+        end
+
+        assert.matches("Wintergrasp", table.concat(data.items[36908].spots[1].tips, " "), 1, true)
+        assert.equals("adapted-source-herb-loop", data.items[37921].spots[1].routeType)
+        assert.equals("firethorn-herbalism-loop", data.items[39970].spots[1].routeType)
+    end)
+
+    it("keeps every supplied Retail Burning Crusade herb route separate, ordered, and cited", function()
+        local data = load_material_farming_spots(true)
+        local expected_routes = {
+            { 22710, "bloodthistle-eversong-outer-settlements-main", 94, 9, 0.36, 0.48, 0.39, 0.38 },
+            { 22710, "bloodthistle-eversong-central-settlements-alternative", 94, 7, 0.53, 0.44, 0.59, 0.41 },
+            { 22785, "felweed-blades-edge-supplied-main", 105, 15, 0.72, 0.39, 0.81, 0.30 },
+            { 22785, "felweed-nagrand-supplied-alternative", 107, 11, 0.82, 0.26, 0.84, 0.29 },
+            { 22786, "dreaming-glory-blades-edge-supplied-main", 105, 15, 0.72, 0.39, 0.81, 0.30 },
+            { 22786, "dreaming-glory-nagrand-supplied-alternative", 107, 11, 0.82, 0.25, 0.84, 0.29 },
+            { 22787, "ragveil-zangarmarsh-supplied-main", 102, 32, 0.72, 0.38, 0.32, 0.31 },
+            { 22787, "ragveil-terokkar-supplied-alternative", 108, 14, 0.16, 0.25, 0.22, 0.25 },
+            { 22788, "flame-cap-zangarmarsh-supplied-main", 102, 13, 0.46, 0.18, 0.21, 0.22 },
+            { 22788, "flame-cap-zangarmarsh-supplied-alternative", 102, 11, 0.72, 0.38, 0.68, 0.30 },
+            { 22789, "terocone-terokkar-supplied-main", 108, 14, 0.16, 0.25, 0.22, 0.25 },
+            { 22789, "terocone-shadowmoon-supplied-alternative", 104, 19, 0.32, 0.29, 0.43, 0.20 },
+            { 22790, "ancient-lichen-slave-pens-supplied-main", 260, 11, 0.55, 0.18, 0.34, 0.32 },
+            { 22790, "ancient-lichen-underbog-supplied-alternative", 262, 11, 0.62, 0.16, 0.70, 0.30 },
+            { 22791, "netherbloom-netherstorm-supplied-main", 109, 24, 0.28, 0.36, 0.26, 0.33 },
+            { 22791, "netherbloom-netherstorm-supplied-alternative", 109, 14, 0.70, 0.18, 0.45, 0.25 },
+            { 22792, "nightmare-vine-shadowmoon-supplied-main", 104, 19, 0.32, 0.29, 0.43, 0.20 },
+            { 22792, "nightmare-vine-blades-edge-supplied-alternative", 105, 13, 0.72, 0.39, 0.18, 0.39 },
+            { 22793, "mana-thistle-blades-edge-supplied-main", 105, 14, 0.68, 0.27, 0.60, 0.44 },
+            { 22793, "mana-thistle-skettis-supplied-alternative", 108, 7, 0.65, 0.61, 0.68, 0.57 },
+            { 22794, "fel-lotus-netherstorm-supplied-main", 109, 24, 0.28, 0.36, 0.26, 0.33 },
+            { 22794, "fel-lotus-shadowmoon-supplied-alternative", 104, 19, 0.32, 0.29, 0.43, 0.20 },
+        }
+
+        assert.is_nil(data.missingItems[22710])
+        for _, expected in ipairs(expected_routes) do
+            local item = data.items[expected[1]]
+            local spot = find_spot(item, expected[2])
+            local context = "missing or invalid herb route " .. expected[2]
+            assert.is_table(spot, context)
+            assert.is_true(spot.isRoute, context)
+            assert.equals(expected[3], spot.mapID, context)
+            assert.equals(expected[4], #spot.coords, context)
+            assert.equals(expected[5], spot.coords[1].x, context)
+            assert.equals(expected[6], spot.coords[1].y, context)
+            assert.equals(expected[7], spot.coords[#spot.coords].x, context)
+            assert.equals(expected[8], spot.coords[#spot.coords].y, context)
+            assert.is_true(#spot.tips >= 3, context)
+            assert.is_true(#spot.sourceUrls >= 2, context)
+            local has_route_variant = spot.location:find("^Main %- ") ~= nil
+                or spot.location:find("^Alternative %- ") ~= nil
+            assert.is_true(has_route_variant, context)
+        end
+    end)
+
+    it("exposes every supplied Classic ore option with route-specific tips and sources", function()
+        local spots, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        local expected_option_counts = {
+            [2770] = 2,
+            [2771] = 3,
+            [2772] = 2,
+            [2775] = 2,
+            [2776] = 2,
+            [3858] = 2,
+            [7911] = 2,
+            [10620] = 3,
+            [11370] = 1,
+            [18562] = 1,
+            [22202] = 1,
+            [22203] = 1,
+        }
+
+        for item_id, expected_count in pairs(expected_option_counts) do
+            local item = spots.items[item_id]
+            local context = "Classic mining item " .. tostring(item_id)
+            assert.is_table(item, context)
+            assert.equals(expected_count, #(item.spots or {}), context)
+
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            assert.equals(expected_count, #options, context)
+            for _, option in ipairs(options) do
+                assert.equals(1, option.spotCount, context)
+                assert.is_true(#(option.pins or {}) > 0, context)
+                local pin = option.pins[1]
+                assert.is_table(pin.tips, context)
+                assert.is_true(#pin.tips >= 3, context)
+                assert.is_table(pin.sourceUrls, context)
+                assert.is_true(#pin.sourceUrls >= 2, context)
+                assert.equals(option.id, pin.routeID, context)
+            end
+        end
+
+        for _, item_id in ipairs({ 2770, 2771, 2772, 2775, 2776, 3858, 7911, 10620 }) do
+            for _, option in ipairs(ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)) do
+                assert.is_true(option.pins[1].isRoute, "outdoor Classic mining option should draw a route")
+            end
+        end
+        for _, item_id in ipairs({ 11370, 18562, 22202, 22203 }) do
+            assert.is_false(ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)[1].pins[1].isRoute)
+        end
+
+        local exhaustive = find_spot(spots.items[10620], "classic-mining-thoriumWinterspringCoverage-10620")
+        assert.equals(56, #exhaustive.coords)
+        assert.equals(0.4163, exhaustive.coords[6].x)
+        assert.equals(0.5050, exhaustive.coords[6].y)
+        assert.equals(0.4453, exhaustive.coords[19].x)
+        assert.equals(0.4454, exhaustive.coords[20].x)
     end)
 
     it("keeps other supplied Burning Crusade route samples", function()

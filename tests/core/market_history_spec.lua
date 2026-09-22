@@ -418,6 +418,17 @@ describe("Core/MarketHistory", function()
             DBMarket = 141000,
             DBHistorical = 100000,
         }, {
+            FarmingItems = {
+                expansions = {
+                    { id = "legion", label = "Legion" },
+                },
+                professions = {
+                    { id = "mining", label = "Mining" },
+                },
+                items = {
+                    { itemID = 123918, expansion = "legion", professions = { "mining" }, tag = "Ore" },
+                },
+            },
             MaterialFarmingSpots = {
                 items = {
                     [123918] = {
@@ -457,7 +468,51 @@ describe("Core/MarketHistory", function()
         assert.equals(1, #rows)
         assert.is_true(rows[1].isIndexedMaterial)
         assert.is_true(rows[1].hasFarmingMap)
-        assert.equals("legion", rows[1].materialExpansionLabel)
+        assert.equals("legion", rows[1].materialExpansionID)
+        assert.equals("Legion", rows[1].materialExpansionLabel)
+        assert.same({ "mining" }, rows[1].materialProfessionIDs)
+        assert.equals("Mining", rows[1].materialProfessionLabel)
+    end)
+
+    it("labels known bag materials without requiring farming-map data", function()
+        local known_material_link = "|cffffffff|Hitem:123918::::::::|h[Leystone Ore]|h|r"
+        local addon = load_market_history({
+            DBMarket = 141000,
+            DBHistorical = 100000,
+        }, {
+            FarmingItems = {
+                expansions = {
+                    { id = "legion", label = "Legion" },
+                },
+                professions = {
+                    { id = "mining", label = "Mining" },
+                },
+                items = {
+                    { itemID = 123918, expansion = "legion", professions = { "mining" }, tag = "Ore" },
+                },
+            },
+        })
+        addon.BuildInventoryAuctionItemList = function()
+            return {
+                {
+                    itemID = 123918,
+                    itemLink = known_material_link,
+                    itemName = "Leystone Ore",
+                    isCraftingReagent = true,
+                    unitValue = 141000,
+                    totalValue = 141000,
+                },
+            }, 141000, 1, 1, 1
+        end
+
+        local rows = with_time(1710200000, function()
+            return addon:BuildPriceIncreaseAlertRows({ minimumValueCopper = 0 })
+        end)
+
+        assert.equals(1, #rows)
+        assert.is_false(rows[1].isIndexedMaterial)
+        assert.equals("Legion", rows[1].materialExpansionLabel)
+        assert.equals("Mining", rows[1].materialProfessionLabel)
     end)
 
     it("requires common quality and a default unit value of at least 30 gold", function()

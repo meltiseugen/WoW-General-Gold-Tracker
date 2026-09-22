@@ -5,6 +5,17 @@ local function C(x, y, label)
     return { x = x, y = y, label = label }
 end
 
+local function RouteCoords(label, packedCoords)
+    local coords = {}
+    for index, packed in ipairs(packedCoords) do
+        local coarsePair = math.floor(packed / 10000)
+        local x = math.floor(coarsePair / 100)
+        local y = coarsePair % 100
+        coords[index] = C(x / 100, y / 100, string.format("%s pin %d", label, index))
+    end
+    return coords
+end
+
 local RAGVEIL_ZANGARMARSH_MAIN_COORDS = {
     C(0.8646, 0.3365, "Routes Zangarmarsh Ragveil main pin 1"),
     C(0.8374, 0.3628, "Routes Zangarmarsh Ragveil main pin 2"),
@@ -488,6 +499,143 @@ local function AppendImportedHerbSpot(itemID, spot)
         item.spots[#item.spots + 1] = spot
     end
 end
+
+local XSCARLIFE_ROUTES = "https://xscarlife-gaming.com/farming-retail/"
+local FELWEED_GUIDE = "https://www.wow-professions.com/farming/felweed-farming"
+
+-- The supplied payloads use whole-percentage x/y pairs followed by four zeroes.
+-- Decode those pairs while preserving their encoded order.
+local SUPPLIED_BLOODTHISTLE_MAIN = RouteCoords("Bloodthistle main", {
+    36480000, 38550000, 48610000, 60590000, 69520000, 70430000, 61350000, 48310000, 39380000,
+})
+local SUPPLIED_BLOODTHISTLE_ALT = RouteCoords("Bloodthistle alternative", {
+    53440000, 49490000, 50560000, 57610000, 64560000, 63480000, 59410000,
+})
+local SUPPLIED_BLADES_EDGE_COMMON = RouteCoords("Blade's Edge common-herb", {
+    72390000, 32480000, 18600000, 51690000, 52740000, 31600000, 81540000, 95630000,
+    44700000, 59760000, 80680000, 99560000, 71460000, 18390000, 81300000,
+})
+local SUPPLIED_FELWEED_NAGRAND_ALT = RouteCoords("Felweed Nagrand alternative", {
+    82260000, 62340000, 47420000, 39540000, 67630000, 86730000, 30750000, 11680000,
+    13580000, 22430000, 84290000,
+})
+local SUPPLIED_DREAMING_GLORY_NAGRAND_ALT = RouteCoords("Dreaming Glory Nagrand alternative", {
+    82250000, 36340000, 47420000, 40540000, 67630000, 86730000, 30750000, 11680000,
+    13580000, 22430000, 84290000,
+})
+local SUPPLIED_RAGVEIL_MAIN = RouteCoords("Ragveil main", {
+    72380000, 34490000, 61390000, 68300000, 42450000, 41300000, 34310000, 67350000,
+    53400000, 49380000, 54360000, 94350000, 12350000, 49320000, 76390000, 52360000,
+    14310000, 55370000, 31300000, 77290000, 42270000, 68240000, 88230000, 21220000,
+    46190000, 14200000, 46180000, 38220000, 5240000, 49260000, 71280000, 32310000,
+})
+local SUPPLIED_TEROKKAR_FOREST = RouteCoords("Terokkar northern forest", {
+    16250000, 27380000, 31450000, 21500000, 22530000, 25580000, 29650000,
+    44720000, 55670000, 75610000, 77540000, 58450000, 38310000, 22250000,
+})
+local SUPPLIED_FLAME_CAP_MAIN = RouteCoords("Flame Cap main", {
+    46180000, 38220000, 5240000, 49260000, 71280000, 32310000, 12350000,
+    94350000, 49320000, 77290000, 42270000, 68240000, 21220000,
+})
+local SUPPLIED_FLAME_CAP_ALT = RouteCoords("Flame Cap alternative", {
+    72380000, 34490000, 42450000, 61390000, 67350000, 53400000,
+    49380000, 54360000, 34310000, 41300000, 68300000,
+})
+local SUPPLIED_SHADOWMOON = RouteCoords("Shadowmoon mixed-herb", {
+    32290000, 75390000, 44470000, 42530000, 49580000, 43680000, 28640000,
+    36690000, 46600000, 3540000, 8490000, 54420000, 30410000, 36470000,
+    9460000, 9310000, 14280000, 40270000, 43200000,
+})
+local SUPPLIED_SLAVE_PENS = RouteCoords("Slave Pens Ancient Lichen", {
+    55180000, 55280000, 48380000, 43480000, 48580000, 55680000,
+    48760000, 38680000, 34560000, 38440000, 34320000,
+})
+local SUPPLIED_UNDERBOG = RouteCoords("Underbog Ancient Lichen", {
+    62160000, 58270000, 48360000, 42460000, 48570000, 39670000,
+    48760000, 61690000, 67560000, 61430000, 70300000,
+})
+local SUPPLIED_NETHERSTORM_MAIN = RouteCoords("Netherstorm full", {
+    28360000, 78460000, 40540000, 30570000, 44580000, 650000, 710000, 630000,
+    44550000, 34490000, 520000, 2600000, 27510000, 7470000, 400000, 4330000,
+    6260000, 200000, 5250000, 240000, 16270000, 310000, 350000, 26330000,
+})
+local SUPPLIED_NETHERSTORM_ALT = RouteCoords("Netherstorm compact alternative", {
+    70180000, 64270000, 70360000, 62440000, 69510000, 62580000, 67670000,
+    58740000, 46690000, 42600000, 49520000, 43450000, 49350000, 45250000,
+})
+local SUPPLIED_NIGHTMARE_VINE_ALT = RouteCoords("Nightmare Vine Blade's Edge alternative", {
+    72390000, 32480000, 18600000, 51690000, 52740000, 31600000, 81540000,
+    95630000, 44700000, 80680000, 99560000, 71460000, 18390000,
+})
+local SUPPLIED_MANA_THISTLE_MAIN = RouteCoords("Mana Thistle main", {
+    68270000, 76310000, 87290000, 92350000, 82400000, 68370000, 75480000,
+    87550000, 79640000, 65710000, 55680000, 62600000, 66520000, 60440000,
+})
+local SUPPLIED_MANA_THISTLE_ALT = RouteCoords("Mana Thistle Skettis alternative", {
+    65610000, 70670000, 77720000, 84680000, 82610000, 75560000, 68570000,
+})
+
+local function SuppliedHerbRoute(id, mapID, mapName, location, coords, sourceUrls, tips, density, difficulty, routeType)
+    return {
+        id = id,
+        source = "Supplied validated Retail Routes import with public-route source cross-checks",
+        sourceUrls = sourceUrls,
+        mapID = mapID,
+        mapName = mapName,
+        location = location,
+        routeType = routeType or "herbalism-loop",
+        isRoute = true,
+        density = density,
+        dropDifficulty = difficulty,
+        tips = tips,
+        coords = coords,
+        confidence = "high",
+    }
+end
+
+Register({
+    itemID = 22710,
+    itemName = "Bloodthistle",
+    expansion = "burningCrusade",
+    professions = { "herbalism" },
+    category = "Herb",
+    researchStatus = "researched",
+    sourceUrls = { XSCARLIFE_ROUTES, "https://www.wowhead.com/item=22710/bloodthistle" },
+    summary = "Bloodthistle grows around blood-elf settlements and structures in Eversong Woods; both supplied circuits are compact ground routes.",
+    spots = {
+        SuppliedHerbRoute(
+            "bloodthistle-eversong-outer-settlements-main",
+            94,
+            "Eversong Woods",
+            "Main - outer settlements circuit",
+            SUPPLIED_BLOODTHISTLE_MAIN,
+            { XSCARLIFE_ROUTES, "https://www.wowhead.com/item=22710/bloodthistle" },
+            {
+                "Search around blood-elf buildings, walls, roads, ruins, and mana-powered structures.",
+                "Do not treat it like a normal wilderness herb; isolated forest sections are less productive.",
+                "Pick every Bloodthistle along the circuit so nodes can recycle.",
+                "This is a compact ground-mount route because flying is normally unavailable in Eversong Woods.",
+            },
+            "Localized around blood-elf structures",
+            "Easy compact ground route"
+        ),
+        SuppliedHerbRoute(
+            "bloodthistle-eversong-central-settlements-alternative",
+            94,
+            "Eversong Woods",
+            "Alternative - central settlement circuit",
+            SUPPLIED_BLOODTHISTLE_ALT,
+            { XSCARLIFE_ROUTES, "https://www.wowhead.com/item=22710/bloodthistle" },
+            {
+                "Use this shorter route when the outer circuit is producing empty stretches.",
+                "Search both sides of paths and immediately behind buildings.",
+                "Bloodthistle can be easy to miss among Eversong's red vegetation; node-tracking icons help considerably.",
+            },
+            "Localized and compact",
+            "Easy short ground route"
+        ),
+    },
+})
 
 RegisterHerb(22785, "Felweed", {
     "https://www.wowhead.com/object=181270/felweed",
@@ -1233,6 +1381,349 @@ AppendImportedHerbSpot(22794, ImportedHerbSpot(
     NIGHTMARE_VINE_SHADOWMOON_COORDS,
     "rare-herb-side-gather",
     "medium"
+))
+
+AppendImportedHerbSpot(22785, SuppliedHerbRoute(
+    "felweed-blades-edge-supplied-main",
+    105,
+    "Blade's Edge Mountains",
+    "Main - Blade's Edge plateau circuit",
+    SUPPLIED_BLADES_EDGE_COMMON,
+    { XSCARLIFE_ROUTES, FELWEED_GUIDE },
+    {
+        "Blade's Edge is one of the strongest Felweed zones because its outdoor herb pool contains substantial Felweed and Dreaming Glory.",
+        "Follow accessible plateaus instead of repeatedly diving into ravines.",
+        "Collect Dreaming Glory and Nightmare Vine too; clearing shared herb locations improves Felweed turnover.",
+        "Flight is strongly recommended because of the vertical terrain.",
+    },
+    "High Felweed and Dreaming Glory turnover",
+    "Moderate because of vertical terrain"
+))
+
+AppendImportedHerbSpot(22785, SuppliedHerbRoute(
+    "felweed-nagrand-supplied-alternative",
+    107,
+    "Nagrand",
+    "Alternative - broad Nagrand perimeter",
+    SUPPLIED_FELWEED_NAGRAND_ALT,
+    { XSCARLIFE_ROUTES, FELWEED_GUIDE },
+    {
+        "Nagrand has easier terrain and sightlines than Blade's Edge.",
+        "Check around hills, cliffs, elemental areas, and the edges of settlement regions.",
+        "Do not cross the empty center unnecessarily; maintain a broad outer circuit.",
+        "Use this alternative when Blade's Edge is being farmed.",
+    },
+    "High for common Outland herbs",
+    "Easy flying circuit"
+))
+
+AppendImportedHerbSpot(22786, SuppliedHerbRoute(
+    "dreaming-glory-blades-edge-supplied-main",
+    105,
+    "Blade's Edge Mountains",
+    "Main - Blade's Edge cliff and plateau circuit",
+    SUPPLIED_BLADES_EDGE_COMMON,
+    { XSCARLIFE_ROUTES, FELWEED_GUIDE },
+    {
+        "Search cliff ledges and elevated terrain; Dreaming Glory strongly favors rocky features.",
+        "Fly close enough to the terrain for tracking to register nodes above and below you.",
+        "Pick Felweed encountered along the loop to recycle the herb pool.",
+        "Avoid flying through canyon centers while ignoring the ledges.",
+    },
+    "High on rocky and elevated terrain",
+    "Moderate because elevation can hide nodes"
+))
+
+AppendImportedHerbSpot(22786, SuppliedHerbRoute(
+    "dreaming-glory-nagrand-supplied-alternative",
+    107,
+    "Nagrand",
+    "Alternative - Nagrand hills and outer walls",
+    SUPPLIED_DREAMING_GLORY_NAGRAND_ALT,
+    { XSCARLIFE_ROUTES, FELWEED_GUIDE },
+    {
+        "Concentrate on raised hills, broken rock formations, and outer mountain walls.",
+        "Nagrand is faster and less demanding than Blade's Edge but can have more competition.",
+        "Clear Felweed as you go instead of cherry-picking.",
+    },
+    "High for mixed common herbs",
+    "Easy flying circuit"
+))
+
+AppendImportedHerbSpot(22787, SuppliedHerbRoute(
+    "ragveil-zangarmarsh-supplied-main",
+    102,
+    "Zangarmarsh",
+    "Main - full Zangarmarsh circuit",
+    SUPPLIED_RAGVEIL_MAIN,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/ragveil-farming" },
+    {
+        "Ragveil is strongly associated with Zangarmarsh's open marsh terrain.",
+        "Stay low around mushroom bases, pools, islands, and dry strips between wetlands.",
+        "Pick Flame Cap and Felweed too so the shared nodes keep cycling.",
+        "The route is deliberately long enough to reduce waiting for respawns.",
+    },
+    "High across open marsh terrain",
+    "Easy but intentionally long"
+))
+
+AppendImportedHerbSpot(22787, SuppliedHerbRoute(
+    "ragveil-terokkar-supplied-alternative",
+    108,
+    "Terokkar Forest",
+    "Alternative - northern and western forest circuit",
+    SUPPLIED_TEROKKAR_FOREST,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/ragveil-farming" },
+    {
+        "This is a mixed-herb fallback rather than a specialized Ragveil circuit.",
+        "Stay primarily in the greener northern and western portions.",
+        "Expect Terocone and Felweed alongside Ragveil.",
+        "Use it when Zangarmarsh is crowded or phased poorly.",
+    },
+    "Medium mixed-herb density",
+    "Easy fallback route"
+))
+
+AppendImportedHerbSpot(22788, SuppliedHerbRoute(
+    "flame-cap-zangarmarsh-supplied-main",
+    102,
+    "Zangarmarsh",
+    "Main - western and southern Zangarmarsh circuit",
+    SUPPLIED_FLAME_CAP_MAIN,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/ragveil-farming" },
+    {
+        "Flame Cap is a rare Zangarmarsh spawn rather than a high-density standalone herb.",
+        "Gather every Ragveil and Felweed node; cherry-picking can leave available herb locations occupied.",
+        "Make several laps before judging the route because Flame Cap's share of the pool is low.",
+        "Continuously clearing the local herb pool is more dependable than realm hopping.",
+    },
+    "Low for Flame Cap, high for supporting herbs",
+    "Rare and RNG-dependent",
+    "rare-herb-side-spawn"
+))
+
+AppendImportedHerbSpot(22788, SuppliedHerbRoute(
+    "flame-cap-zangarmarsh-supplied-alternative",
+    102,
+    "Zangarmarsh",
+    "Alternative - eastern and central Zangarmarsh circuit",
+    SUPPLIED_FLAME_CAP_ALT,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/ragveil-farming" },
+    {
+        "Use this shorter loop if western Zangarmarsh appears depleted.",
+        "Search around mushroom clusters and small raised islands rather than flying high over them.",
+        "Alternate between the two Zangarmarsh routes to allow node regeneration.",
+    },
+    "Low for Flame Cap, medium for supporting herbs",
+    "Rare but compact",
+    "rare-herb-side-spawn"
+))
+
+AppendImportedHerbSpot(22789, SuppliedHerbRoute(
+    "terocone-terokkar-supplied-main",
+    108,
+    "Terokkar Forest",
+    "Main - general-purpose Terokkar Forest circuit",
+    SUPPLIED_TEROKKAR_FOREST,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/terocone-farming" },
+    {
+        "This is the best general-purpose Terocone route in the supplied set.",
+        "Follow tree lines, forest edges, hills, and ruins.",
+        "Give the heavily corrupted southeastern wasteland less attention.",
+        "Pick Felweed and Ragveil so new Terocone has opportunities to spawn.",
+    },
+    "High for Terocone",
+    "Easy general-purpose route"
+))
+
+AppendImportedHerbSpot(22789, SuppliedHerbRoute(
+    "terocone-shadowmoon-supplied-alternative",
+    104,
+    "Shadowmoon Valley",
+    "Alternative - Shadowmoon mixed-herb circuit",
+    SUPPLIED_SHADOWMOON,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/terocone-farming" },
+    {
+        "Treat this as a mixed-herb alternative; Nightmare Vine will dominate parts of the circuit.",
+        "Search the greener western and central areas more carefully than barren lava sections.",
+        "Use it when Terokkar is crowded or when you also need Nightmare Vine.",
+    },
+    "Medium mixed-herb density",
+    "Moderate alternative route"
+))
+
+AppendImportedHerbSpot(22790, SuppliedHerbRoute(
+    "ancient-lichen-slave-pens-supplied-main",
+    260,
+    "The Slave Pens",
+    "Main - Slave Pens interior herb route",
+    SUPPLIED_SLAVE_PENS,
+    { XSCARLIFE_ROUTES, "https://www.wowhead.com/object=181278/ancient-lichen" },
+    {
+        "Ancient Lichen grows inside Outland dungeons rather than on normal outdoor circuits.",
+        "Clear on Normal for easy solo resets.",
+        "Check walls, tunnel sides, rock shelves, and damp corners.",
+        "The route overlay may require opening the instance map once after entering.",
+    },
+    "Localized dungeon herb nodes",
+    "Easy solo clear with instance reset limits",
+    "dungeon-herbalism-loop"
+))
+
+AppendImportedHerbSpot(22790, SuppliedHerbRoute(
+    "ancient-lichen-underbog-supplied-alternative",
+    262,
+    "The Underbog",
+    "Alternative - Underbog interior herb route",
+    SUPPLIED_UNDERBOG,
+    { XSCARLIFE_ROUTES, "https://www.wowhead.com/object=181278/ancient-lichen" },
+    {
+        "The Underbog is longer but provides more extensive wall and plant-covered terrain.",
+        "Use a class with strong movement speed and instant area damage.",
+        "Reset after completing the useful herb section rather than always clearing every boss.",
+        "Respect Retail's per-hour instance-entry limit.",
+    },
+    "Localized dungeon herb nodes",
+    "Longer solo clear with instance reset limits",
+    "dungeon-herbalism-loop"
+))
+
+AppendImportedHerbSpot(22791, SuppliedHerbRoute(
+    "netherbloom-netherstorm-supplied-main",
+    109,
+    "Netherstorm",
+    "Main - full Netherstorm circuit",
+    SUPPLIED_NETHERSTORM_MAIN,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/netherbloom-farming" },
+    {
+        "Netherbloom is the dominant outdoor herb in Netherstorm.",
+        "Circle individual landmasses rather than flying straight across the Twisting Nether.",
+        "Scan around eco-domes, mana forges, rock edges, and settlement perimeters.",
+        "The full circuit is long enough for nodes near the beginning to start recycling.",
+    },
+    "High",
+    "Easy with flying"
+))
+
+AppendImportedHerbSpot(22791, SuppliedHerbRoute(
+    "netherbloom-netherstorm-supplied-alternative",
+    109,
+    "Netherstorm",
+    "Alternative - compact central and southern circuit",
+    SUPPLIED_NETHERSTORM_ALT,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/netherbloom-farming" },
+    {
+        "Use this faster route to test current node density.",
+        "If you begin catching your own respawn gap, switch to the full route.",
+        "Avoid long detours to isolated islands unless tracking shows a node.",
+    },
+    "Medium to high",
+    "Easy compact route"
+))
+
+AppendImportedHerbSpot(22792, SuppliedHerbRoute(
+    "nightmare-vine-shadowmoon-supplied-main",
+    104,
+    "Shadowmoon Valley",
+    "Main - Shadowmoon Valley circuit",
+    SUPPLIED_SHADOWMOON,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/nightmare-vine-farming" },
+    {
+        "Shadowmoon Valley is the primary Nightmare Vine farming zone.",
+        "Follow terrain edges, lava-field boundaries, ridges, and fel-corrupted areas.",
+        "Stay relatively close to the ground because elevation differences can hide nodes.",
+        "Collect other visible herbs to prevent the local spawn pool from stagnating.",
+    },
+    "High for Nightmare Vine",
+    "Moderate because elevation can hide nodes"
+))
+
+AppendImportedHerbSpot(22792, SuppliedHerbRoute(
+    "nightmare-vine-blades-edge-supplied-alternative",
+    105,
+    "Blade's Edge Mountains",
+    "Alternative - Blade's Edge mixed-herb circuit",
+    SUPPLIED_NIGHTMARE_VINE_ALT,
+    { XSCARLIFE_ROUTES, "https://www.wow-professions.com/farming/nightmare-vine-farming" },
+    {
+        "Nightmare Vine is less concentrated here than in Shadowmoon Valley.",
+        "Use this as a mixed Felweed, Dreaming Glory, and Nightmare Vine route.",
+        "Prioritize fel-corrupted sections and higher-level subzones.",
+    },
+    "Medium mixed-herb density",
+    "Moderate alternative route"
+))
+
+AppendImportedHerbSpot(22793, SuppliedHerbRoute(
+    "mana-thistle-blades-edge-supplied-main",
+    105,
+    "Blade's Edge Mountains",
+    "Main - high plateaus circuit",
+    SUPPLIED_MANA_THISTLE_MAIN,
+    { XSCARLIFE_ROUTES, "https://www.wowhead.com/object=181281/mana-thistle" },
+    {
+        "Mana Thistle favors higher-level areas and elevated plateaus.",
+        "Check Ogri'la, Forge Camp regions, and the upper plateaus carefully.",
+        "Do not rely exclusively on the generic lowland Felweed loop; Mana Thistle's distribution is more restricted.",
+        "Flying is effectively mandatory for an efficient circuit.",
+    },
+    "Low and geographically restricted",
+    "Hard without fast flying",
+    "rare-herb-highland-loop"
+))
+
+AppendImportedHerbSpot(22793, SuppliedHerbRoute(
+    "mana-thistle-skettis-supplied-alternative",
+    108,
+    "Terokkar Forest",
+    "Alternative - compact Skettis circuit",
+    SUPPLIED_MANA_THISTLE_ALT,
+    { XSCARLIFE_ROUTES, "https://www.wowhead.com/object=181281/mana-thistle" },
+    {
+        "This compact route targets Skettis rather than the entire Terokkar map.",
+        "Search islands, tree bases, ruins, and elevated edges.",
+        "The circuit is short; pause briefly or alternate zones if nodes have not respawned.",
+        "Avoid spending excessive time fighting mobs; Retail characters should disengage quickly.",
+    },
+    "Low and compact",
+    "Moderate because the circuit can outrun respawns",
+    "rare-herb-highland-loop"
+))
+
+AppendImportedHerbSpot(22794, SuppliedHerbRoute(
+    "fel-lotus-netherstorm-supplied-main",
+    109,
+    "Netherstorm",
+    "Main - Netherbloom proxy circuit",
+    SUPPLIED_NETHERSTORM_MAIN,
+    { XSCARLIFE_ROUTES, "https://www.wowhead.com/item=22794/fel-lotus" },
+    {
+        "Optimize total herbs gathered per hour rather than searching for a visible Fel Lotus node.",
+        "Netherstorm's abundant Netherbloom makes it a strong proxy.",
+        "Never skip normal herb nodes; each gathering attempt is another Fel Lotus chance.",
+        "Track results over several hundred nodes because short sessions are heavily affected by luck.",
+    },
+    "Rare bonus from high eligible-herb volume",
+    "RNG-dependent",
+    "rare-herb-side-gather"
+))
+
+AppendImportedHerbSpot(22794, SuppliedHerbRoute(
+    "fel-lotus-shadowmoon-supplied-alternative",
+    104,
+    "Shadowmoon Valley",
+    "Alternative - Nightmare Vine proxy circuit",
+    SUPPLIED_SHADOWMOON,
+    { XSCARLIFE_ROUTES, "https://www.wowhead.com/item=22794/fel-lotus" },
+    {
+        "Use this route when Netherstorm is depleted or heavily contested.",
+        "Gather every Nightmare Vine and other Outland herb encountered.",
+        "This route gains value when Nightmare Vine itself sells better on your realm.",
+        "Fel Lotus results remain RNG-dependent regardless of route.",
+    },
+    "Rare bonus from mixed Outland herbs",
+    "RNG-dependent",
+    "rare-herb-side-gather"
 ))
 
 AppendImportedHerbSpot(22792, ImportedHerbSpot(

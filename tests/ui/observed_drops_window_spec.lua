@@ -149,6 +149,41 @@ local function project_rows(rows)
 end
 
 describe("UI/ObservedDropsWindow row snapshots", function()
+    it("paginates drop results in groups of thirty", function()
+        local addon, item_links, item_names = build_addon()
+        addon = load_window(addon, item_links, item_names)
+
+        assert.equals(1, addon:GetObservedDropsPageCount(0))
+        assert.equals(1, addon:GetObservedDropsPageCount(30))
+        assert.equals(2, addon:GetObservedDropsPageCount(31))
+        assert.equals(3, addon:GetObservedDropsPageCount(90))
+    end)
+
+    it("clamps drop result page navigation and scrolls the new page to the top", function()
+        local addon, item_links, item_names = build_addon()
+        addon = load_window(addon, item_links, item_names)
+        addon.observedDropsFrame.hasObservedDropsScanRun = true
+        addon.observedDropsFrame.currentPage = 1
+        addon.observedDropsFrame.scannedObservedDropsRows = {}
+        for index = 1, 65 do
+            addon.observedDropsFrame.scannedObservedDropsRows[index] = { itemID = index }
+        end
+        local refresh_scroll_to_top
+        addon.RefreshObservedDropsWindow = function(_, scroll_to_top)
+            refresh_scroll_to_top = scroll_to_top
+        end
+
+        addon:SetObservedDropsPage(2)
+        assert.equals(2, addon.observedDropsFrame.currentPage)
+        assert.is_true(refresh_scroll_to_top)
+
+        addon:SetObservedDropsPage(99)
+        assert.equals(3, addon.observedDropsFrame.currentPage)
+
+        addon:SetObservedDropsPage(-10)
+        assert.equals(1, addon.observedDropsFrame.currentPage)
+    end)
+
     it("builds stable sorted rows for the observed drops list", function()
         local addon, item_links, item_names = build_addon()
         addon = load_window(addon, item_links, item_names)

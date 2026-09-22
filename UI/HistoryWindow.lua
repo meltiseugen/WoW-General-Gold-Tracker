@@ -20,6 +20,12 @@ local HISTORY_WINDOW_MIN_HEIGHT = 610
 local HISTORY_WINDOW_DEFAULT_HEIGHT = 610
 local HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT = 620
 local HISTORY_WINDOW_VERTICAL_CHROME_INSET = 66
+local HISTORY_SORT_KEYS = {
+    highlights = true,
+    sessionTotal = true,
+    sessionTotalRaw = true,
+    duration = true,
+}
 local LOCATION_TABLE_MIN_VISIBLE_ROWS = 3
 local DETAILS_GAP_LOCATION_TABLE_TO_FILTER = 10
 local DETAILS_GAP_FILTER_TO_SUMMARY = 12
@@ -68,6 +74,7 @@ local function CreateHistorySortHeaderButton(parent, width, label, justifyH)
     text:SetWordWrap(false)
     text:SetText(label or "")
     button.text = text
+    button.sortLabel = label or ""
 
     local sortIcon = button:CreateTexture(nil, "ARTWORK")
     sortIcon:SetSize(HISTORY_SORT_ICON_SIZE, HISTORY_SORT_ICON_SIZE)
@@ -735,6 +742,7 @@ function GoldTracker:CreateHistoryWindow()
     frame.currentPage = 1
     frame.sortKey = frame.sortKey or nil
     frame.sortAscending = frame.sortAscending == true
+    frame.sortCriteria = frame.sortCriteria or {}
     frame.historyDateFilterKey = frame.historyDateFilterKey or HISTORY_DATE_FILTER_ALL
 
     local mergeButton = CreateHistoryButton(listContainer, 120, 22, "Merge", "neutral")
@@ -1838,8 +1846,7 @@ function GoldTracker:GetDisplaySortedSessionHistory()
         end
     end
 
-    local sortKey = frame and frame.sortKey or nil
-    local sortAscending = frame and frame.sortAscending == true
+    local sortCriteria = frame and self:GetTableSortCriteria(frame, "sortKey", "sortAscending", HISTORY_SORT_KEYS) or {}
 
     table.sort(ordered, function(a, b)
         local aPinned = a and a.pinned == true
@@ -1848,11 +1855,11 @@ function GoldTracker:GetDisplaySortedSessionHistory()
             return aPinned and not bPinned
         end
 
-        if sortKey == "highlights" or sortKey == "sessionTotal" or sortKey == "sessionTotalRaw" or sortKey == "duration" then
-            local aValue = GetHistorySortValue(a, sortKey)
-            local bValue = GetHistorySortValue(b, sortKey)
+        for _, criterion in ipairs(sortCriteria) do
+            local aValue = GetHistorySortValue(a, criterion.key)
+            local bValue = GetHistorySortValue(b, criterion.key)
             if aValue ~= bValue then
-                if sortAscending then
+                if criterion.ascending == true then
                     return aValue < bValue
                 end
                 return aValue > bValue
@@ -1871,8 +1878,8 @@ function GoldTracker:UpdateHistorySortHeaderState()
     end
 
     local frame = self.historyFrame
-    local sortKey = frame.sortKey
-    local sortAscending = frame.sortAscending == true
+    local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", HISTORY_SORT_KEYS)
+    local showPriority = #criteria > 1
     local headers = {
         highlights = { button = frame.summaryHeaderButton, label = "Highlights" },
         sessionTotal = { button = frame.totalHeaderButton, label = "Session Total" },
@@ -1883,11 +1890,13 @@ function GoldTracker:UpdateHistorySortHeaderState()
     for headerSortKey, header in pairs(headers) do
         local button = header.button
         if button and button.text then
-            button.text:SetText(header.label)
-            if sortKey == headerSortKey then
+            self:AttachTableSortHeaderTooltip(button, header.label)
+            local criterion, priority = self:GetTableSortCriterion(criteria, headerSortKey)
+            button.text:SetText(showPriority and criterion and (header.label .. " " .. priority) or header.label)
+            if criterion then
                 button.text:SetTextColor(1, 1, 1)
                 if button.sortIcon then
-                    Theme:SetTexture(button.sortIcon, sortAscending and "sortAscending" or "sortDescending")
+                    Theme:SetTexture(button.sortIcon, criterion.ascending and "sortAscending" or "sortDescending")
                     button.sortIcon:Show()
                 end
             else
@@ -1906,19 +1915,14 @@ function GoldTracker:ToggleHistorySort(sortKey)
     end
 
     local frame = self.historyFrame
-    if sortKey ~= "highlights" and sortKey ~= "sessionTotal" and sortKey ~= "sessionTotalRaw" and sortKey ~= "duration" then
+    if not HISTORY_SORT_KEYS[sortKey] then
         return
     end
 
-    if frame.sortKey ~= sortKey then
-        frame.sortKey = sortKey
-        frame.sortAscending = false
-    elseif frame.sortAscending ~= true then
-        frame.sortAscending = true
-    else
-        frame.sortKey = nil
-        frame.sortAscending = false
-    end
+    self:ToggleTableSortCriterion(frame, sortKey, false, {
+        validKeys = HISTORY_SORT_KEYS,
+        allowClear = true,
+    })
 
     frame.currentPage = 1
     self:RefreshHistoryWindow()

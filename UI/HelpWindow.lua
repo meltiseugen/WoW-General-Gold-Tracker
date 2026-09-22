@@ -247,6 +247,12 @@ local function BuildHistoryText()
         "Add a saved custom material with /gt addmat <itemID> <expansionID> <professionID> [tag].",
     })
 
+    AddSection(lines, "Table sorting", {
+        "Click a column header to sort by that column only.",
+        "Shift-click more headers to add secondary and tertiary sorting.",
+        "Numbers beside active headers show their sorting priority; Shift-click an active header to reverse its direction.",
+    })
+
     AddSection(lines, "Diagnosis", {
         "Experimental troubleshooting view.",
         "Shows event counters, tracking pipeline counters, and timing data.",

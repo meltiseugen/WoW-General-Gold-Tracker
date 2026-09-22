@@ -32,6 +32,79 @@ local function SurfaceTooltipData(tooltipData)
     return tooltipData
 end
 
+function GoldTracker:IsOnLootedTooltipLine(text)
+    if type(text) ~= "string" or text == "" then
+        return false
+    end
+
+    local normalizedText = string.gsub(text, "|c%x%x%x%x%x%x%x%x", "")
+    normalizedText = string.gsub(normalizedText, "|r", "")
+    normalizedText = string.lower(normalizedText)
+    normalizedText = string.gsub(normalizedText, "^%s+", "")
+
+    return string.find(normalizedText, "^on%s+looted%s*:") ~= nil
+end
+
+function GoldTracker:GetTooltipOnLootedState(tooltipData)
+    local surfaced = SurfaceTooltipData(tooltipData)
+    if type(surfaced) ~= "table" or type(surfaced.lines) ~= "table" then
+        return false, false
+    end
+
+    local sawTooltipTextLine = false
+    for _, line in ipairs(surfaced.lines) do
+        local leftText = line and line.leftText or nil
+        local rightText = line and line.rightText or nil
+        local lineText = line and line.text or nil
+
+        if (type(leftText) == "string" and leftText ~= "")
+            or (type(rightText) == "string" and rightText ~= "")
+            or (type(lineText) == "string" and lineText ~= "") then
+            sawTooltipTextLine = true
+        end
+
+        if self:IsOnLootedTooltipLine(leftText)
+            or self:IsOnLootedTooltipLine(rightText)
+            or self:IsOnLootedTooltipLine(lineText) then
+            return true, true
+        end
+    end
+
+    return sawTooltipTextLine, false
+end
+
+function GoldTracker:IsOnLootedItem(itemLink)
+    if type(itemLink) ~= "string" or itemLink == "" then
+        return false
+    end
+
+    local cacheKey = self:GetItemIDFromLink(itemLink) or itemLink
+    if type(self.onLootedItemCache) ~= "table" then
+        self.onLootedItemCache = {}
+    else
+        local cachedValue = self.onLootedItemCache[cacheKey]
+        if cachedValue ~= nil then
+            return cachedValue == true
+        end
+    end
+
+    if C_TooltipInfo and type(C_TooltipInfo.GetHyperlink) == "function" then
+        local ok, tooltipData = pcall(C_TooltipInfo.GetHyperlink, itemLink)
+        if ok then
+            local sawTextLine, isOnLooted = self:GetTooltipOnLootedState(tooltipData)
+            if isOnLooted then
+                self.onLootedItemCache[cacheKey] = true
+                return true
+            end
+            if sawTextLine then
+                self.onLootedItemCache[cacheKey] = false
+            end
+        end
+    end
+
+    return false
+end
+
 function GoldTracker:IsRestrictedBindingTooltipLine(text)
     if type(text) ~= "string" or text == "" then
         return false

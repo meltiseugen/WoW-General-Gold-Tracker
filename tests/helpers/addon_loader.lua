@@ -8,6 +8,11 @@ function M.load_module(relative_path, addon, ns_overrides)
     for key, value in pairs(ns_overrides or {}) do
         ns[key] = value
     end
+    if relative_path:match("^UI/") and type(ns.GoldTracker.GetTableSortCriteria) ~= "function" then
+        local sort_chunk, sort_err = loadfile("Core/TableSort.lua")
+        assert(sort_chunk, sort_err)
+        sort_chunk("General-Gold-Tracker", ns)
+    end
     local chunk, err = loadfile(relative_path)
     assert(chunk, err)
     chunk("General-Gold-Tracker", ns)

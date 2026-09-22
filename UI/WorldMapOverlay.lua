@@ -86,6 +86,7 @@ local function CopyProjectionPin(pinData, fallbackMapID)
         spotLocation = pinData.spotLocation,
         targetName = pinData.targetName,
         targetType = pinData.targetType,
+        farmAction = pinData.farmAction,
         isRoute = pinData.isRoute == true,
         routeID = pinData.routeID,
         routeType = pinData.routeType,
@@ -157,6 +158,23 @@ local function AddProjectionTooltipLines(tooltip, pinData)
     if type(pinData.itemName) == "string" and pinData.itemName ~= "" then
         tooltip:AddDoubleLine("Item", pinData.itemName, 0.72, 0.86, 1.0, 1, 1, 1)
     end
+    if type(pinData.farmAction) == "string" and pinData.farmAction ~= "" then
+        tooltip:AddLine(pinData.farmAction, 1.0, 0.45, 0.20, true)
+    elseif type(pinData.targetName) == "string" and pinData.targetName ~= "" then
+        local actionLabels = {
+            fish = "Fish",
+            gather = "Gather",
+            kill = "Kill",
+            mine = "Mine",
+            skin = "Kill and skin",
+        }
+        tooltip:AddDoubleLine(
+            actionLabels[pinData.targetType] or "Farm",
+            pinData.targetName,
+            1.0, 0.45, 0.20,
+            1, 0.72, 0.55
+        )
+    end
     if type(pinData.sourceLabel) == "string" and pinData.sourceLabel ~= "" then
         tooltip:AddDoubleLine("Source", pinData.sourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
     end
@@ -184,15 +202,28 @@ local function BringWorldMapToFront(mapFrame)
     if not mapFrame then
         return
     end
-    if mapFrame.SetFrameStrata then
-        pcall(mapFrame.SetFrameStrata, mapFrame, "FULLSCREEN")
+
+    -- WorldMapFrame is a composite Blizzard panel. Its quest log and other
+    -- controls use their own frames and levels, so changing or raising only
+    -- the map root can place the map canvas in front of its own UI. Keep the
+    -- native map hierarchy intact and move only our addon windows behind it.
+    local theme = NS.JanisTheme
+    if theme and type(theme.DemoteInactiveAddonWindows) == "function" then
+        pcall(theme.DemoteInactiveAddonWindows, theme, mapFrame, "LOW")
     end
-    if mapFrame.SetToplevel then
-        pcall(mapFrame.SetToplevel, mapFrame, true)
+end
+
+local function KeepWorldMapInFrontAfterOpen(mapFrame)
+    if not C_Timer or type(C_Timer.After) ~= "function" then
+        return
     end
-    if mapFrame.Raise then
-        pcall(mapFrame.Raise, mapFrame)
-    end
+
+    C_Timer.After(0, function()
+        if mapFrame == WorldMapFrame
+            and (not mapFrame.IsShown or mapFrame:IsShown()) then
+            BringWorldMapToFront(mapFrame)
+        end
+    end)
 end
 
 local function OpenWorldMapToMapID(mapID)
@@ -204,6 +235,7 @@ local function OpenWorldMapToMapID(mapID)
             mapFrame:SetMapID(mapID)
         end
         BringWorldMapToFront(mapFrame)
+        KeepWorldMapInFrontAfterOpen(mapFrame)
         return true
     end
 
@@ -225,6 +257,7 @@ local function OpenWorldMapToMapID(mapID)
         pcall(mapFrame.SetMapID, mapFrame, mapID)
     end
     BringWorldMapToFront(mapFrame)
+    KeepWorldMapInFrontAfterOpen(mapFrame)
     return opened
 end
 
@@ -292,6 +325,23 @@ local function ApplyProjectionPinTexture(texture, atlas, fallbackTexture)
         return "texture"
     end
     return nil
+end
+
+local function ApplyConfiguredProjectionPinIcon(texture, addon)
+    local iconOption
+    if addon and type(addon.GetMapPinIconOption) == "function" then
+        iconOption = addon:GetMapPinIconOption()
+    end
+    iconOption = type(iconOption) == "table" and iconOption or {
+        atlas = "VignetteLoot",
+        texture = "Interface\\Icons\\INV_Misc_Map02",
+    }
+
+    local textureKind = ApplyProjectionPinTexture(texture, iconOption.atlas, iconOption.texture)
+    if textureKind ~= "atlas" and texture and texture.SetTexCoord then
+        texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
+    return textureKind
 end
 
 local function BuildProjectionKey(projection)
@@ -529,10 +579,7 @@ local function EnsureWorldMapOverlayMixins()
                 icon:ClearAllPoints()
                 icon:SetPoint("CENTER", self, "CENTER")
                 icon:SetSize(PIN_ICON_SIZE, PIN_ICON_SIZE)
-                local iconTextureKind = ApplyProjectionPinTexture(icon, "VignetteLoot", "Interface\\Icons\\INV_Misc_Map02")
-                if iconTextureKind ~= "atlas" and icon.SetTexCoord then
-                    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                end
+                ApplyConfiguredProjectionPinIcon(icon, self.dataProvider and self.dataProvider.addon)
                 if icon.SetVertexColor then
                     icon:SetVertexColor(1, 1, 1, 1)
                 end
@@ -865,10 +912,7 @@ local function CreateMinimapProjectionPin(frame)
     local icon = pin:CreateTexture(nil, "OVERLAY")
     icon:SetPoint("CENTER", pin, "CENTER")
     icon:SetSize(MINIMAP_PIN_ICON_SIZE, MINIMAP_PIN_ICON_SIZE)
-    local iconTextureKind = ApplyProjectionPinTexture(icon, "VignetteLoot", "Interface\\Icons\\INV_Misc_Map02")
-    if iconTextureKind ~= "atlas" and icon.SetTexCoord then
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    end
+    ApplyConfiguredProjectionPinIcon(icon, frame.addon)
     pin.icon = icon
 
     pin:SetScript("OnEnter", function(self)
@@ -990,6 +1034,7 @@ function GoldTracker:RefreshMinimapProjectionPins(force)
             usedPins = usedPins + 1
             local pin = GetMinimapProjectionPin(overlay, usedPins)
             pin.pinData = pinData
+            ApplyConfiguredProjectionPinIcon(pin.icon, self)
             pin:ClearAllPoints()
             pin:SetPoint("CENTER", overlay, "CENTER", offsetX, offsetY)
             pin:Show()

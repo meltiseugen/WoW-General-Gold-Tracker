@@ -121,6 +121,7 @@ local function CreateInventoryHeaderButton(parent, label, width, justifyH)
     text:SetWordWrap(false)
     text:SetText(label)
     button.text = text
+    button.sortLabel = label
 
     local sortIcon = button:CreateTexture(nil, "ARTWORK")
     sortIcon:SetSize(INVENTORY_SORT_ICON_SIZE, INVENTORY_SORT_ICON_SIZE)
@@ -813,22 +814,28 @@ local function GetInventorySortValue(item, sortKey)
     return tonumber(item and item.totalValue) or 0
 end
 
-local function SortInventoryItems(items, sortKey, sortAscending)
-    local normalizedSortKey = NormalizeInventorySortKey(sortKey)
-    local ascending = sortAscending == true
+local function SortInventoryItems(items, sortKey, sortAscending, sortCriteria)
+    local criteria = type(sortCriteria) == "table" and sortCriteria or {
+        { key = NormalizeInventorySortKey(sortKey), ascending = sortAscending == true },
+    }
+    local primarySortKey = criteria[1] and NormalizeInventorySortKey(criteria[1].key)
+        or NormalizeInventorySortKey(sortKey)
 
     table.sort(items, function(left, right)
-        local leftValue = GetInventorySortValue(left, normalizedSortKey)
-        local rightValue = GetInventorySortValue(right, normalizedSortKey)
-        if leftValue ~= rightValue then
-            if ascending then
-                return leftValue < rightValue
+        for _, criterion in ipairs(criteria) do
+            local normalizedSortKey = NormalizeInventorySortKey(criterion.key)
+            local leftValue = GetInventorySortValue(left, normalizedSortKey)
+            local rightValue = GetInventorySortValue(right, normalizedSortKey)
+            if leftValue ~= rightValue then
+                if criterion.ascending == true then
+                    return leftValue < rightValue
+                end
+                return leftValue > rightValue
             end
-            return leftValue > rightValue
         end
 
-        if normalizedSortKey ~= "itemName" then
-            if normalizedSortKey == "demand" or normalizedSortKey == "sellRate" then
+        if primarySortKey ~= "itemName" then
+            if primarySortKey == "demand" or primarySortKey == "sellRate" then
                 local leftRate = tonumber(left and left.regionSaleRate) or 0
                 local rightRate = tonumber(right and right.regionSaleRate) or 0
                 if leftRate ~= rightRate then
@@ -2253,8 +2260,13 @@ function GoldTracker:UpdateInventorySortHeaderState()
         return
     end
 
-    local sortKey = NormalizeInventorySortKey(frame.inventorySortKey)
-    local sortAscending = frame.inventorySortAscending == true
+    local criteria = self:GetTableSortCriteria(
+        frame,
+        "inventorySortKey",
+        "inventorySortAscending",
+        INVENTORY_SORT_KEYS
+    )
+    local showPriority = #criteria > 1
     local headers = {
         demand = { button = frame.demandHeaderButton, label = "Sold/day" },
         sellRate = { button = frame.sellRateHeaderButton, label = "Sale %" },
@@ -2269,11 +2281,13 @@ function GoldTracker:UpdateInventorySortHeaderState()
     for headerSortKey, header in pairs(headers) do
         local button = header.button
         if button and button.text then
-            button.text:SetText(header.label)
-            if headerSortKey == sortKey then
+            self:AttachTableSortHeaderTooltip(button, header.label)
+            local criterion, priority = self:GetTableSortCriterion(criteria, headerSortKey)
+            button.text:SetText(showPriority and criterion and (header.label .. " " .. priority) or header.label)
+            if criterion then
                 button.text:SetTextColor(1, 1, 1)
                 if button.sortIcon then
-                    Theme:SetTexture(button.sortIcon, sortAscending and "sortAscending" or "sortDescending")
+                    Theme:SetTexture(button.sortIcon, criterion.ascending and "sortAscending" or "sortDescending")
                     button.sortIcon:Show()
                 end
             else
@@ -2292,12 +2306,11 @@ function GoldTracker:ToggleInventorySort(sortKey)
         return
     end
 
-    if frame.inventorySortKey ~= sortKey then
-        frame.inventorySortKey = sortKey
-        frame.inventorySortAscending = sortKey == "itemName"
-    else
-        frame.inventorySortAscending = frame.inventorySortAscending ~= true
-    end
+    self:ToggleTableSortCriterion(frame, sortKey, sortKey == "itemName", {
+        validKeys = INVENTORY_SORT_KEYS,
+        sortKeyField = "inventorySortKey",
+        sortAscendingField = "inventorySortAscending",
+    })
 
     self:RefreshInventoryWindow(true)
 end
@@ -2666,7 +2679,7 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
     local source = ResolveInventoryWindowSource(self, frame)
     local minimumQuality = NormalizeMinimumQuality(self, frame.minimumQuality)
     local minimumValueCopper = tonumber(frame.minimumValueCopper) or 0
-    local items, totalValue, totalQuantity, scannedStacks, matchedStacks, scannedItems =
+    local items, totalValue, totalQuantity, scannedStacks, matchedStacks =
         self:BuildInventoryAuctionItemList(
             source.id,
             minimumQuality,
@@ -2675,9 +2688,6 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
             frame.inventorySortAscending,
             frame.categoryFilterID
         )
-    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
-        self:RecordDiscoveredItemMarketSnapshots(scannedItems or items)
-    end
     local rowHeight = INVENTORY_ROW_HEIGHT
     local yOffset = 0
 
@@ -2703,12 +2713,19 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
         frame.emptyText:Hide()
     end
 
-    if frame.inventorySortKey == "historySamples" and type(self.GetMarketHistorySampleCount) == "function" then
+    local sortCriteria = self:GetTableSortCriteria(
+        frame,
+        "inventorySortKey",
+        "inventorySortAscending",
+        INVENTORY_SORT_KEYS
+    )
+    local historyCriterion = self:GetTableSortCriterion(sortCriteria, "historySamples")
+    if historyCriterion and type(self.GetMarketHistorySampleCount) == "function" then
         for _, item in ipairs(items) do
             item.marketHistorySampleCount = self:GetMarketHistorySampleCount(item.itemLink)
         end
-        SortInventoryItems(items, frame.inventorySortKey, frame.inventorySortAscending)
     end
+    SortInventoryItems(items, frame.inventorySortKey, frame.inventorySortAscending, sortCriteria)
 
     local displayRows = BuildInventoryDisplayRows(items, frame.categoryFilterID, frame.groupByCategory)
 
@@ -2956,6 +2973,9 @@ function GoldTracker:CreateInventoryWindow()
     frame.inventoryRows = {}
     frame.inventorySortKey = INVENTORY_DEFAULT_SORT_KEY
     frame.inventorySortAscending = INVENTORY_DEFAULT_SORT_ASCENDING
+    frame.sortCriteria = {
+        { key = INVENTORY_DEFAULT_SORT_KEY, ascending = INVENTORY_DEFAULT_SORT_ASCENDING },
+    }
 
     local chrome = Theme:ApplyWindowChrome(frame, "Auctionable Inventory")
     Theme:RegisterSpecialFrame("GoldTrackerInventoryFrame")

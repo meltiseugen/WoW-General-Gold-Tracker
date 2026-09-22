@@ -174,10 +174,6 @@ function GoldTracker:OnChatMsgLoot(message, playerName, _, _, _, _, _, _, _, _, 
         return
     end
 
-    if self.session and self.session.active then
-        self:HandleSessionLocationTransition()
-    end
-
     local parseStart = self:BeginDiagnosticTimer()
     local itemLink, quantity = self:ExtractLootItemFromMessage(message)
     self:EndDiagnosticTimer("parse_loot_chat", parseStart)
@@ -185,6 +181,16 @@ function GoldTracker:OnChatMsgLoot(message, playerName, _, _, _, _, _, _, _, _, 
         if not string.find(itemLink, "|Hitem:", 1, true) and not string.find(itemLink, "|Hbattlepet:", 1, true) then
             self:IncrementDiagnosticCounter("loot_chat_ignored")
             return
+        end
+
+        if type(self.IsOnLootedItem) == "function" and self:IsOnLootedItem(itemLink) then
+            self:IncrementDiagnosticCounter("loot_chat_ignored")
+            self:IncrementDiagnosticCounter("item_filtered_on_looted", quantity)
+            return
+        end
+
+        if self.session and self.session.active then
+            self:HandleSessionLocationTransition()
         end
 
         if not self:EnsureSessionForTrackedLoot() then
@@ -201,6 +207,10 @@ function GoldTracker:OnChatMsgLoot(message, playerName, _, _, _, _, _, _, _, _, 
     if not amount or amount <= 0 then
         self:IncrementDiagnosticCounter("loot_chat_ignored")
         return
+    end
+
+    if self.session and self.session.active then
+        self:HandleSessionLocationTransition()
     end
 
     if not self:EnsureSessionForTrackedLoot() then

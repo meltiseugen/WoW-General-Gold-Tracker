@@ -431,6 +431,15 @@ describe("Core/Namespace utility edges", function()
         assert.near(1.7, addon:GetWorldMapProjectionPinScale(), 0.0001)
     end)
 
+    it("normalizes the farming map pin icon and exposes its texture", function()
+        local addon = load_namespace({ mapPinIcon = "ore" })
+
+        assert.equals("ore", addon:NormalizeMapPinIcon("ore"))
+        assert.equals("loot", addon:NormalizeMapPinIcon("not-an-icon"))
+        assert.equals("ore", addon:GetMapPinIconOption().id)
+        assert.equals("Interface\\Icons\\INV_Ore_Copper_01", addon:GetMapPinIconOption().texture)
+    end)
+
     it("normalizes comma-separated value source labels with aliases and deduplication", function()
         local addon = load_namespace({})
 

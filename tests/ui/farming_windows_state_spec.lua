@@ -230,10 +230,74 @@ describe("UI farming windows shared state", function()
         assert.equals(2, #rows)
         assert.equals(40001, rows[1].itemID)
         assert.equals("2 rares", rows[1].rareName)
-        assert.equals("2 locations", rows[1].locationLabel)
+        assert.equals("1 42.0,51.0 / 2 30.0,44.0", rows[1].locationLabel)
+        assert.equals(2, #rows[1].locations)
         assert.equals(2, rows[1].rareSourceCount)
         assert.equals("Rare One", rows[1].rareSources[1].rareName)
         assert.equals("Zone B 30.0,44.0", rows[1].rareSources[2].locationLabel)
+    end)
+
+    it("applies rare-table sort criteria in priority order", function()
+        local addon = load_rare_and_instance(build_addon())
+        local rows = {
+            { itemID = 1, itemName = "Alpha", favorite = true, value = 500 },
+            { itemID = 2, itemName = "Zulu", favorite = true, value = 100 },
+            { itemID = 3, itemName = "Middle", favorite = false, value = 900 },
+        }
+
+        addon:SortRareFarmingRows(rows, "favorite", false, {
+            { key = "favorite", ascending = false },
+            { key = "itemName", ascending = false },
+        })
+
+        assert.equals("Zulu", rows[1].itemName)
+        assert.equals("Alpha", rows[2].itemName)
+        assert.equals("Middle", rows[3].itemName)
+    end)
+
+    it("keeps every rare spawn location and sorts rows into location groups", function()
+        local addon = load_rare_and_instance(build_addon())
+        local rows, map_options = loader.with_globals({
+            C_Map = {
+                GetMapInfo = function(map_id)
+                    return ({
+                        [11] = { name = "Zone A" },
+                        [22] = { name = "Zone B" },
+                    })[map_id]
+                end,
+            },
+        }, function()
+            local grouped = addon:BuildRareFarmingGroupedRows({
+                {
+                    npcID = 1001,
+                    rareName = "Rare One",
+                    itemID = 40001,
+                    itemName = "Shared Cape",
+                    locations = {
+                        { mapID = 22, x = 30, y = 44 },
+                        { mapID = 22, x = 35, y = 49 },
+                    },
+                    value = 120000,
+                },
+                {
+                    npcID = 1002,
+                    rareName = "Rare Two",
+                    itemID = 40002,
+                    itemName = "Other Boots",
+                    locations = { { mapID = 11, x = 42, y = 51 } },
+                    value = 90000,
+                },
+            })
+            addon:SortRareFarmingRows(grouped, "location", true)
+            return grouped, addon:BuildRareFarmingMapOptions(grouped[2])
+        end)
+
+        assert.equals(2, #rows[2].locations)
+        assert.equals("Zone B 30.0,44.0 / 35.0,49.0", rows[2].locationLabel)
+        assert.equals("Zone A", addon:GetRareFarmingLocationGroupLabel(rows[1]))
+        assert.equals("Zone B", addon:GetRareFarmingLocationGroupLabel(rows[2]))
+        assert.equals(1, #map_options)
+        assert.equals(2, #map_options[1].pins)
     end)
 
     it("builds rare farming map options from every grouped rare source location", function()
@@ -677,6 +741,7 @@ describe("UI farming windows shared state", function()
                         [1] = { name = "Eastern Kingdoms", mapType = 2 },
                         [10] = { name = "Burning Steppes", mapType = 3, parentMapID = 1 },
                         [100] = { name = "Molten Core", mapType = 5, parentMapID = 10 },
+                        [101] = { name = "Molten Core - Inner Depths", mapType = 5, parentMapID = 10 },
                     })[map_id]
                 end,
             },
@@ -694,6 +759,15 @@ describe("UI farming windows shared state", function()
                     end
                     return {}
                 end,
+                GetEncountersOnMap = function(map_id)
+                    if map_id == 100 then
+                        return {
+                            { encounterID = 999, mapX = 0.12, mapY = 0.34 },
+                            { encounterID = 663, mapX = 0.44, mapY = 0.55 },
+                        }
+                    end
+                    return {}
+                end,
             },
         })
 
@@ -705,8 +779,6 @@ describe("UI farming windows shared state", function()
             instanceMapID = 100,
             bossName = "Lucifron",
             bossEncounterJournalID = 663,
-            bossX = 44,
-            bossY = 55,
         }
         local runtime_globals = {
             Enum = { UIMapType = { Continent = 2 } },
@@ -734,6 +806,15 @@ describe("UI farming windows shared state", function()
                     end
                     return {}
                 end,
+                GetEncountersOnMap = function(map_id)
+                    if map_id == 100 then
+                        return {
+                            { encounterID = 999, mapX = 0.12, mapY = 0.34 },
+                            { encounterID = 663, mapX = 0.44, mapY = 0.55 },
+                        }
+                    end
+                    return {}
+                end,
             },
         }
 
@@ -745,6 +826,8 @@ describe("UI farming windows shared state", function()
         assert.equals(10, options[2].mapID)
         assert.equals(100, options[3].mapID)
         assert.equals(0.44, options[3].pins[1].x)
+        assert.equals(0.55, options[3].pins[1].y)
+        assert.equals("Boss drop", options[3].pins[1].routeType)
 
         local trash_row = {
             itemID = 70002,
@@ -760,5 +843,29 @@ describe("UI farming windows shared state", function()
         assert.equals(2, #trash_options)
         assert.equals(1, trash_options[1].mapID)
         assert.equals(10, trash_options[2].mapID)
+
+        runtime_globals.C_Map.GetMapGroupID = function(map_id)
+            return map_id == 100 and 7 or nil
+        end
+        runtime_globals.C_Map.GetMapGroupMembersInfo = function(map_group_id)
+            if map_group_id == 7 then
+                return { { mapID = 100 }, { mapID = 101 } }
+            end
+            return {}
+        end
+        runtime_globals.C_EncounterJournal.GetEncountersOnMap = function(map_id)
+            if map_id == 101 then
+                return { { encounterID = 663, mapX = 0.62, mapY = 0.73 } }
+            end
+            return {}
+        end
+
+        local multi_floor_options = loader.with_globals(runtime_globals, function()
+            return addon:BuildInstanceFarmingMapOptions(boss_row)
+        end)
+        assert.equals(3, #multi_floor_options)
+        assert.equals(101, multi_floor_options[3].mapID)
+        assert.equals(0.62, multi_floor_options[3].pins[1].x)
+        assert.equals(0.73, multi_floor_options[3].pins[1].y)
     end)
 end)

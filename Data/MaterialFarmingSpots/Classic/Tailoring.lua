@@ -162,3 +162,46 @@ RegisterCloth(4306, "Silk Cloth", "Cloth", "silk", "Mid-level cloth from Scarlet
 RegisterCloth(4338, "Mageweave Cloth", "Cloth", "mageweave", "High-mid cloth from Tanaris, Feralas, and Zul'Farrak routes.")
 RegisterCloth(14047, "Runecloth", "Cloth", "runecloth", "Endgame cloth from Plaguelands, Felwood, Silithus, and dungeon-style humanoid/undead farms.")
 RegisterCloth(14256, "Felcloth", "Cloth", "felcloth", "Rare demon cloth from satyr and demon farms, often paired with Runecloth farming.")
+
+local function RegisterSpiderSilk(itemID, itemName, mapName, location, coords, targetUrl, summary)
+    local urls = { ItemUrl(itemID), targetUrl, "https://www.wowhead.com/npc=4376/darkmist-spider" }
+    Register({
+        itemID = itemID,
+        itemName = itemName,
+        expansion = "classic",
+        professions = { "tailoring" },
+        category = "Spider Silk",
+        researchStatus = "researched",
+        sourceUrls = urls,
+        summary = summary,
+        spots = {
+            {
+                id = "classic-spider-silk-" .. tostring(itemID),
+                source = "Wowhead retail item/NPC drop pages and spider-camp map pins",
+                sourceUrls = urls,
+                mapName = mapName,
+                location = location,
+                routeType = "creature-reagent-grind",
+                density = "Medium to high",
+                dropDifficulty = "Spider silk is an uncommon creature drop, so clear the entire spider pocket for respawns.",
+                tips = {
+                    "Kill spiders in a continuous circuit instead of waiting at one spawn.",
+                    "List silk separately from cloth because it serves different legacy recipes.",
+                    "Keep venom sacs and ordinary cloth as side-value drops.",
+                },
+                coords = coords,
+                confidence = "high",
+            },
+        },
+    })
+end
+
+RegisterSpiderSilk(3182, "Spider's Silk", "Wetlands", "Leech and spider pockets around Greenwarden's Grove", {
+    C(0.520, 0.380, "Greenwarden west spiders"), C(0.590, 0.430, "Central Wetlands spider pocket"), C(0.650, 0.490, "Eastern Wetlands spiders"),
+}, "https://www.wowhead.com/npc=1111/leech-stalker", "Early specialty silk from low-mid-level spiders.")
+RegisterSpiderSilk(4337, "Thick Spider's Silk", "Dustwallow Marsh", "Darkmist spider circuit west of Brackenwall Village", {
+    C(0.330, 0.220, "Darkmist north spiders"), C(0.350, 0.260, "Darkmist center"), C(0.380, 0.300, "Darkmist south return"),
+}, "https://www.wowhead.com/npc=4377/darkmist-lurker", "Mid-level specialty silk used by Tailoring and Engineering crafts.")
+RegisterSpiderSilk(14227, "Ironweb Spider Silk", "Silithus", "Rock Stalker and Sand Skitterer circuit around Hive'Ashi", {
+    C(0.430, 0.260, "Hive'Ashi north spiders"), C(0.470, 0.320, "Hive'Ashi center spiders"), C(0.520, 0.360, "Hive'Ashi east return"),
+}, "https://www.wowhead.com/npc=11739/rock-stalker", "Endgame spider silk used by high-end Tailoring and engineering components.")

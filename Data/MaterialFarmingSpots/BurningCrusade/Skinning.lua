@@ -111,6 +111,30 @@ RegisterSkinning(25699, "Crystal-Infused Leather", "Leather", {
         coords = RAVAGER_HELLFIRE_COORDS,
         confidence = "medium",
     },
+    {
+        id = "crystal-infused-blades-edge-shard-hide-boars",
+        source = "Wowhead retail Crystal-Infused Leather comments and Shard-Hide Boar page",
+        sourceUrls = {
+            "https://www.wowhead.com/item=25699/crystal-infused-leather",
+            "https://www.wowhead.com/npc=22180/shard-hide-boar",
+        },
+        mapName = "Blade's Edge Mountains",
+        location = "Shard-Hide Boars around Ogri'la and Forge Camp: Terror",
+        routeType = "skinning-loop",
+        density = "Medium",
+        dropDifficulty = "Targeted route repeatedly recommended for better Crystal-Infused Leather yield than Hellfire ravagers.",
+        tips = {
+            "Start near 30,70 and clear the boars south of Ogri'la toward the fel camp.",
+            "Loop around Ogri'la while the southern boar pack respawns.",
+            "Apexis Shards and ordinary Outland leather are side value.",
+        },
+        coords = {
+            C(0.300, 0.700, "Shard-Hide Boar comment waypoint"),
+            C(0.286, 0.674, "Ogri'la southern boars"),
+            C(0.318, 0.724, "Forge Camp: Terror boars"),
+        },
+        confidence = "high",
+    },
 })
 
 RegisterSkinning(25700, "Fel Scales", "Scale", {
