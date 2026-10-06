@@ -1,7 +1,7 @@
 local _, NS = ...
 
 NS.FarmingItems = {
-    dataVersion = 24,
+    dataVersion = 25,
     sourceNote = "Curated profession materials, composed crafting reagents, and housing decor cross-checked against Blizzard profession tables, Wowhead, WoWDB, and Warcraft Wiki. New recipe chains show farmable inputs and omit vendor-sourced reagents. Wrath housing quantities use the announced Patch 12.1.5 PTR reductions published 2026-09-15.",
     expansions = {
         { id = "all", label = "All expansions" },

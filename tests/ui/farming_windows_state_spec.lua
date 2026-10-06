@@ -61,7 +61,7 @@ local function load_rare_and_instance(addon)
     end)
 end
 
-local function load_instance_with_data(addon, instance_data, globals, att_data)
+local function load_instance_with_data(addon, instance_data, globals, att_data, wit_data)
     local values = {
         LE_ITEM_BIND_ON_ACQUIRE = 1,
         LE_ITEM_BIND_ON_EQUIP = 2,
@@ -75,6 +75,7 @@ local function load_instance_with_data(addon, instance_data, globals, att_data)
         return loader.load_module("UI/InstanceFarmingWindow.lua", addon, {
             InstanceDropsData = instance_data,
             ATTBoEDropsData = att_data,
+            WITDropsData = wit_data,
         })
     end)
 end
@@ -91,6 +92,7 @@ local function build_addon()
             instanceFarmingValueSource = "TSM_DBMARKET",
             rareFarmingMinimumValue = 1000,
             instanceFarmingMinimumValue = 1000,
+            instanceTransmogMinimumValue = 0,
             rareFarmingExpansionFilter = "current",
             instanceFarmingExpansionFilter = "current",
             instanceFarmingContentTypeFilter = "all",
@@ -102,6 +104,7 @@ local function build_addon()
             instanceFarmingValueSource = "TSM_DBMARKET",
             rareFarmingMinimumValue = 1000,
             instanceFarmingMinimumValue = 1000,
+            instanceTransmogMinimumValue = 0,
             rareFarmingExpansionFilter = "current",
             instanceFarmingExpansionFilter = "current",
             instanceFarmingContentTypeFilter = "all",
@@ -255,6 +258,310 @@ describe("UI farming windows shared state", function()
         assert.equals("Middle", rows[3].itemName)
     end)
 
+    it("defaults instance rows to instance-name groups and marks group boundaries", function()
+        local addon = load_rare_and_instance(build_addon())
+        local rows = {
+            { itemID = 1, itemName = "Zulu", instanceName = "BlackrockDepths" },
+            { itemID = 2, itemName = "Core Helm", instanceName = "MoltenCore" },
+            { itemID = 3, itemName = "Alpha", instanceName = "BlackrockDepths" },
+        }
+
+        addon:SortInstanceFarmingRows(rows, nil, true)
+
+        assert.equals("Alpha", rows[1].itemName)
+        assert.equals("Zulu", rows[2].itemName)
+        assert.equals("Core Helm", rows[3].itemName)
+        assert.is_false(addon:IsInstanceFarmingGroupBoundary(rows, 1, "instanceName"))
+        assert.is_true(addon:IsInstanceFarmingGroupBoundary(rows, 2, "instanceName"))
+        assert.is_false(addon:IsInstanceFarmingGroupBoundary(rows, 3, "instanceName"))
+        assert.is_false(addon:IsInstanceFarmingGroupBoundary(rows, 2, "value"))
+    end)
+
+    it("builds WIT raid-pet rows and groups them by location", function()
+        local addon = build_addon()
+        addon.ResolveItemUnitValue = function(_, _, item_link)
+            local species_id = tonumber(item_link:match("battlepet:(%d+)"))
+            return species_id, "TSM_DBMARKET", "Market Value", false
+        end
+        addon.GetTSMRawCustomValue = function(_, _, item_link)
+            return tonumber(item_link:match("battlepet:(%d+)")) or 0
+        end
+        addon.GetMarketHistoryItemKey = function(_, item_link)
+            return item_link:match("battlepet:(%d+)")
+        end
+        addon = load_instance_with_data(addon, {
+            expansions = { currentID = 1, options = {} },
+            instances = {},
+        }, nil, nil, {
+            sourceVersion = "test",
+            categories = {
+                raidPets = {
+                    {
+                        recordID = "raidPets:One:1",
+                        farmID = "One",
+                        farmName = "First Raid Pets",
+                        itemID = 82800,
+                        itemLink = "|cff0070dd|Hbattlepet:101:1:3:150:10:13:0:0|h[First Pet]|h|r",
+                        petID = 101,
+                        quantity = 1,
+                        contentID = 2,
+                        expansionLabel = "The Burning Crusade",
+                        locationLabel = "Deadwind Pass",
+                    },
+                    {
+                        recordID = "raidPets:Two:1",
+                        farmID = "Two",
+                        farmName = "Second Raid Pets",
+                        itemID = 82800,
+                        itemLink = "|cff0070dd|Hbattlepet:202:1:3:150:10:13:0:0|h[Second Pet]|h|r",
+                        petID = 202,
+                        quantity = 1,
+                        contentID = 3,
+                        expansionLabel = "Wrath of the Lich King",
+                        locationLabel = "Icecrown",
+                    },
+                    {
+                        recordID = "raidPets:One:2",
+                        farmID = "One",
+                        farmName = "First Raid Pets",
+                        itemID = 82800,
+                        itemLink = "|cff0070dd|Hbattlepet:303:1:3:150:10:13:0:0|h[Third Pet]|h|r",
+                        petID = 303,
+                        quantity = 1,
+                        contentID = 2,
+                        expansionLabel = "The Burning Crusade",
+                        locationLabel = "Deadwind Pass",
+                    },
+                },
+            },
+        })
+
+        local rows = addon:BuildInstanceRaidPetRows()
+        addon:SortInstanceFarmingRows(rows, "instanceName", true)
+
+        assert.equals(3, #rows)
+        assert.equals("First Pet", rows[1].itemName)
+        assert.equals("Deadwind Pass", rows[1].instanceName)
+        assert.equals("pet", rows[1].contentType)
+        assert.equals(101, rows[1].value)
+        assert.equals("Third Pet", rows[2].itemName)
+        assert.is_true(addon:IsInstanceFarmingGroupBoundary(rows, 2, "instanceName"))
+        assert.equals("Icecrown", rows[3].locationLabel)
+    end)
+
+    it("builds the static WIT transmog catalog from both branches", function()
+        local addon = load_instance_with_data(build_addon(), {
+            expansions = { currentID = 1, options = {} },
+            instances = {},
+        }, nil, nil, {
+            sourceVersion = "test",
+            categories = {
+                transmogs = {
+                    {
+                        recordID = "transmogs:Deadmines:1",
+                        farmID = "Deadmines",
+                        farmName = "The Deadmines",
+                        itemID = 1001,
+                        quantity = 2,
+                        contentID = 1,
+                        expansionLabel = "Classic",
+                        locationID = 291,
+                    },
+                    {
+                        recordID = "transmogs:Outland:1",
+                        farmID = "OutlandRaid",
+                        farmName = "Outland Raid",
+                        itemID = 2001,
+                        contentID = 2,
+                        expansionLabel = "The Burning Crusade",
+                    },
+                },
+                openWorldInstances = {
+                    {
+                        recordID = "openWorldInstances:Deadmines:1",
+                        farmID = "DeadminesLegacy",
+                        farmName = "The Deadmines",
+                        itemID = 1002,
+                        contentID = 1,
+                        expansionLabel = "Classic",
+                        locationID = 291,
+                    },
+                },
+            },
+        })
+
+        local rows = addon:BuildInstanceTransmogRows("all")
+        local classicRows = addon:BuildInstanceTransmogRows("1")
+        local options = addon:GetInstanceTransmogExpansionOptions()
+
+        assert.equals(3, #rows)
+        assert.equals(2, #classicRows)
+        assert.equals("All expansions", options[1].label)
+        assert.equals("Instances > Transmog", classicRows[1].sourceLabel)
+        assert.equals("Open World > Transmog", classicRows[2].sourceLabel)
+        assert.equals(291, classicRows[1].instanceMapID)
+
+        local expanded = {}
+        local display = addon:BuildInstanceTransmogDisplayRows(rows, expanded, false)
+        assert.equals(2, #display)
+        assert.is_true(display[1].isLocationGroupHeader)
+        assert.is_true(display[1].collapsed)
+
+        expanded[display[1].locationGroupKey] = true
+        display = addon:BuildInstanceTransmogDisplayRows(rows, expanded, false)
+        assert.equals(3, #display)
+        assert.equals("The Deadmines", display[2].locationGroupLabel)
+        assert.is_true(display[2].collapsed)
+
+        expanded[display[2].locationGroupKey] = true
+        display = addon:BuildInstanceTransmogDisplayRows(rows, expanded, false)
+        assert.equals(5, #display)
+        assert.equals(1001, display[3].itemID)
+        assert.equals(1002, display[4].itemID)
+
+        classicRows[1].value = 100
+        classicRows[2].value = 300
+        local valueCriteria = {
+            { key = "instanceName", ascending = true },
+            { key = "value", ascending = false },
+        }
+        local valueSortedDisplay = addon:BuildInstanceTransmogDisplayRows(
+            classicRows,
+            expanded,
+            false,
+            "instanceName",
+            true,
+            valueCriteria
+        )
+        assert.equals(1002, valueSortedDisplay[3].itemID)
+        assert.equals(1001, valueSortedDisplay[4].itemID)
+
+        local flatRows = addon:BuildInstanceTransmogDisplayRows(rows, expanded, true)
+        assert.equals(3, #flatRows)
+        assert.is_nil(flatRows[1].isLocationGroupHeader)
+    end)
+
+    it("loads WIT transmog prices when value is a secondary sort", function()
+        local worker
+        local addon = build_addon()
+        addon.ResolveItemUnitValue = function(_, _, _, item_id)
+            return item_id * 100, "TSM_DBMARKET", "Market Value", false
+        end
+        addon.GetTSMItemValueForItemID = function()
+            return 0
+        end
+        addon.RefreshInstanceFarmingWindow = noop
+        addon = load_instance_with_data(addon, {
+            expansions = { currentID = 3, options = {} },
+            instances = {},
+        }, nil, nil, {
+            sourceVersion = "test",
+            categories = {
+                transmogs = {
+                    { recordID = "one", farmName = "Ahn'kahet", itemID = 1001, contentID = 3, expansionLabel = "Wrath" },
+                    { recordID = "two", farmName = "Ahn'kahet", itemID = 1002, contentID = 3, expansionLabel = "Wrath" },
+                },
+            },
+        })
+        local rows = addon:BuildInstanceTransmogRows("3")
+        addon.instanceFarmingFrame = {
+            instanceFarmingViewID = "transmogs",
+            valueSourceID = "TSM_DBMARKET",
+            transmogMinimumValueCopper = 0,
+            transmogRows = rows,
+            sortKey = "instanceName",
+            sortAscending = true,
+            sortCriteria = {
+                { key = "instanceName", ascending = true },
+                { key = "value", ascending = false },
+            },
+        }
+
+        loader.with_globals({
+            CreateFrame = function()
+                worker = {
+                    SetScript = function(self, _, script)
+                        self.on_update = script
+                    end,
+                    Hide = function(self)
+                        self.hidden = true
+                    end,
+                    Show = function(self)
+                        self.hidden = false
+                    end,
+                }
+                return worker
+            end,
+        }, function()
+            addon:StartInstanceTransmogPriceLoading()
+            assert.is_table(addon.instanceFarmingFrame.transmogPriceLoadState)
+            worker.on_update(worker, 0.5)
+        end)
+
+        assert.equals(100100, rows[1].value)
+        assert.equals(100200, rows[2].value)
+        assert.is_nil(addon.instanceFarmingFrame.transmogPriceLoadState)
+    end)
+
+    it("filters WIT transmogs by the selected value source after progressive pricing", function()
+        local worker
+        local addon = build_addon()
+        addon.ResolveItemUnitValue = function(_, _, _, item_id)
+            return item_id == 1002 and 250000 or 50000, "TSM_DBMARKET", "Market Value", false
+        end
+        addon.GetTSMItemValueForItemID = function()
+            return 0
+        end
+        addon.RefreshInstanceFarmingWindow = noop
+        addon = load_instance_with_data(addon, {
+            expansions = { currentID = 1, options = {} },
+            instances = {},
+        }, nil, nil, {
+            sourceVersion = "test",
+            categories = {
+                transmogs = {
+                    { recordID = "one", farmName = "One", itemID = 1001, contentID = 1, expansionLabel = "Classic" },
+                    { recordID = "two", farmName = "Two", itemID = 1002, contentID = 1, expansionLabel = "Classic" },
+                },
+            },
+        })
+        local rows = addon:BuildInstanceTransmogRows("all")
+        addon.instanceFarmingFrame = {
+            instanceFarmingViewID = "transmogs",
+            valueSourceID = "TSM_DBMARKET",
+            transmogMinimumValueCopper = 100000,
+            transmogRows = rows,
+        }
+
+        assert.equals(0, #addon:FilterInstanceTransmogRows(rows, 100000, "TSM_DBMARKET"))
+        loader.with_globals({
+            CreateFrame = function()
+                worker = {
+                    SetScript = function(self, _, script)
+                        self.on_update = script
+                    end,
+                    Hide = function(self)
+                        self.hidden = true
+                    end,
+                    Show = function(self)
+                        self.hidden = false
+                    end,
+                }
+                return worker
+            end,
+        }, function()
+            addon:StartInstanceTransmogPriceLoading()
+            worker.on_update(worker, 0.5)
+        end)
+
+        local filtered = addon:FilterInstanceTransmogRows(rows, 100000, "TSM_DBMARKET")
+        assert.equals(1, #filtered)
+        assert.equals(1002, filtered[1].itemID)
+        assert.equals(250000, filtered[1].value)
+        assert.equals(2, #addon:FilterInstanceTransmogRows(rows, 0, "TSM_DBMARKET"))
+        assert.is_nil(addon.instanceFarmingFrame.transmogPriceLoadState)
+    end)
+
     it("keeps every rare spawn location and sorts rows into location groups", function()
         local addon = load_rare_and_instance(build_addon())
         local rows, map_options = loader.with_globals({
@@ -397,6 +704,64 @@ describe("UI farming windows shared state", function()
         assert.is_true(addon.instanceFarmingFrame.controlsPanel.shown)
         assert.is_false(addon.instanceFarmingFrame.libraryPanel.shown)
         assert.is_true(addon.instanceFarmingFrame.newScanTabButton.selected)
+    end)
+
+    it("opens raid pets as a dedicated instance sub-tab", function()
+        local addon = load_rare_and_instance(build_addon())
+        addon.instanceFarmingFrame = {
+            valueSourceID = "TSM_DBMARKET",
+            libraryPanel = panel(),
+            controlsPanel = panel(),
+            listPanel = panel(),
+            metaText = panel(),
+            libraryUpdateFavoritesButton = button(),
+            savedTabButton = button(),
+            favoritesTabButton = button(),
+            petsTabButton = button(),
+            newScanTabButton = button(),
+        }
+        addon.RefreshInstanceFarmingWindow = noop
+
+        addon:OpenInstanceFarmingPets()
+
+        assert.equals("pets", addon.instanceFarmingFrame.instanceFarmingNavigationTab)
+        assert.equals("pets", addon.instanceFarmingFrame.instanceFarmingViewID)
+        assert.is_false(addon.instanceFarmingFrame.libraryPanel.shown)
+        assert.is_false(addon.instanceFarmingFrame.controlsPanel.shown)
+        assert.is_true(addon.instanceFarmingFrame.listPanel.shown)
+        assert.is_true(addon.instanceFarmingFrame.metaText.shown)
+        assert.is_true(addon.instanceFarmingFrame.petsTabButton.selected)
+    end)
+
+    it("opens static transmogs as a dedicated instance sub-tab", function()
+        local addon = load_rare_and_instance(build_addon())
+        addon.instanceFarmingFrame = {
+            valueSourceID = "TSM_DBMARKET",
+            transmogExpansionFilterID = "all",
+            transmogFlatList = false,
+            libraryPanel = panel(),
+            controlsPanel = panel(),
+            transmogControlsPanel = panel(),
+            listPanel = panel(),
+            metaText = panel(),
+            libraryUpdateFavoritesButton = button(),
+            savedTabButton = button(),
+            favoritesTabButton = button(),
+            transmogsTabButton = button(),
+            petsTabButton = button(),
+            newScanTabButton = button(),
+        }
+        addon.RefreshInstanceFarmingWindow = noop
+
+        addon:OpenInstanceFarmingTransmogs()
+
+        assert.equals("transmogs", addon.instanceFarmingFrame.instanceFarmingNavigationTab)
+        assert.equals("transmogs", addon.instanceFarmingFrame.instanceFarmingViewID)
+        assert.is_false(addon.instanceFarmingFrame.libraryPanel.shown)
+        assert.is_false(addon.instanceFarmingFrame.controlsPanel.shown)
+        assert.is_true(addon.instanceFarmingFrame.transmogControlsPanel.shown)
+        assert.is_true(addon.instanceFarmingFrame.listPanel.shown)
+        assert.is_true(addon.instanceFarmingFrame.transmogsTabButton.selected)
     end)
 
     it("keeps waiting item-binding rows in the same instance scan", function()
@@ -565,12 +930,12 @@ describe("UI farming windows shared state", function()
         end)
     end)
 
-    it("includes ATT instance BoE rows in instance farming scans", function()
+    it("combines ATT and WIT static auctionable rows in instance farming scans", function()
         local worker
         local status_text = {}
         local addon = build_addon()
         addon.db.instanceFarmingExpansionFilter = "2"
-        addon.db.instanceFarmingContentTypeFilter = "dungeon"
+        addon.db.instanceFarmingContentTypeFilter = "raid"
         addon.db.instanceFarmingMinimumValue = 0
         addon.db.instanceFarmingScanMode = "foreground"
         addon.GetTSMItemValueForItemID = function()
@@ -590,7 +955,7 @@ describe("UI farming windows shared state", function()
         addon.COPPER_PER_GOLD = 10000
         local function get_test_item_info(item_id)
             local id = tonumber(item_id)
-            if id == 80001 or id == 80002 then
+            if id == 80001 or id == 80002 or id == 80003 then
                 return "Drop " .. tostring(id),
                     "item:" .. tostring(id),
                     2,
@@ -619,11 +984,11 @@ describe("UI farming windows shared state", function()
             },
             instances = {
                 {
-                    name = "TBCDungeon",
+                    name = "SunwellPlateau",
                     expansionID = 2,
                     expansion = "Burning Crusade",
-                    contentType = "dungeon",
-                    encounterJournalID = 777,
+                    contentType = "raid",
+                    encounterJournalID = 752,
                     mapID = 100,
                     bosses = {
                         { name = "Trash Mobs", loot = { { itemID = 80001 } } },
@@ -648,16 +1013,37 @@ describe("UI farming windows shared state", function()
             GetItemInfo = get_test_item_info,
         }, {
             instances = {
-                [777] = {
-                    journalInstanceID = 777,
-                    name = "TBCDungeon",
+                [752] = {
+                    journalInstanceID = 752,
+                    name = "SunwellPlateau",
                     expansionID = 2,
                     expansion = "Burning Crusade",
-                    contentType = "dungeon",
+                    contentType = "raid",
                     mapID = 100,
                     items = {
                         { itemID = 80001 },
                         { itemID = 80002 },
+                    },
+                },
+            },
+        }, {
+            categories = {
+                transmogs = {
+                    {
+                        recordID = "transmogs:Sunwell:1",
+                        farmID = "Sunwell",
+                        farmName = "Sunwell (Trash)",
+                        itemID = 80002,
+                        contentID = 2,
+                        expansionLabel = "Burning Crusade",
+                    },
+                    {
+                        recordID = "transmogs:Sunwell:2",
+                        farmID = "Sunwell",
+                        farmName = "Sunwell (Trash)",
+                        itemID = 80003,
+                        contentID = 2,
+                        expansionLabel = "Burning Crusade",
                     },
                 },
             },
@@ -668,7 +1054,7 @@ describe("UI farming windows shared state", function()
         addon.instanceFarmingFrame = {
             valueSourceID = "TSM_DBMARKET",
             expansionFilterID = "2",
-            contentTypeFilterID = "dungeon",
+            contentTypeFilterID = "raid",
             scanModeID = "foreground",
             minimumValueCopper = 0,
             lastResults = {},
@@ -714,16 +1100,18 @@ describe("UI farming windows shared state", function()
         }, function()
             addon:StartInstanceFarmingScan()
             assert.is_table(addon.instanceFarmingFrame.scanState)
-            assert.equals(2, addon.instanceFarmingFrame.scanState.total)
+            assert.equals(3, addon.instanceFarmingFrame.scanState.total)
 
             worker.on_update(worker, 0.1)
 
             assert.is_nil(addon.instanceFarmingFrame.scanState)
-            assert.equals(2, #addon.instanceFarmingFrame.lastResults)
+            assert.equals(3, #addon.instanceFarmingFrame.lastResults)
             assert.equals(80001, addon.instanceFarmingFrame.lastResults[1].itemID)
             assert.equals(80002, addon.instanceFarmingFrame.lastResults[2].itemID)
+            assert.equals(80003, addon.instanceFarmingFrame.lastResults[3].itemID)
             assert.equals("att-instance", addon.instanceFarmingFrame.lastResults[2].farmingSourceType)
-            assert.matches("2 auctionable instance drops matched", status_text[#status_text])
+            assert.equals("wit-transmogs", addon.instanceFarmingFrame.lastResults[3].farmingSourceType)
+            assert.matches("3 auctionable instance drops matched", status_text[#status_text])
         end)
     end)
 

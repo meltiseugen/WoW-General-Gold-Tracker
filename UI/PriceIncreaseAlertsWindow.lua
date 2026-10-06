@@ -21,9 +21,11 @@ local ALERTS_TSM_WIDTH = 60
 local ALERTS_QTY_WIDTH = 42
 local ALERTS_UNIT_WIDTH = 104
 local ALERTS_TOTAL_WIDTH = 110
-local ALERTS_ACTIONS_WIDTH = 120
-local ALERTS_DETAILS_BUTTON_WIDTH = 64
+local ALERTS_ACTIONS_WIDTH = 160
+local ALERTS_FARM_BUTTON_WIDTH = 48
 local ALERTS_MAP_BUTTON_WIDTH = 48
+local ALERTS_ADD_BUTTON_WIDTH = 48
+local ALERTS_HORIZONTAL_SCROLL_HEIGHT = 14
 
 local function CreateAlertsPanel(parent, bg, border)
     return Theme:CreatePanel(parent, bg, border)
@@ -104,6 +106,26 @@ local function SetAlertsHeaderColumn(fontString, panel, leftOffset, width)
     fontString:SetWidth(math.max(1, width))
 end
 
+local function PriceIncreaseAlertsNeedsItemDataRefresh(frame, itemID)
+    itemID = tonumber(itemID)
+    if not itemID then
+        return false
+    end
+    itemID = math.floor(itemID + 0.5)
+
+    for _, row in ipairs(frame and frame.rows or {}) do
+        if tonumber(row and row.itemID) == itemID
+            and (type(row.IsShown) ~= "function" or row:IsShown())
+        then
+            local hasName = type(row.itemName) == "string" and row.itemName ~= ""
+            local hasLink = type(row.itemLink) == "string" and row.itemLink ~= ""
+            local hasIcon = row.iconTexture ~= nil
+            return not (hasName and hasLink and hasIcon)
+        end
+    end
+    return false
+end
+
 local function SetAlertsColumnShown(fontString, shown)
     if fontString and fontString.SetShown then
         fontString:SetShown(shown == true)
@@ -126,6 +148,35 @@ local function GetAlertsTableAvailableWidth(frame)
     return math.max(1, width - 6)
 end
 
+local function UpdateAlertsHorizontalScroll(frame)
+    if not frame then
+        return 0
+    end
+
+    local contentWidth = frame.content and (tonumber(frame.content:GetWidth()) or 0) or 0
+    local maxOffset = math.max(0, math.floor(contentWidth - GetAlertsTableAvailableWidth(frame)))
+    local offset = math.min(math.max(0, math.floor(tonumber(frame.horizontalScrollOffset) or 0)), maxOffset)
+    frame.horizontalScrollOffset = offset
+    if frame.scrollFrame and frame.scrollFrame.UpdateScrollChildRect then
+        frame.scrollFrame:UpdateScrollChildRect()
+    end
+    if frame.scrollFrame and frame.scrollFrame.SetHorizontalScroll then
+        frame.scrollFrame:SetHorizontalScroll(offset)
+    end
+    if frame.horizontalScrollBar then
+        frame.horizontalScrollBar:SetMinMaxValues(0, maxOffset)
+        frame.horizontalScrollBar:SetValueStep(20)
+        if frame.horizontalScrollBar.SetObeyStepOnDrag then
+            frame.horizontalScrollBar:SetObeyStepOnDrag(false)
+        end
+        frame.horizontalScrollBar:SetShown(maxOffset > 0)
+        frame.horizontalScrollBar.updating = true
+        frame.horizontalScrollBar:SetValue(offset)
+        frame.horizontalScrollBar.updating = false
+    end
+    return offset
+end
+
 local function ApplyAlertsTableColumnLayout(frame)
     if not frame then
         return
@@ -136,67 +187,110 @@ local function ApplyAlertsTableColumnLayout(frame)
         frame.content:SetWidth(availableWidth)
     end
 
-    local iconX = 8
+    local actionsX = 8
+    local iconX = actionsX + ALERTS_ACTIONS_WIDTH + ALERTS_COLUMN_GAP
     local itemX = iconX + ALERTS_ICON_SIZE + 8
+    local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rows, "itemText", 1, { padding = 8 })
     local rightEdge = availableWidth - ALERTS_ROW_RIGHT_PADDING
     local showDetailedColumns = availableWidth >= 1000
-    local actionsX = rightEdge - ALERTS_ACTIONS_WIDTH
-    local totalX = showDetailedColumns and (actionsX - ALERTS_COLUMN_GAP - ALERTS_TOTAL_WIDTH) or nil
-    local unitRightX = totalX or actionsX
-    local unitX = unitRightX - ALERTS_COLUMN_GAP - ALERTS_UNIT_WIDTH
-    local qtyX = showDetailedColumns and (unitX - ALERTS_COLUMN_GAP - ALERTS_QTY_WIDTH) or nil
-    local tsmX = showDetailedColumns and (qtyX - ALERTS_COLUMN_GAP - ALERTS_TSM_WIDTH) or nil
-    local localRightX = tsmX or unitX
+    local expansionX = rightEdge - ALERTS_EXPANSION_WIDTH
+    local professionX = expansionX - ALERTS_COLUMN_GAP - ALERTS_PROFESSION_WIDTH
+    local totalX = showDetailedColumns and (professionX - ALERTS_COLUMN_GAP - ALERTS_TOTAL_WIDTH) or nil
+    local qtyRightX = totalX or professionX
+    local qtyX = showDetailedColumns and (qtyRightX - ALERTS_COLUMN_GAP - ALERTS_QTY_WIDTH) or nil
+    local tsmRightX = qtyX or professionX
+    local tsmX = showDetailedColumns and (tsmRightX - ALERTS_COLUMN_GAP - ALERTS_TSM_WIDTH) or nil
+    local localRightX = tsmX or professionX
     local localX = localRightX - ALERTS_COLUMN_GAP - ALERTS_LOCAL_WIDTH
     local basisX = showDetailedColumns and (localX - ALERTS_COLUMN_GAP - ALERTS_BASIS_WIDTH) or nil
-    local professionRightX = basisX or localX
-    local professionX = professionRightX - ALERTS_COLUMN_GAP - ALERTS_PROFESSION_WIDTH
-    local expansionX = professionX - ALERTS_COLUMN_GAP - ALERTS_EXPANSION_WIDTH
-    local itemWidth = math.max(1, expansionX - ALERTS_COLUMN_GAP - itemX)
+    local unitRightX = basisX or localX
+    local unitX = unitRightX - ALERTS_COLUMN_GAP - ALERTS_UNIT_WIDTH
+    local itemWidth = math.max(1, unitX - ALERTS_COLUMN_GAP - itemX)
+    if showDetailedColumns and itemWidth < requiredItemWidth then
+        showDetailedColumns = false
+        totalX = nil
+        qtyX = nil
+        tsmX = nil
+        localX = professionX - ALERTS_COLUMN_GAP - ALERTS_LOCAL_WIDTH
+        basisX = nil
+        unitX = localX - ALERTS_COLUMN_GAP - ALERTS_UNIT_WIDTH
+        itemWidth = math.max(1, unitX - ALERTS_COLUMN_GAP - itemX)
+    end
+    local itemOverflow = math.max(0, requiredItemWidth - itemWidth)
+    if itemOverflow > 0 then
+        unitX = unitX + itemOverflow
+        localX = localX + itemOverflow
+        professionX = professionX + itemOverflow
+        expansionX = expansionX + itemOverflow
+        itemWidth = requiredItemWidth
+        if frame.content then
+            frame.content:SetWidth(availableWidth + itemOverflow)
+        end
+    end
+    local horizontalOffset = UpdateAlertsHorizontalScroll(frame)
 
     if frame.listPanel then
+        frame.basisHeaderText:SetText("Trigger")
+        frame.localHeaderText:SetText(showDetailedColumns and "DBMarket" or "Change")
+        frame.tsmHeaderText:SetText("Min Buyout")
         SetAlertsColumnShown(frame.basisHeaderText, showDetailedColumns)
         SetAlertsColumnShown(frame.tsmHeaderText, showDetailedColumns)
         SetAlertsColumnShown(frame.qtyHeaderText, showDetailedColumns)
         SetAlertsColumnShown(frame.totalHeaderText, showDetailedColumns)
-        SetAlertsHeaderColumn(frame.itemHeaderText, frame.listPanel, 20 + itemX, itemWidth)
-        SetAlertsHeaderColumn(frame.expansionHeaderText, frame.listPanel, 20 + expansionX, ALERTS_EXPANSION_WIDTH)
-        SetAlertsHeaderColumn(frame.professionHeaderText, frame.listPanel, 20 + professionX, ALERTS_PROFESSION_WIDTH)
+        SetAlertsHeaderColumn(frame.actionsHeaderText, frame.listPanel, 20 + actionsX - horizontalOffset, ALERTS_ACTIONS_WIDTH)
+        SetAlertsHeaderColumn(frame.itemHeaderText, frame.listPanel, 20 + itemX - horizontalOffset, itemWidth)
+        SetAlertsHeaderColumn(frame.unitHeaderText, frame.listPanel, 20 + unitX - horizontalOffset, ALERTS_UNIT_WIDTH)
         if showDetailedColumns then
-            SetAlertsHeaderColumn(frame.basisHeaderText, frame.listPanel, 20 + basisX, ALERTS_BASIS_WIDTH)
-            SetAlertsHeaderColumn(frame.tsmHeaderText, frame.listPanel, 20 + tsmX, ALERTS_TSM_WIDTH)
-            SetAlertsHeaderColumn(frame.qtyHeaderText, frame.listPanel, 20 + qtyX, ALERTS_QTY_WIDTH)
-            SetAlertsHeaderColumn(frame.totalHeaderText, frame.listPanel, 20 + totalX, ALERTS_TOTAL_WIDTH)
+            SetAlertsHeaderColumn(frame.basisHeaderText, frame.listPanel, 20 + basisX - horizontalOffset, ALERTS_BASIS_WIDTH)
         end
-        SetAlertsHeaderColumn(frame.localHeaderText, frame.listPanel, 20 + localX, ALERTS_LOCAL_WIDTH)
-        SetAlertsHeaderColumn(frame.unitHeaderText, frame.listPanel, 20 + unitX, ALERTS_UNIT_WIDTH)
-        SetAlertsHeaderColumn(frame.actionsHeaderText, frame.listPanel, 20 + actionsX, ALERTS_ACTIONS_WIDTH)
+        SetAlertsHeaderColumn(frame.localHeaderText, frame.listPanel, 20 + localX - horizontalOffset, ALERTS_LOCAL_WIDTH)
+        if showDetailedColumns then
+            SetAlertsHeaderColumn(frame.tsmHeaderText, frame.listPanel, 20 + tsmX - horizontalOffset, ALERTS_TSM_WIDTH)
+            SetAlertsHeaderColumn(frame.qtyHeaderText, frame.listPanel, 20 + qtyX - horizontalOffset, ALERTS_QTY_WIDTH)
+            SetAlertsHeaderColumn(frame.totalHeaderText, frame.listPanel, 20 + totalX - horizontalOffset, ALERTS_TOTAL_WIDTH)
+        end
+        SetAlertsHeaderColumn(frame.professionHeaderText, frame.listPanel, 20 + professionX - horizontalOffset, ALERTS_PROFESSION_WIDTH)
+        SetAlertsHeaderColumn(frame.expansionHeaderText, frame.listPanel, 20 + expansionX - horizontalOffset, ALERTS_EXPANSION_WIDTH)
     end
 
     for _, row in ipairs(frame.rows or {}) do
+        row.localText:SetText(FormatAlertPercent(
+            showDetailedColumns and row.dbMarketChangePercent or row.changePercent
+        ))
+        row.tsmText:SetText(FormatAlertPercent(row.dbMinBuyoutChangePercent))
         SetAlertsColumnShown(row.basisText, showDetailedColumns)
         SetAlertsColumnShown(row.tsmText, showDetailedColumns)
         SetAlertsColumnShown(row.quantityText, showDetailedColumns)
         SetAlertsColumnShown(row.totalValueText, showDetailedColumns)
+        if row.icon then
+            row.icon:ClearAllPoints()
+            row.icon:SetPoint("LEFT", row, "LEFT", iconX, 0)
+        end
         SetAlertsRowColumn(row.itemText, row, itemX, itemWidth)
-        SetAlertsRowColumn(row.expansionText, row, expansionX, ALERTS_EXPANSION_WIDTH)
-        SetAlertsRowColumn(row.professionText, row, professionX, ALERTS_PROFESSION_WIDTH)
+        SetAlertsRowColumn(row.unitValueText, row, unitX, ALERTS_UNIT_WIDTH)
         if showDetailedColumns then
             SetAlertsRowColumn(row.basisText, row, basisX, ALERTS_BASIS_WIDTH)
+        end
+        SetAlertsRowColumn(row.localText, row, localX, ALERTS_LOCAL_WIDTH)
+        if showDetailedColumns then
             SetAlertsRowColumn(row.tsmText, row, tsmX, ALERTS_TSM_WIDTH)
             SetAlertsRowColumn(row.quantityText, row, qtyX, ALERTS_QTY_WIDTH)
             SetAlertsRowColumn(row.totalValueText, row, totalX, ALERTS_TOTAL_WIDTH)
         end
-        SetAlertsRowColumn(row.localText, row, localX, ALERTS_LOCAL_WIDTH)
-        SetAlertsRowColumn(row.unitValueText, row, unitX, ALERTS_UNIT_WIDTH)
-        if row.detailsButton then
-            row.detailsButton:ClearAllPoints()
-            row.detailsButton:SetPoint("LEFT", row, "LEFT", actionsX, 0)
+        if row.farmButton then
+            row.farmButton:ClearAllPoints()
+            row.farmButton:SetPoint("LEFT", row, "LEFT", actionsX, 0)
         end
         if row.mapButton then
             row.mapButton:ClearAllPoints()
-            row.mapButton:SetPoint("LEFT", row.detailsButton or row, row.detailsButton and "RIGHT" or "LEFT", row.detailsButton and 6 or actionsX, 0)
+            row.mapButton:SetPoint("LEFT", row.farmButton or row, row.farmButton and "RIGHT" or "LEFT", row.farmButton and 6 or actionsX, 0)
         end
+        if row.addButton then
+            row.addButton:ClearAllPoints()
+            row.addButton:SetPoint("LEFT", row.mapButton or row.farmButton or row, (row.mapButton or row.farmButton) and "RIGHT" or "LEFT", (row.mapButton or row.farmButton) and 6 or actionsX, 0)
+        end
+        SetAlertsRowColumn(row.professionText, row, professionX, ALERTS_PROFESSION_WIDTH)
+        SetAlertsRowColumn(row.expansionText, row, expansionX, ALERTS_EXPANSION_WIDTH)
     end
 end
 
@@ -285,14 +379,26 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     totalValueText:SetWordWrap(false)
     row.totalValueText = totalValueText
 
-    local detailsButton = CreateAlertsButton(row, ALERTS_DETAILS_BUTTON_WIDTH, 20, "Details", "neutral")
-    detailsButton:SetScript("OnClick", function(self)
+    local farmButton = CreateAlertsButton(row, ALERTS_FARM_BUTTON_WIDTH, 20, "Farm", "primary")
+    farmButton:SetScript("OnClick", function(self)
         local parentRow = self:GetParent()
-        if type(GoldTracker.OpenInventoryItemDetailsWindow) == "function" then
-            GoldTracker:OpenInventoryItemDetailsWindow(parentRow)
+        if type(GoldTracker.OpenFarmDetailsForItem) == "function" then
+            GoldTracker:OpenFarmDetailsForItem(parentRow.itemID)
         end
     end)
-    row.detailsButton = detailsButton
+    farmButton:SetScript("OnEnter", function(self)
+        if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText("Open farm map")
+            GameTooltip:Show()
+        end
+    end)
+    farmButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    row.farmButton = farmButton
 
     local mapButton = CreateAlertsButton(row, ALERTS_MAP_BUTTON_WIDTH, 20, "Map", "neutral")
     mapButton:SetScript("OnClick", function(self)
@@ -321,6 +427,10 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     end)
     row.mapButton = mapButton
 
+    local addButton = CreateAlertsButton(row, ALERTS_ADD_BUTTON_WIDTH, 20, "Add", "neutral")
+    GoldTracker:ConfigureCustomFarmAddButton(addButton, "alerts")
+    row.addButton = addButton
+
     local divider = row:CreateTexture(nil, "ARTWORK")
     divider:SetColorTexture(1, 0.82, 0.18, 0.10)
     divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 6, 0)
@@ -328,38 +438,52 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     divider:SetHeight(1)
     row.divider = divider
 
-    row:SetScript("OnEnter", function(self)
-        if type(self.itemLink) ~= "string" or self.itemLink == "" or not GameTooltip then
+    self:CreateItemTooltipTarget(row, itemText, icon, function(self, target)
+        if not GameTooltip then
             return
         end
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:SetHyperlink(self.itemLink)
+        local hasItemLink = type(self.itemLink) == "string" and self.itemLink ~= ""
+        local itemID = tonumber(self.itemID)
+        itemID = itemID and math.floor(itemID + 0.5) or nil
+        if not hasItemLink and not itemID then
+            return
+        end
+
+        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
+        if hasItemLink then
+            GameTooltip:SetHyperlink(self.itemLink)
+        elseif type(GameTooltip.SetItemByID) == "function" then
+            GameTooltip:SetItemByID(itemID)
+        else
+            GameTooltip:SetHyperlink("item:" .. tostring(math.floor(itemID + 0.5)))
+        end
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Price increase alert", 1.0, 0.82, 0.18)
+        local isDecrease = self.alertDirection == "decrease"
+        GameTooltip:AddLine(isDecrease and "Price decrease alert" or "Price increase alert", 1.0, 0.82, 0.18)
         GameTooltip:AddDoubleLine("Expansion", tostring(self.materialExpansionLabel or self.materialExpansionID or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Profession", tostring(self.materialProfessionLabel or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Alert basis", tostring(self.alertBasis or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Local change", FormatAlertPercent(self.localChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
-        GameTooltip:AddDoubleLine("TSM change", FormatAlertPercent(self.tsmChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
+        GameTooltip:AddDoubleLine("Triggered by", tostring(self.alertBasis or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
+        GameTooltip:AddDoubleLine("DBMarket change", FormatAlertPercent(self.dbMarketChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
+        GameTooltip:AddDoubleLine("Min Buyout change", FormatAlertPercent(self.dbMinBuyoutChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
         GameTooltip:AddDoubleLine("Baseline", self.baselinePrice and GoldTracker:FormatMoney(self.baselinePrice) or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Current", self.latestPrice and GoldTracker:FormatMoney(self.latestPrice) or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Quantity", tostring(self.quantity or 0), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Stack value", GoldTracker:FormatMoney(self.totalValue or 0), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Local samples", tostring(self.localSampleCount or 0), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("First sample", FormatAlertTimestamp(self.baselineTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Previous sample", FormatAlertTimestamp(self.baselineTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Latest sample", FormatAlertTimestamp(self.latestTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddLine(" ")
         GameTooltip:AddDoubleLine("Region sold/day", FormatAlertDecimal(self.regionSoldPerDay, 2), 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddDoubleLine("Region sale rate", FormatAlertDecimal(self.regionSaleRate, 3), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    row:SetScript("OnLeave", function()
-        if GameTooltip then
-            GameTooltip:Hide()
+        if type(GoldTracker.AddFarmActionTooltip) == "function" then
+            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
         end
+        GameTooltip:Show()
     end)
     row:SetScript("OnMouseUp", function(self, button)
         if button ~= "LeftButton" or type(self.itemLink) ~= "string" or self.itemLink == "" then
+            return
+        end
+        if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
             return
         end
         if GoldTracker:HandleModifiedItemClickIfModified(self) then
@@ -401,33 +525,77 @@ function GoldTracker:SavePriceIncreaseAlertsMinimumValueInput(skipRefresh)
     end
 end
 
+local function UpdateAlertsViewControls(frame)
+    if not frame then
+        return
+    end
+    local direction = frame.alertDirection == "decrease" and "decrease" or "increase"
+    if frame.increaseViewButton and frame.increaseViewButton.SetPalette then
+        frame.increaseViewButton:SetPalette(direction == "increase" and "primary" or "neutral")
+    end
+    if frame.decreaseViewButton and frame.decreaseViewButton.SetPalette then
+        frame.decreaseViewButton:SetPalette(direction == "decrease" and "primary" or "neutral")
+    end
+end
+
+local function UpdateKnownPriceScanControls(addon, frame, state)
+    if not frame or not frame.scanPricesButton then
+        return
+    end
+    state = type(state) == "table" and state or (addon.GetKnownPriceScanState and addon:GetKnownPriceScanState())
+    local running = type(state) == "table" and state.running == true
+    if frame.scanPricesButton.SetEnabled then
+        frame.scanPricesButton:SetEnabled(not running)
+    end
+    if running then
+        frame.scanPricesButton:SetText(string.format("Scanning %d/%d", state.processed or 0, state.total or 0))
+        frame.scanProgressText = string.format(
+            "Scanning known prices: %d/%d checked, %d priced.",
+            state.processed or 0,
+            state.total or 0,
+            state.priced or 0
+        )
+    else
+        frame.scanPricesButton:SetText("Scan known prices")
+        if type(state) == "table" and state.completedAt then
+            frame.scanProgressText = string.format(
+                "Known-price scan complete: %d checked, %d priced.",
+                state.total or 0,
+                state.priced or 0
+            )
+        end
+    end
+end
+
 function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
     local frame = self.priceIncreaseAlertsFrame
     if not frame or not frame.content then
         return
     end
 
-    local rows, meta = self:BuildPriceIncreaseAlertRows()
+    local direction = frame.alertDirection == "decrease" and "decrease" or "increase"
+    local rows, meta = self:BuildPriceAlertRows({ direction = direction })
     rows = type(rows) == "table" and rows or {}
     meta = type(meta) == "table" and meta or {}
 
     if frame.metaText then
-        frame.metaText:SetText(string.format(
-            "%d material alerts, %d bag materials, %d stacks scanned, >= %d%% over %d days, unit value >= %s",
+        local summary = string.format(
+            "%d price %s, %d known items, >= %d%% since the previous snapshot, unit value >= %s",
             #rows,
-            tonumber(meta.inventoryMaterialCount) or 0,
-            tonumber(meta.scannedStacks) or 0,
+            direction == "decrease" and "decreases" or "increases",
+            tonumber(meta.knownItemCount) or 0,
             tonumber(meta.thresholdPercent) or 30,
-            tonumber(meta.lookbackDays) or 3,
             self:FormatMoney(tonumber(meta.minimumValueCopper) or 0)
-        ))
+        )
+        frame.metaText:SetText(frame.scanProgressText and (frame.scanProgressText .. "  " .. summary) or summary)
     end
 
     if frame.emptyText then
         if #rows == 0 then
             frame.emptyText:SetText(string.format(
-                "No non-poor materials worth at least %s are up by %d%% yet.",
+                "No known non-poor items worth at least %s are %s by %d%% since the previous snapshot.",
                 self:FormatMoney(tonumber(meta.minimumValueCopper) or 0),
+                direction == "decrease" and "down" or "up",
                 tonumber(meta.thresholdPercent) or 30
             ))
             frame.emptyText:Show()
@@ -452,16 +620,17 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             row.baselinePrice = result.baselinePrice
             row.latestPrice = result.latestPrice
             row.changePercent = result.changePercent
-            row.localChangePercent = result.localChangePercent
-            row.tsmChangePercent = result.tsmChangePercent
-            row.localSampleCount = result.localSampleCount
+            row.dbMarketChangePercent = result.dbMarketChangePercent
+            row.dbMinBuyoutChangePercent = result.dbMinBuyoutChangePercent
             row.baselineTimestamp = result.baselineTimestamp
             row.latestTimestamp = result.latestTimestamp
             row.regionSoldPerDay = result.regionSoldPerDay
             row.regionSaleRate = result.regionSaleRate
             row.alertBasis = result.alertBasis
+            row.alertDirection = result.alertDirection
             row.isIndexedMaterial = result.isIndexedMaterial == true
             row.hasFarmingMap = result.hasFarmingMap == true
+            row.hasFarm = type(self.HasFarmForItem) == "function" and self:HasFarmForItem(result.itemID) or false
             row.materialExpansionID = result.materialExpansionID
             row.materialExpansionLabel = result.materialExpansionLabel
             row.materialProfessionIDs = result.materialProfessionIDs
@@ -471,9 +640,9 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             row.itemText:SetText(result.itemLink or result.itemName or ("Item " .. tostring(result.itemID or "?")))
             row.expansionText:SetText(tostring(result.materialExpansionLabel or result.materialExpansionID or "Unknown"))
             row.professionText:SetText(tostring(result.materialProfessionLabel or "Unknown"))
-            row.basisText:SetText(result.isMaterial and (alertBasis .. " material") or alertBasis)
-            row.localText:SetText(FormatAlertPercent(result.localChangePercent))
-            row.tsmText:SetText(FormatAlertPercent(result.tsmChangePercent))
+            row.basisText:SetText(alertBasis)
+            row.localText:SetText(FormatAlertPercent(result.changePercent))
+            row.tsmText:SetText(FormatAlertPercent(result.dbMinBuyoutChangePercent))
             row.quantityText:SetText(tostring(result.quantity or 0))
             row.unitValueText:SetText(self:FormatMoney(result.unitValue or 0))
             row.totalValueText:SetText(self:FormatMoney(result.totalValue or 0))
@@ -481,8 +650,11 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             row.basisText:SetTextColor(result.isMaterial and 0.72 or 1.0, result.isMaterial and 0.86 or 0.82, result.isMaterial and 1.0 or 0.18)
             row.expansionText:SetTextColor(0.76, 0.82, 0.94)
             row.professionText:SetTextColor(0.72, 0.86, 1.0)
-            row.localText:SetTextColor(0.52, 1.00, 0.56)
-            row.tsmText:SetTextColor(0.68, 0.96, 0.72)
+            local changeR, changeG, changeB = direction == "decrease" and 1.0 or 0.52,
+                direction == "decrease" and 0.48 or 1.0,
+                direction == "decrease" and 0.42 or 0.56
+            row.localText:SetTextColor(changeR, changeG, changeB)
+            row.tsmText:SetTextColor(changeR, changeG, changeB)
             row.quantityText:SetTextColor(0.92, 0.95, 1.0)
             row.unitValueText:SetTextColor(0.72, 0.86, 1.0)
             row.totalValueText:SetTextColor(0.68, 0.96, 0.72)
@@ -500,8 +672,8 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             if row.divider then
                 row.divider:SetShown(index < #rows)
             end
-            if row.detailsButton then
-                row.detailsButton:Show()
+            if row.farmButton then
+                row.farmButton:SetShown(row.hasFarm)
             end
             if row.mapButton then
                 if result.isIndexedMaterial == true then
@@ -515,6 +687,9 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
                 else
                     row.mapButton:Hide()
                 end
+            end
+            if row.addButton then
+                row.addButton:Show()
             end
 
             row:ClearAllPoints()
@@ -537,6 +712,8 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
     end
 
     frame.content:SetHeight(math.max(1, yOffset))
+    UpdateAlertsViewControls(frame)
+    UpdateKnownPriceScanControls(self, frame)
     self:RefreshPriceIncreaseAlertsWindowLayout()
     if scrollToTop and frame.scrollFrame then
         frame.scrollFrame:SetVerticalScroll(0)
@@ -579,6 +756,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame:SetClampedToScreen(true)
     frame:Hide()
     frame.rows = {}
+    frame.alertDirection = "increase"
 
     local chrome = Theme:ApplyWindowChrome(frame, "Price Alerts")
     Theme:RegisterSpecialFrame("GoldTrackerPriceIncreaseAlertsFrame")
@@ -586,23 +764,15 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     local controlsPanel = CreateAlertsPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
     controlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -54)
-    controlsPanel:SetHeight(48)
+    controlsPanel:SetHeight(66)
     frame.controlsPanel = controlsPanel
 
-    local titleText = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    titleText:SetPoint("LEFT", controlsPanel, "LEFT", 14, 0)
-    titleText:SetText("Recent price increases")
-    titleText:SetTextColor(1.0, 0.82, 0.18)
-    frame.titleText = titleText
-
     local valueLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    valueLabel:SetPoint("LEFT", titleText, "RIGHT", 32, 0)
     valueLabel:SetText("Min unit value (g)")
     frame.valueLabel = valueLabel
 
     local minimumValueInput = CreateFrame("EditBox", nil, controlsPanel, "InputBoxTemplate")
-    minimumValueInput:SetSize(78, 22)
-    minimumValueInput:SetPoint("LEFT", valueLabel, "RIGHT", 10, 0)
+    minimumValueInput:SetSize(96, 22)
     minimumValueInput:SetAutoFocus(false)
     minimumValueInput:SetNumeric(false)
     minimumValueInput:SetText(FormatAlertsGoldInput(self, self:GetPriceIncreaseAlertConfig().minimumValueCopper))
@@ -618,13 +788,61 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     end)
     frame.minimumValueInput = minimumValueInput
 
-    local refreshButton = CreateAlertsButton(controlsPanel, 86, 22, "Refresh", "neutral")
-    refreshButton:SetPoint("RIGHT", controlsPanel, "RIGHT", -14, 0)
+    local viewLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    viewLabel:SetText("View")
+    frame.viewLabel = viewLabel
+
+    local viewControl = CreateFrame("Frame", nil, controlsPanel)
+    viewControl:SetSize(208, 24)
+    frame.viewControl = viewControl
+    local increaseViewButton = CreateAlertsButton(viewControl, 96, 24, "Increases", "primary")
+    increaseViewButton:SetPoint("LEFT", viewControl, "LEFT", 0, 0)
+    increaseViewButton:SetScript("OnClick", function()
+        frame.alertDirection = "increase"
+        addon:RefreshPriceIncreaseAlertsWindow(true)
+    end)
+    frame.increaseViewButton = increaseViewButton
+    local decreaseViewButton = CreateAlertsButton(viewControl, 104, 24, "Decreases", "neutral")
+    decreaseViewButton:SetPoint("LEFT", increaseViewButton, "RIGHT", 8, 0)
+    decreaseViewButton:SetScript("OnClick", function()
+        frame.alertDirection = "decrease"
+        addon:RefreshPriceIncreaseAlertsWindow(true)
+    end)
+    frame.decreaseViewButton = decreaseViewButton
+
+    local refreshButton = CreateAlertsButton(controlsPanel, 96, 24, "Refresh", "neutral")
     refreshButton:SetScript("OnClick", function()
         frame.itemDataRefreshGeneration = (tonumber(frame.itemDataRefreshGeneration) or 0) + 1
         addon:RefreshPriceIncreaseAlertsWindow(true)
     end)
     frame.refreshButton = refreshButton
+
+    local scanPricesButton = CreateAlertsButton(controlsPanel, 154, 24, "Scan known prices", "neutral")
+    scanPricesButton:SetScript("OnClick", function()
+        if type(addon.StartKnownPriceScan) ~= "function" then
+            return
+        end
+        local _, state = addon:StartKnownPriceScan({
+            onProgress = function(scanState)
+                UpdateKnownPriceScanControls(addon, frame, scanState)
+                if frame.metaText and frame.scanProgressText then
+                    frame.metaText:SetText(frame.scanProgressText)
+                end
+            end,
+            onComplete = function(scanState)
+                UpdateKnownPriceScanControls(addon, frame, scanState)
+                addon:RefreshPriceIncreaseAlertsWindow(true)
+            end,
+        })
+        UpdateKnownPriceScanControls(addon, frame, state)
+    end)
+    frame.scanPricesButton = scanPricesButton
+
+    Theme:LayoutExplorerFilterFields(controlsPanel, {
+        { label = valueLabel, control = minimumValueInput, widthKey = "valueInput" },
+        { label = viewLabel, control = viewControl, width = 208 },
+    })
+    Theme:LayoutExplorerActionButtons(controlsPanel, { refreshButton, scanPricesButton })
 
     local listPanel = CreateAlertsPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
     listPanel:SetPoint("TOPLEFT", controlsPanel, "BOTTOMLEFT", 0, -10)
@@ -634,9 +852,9 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame.itemHeaderText = CreateHeaderText(listPanel, "Item", "LEFT")
     frame.expansionHeaderText = CreateHeaderText(listPanel, "Expansion", "LEFT")
     frame.professionHeaderText = CreateHeaderText(listPanel, "Profession", "LEFT")
-    frame.basisHeaderText = CreateHeaderText(listPanel, "Basis", "LEFT")
-    frame.localHeaderText = CreateHeaderText(listPanel, "Local", "RIGHT")
-    frame.tsmHeaderText = CreateHeaderText(listPanel, "TSM", "RIGHT")
+    frame.basisHeaderText = CreateHeaderText(listPanel, "Trigger", "LEFT")
+    frame.localHeaderText = CreateHeaderText(listPanel, "DBMarket", "RIGHT")
+    frame.tsmHeaderText = CreateHeaderText(listPanel, "Min Buyout", "RIGHT")
     frame.qtyHeaderText = CreateHeaderText(listPanel, "Qty", "RIGHT")
     frame.unitHeaderText = CreateHeaderText(listPanel, "Unit value", "RIGHT")
     frame.totalHeaderText = CreateHeaderText(listPanel, "Stack value", "RIGHT")
@@ -650,7 +868,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, listPanel, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 12, -36)
-    scrollFrame:SetPoint("BOTTOMRIGHT", listPanel, "BOTTOMRIGHT", -26, 12)
+    scrollFrame:SetPoint("BOTTOMRIGHT", listPanel, "BOTTOMRIGHT", -26, 12 + ALERTS_HORIZONTAL_SCROLL_HEIGHT)
     scrollFrame:EnableMouseWheel(true)
     scrollFrame:SetScript("OnMouseWheel", function(self, delta)
         local step = math.max(18, math.floor(self:GetHeight() * 0.12))
@@ -670,6 +888,29 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     scrollFrame:SetScrollChild(content)
     frame.content = content
 
+    local horizontalScrollBar = CreateFrame("Slider", "GoldTrackerAlertsHorizontalScrollBar", listPanel, "OptionsSliderTemplate")
+    horizontalScrollBar:SetOrientation("HORIZONTAL")
+    horizontalScrollBar:SetPoint("BOTTOMLEFT", listPanel, "BOTTOMLEFT", 14, 9)
+    horizontalScrollBar:SetPoint("BOTTOMRIGHT", listPanel, "BOTTOMRIGHT", -32, 9)
+    horizontalScrollBar:SetHeight(12)
+    horizontalScrollBar:SetMinMaxValues(0, 0)
+    horizontalScrollBar:SetValue(0)
+    horizontalScrollBar:SetScript("OnValueChanged", function(self, value)
+        if self.updating then
+            return
+        end
+        frame.horizontalScrollOffset = math.max(0, math.floor((tonumber(value) or 0) + 0.5))
+        addon:RefreshPriceIncreaseAlertsWindowLayout()
+    end)
+    local sliderName = horizontalScrollBar:GetName()
+    if sliderName then
+        _G[sliderName .. "Low"]:Hide()
+        _G[sliderName .. "High"]:Hide()
+        _G[sliderName .. "Text"]:Hide()
+    end
+    horizontalScrollBar:Hide()
+    frame.horizontalScrollBar = horizontalScrollBar
+
     local emptyText = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     emptyText:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -12)
     emptyText:SetPoint("TOPRIGHT", content, "TOPRIGHT", -10, -12)
@@ -688,6 +929,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame.metaText = metaText
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = ALERTS_WINDOW_MIN_WIDTH,
         minHeight = ALERTS_WINDOW_MIN_HEIGHT,
         maxWidth = ALERTS_WINDOW_MAX_WIDTH,
@@ -701,7 +943,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
     frame:RegisterEvent("PLAYER_LOGOUT")
-    frame:SetScript("OnEvent", function(self, event)
+    frame:SetScript("OnEvent", function(self, event, itemID)
         if event == "PLAYER_LOGOUT" then
             addon:SavePriceIncreaseAlertsMinimumValueInput(true)
             return
@@ -714,6 +956,13 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
         if event == "BAG_UPDATE_DELAYED" then
             self.itemDataRefreshGeneration = (tonumber(self.itemDataRefreshGeneration) or 0) + 1
             addon:RefreshPriceIncreaseAlertsWindow(false)
+            return
+        end
+
+        if type(addon.IsFarmItemDataRequest) == "function" and addon:IsFarmItemDataRequest(itemID) then
+            return
+        end
+        if not PriceIncreaseAlertsNeedsItemDataRefresh(self, itemID) then
             return
         end
 
@@ -735,6 +984,25 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
             return
         end
         addon:RefreshPriceIncreaseAlertsWindowLayout()
+    end)
+    frame:SetScript("OnUpdate", function(self, elapsed)
+        if not self:IsShown() then
+            return
+        end
+        self.scanUpdateElapsed = (tonumber(self.scanUpdateElapsed) or 0) + (tonumber(elapsed) or 0)
+        if self.scanUpdateElapsed < 0.25 then
+            return
+        end
+        self.scanUpdateElapsed = 0
+        local state = addon.GetKnownPriceScanState and addon:GetKnownPriceScanState() or nil
+        local running = type(state) == "table" and state.running == true
+        UpdateKnownPriceScanControls(addon, self, state)
+        if self.lastKnownPriceScanRunning == true and not running then
+            addon:RefreshPriceIncreaseAlertsWindow(true)
+        elseif running and self.metaText and self.scanProgressText then
+            self.metaText:SetText(self.scanProgressText)
+        end
+        self.lastKnownPriceScanRunning = running
     end)
     frame:SetScript("OnShow", function()
         if frame.suppressExplorerOnShow then

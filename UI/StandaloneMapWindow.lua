@@ -10,20 +10,30 @@ local MIN_ZOOM = 1
 local MAX_ZOOM = 3
 local ZOOM_STEP = 0.25
 local MAP_DROPDOWN_WIDTH = 280
-local DETAILS_PANEL_WIDTH = 292
+local WINDOW_WIDTH = 1080
+local WINDOW_HEIGHT = 600
+local DETAILS_PANEL_WIDTH = 380
 local DETAILS_PANEL_GAP = 10
 local DETAILS_CONTENT_PADDING = 12
 local SOURCE_BUTTON_WIDTH = 54
 local SOURCE_ROW_HEIGHT = 24
+local DETAIL_TABLE_ROW_HEIGHT = 20
+local DETAIL_TOGGLE_ROW_HEIGHT = 20
+local DETAIL_TABLE_QUANTITY_WIDTH = 58
+local DETAIL_TABLE_VALUE_WIDTH = 116
+local DETAIL_TABLE_COLUMN_GAP = 8
 local DETAIL_TEXT_HEIGHT_PADDING = 4
 local DETAIL_TEXT_MEASURE_HEIGHT = 1000
 local ROUTE_LINE_THICKNESS = 3
 local MAP_DISPLAY_MODE_OVERLAY = "overlay"
 local MAP_DISPLAY_MODE_ICONS = "icons"
 local MAP_DISPLAY_MODE_BUTTON_WIDTH = 72
+local WAYPOINT_BUTTON_WIDTH = 82
+local ADD_TO_FARM_BUTTON_WIDTH = 104
 local MAP_PIN_SIZE = 18
 local MAP_PIN_ICON_SIZE = 14
 local MAP_PIN_RING_SIZE = 24
+local MAP_CLICK_DISTANCE = 5
 
 local GetSelectedMapOption
 
@@ -95,6 +105,10 @@ local function GetPinTitle(pinData)
 end
 
 local function GetStandaloneMapToolbarTitle(frame)
+    local option = GetSelectedMapOption and GetSelectedMapOption(frame)
+    if HasText(option and option.windowTitle) then
+        return option.windowTitle
+    end
     if HasText(frame and frame.windowTitle) then
         return frame.windowTitle
     end
@@ -453,6 +467,80 @@ local function BuildVisiblePinGroups(pins, mapID)
     return groups
 end
 
+local function IsValidMapCoordinate(value)
+    value = tonumber(value)
+    return value and value >= 0 and value <= 1
+end
+
+local function GetStandaloneMapAreaGroups(frame)
+    if not frame or not MapAreaOverlay or type(MapAreaOverlay.BuildGroups) ~= "function" then
+        return {}
+    end
+    return MapAreaOverlay:BuildGroups(frame.mapPins, frame.mapID)
+end
+
+local function GetAreaGroupCenter(group)
+    local totalX = 0
+    local totalY = 0
+    local pointCount = 0
+    for _, pinData in ipairs(group and group.pins or {}) do
+        local x = tonumber(pinData and pinData.x)
+        local y = tonumber(pinData and pinData.y)
+        if IsValidMapCoordinate(x) and IsValidMapCoordinate(y) then
+            totalX = totalX + x
+            totalY = totalY + y
+            pointCount = pointCount + 1
+        end
+    end
+    if pointCount == 0 then
+        return nil, nil
+    end
+    return totalX / pointCount, totalY / pointCount
+end
+
+local function GetAreaGroupLabel(group)
+    local x, y = GetAreaGroupCenter(group)
+    local label = group and group.label
+    if HasText(label) and x and y then
+        return string.format("%s (%.1f, %.1f)", label, x * 100, y * 100)
+    elseif HasText(label) then
+        return label
+    elseif x and y then
+        return string.format("farming area at %.1f, %.1f", x * 100, y * 100)
+    end
+    return "farming area"
+end
+
+local function FindAreaGroupByKey(groups, key)
+    if key == nil then
+        return nil
+    end
+    for _, group in ipairs(groups or {}) do
+        if group.key == key then
+            return group
+        end
+    end
+    return nil
+end
+
+local function PointIsInsidePolygon(x, y, points)
+    local inside = false
+    local previous = points and points[#points]
+    if not previous then
+        return false
+    end
+
+    for _, current in ipairs(points) do
+        if ((current.y > y) ~= (previous.y > y))
+            and x < ((previous.x - current.x) * (y - current.y) / (previous.y - current.y)) + current.x
+        then
+            inside = not inside
+        end
+        previous = current
+    end
+    return inside
+end
+
 function GoldTracker.BuildStandaloneMapDetailLines(_, pins, mapID, mapLabel)
     local lines = {}
     local groups = BuildVisiblePinGroups(pins, mapID)
@@ -635,6 +723,8 @@ local function GetMapPin(frame, index)
         pin:SetScript("OnClick", function(_, button)
             if button == "RightButton" then
                 GoldTracker:NavigateStandaloneMapToParent()
+            elseif button == "LeftButton" then
+                GoldTracker:SelectStandaloneMapAreaForPin(pin.pinData)
             end
         end)
         frame.mapPinFrames[index] = pin
@@ -654,6 +744,7 @@ end
 local function HideMapAreas(frame)
     if MapAreaOverlay then
         MapAreaOverlay:Hide(frame, "standaloneMapArea")
+        MapAreaOverlay:Hide(frame, "standaloneSelectedMapArea")
     end
 end
 
@@ -872,6 +963,19 @@ local function HideDetailLines(frame, usedLines)
             end
         end
     end
+    for index, row in pairs(frame.detailTableRows or {}) do
+        if index > normalizedUsedLines and row then
+            row:Hide()
+            row.itemID = nil
+            row.itemLink = nil
+        end
+    end
+    for index, row in pairs(frame.detailToggleRows or {}) do
+        if index > normalizedUsedLines and row then
+            row:Hide()
+            row.onClick = nil
+        end
+    end
 end
 
 local function GetDetailLine(frame, index)
@@ -988,6 +1092,116 @@ local function GetDetailSourceRow(frame, index)
     return row
 end
 
+local function ScrollStandaloneMapDetails(scrollFrame, delta)
+    if not scrollFrame then
+        return
+    end
+    local step = 38
+    local current = scrollFrame:GetVerticalScroll() or 0
+    local maxScroll = scrollFrame:GetVerticalScrollRange() or 0
+    scrollFrame:SetVerticalScroll(math.max(0, math.min(maxScroll, current - (delta * step))))
+end
+
+local function GetDetailTableRow(frame, index)
+    frame.detailTableRows = frame.detailTableRows or {}
+    local row = frame.detailTableRows[index]
+    if not row then
+        row = CreateFrame("Frame", nil, frame.detailsContent)
+        row:SetHeight(DETAIL_TABLE_ROW_HEIGHT)
+        if type(row.EnableMouse) == "function" then
+            row:EnableMouse(true)
+        end
+        if type(row.EnableMouseWheel) == "function" then
+            row:EnableMouseWheel(true)
+            row:SetScript("OnMouseWheel", function(_, delta)
+                ScrollStandaloneMapDetails(frame.detailsScrollFrame, delta)
+            end)
+        end
+        row:SetScript("OnEnter", function(self)
+            if not GameTooltip or not self.itemID then
+                return
+            end
+            GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+            if HasText(self.itemLink) then
+                GameTooltip:SetHyperlink(self.itemLink)
+            elseif type(GameTooltip.SetItemByID) == "function" then
+                GameTooltip:SetItemByID(self.itemID)
+            elseif type(GameTooltip.SetHyperlink) == "function" then
+                GameTooltip:SetHyperlink("item:" .. tostring(self.itemID))
+            end
+            if type(GameTooltip.Show) == "function" then
+                GameTooltip:Show()
+            end
+        end)
+        row:SetScript("OnLeave", function()
+            if GameTooltip then
+                GameTooltip:Hide()
+            end
+        end)
+
+        local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        valueText:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+        valueText:SetWidth(DETAIL_TABLE_VALUE_WIDTH)
+        valueText:SetJustifyH("RIGHT")
+        valueText:SetWordWrap(false)
+        row.valueText = valueText
+
+        local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        quantityText:SetPoint("RIGHT", valueText, "LEFT", -DETAIL_TABLE_COLUMN_GAP, 0)
+        quantityText:SetWidth(DETAIL_TABLE_QUANTITY_WIDTH)
+        quantityText:SetJustifyH("RIGHT")
+        quantityText:SetWordWrap(false)
+        row.quantityText = quantityText
+
+        local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        itemText:SetPoint("LEFT", row, "LEFT", 0, 0)
+        itemText:SetPoint("RIGHT", quantityText, "LEFT", -DETAIL_TABLE_COLUMN_GAP, 0)
+        itemText:SetJustifyH("LEFT")
+        itemText:SetWordWrap(false)
+        row.itemText = itemText
+
+        frame.detailTableRows[index] = row
+    end
+    return row
+end
+
+local function GetDetailToggleRow(frame, index)
+    frame.detailToggleRows = frame.detailToggleRows or {}
+    local row = frame.detailToggleRows[index]
+    if not row then
+        row = CreateFrame("Button", nil, frame.detailsContent)
+        row:SetHeight(DETAIL_TOGGLE_ROW_HEIGHT)
+        if type(row.EnableMouseWheel) == "function" then
+            row:EnableMouseWheel(true)
+            row:SetScript("OnMouseWheel", function(_, delta)
+                ScrollStandaloneMapDetails(frame.detailsScrollFrame, delta)
+            end)
+        end
+
+        local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        label:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+        label:SetJustifyH("LEFT")
+        label:SetWordWrap(false)
+        row.label = label
+
+        row:SetScript("OnClick", function(self)
+            if type(self.onClick) == "function" then
+                self.onClick()
+            end
+        end)
+        row:SetScript("OnEnter", function(self)
+            self.label:SetTextColor(1.0, 0.82, 0.18, 1)
+        end)
+        row:SetScript("OnLeave", function(self)
+            self.label:SetTextColor(0.68, 0.72, 0.80, 1)
+        end)
+
+        frame.detailToggleRows[index] = row
+    end
+    return row
+end
+
 local function RefreshStandaloneMapDetails(frame)
     if not frame or not frame.detailsContent or not frame.detailsScrollFrame then
         return
@@ -995,7 +1209,14 @@ local function RefreshStandaloneMapDetails(frame)
 
     local option = GetSelectedMapOption(frame)
     local mapLabel = (option and (option.mapLabel or option.label)) or GetMapName(frame.mapID)
-    local lines = GoldTracker:BuildStandaloneMapDetailLines(frame.mapPins, frame.mapID, mapLabel)
+    local lines
+    if type(frame.detailLinesBuilder) == "function" then
+        local ok, customLines = pcall(frame.detailLinesBuilder, option, frame.mapID, mapLabel)
+        if ok and type(customLines) == "table" then
+            lines = customLines
+        end
+    end
+    lines = lines or GoldTracker:BuildStandaloneMapDetailLines(frame.mapPins, frame.mapID, mapLabel)
     local scrollWidth = frame.detailsScrollFrame:GetWidth() or 0
     if scrollWidth <= 1 then
         scrollWidth = DETAILS_PANEL_WIDTH - (DETAILS_CONTENT_PADDING * 2) - 24
@@ -1010,6 +1231,17 @@ local function RefreshStandaloneMapDetails(frame)
             if text then
                 text:Hide()
             end
+            local tableRow = frame.detailTableRows and frame.detailTableRows[index]
+            if tableRow then
+                tableRow:Hide()
+                tableRow.itemID = nil
+                tableRow.itemLink = nil
+            end
+            local toggleRow = frame.detailToggleRows and frame.detailToggleRows[index]
+            if toggleRow then
+                toggleRow:Hide()
+                toggleRow.onClick = nil
+            end
 
             local row = GetDetailSourceRow(frame, index)
             row:ClearAllPoints()
@@ -1021,6 +1253,68 @@ local function RefreshStandaloneMapDetails(frame)
             row.button.tooltipText = line.url
             row:Show()
             lineHeight = SOURCE_ROW_HEIGHT
+        elseif line.type == "farmTarget" then
+            local text = frame.detailTextLines and frame.detailTextLines[index]
+            if text then
+                text:Hide()
+            end
+            local sourceRow = frame.detailSourceRows and frame.detailSourceRows[index]
+            if sourceRow then
+                sourceRow:Hide()
+                if sourceRow.button then
+                    sourceRow.button.sourceUrl = nil
+                    sourceRow.button.sourceSiteName = nil
+                    sourceRow.button.tooltipText = nil
+                end
+            end
+            local toggleRow = frame.detailToggleRows and frame.detailToggleRows[index]
+            if toggleRow then
+                toggleRow:Hide()
+                toggleRow.onClick = nil
+            end
+
+            local row = GetDetailTableRow(frame, index)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.detailsContent, "TOPLEFT", 0, -yOffset)
+            row:SetWidth(contentWidth)
+            row.itemID = tonumber(line.itemID)
+            row.itemLink = line.itemLink
+            row.itemText:SetText(line.itemName or "Unknown item")
+            row.quantityText:SetText(line.quantityText or "")
+            row.valueText:SetText(line.totalValueText or "unavailable")
+            local r = line.selected and 0.45 or 0.82
+            local g = line.selected and 0.92 or 0.86
+            local b = line.selected and 1.0 or 0.92
+            row.itemText:SetTextColor(r, g, b, 1)
+            row.quantityText:SetTextColor(r, g, b, 1)
+            row.valueText:SetTextColor(r, g, b, 1)
+            row:Show()
+            lineHeight = DETAIL_TABLE_ROW_HEIGHT
+        elseif line.type == "detailToggle" then
+            local text = frame.detailTextLines and frame.detailTextLines[index]
+            if text then
+                text:Hide()
+            end
+            local sourceRow = frame.detailSourceRows and frame.detailSourceRows[index]
+            if sourceRow then
+                sourceRow:Hide()
+            end
+            local tableRow = frame.detailTableRows and frame.detailTableRows[index]
+            if tableRow then
+                tableRow:Hide()
+                tableRow.itemID = nil
+                tableRow.itemLink = nil
+            end
+
+            local row = GetDetailToggleRow(frame, index)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.detailsContent, "TOPLEFT", 0, -yOffset)
+            row:SetWidth(contentWidth)
+            row.label:SetText(line.text or "")
+            row.label:SetTextColor(0.68, 0.72, 0.80, 1)
+            row.onClick = line.onClick
+            row:Show()
+            lineHeight = DETAIL_TOGGLE_ROW_HEIGHT
         else
             local row = frame.detailSourceRows and frame.detailSourceRows[index]
             if row then
@@ -1030,6 +1324,17 @@ local function RefreshStandaloneMapDetails(frame)
                     row.button.sourceSiteName = nil
                     row.button.tooltipText = nil
                 end
+            end
+            local tableRow = frame.detailTableRows and frame.detailTableRows[index]
+            if tableRow then
+                tableRow:Hide()
+                tableRow.itemID = nil
+                tableRow.itemLink = nil
+            end
+            local toggleRow = frame.detailToggleRows and frame.detailToggleRows[index]
+            if toggleRow then
+                toggleRow:Hide()
+                toggleRow.onClick = nil
             end
 
             local text = GetDetailLine(frame, index)
@@ -1151,7 +1456,7 @@ local function RenderMapAreas(frame)
     local width = (frame.mapLayer.layerWidth or 1) * scale
     local height = (frame.mapLayer.layerHeight or 1) * scale
     local polygons = MapAreaOverlay:BuildPolygons(frame.mapPins, frame.mapID)
-    return MapAreaOverlay:Render(
+    local renderedCount = MapAreaOverlay:Render(
         frame,
         frame.mapContent,
         "standaloneMapArea",
@@ -1165,6 +1470,83 @@ local function RenderMapAreas(frame)
             borderSubLevel = -1,
         }
     )
+    local selectedPolygon
+    for _, polygon in ipairs(polygons) do
+        if polygon.key == frame.selectedMapAreaKey then
+            selectedPolygon = polygon
+            break
+        end
+    end
+    MapAreaOverlay:Render(
+        frame,
+        frame.mapContent,
+        "standaloneSelectedMapArea",
+        selectedPolygon and { selectedPolygon } or {},
+        width,
+        height,
+        {
+            layer = "OVERLAY",
+            fillSubLevel = 0,
+            glowSubLevel = 1,
+            borderSubLevel = 2,
+            fillColor = { 1.0, 0.66, 0.08, 0.16 },
+            glowColor = { 1.0, 0.74, 0.16, 0.32 },
+            borderColor = { 1.0, 0.82, 0.18, 1.0 },
+        }
+    )
+    return renderedCount
+end
+
+-- A self-contained map canvas for source selection. It shares the map and
+-- overlay renderer, but never takes over the standalone window or builds details.
+function GoldTracker:RefreshFarmingMapPreview(frame, option)
+    if option then
+        frame.mapID = option.mapID
+        frame.mapPins = option.pins or {}
+    end
+    if not frame.mapID then
+        return
+    end
+    local layer, textures = LoadMapArt(frame, frame.mapID)
+    frame.mapLayer, frame.mapTextureFileIDs = layer, textures
+    if not layer then
+        frame.mapContent:Hide()
+        frame.statusText:Show()
+        HideRouteLines(frame)
+        HideMapAreas(frame)
+        return
+    end
+    frame.statusText:Hide()
+    frame.mapContent:Show()
+    UpdateCanvasPosition(frame)
+    RenderTiles(frame)
+    RenderExploredTiles(frame)
+    RenderRouteLines(frame)
+    RenderMapAreas(frame)
+end
+
+function GoldTracker:CreateFarmingMapPreview(parent)
+    local frame = CreatePanel(parent, "input", "inputBorder")
+    local viewport = CreateFrame("Frame", nil, frame)
+    viewport:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
+    viewport:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1)
+    viewport:SetClipsChildren(true)
+    local content = CreateFrame("Frame", nil, viewport)
+    content:SetPoint("CENTER", viewport, "CENTER")
+    content:SetSize(1, 1)
+    frame.mapViewport = viewport
+    frame.mapContent = content
+    frame.mapTileTextures = {}
+    frame.mapExploredTileTextures = {}
+    frame.mapRouteLines = {}
+    frame.mapPins = {}
+    frame.mapZoom = 1
+    frame.statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    frame.statusText:SetPoint("CENTER", frame, "CENTER")
+    viewport:SetScript("OnSizeChanged", function()
+        GoldTracker:RefreshFarmingMapPreview(frame)
+    end)
+    return frame
 end
 
 function GetSelectedMapOption(frame)
@@ -1182,6 +1564,7 @@ local function ApplyStandaloneMapOption(frame, optionIndex)
     frame.selectedMapOptionIndex = optionIndex
     frame.mapID = tonumber(option.mapID) or frame.mapID or DEFAULT_MAP_ID
     frame.mapPins = type(option.pins) == "table" and option.pins or {}
+    frame.selectedMapAreaKey = nil
     frame.mapZoom = 1
     frame.mapPanX = 0
     frame.mapPanY = 0
@@ -1211,6 +1594,275 @@ local function RefreshStandaloneMapDropdown(frame)
     UIDropDownMenu_SetText(frame.mapDropdown, (GetSelectedMapOption(frame) or {}).label or "Select map")
 end
 
+function GoldTracker:GetStandaloneMapWaypointDestination()
+    local frame = self.standaloneMapFrame
+    if not frame then
+        return nil, "no-map"
+    end
+
+    local groups = GetStandaloneMapAreaGroups(frame)
+    local group = FindAreaGroupByKey(groups, frame.selectedMapAreaKey)
+    for _, pinData in ipairs(frame.mapPins or {}) do
+        local x = tonumber(pinData and pinData.x)
+        local y = tonumber(pinData and pinData.y)
+        if not group and pinData
+            and pinData.isRoute == true
+            and tonumber(pinData.mapID) == tonumber(frame.mapID)
+            and IsValidMapCoordinate(x)
+            and IsValidMapCoordinate(y)
+        then
+            return {
+                mapID = tonumber(frame.mapID),
+                x = x,
+                y = y,
+                label = (pinData.label or GetPinTitle(pinData)) .. " (route start)",
+                waypointKind = "route",
+                pinData = pinData,
+            }
+        end
+    end
+
+    if not group then
+        if #groups == 1 then
+            group = groups[1]
+        elseif #groups > 1 then
+            return nil, "select-area", #groups
+        else
+            return nil, "no-destination", 0
+        end
+    end
+
+    local x, y = GetAreaGroupCenter(group)
+    if not x or not y then
+        return nil, "no-destination", #groups
+    end
+    return {
+        mapID = tonumber(frame.mapID),
+        x = x,
+        y = y,
+        label = GetAreaGroupLabel(group),
+        waypointKind = "area",
+        areaKey = group.key,
+        pinData = group.pins and group.pins[1],
+        pins = group.pins,
+    }, nil, #groups
+end
+
+local function CopyStandaloneMapFarmRow(source)
+    local row = {}
+    for key, value in pairs(type(source) == "table" and source or {}) do
+        if type(value) == "string" or type(value) == "number" or type(value) == "boolean" then
+            row[key] = value
+        end
+    end
+    return row
+end
+
+function GoldTracker:GetStandaloneMapCustomFarmRow()
+    local frame = self.standaloneMapFrame
+    if not frame then
+        return nil, "No item is available to add from this map."
+    end
+    local option = GetSelectedMapOption(frame) or {}
+    local destination, reason = self:GetStandaloneMapWaypointDestination()
+    if reason == "select-area" then
+        return nil, "Select a farming overlay, then click Add to farm."
+    end
+    local pin = destination and destination.pinData or {}
+    local row = CopyStandaloneMapFarmRow(frame.customFarmRow)
+    row.itemID = tonumber(option.selectedItemID or row.itemID or pin.itemID)
+    if not row.itemID or row.itemID <= 0 then
+        return nil, "Open this map from an item to add it to a farm."
+    end
+    if not row.itemName and not option.selectedItemID then
+        row.itemName = pin.itemName
+    end
+    row.farmingSourceType = row.farmingSourceType or "map"
+    row.mapID = tonumber(frame.mapID)
+    -- Do not retain a source row's coordinates after switching maps.
+    row.x = destination and destination.x or nil
+    row.y = destination and destination.y or nil
+    row.coordX, row.coordY = nil, nil
+    row.locationLabel = pin.spotLocation or option.location or option.mapLabel or GetMapName(frame.mapID)
+    row.sourceName = pin.targetName or row.sourceName
+    row.providerKey = table.concat({
+        "map", tostring(frame.mapID), tostring(option.sourceType or pin.sourceType or "static"),
+        destination and destination.waypointKind or "map",
+        tostring(pin.areaID or pin.routeID or pin.spotLocation or "location"),
+        destination and string.format("%.6f:%.6f", destination.x, destination.y) or tostring(option.id or "map"),
+    }, ":")
+    local mapSource
+    if destination then
+        local pins = destination.pins or {}
+        if destination.waypointKind == "route" then
+            for _, routePin in ipairs(frame.mapPins or {}) do
+                if routePin.isRoute == true and routePin.routeID == pin.routeID
+                    and tonumber(routePin.mapID) == row.mapID
+                then
+                    pins[#pins + 1] = routePin
+                end
+            end
+        end
+        mapSource = {
+            id = row.providerKey,
+            mapID = row.mapID,
+            mapLabel = option.mapLabel or GetMapName(row.mapID),
+            label = destination.label,
+            sourceType = option.sourceType or pin.sourceType,
+            sourceLabel = option.sourceLabel or pin.sourceLabel,
+            pins = pins,
+        }
+    end
+    return row, nil, mapSource
+end
+
+function GoldTracker:AddStandaloneMapToCustomFarm()
+    local row, reason, mapSource = self:GetStandaloneMapCustomFarmRow()
+    if not row then
+        SetStatus(self.standaloneMapFrame, reason)
+        return false
+    end
+    return self:RequestAddToCustomFarm(row, row.farmingSourceType, mapSource)
+end
+
+local function RefreshStandaloneAddToFarmButton(frame)
+    local button = frame and frame.addToFarmButton
+    if not button then
+        return
+    end
+    local row, reason = GoldTracker:GetStandaloneMapCustomFarmRow()
+    button:SetAlpha(row and 1 or 0.5)
+    button.tooltipText = reason
+end
+
+local function RefreshStandaloneWaypointButton(frame)
+    if not frame or not frame.waypointButton then
+        return
+    end
+
+    local destination, reason, groupCount = GoldTracker:GetStandaloneMapWaypointDestination()
+    if destination and destination.waypointKind == "route" then
+        frame.waypointButton.tooltipText = "Set a Blizzard waypoint at the starting point of this route."
+    elseif destination and groupCount == 1 then
+        frame.waypointButton.tooltipText = "Set a Blizzard waypoint at the center of this farming area."
+    elseif destination then
+        frame.waypointButton.tooltipText = "Set a Blizzard waypoint for the selected farming area: "
+            .. tostring(destination.label) .. "."
+    elseif reason == "select-area" then
+        frame.waypointButton.tooltipText = string.format(
+            "This map has %d separate farming areas. Click the requested overlay first, then click Waypoint.",
+            groupCount or 0
+        )
+    else
+        frame.waypointButton.tooltipText = "No waypoint destination is available for this map."
+    end
+end
+
+function GoldTracker:SelectStandaloneMapAreaAt(x, y)
+    local frame = self.standaloneMapFrame
+    x = tonumber(x)
+    y = tonumber(y)
+    if not frame or not IsValidMapCoordinate(x) or not IsValidMapCoordinate(y)
+        or not MapAreaOverlay or type(MapAreaOverlay.BuildPolygons) ~= "function"
+    then
+        return false
+    end
+
+    local selectedKey
+    for _, polygon in ipairs(MapAreaOverlay:BuildPolygons(frame.mapPins, frame.mapID)) do
+        if PointIsInsidePolygon(x, y, polygon.points) then
+            selectedKey = polygon.key
+            break
+        end
+    end
+    frame.selectedMapAreaKey = selectedKey
+    self:RefreshStandaloneMapWindow()
+    return selectedKey ~= nil
+end
+
+function GoldTracker:SelectStandaloneMapAreaForPin(pinData)
+    local frame = self.standaloneMapFrame
+    if not frame or not pinData or pinData.isRoute == true then
+        return false
+    end
+
+    for _, group in ipairs(GetStandaloneMapAreaGroups(frame)) do
+        for _, groupPin in ipairs(group.pins or {}) do
+            if groupPin == pinData then
+                frame.selectedMapAreaKey = group.key
+                self:RefreshStandaloneMapWindow()
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function GoldTracker:SetStandaloneMapWaypoint()
+    local frame = self.standaloneMapFrame
+    local destination, reason, groupCount = self:GetStandaloneMapWaypointDestination()
+    if not destination then
+        if reason == "select-area" then
+            SetStatus(frame, string.format(
+                "Select one of the %d farming overlays, then click Waypoint again.",
+                groupCount or 0
+            ))
+        else
+            SetStatus(frame, "No waypoint destination is available for this map.")
+        end
+        return false
+    end
+
+    if not C_Map or type(C_Map.SetUserWaypoint) ~= "function"
+        or not UiMapPoint or type(UiMapPoint.CreateFromCoordinates) ~= "function"
+    then
+        SetStatus(frame, "Blizzard waypoint API is unavailable.")
+        return false
+    end
+
+    local pointOK, point = pcall(UiMapPoint.CreateFromCoordinates, destination.mapID, destination.x, destination.y)
+    if not pointOK or not point then
+        SetStatus(frame, "Blizzard could not create a waypoint for this destination.")
+        return false
+    end
+    local waypointOK = pcall(C_Map.SetUserWaypoint, point)
+    if not waypointOK then
+        SetStatus(frame, "Blizzard could not set the waypoint.")
+        return false
+    end
+    if C_SuperTrack and type(C_SuperTrack.SetSuperTrackedUserWaypoint) == "function" then
+        pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, true)
+    end
+
+    SetStatus(frame, "Blizzard waypoint set for " .. tostring(destination.label) .. ".")
+    return true
+end
+
+local function SelectStandaloneMapAreaFromCursor(frame)
+    if not frame or not frame.mapContent or not frame.mapLayer
+        or type(GetCursorPosition) ~= "function"
+        or type(frame.mapContent.GetLeft) ~= "function"
+        or type(frame.mapContent.GetTop) ~= "function"
+    then
+        return false
+    end
+
+    local cursorX, cursorY = GetCursorPosition()
+    local effectiveScale = type(frame.mapContent.GetEffectiveScale) == "function"
+        and frame.mapContent:GetEffectiveScale() or 1
+    effectiveScale = tonumber(effectiveScale) or 1
+    cursorX = cursorX / effectiveScale
+    cursorY = cursorY / effectiveScale
+    local left = frame.mapContent:GetLeft()
+    local top = frame.mapContent:GetTop()
+    local width = (frame.mapLayer.layerWidth or 1) * (frame.mapCurrentScale or 1)
+    local height = (frame.mapLayer.layerHeight or 1) * (frame.mapCurrentScale or 1)
+    if not left or not top or width <= 0 or height <= 0 then
+        return false
+    end
+    return GoldTracker:SelectStandaloneMapAreaAt((cursorX - left) / width, (top - cursorY) / height)
+end
+
 function GoldTracker:RefreshStandaloneMapWindow()
     local frame = self.standaloneMapFrame
     if not frame then
@@ -1219,6 +1871,8 @@ function GoldTracker:RefreshStandaloneMapWindow()
 
     RefreshStandaloneMapDropdown(frame)
     RefreshMapDisplayModeButton(frame)
+    RefreshStandaloneWaypointButton(frame)
+    RefreshStandaloneAddToFarmButton(frame)
     frame.mapTitle:SetText(GetStandaloneMapToolbarTitle(frame))
     RefreshStandaloneMapDetails(frame)
     local layer, textureFileIDs = LoadMapArt(frame, frame.mapID)
@@ -1255,7 +1909,24 @@ function GoldTracker:RefreshStandaloneMapWindow()
             routePointCount = routePointCount + 1
         end
     end
-    if displayMode == MAP_DISPLAY_MODE_ICONS and iconCount > 0 then
+    local selectedOption = GetSelectedMapOption(frame)
+    local areaGroups = GetStandaloneMapAreaGroups(frame)
+    local selectedArea = FindAreaGroupByKey(areaGroups, frame.selectedMapAreaKey)
+    if selectedOption and selectedOption.mapOnly == true then
+        SetStatus(frame, string.format("Instance map shown; no route coordinates are available. Zoom %.2fx", frame.mapZoom or 1))
+    elseif routePointCount == 0 and #areaGroups > 1 and not selectedArea then
+        SetStatus(frame, string.format(
+            "Select one of the %d farming overlays before setting a waypoint. Zoom %.2fx",
+            #areaGroups,
+            frame.mapZoom or 1
+        ))
+    elseif selectedArea then
+        SetStatus(frame, string.format(
+            "Waypoint area selected: %s. Zoom %.2fx",
+            GetAreaGroupLabel(selectedArea),
+            frame.mapZoom or 1
+        ))
+    elseif displayMode == MAP_DISPLAY_MODE_ICONS and iconCount > 0 then
         SetStatus(frame, string.format("%d farming location %s visible. Zoom %.2fx", iconCount, iconCount == 1 and "icon" or "icons", frame.mapZoom or 1))
     elseif displayMode == MAP_DISPLAY_MODE_ICONS then
         SetStatus(frame, string.format("No farming locations on this map. Zoom %.2fx", frame.mapZoom or 1))
@@ -1332,6 +2003,7 @@ function GoldTracker:NavigateStandaloneMapToParent()
     end
 
     frame.mapID = parentMapID
+    frame.selectedMapAreaKey = nil
     frame.mapZoom = 1
     frame.mapPanX = 0
     frame.mapPanY = 0
@@ -1363,6 +2035,7 @@ function GoldTracker:ProjectStandaloneMapToWorldMap()
         pins = frame.mapPins,
         mapOptions = frame.mapOptions,
         selectedMapOptionIndex = frame.selectedMapOptionIndex,
+        customFarmRow = frame.customFarmRow,
     })
     if projected then
         local pinCount = 0
@@ -1400,7 +2073,7 @@ function GoldTracker:CreateStandaloneMapWindow()
     end
 
     local frame = CreateFrame("Frame", "GoldTrackerStandaloneMapFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(980, 600)
+    frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("DIALOG")
     if frame.SetToplevel then
@@ -1412,6 +2085,16 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", frame.StartMoving)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+    frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
+    frame:SetScript("OnEvent", function(self, _, itemID)
+        if self:IsShown()
+            and type(GoldTracker.CompleteFarmItemDataRequest) == "function"
+            and GoldTracker:CompleteFarmItemDataRequest(itemID)
+        then
+            RefreshStandaloneMapDetails(self)
+        end
+    end)
     frame:Hide()
 
     local chrome
@@ -1451,8 +2134,11 @@ function GoldTracker:CreateStandaloneMapWindow()
     local projectButton = CreateButton(toolbar, 72, 24, "Project", "neutral")
     projectButton:SetPoint("RIGHT", zoomOutButton, "LEFT", -6, 0)
 
+    local waypointButton = CreateButton(toolbar, WAYPOINT_BUTTON_WIDTH, 24, "Waypoint", "neutral")
+    waypointButton:SetPoint("RIGHT", projectButton, "LEFT", -6, 0)
+
     local displayModeButton = CreateButton(toolbar, MAP_DISPLAY_MODE_BUTTON_WIDTH, 24, "Icons", "neutral")
-    displayModeButton:SetPoint("RIGHT", projectButton, "LEFT", -6, 0)
+    displayModeButton:SetPoint("RIGHT", waypointButton, "LEFT", -6, 0)
 
     local clearProjectionButton = CreateButton(toolbar, 92, 24, "Clear Pins", "neutral")
     clearProjectionButton:SetPoint("RIGHT", displayModeButton, "LEFT", -6, 0)
@@ -1486,10 +2172,7 @@ function GoldTracker:CreateStandaloneMapWindow()
     detailsScrollFrame:SetPoint("BOTTOMRIGHT", detailsPanel, "BOTTOMRIGHT", -30, DETAILS_CONTENT_PADDING)
     detailsScrollFrame:EnableMouseWheel(true)
     detailsScrollFrame:SetScript("OnMouseWheel", function(self, delta)
-        local step = 38
-        local current = self:GetVerticalScroll() or 0
-        local maxScroll = self:GetVerticalScrollRange() or 0
-        self:SetVerticalScroll(math.max(0, math.min(maxScroll, current - (delta * step))))
+        ScrollStandaloneMapDetails(self, delta)
     end)
 
     local detailsContent = CreateFrame("Frame", nil, detailsScrollFrame)
@@ -1512,8 +2195,33 @@ function GoldTracker:CreateStandaloneMapWindow()
 
     local statusText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     statusText:SetPoint("BOTTOMLEFT", body, "BOTTOMLEFT", 18, 18)
-    statusText:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", -18, 18)
+    statusText:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", -(ADD_TO_FARM_BUTTON_WIDTH + 30), 18)
     statusText:SetJustifyH("LEFT")
+
+    local addToFarmButton = CreateButton(body, ADD_TO_FARM_BUTTON_WIDTH, 24, "Add to farm", "neutral")
+    addToFarmButton:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", -12, 8)
+    addToFarmButton:SetScript("OnClick", function()
+        GoldTracker:AddStandaloneMapToCustomFarm()
+    end)
+    addToFarmButton:SetScript("OnEnter", function(self)
+        if not GameTooltip then
+            return
+        end
+        local row, reason = GoldTracker:GetStandaloneMapCustomFarmRow()
+        local title, detail = "Add to farm", reason
+        if row then
+            title, detail = GoldTracker:GetCustomFarmAddButtonTooltip(row.itemID)
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(title, 1, 1, 1)
+        GameTooltip:AddLine(detail, 0.72, 0.86, 1.0, true)
+        GameTooltip:Show()
+    end)
+    addToFarmButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
 
     frame.mapID = DEFAULT_MAP_ID
     frame.mapPins = {}
@@ -1534,9 +2242,13 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame.detailsContent = detailsContent
     frame.detailTextLines = {}
     frame.detailSourceRows = {}
+    frame.detailTableRows = {}
+    frame.detailToggleRows = {}
     frame.statusText = statusText
     frame.mapDropdown = mapDropdown
     frame.displayModeButton = displayModeButton
+    frame.waypointButton = waypointButton
+    frame.addToFarmButton = addToFarmButton
 
     mapViewport:SetScript("OnMouseWheel", function(_, delta)
         GoldTracker:AdjustStandaloneMapZoom(delta > 0 and ZOOM_STEP or -ZOOM_STEP)
@@ -1552,10 +2264,24 @@ function GoldTracker:CreateStandaloneMapWindow()
         end
         frame.mapDragging = true
         frame.mapDragX, frame.mapDragY = GetCursorPosition()
+        frame.mapMouseDownX, frame.mapMouseDownY = frame.mapDragX, frame.mapDragY
     end)
 
-    mapViewport:SetScript("OnMouseUp", function()
+    mapViewport:SetScript("OnMouseUp", function(_, button)
+        local mouseDownX = frame.mapMouseDownX
+        local mouseDownY = frame.mapMouseDownY
         frame.mapDragging = false
+        frame.mapMouseDownX = nil
+        frame.mapMouseDownY = nil
+        if button ~= "LeftButton" or not mouseDownX or not mouseDownY or type(GetCursorPosition) ~= "function" then
+            return
+        end
+        local cursorX, cursorY = GetCursorPosition()
+        local distanceX = cursorX - mouseDownX
+        local distanceY = cursorY - mouseDownY
+        if ((distanceX * distanceX) + (distanceY * distanceY)) <= (MAP_CLICK_DISTANCE * MAP_CLICK_DISTANCE) then
+            SelectStandaloneMapAreaFromCursor(frame)
+        end
     end)
 
     mapViewport:SetScript("OnHide", function()
@@ -1596,6 +2322,23 @@ function GoldTracker:CreateStandaloneMapWindow()
         GoldTracker:ProjectStandaloneMapToWorldMap()
     end)
 
+    waypointButton:SetScript("OnClick", function()
+        GoldTracker:SetStandaloneMapWaypoint()
+    end)
+    waypointButton:SetScript("OnEnter", function(self)
+        if GameTooltip and HasText(self.tooltipText) then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText("Blizzard waypoint", 1.0, 0.82, 0.18)
+            GameTooltip:AddLine(self.tooltipText, 0.82, 0.86, 0.92, true)
+            GameTooltip:Show()
+        end
+    end)
+    waypointButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+
     displayModeButton:SetScript("OnClick", function()
         GoldTracker:ToggleStandaloneMapDisplayMode()
     end)
@@ -1626,6 +2369,10 @@ function GoldTracker:OpenStandaloneMapWindow(options)
 
     frame.windowTitle = options.title
     frame.projectionKey = options.projectionKey or options.title
+    frame.customFarmRow = CopyStandaloneMapFarmRow(options.customFarmRow)
+    frame.customFarmRow.farmingSourceType = options.customFarmSourceType or frame.customFarmRow.farmingSourceType
+    frame.selectedMapAreaKey = nil
+    frame.detailLinesBuilder = type(options.detailLinesBuilder) == "function" and options.detailLinesBuilder or nil
     frame.mapDisplayMode = NormalizeMapDisplayMode(options.displayMode or frame.mapDisplayMode)
     frame.mapOptions = type(options.mapOptions) == "table" and options.mapOptions or nil
     frame.selectedMapOptionIndex = tonumber(options.selectedMapOptionIndex) or 1

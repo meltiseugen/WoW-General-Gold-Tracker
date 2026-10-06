@@ -183,6 +183,9 @@ function GoldTracker:OnAddonLoaded(addonName)
     end
 
     self:InitializeDatabase()
+    if type(self.RegisterCurrentCustomFarmCharacter) == "function" then
+        self:RegisterCurrentCustomFarmCharacter()
+    end
     self:CreateMinimapButton()
     self:CreateMainWindow()
     self:CreateOptionsPanel()
@@ -226,6 +229,9 @@ function GoldTracker:OnAddonLoaded(addonName)
         else
             self:RecordSavedInstanceFarmingMarketSnapshots()
         end
+    end
+    if type(self.QueueAutomaticKnownPriceScan) == "function" then
+        self:QueueAutomaticKnownPriceScan()
     end
 
     self:Print("Loaded. Use /gt to open the tracker window.")

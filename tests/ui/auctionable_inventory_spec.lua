@@ -252,6 +252,28 @@ local function make_icon()
 end
 
 describe("UI/InventoryWindow auctionable rows", function()
+    it("repairs empty bag hyperlinks with the resolved item name", function()
+        with_loaded_inventory(build_addon(), function(addon)
+            local display_text = addon:GetInventoryItemDisplayText({
+                itemID = 2001,
+                itemName = "Sellable Girdle",
+                itemLink = "|cff1eff00|Hitem:2001::::::::|h[]|h|r",
+            })
+
+            assert.equals("|cff1eff00|Hitem:2001::::::::|h[Sellable Girdle]|h|r", display_text)
+        end)
+    end)
+
+    it("uses an item ID placeholder while bag item data is loading", function()
+        with_loaded_inventory(build_addon(), function(addon)
+            assert.equals("Item 2001", addon:GetInventoryItemDisplayText({
+                itemID = 2001,
+                itemName = "|cff1eff00|Hitem:2001::::::::|h[]|h|r",
+                itemLink = "|cff1eff00|Hitem:2001::::::::|h[]|h|r",
+            }))
+        end)
+    end)
+
     it("does not capture market history synchronously while refreshing the bag view", function()
         with_loaded_inventory(build_addon(), function(addon)
             local snapshot_calls = 0

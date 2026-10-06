@@ -208,6 +208,7 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots/Midnight/Cooking.lua",
     "Data/MaterialFarmingSpots/Midnight/Jewelcrafting.lua",
     "Data/MaterialFarmingSpots/Midnight/Engineering.lua",
+    "Data/MaterialFarmingSpots/WITGathering.lua",
     "Data/MaterialFarmingSpots/Finalize.lua",
 }
 
@@ -3034,6 +3035,64 @@ describe("Data/MaterialFarmingSpots", function()
         assert.is_true(royal_ripple_pin_found)
         assert.is_true(coelacanth_water_pin_found)
     end)
+
+    it("loads every defined WIT Gathering row with decoded routes and hidden yields", function()
+        local spots, ns = load_material_farming_spots(true)
+        local wit = ns.WITGatheringData
+
+        assert.is_table(wit)
+        assert.equals("v4.3.1", wit.sourceVersion)
+        assert.equals(415, wit.farmCount)
+        assert.equals(317, wit.routeCount)
+        assert.equals(10872, wit.pointCount)
+        assert.equals(wit.farmCount, #wit.farms)
+
+        local route_count = 0
+        local point_count = 0
+        local records = {}
+        for _, farm in ipairs(wit.farms) do
+            assert_non_empty_string(farm.recordID)
+            assert.is_nil(records[farm.recordID])
+            records[farm.recordID] = farm
+            assert_non_empty_string(farm.category)
+            assert.is_number(farm.recordedSeconds)
+            assert.is_true(farm.recordedSeconds > 0)
+            assert.is_table(farm.results)
+            assert.is_table(farm.routes)
+            for _, result in ipairs(farm.results) do
+                assert.is_number(result.itemID)
+                assert.is_true(result.itemID > 0)
+                assert.is_number(result.quantity)
+                assert.is_true(result.quantity >= 0)
+            end
+            for _, route in ipairs(farm.routes) do
+                route_count = route_count + 1
+                point_count = point_count + #route.coords
+                assert_non_empty_string(route.name)
+                assert.is_number(route.mapID)
+                assert.is_true(route.mapID > 0)
+                assert.is_true(#route.coords > 0)
+            end
+        end
+        assert.equals(wit.routeCount, route_count)
+        assert.equals(wit.pointCount, point_count)
+
+        local copper = records["Mining:CopperOre:1"]
+        assert.is_table(copper)
+        assert.equals(2770, copper.itemID)
+        assert.equals(540, copper.results[1].quantity)
+        assert.equals(0.5080, copper.routes[1].coords[1].x)
+        assert.equals(0.5080, copper.routes[1].coords[1].y)
+
+        local copper_wit_spots = 0
+        for _, spot in ipairs(spots.items[2770].spots) do
+            if type(spot.dropdownLabel) == "string" and spot.dropdownLabel:find("^WIT: ") then
+                copper_wit_spots = copper_wit_spots + 1
+                assert.is_table(records[spot.witFarmRecordID])
+            end
+        end
+        assert.is_true(copper_wit_spots > 1)
+    end)
 end)
 
 describe("Data/RareDrops", function()
@@ -3181,5 +3240,122 @@ describe("Data/ATTBoEDrops", function()
 
         assert.equals(data.instanceItemCount, instance_item_count)
         assert.equals(data.zoneItemCount, zone_item_count)
+    end)
+end)
+
+describe("Data/WITDrops", function()
+    it("matches the generated WIT category counters", function()
+        local data = load_data("Data/WITDrops.lua", "WITDropsData")
+
+        assert_non_empty_string(data.sourceVersion)
+        assert_non_empty_string(data.sourceURL)
+        assert.is_table(data.categories)
+        assert.is_table(data.categoryCounts)
+
+        local total = 0
+        for _, category in ipairs({ "transmogs", "openWorldInstances", "mounts", "toys", "pets", "raidPets" }) do
+            local rows = data.categories[category]
+            assert.is_table(rows)
+            assert.equals(data.categoryCounts[category], #rows)
+            assert.is_true(#rows > 0)
+            total = total + #rows
+            for _, row in ipairs(rows) do
+                assert_non_empty_string(row.recordID)
+                assert_non_empty_string(row.farmID)
+                assert_non_empty_string(row.farmName)
+                assert.is_number(row.itemID)
+                assert.is_true(row.itemID > 0)
+                assert.is_number(row.quantity)
+                assert.is_number(row.contentID)
+                assert_non_empty_string(row.expansion)
+                assert_non_empty_string(row.expansionLabel)
+                assert_non_empty_string(row.locationLabel)
+                if category == "raidPets" then
+                    assert.is_number(row.petID)
+                    assert_non_empty_string(row.itemLink)
+                end
+            end
+        end
+
+        assert.equals(data.itemSourceCount, total)
+        assert.equals(9049, data.categoryCounts.transmogs)
+        assert.equals(147, data.categoryCounts.openWorldInstances)
+        assert.equals(7, data.categoryCounts.mounts)
+        assert.equals(7, data.categoryCounts.toys)
+        assert.equals(179, data.categoryCounts.pets)
+        assert.equals(91, data.categoryCounts.raidPets)
+    end)
+end)
+
+describe("Data/Farms", function()
+    it("contains the generated, runtime-independent WIT farm index", function()
+        local data = load_data("Data/Farms.lua", "FarmCatalog")
+
+        assert.equals(2, data.dataVersion)
+        assert.equals("v4.3.1", data.sourceVersion)
+        assert.is_false(data.runtimeDependency)
+        assert.equals(504, data.farmCount)
+        assert.equals(11151, data.targetCount)
+        assert.equals(4966, data.uniqueItemCount)
+        assert.equals(414, data.sourceCounts.gathering)
+        assert.equals(90, data.sourceCounts.drops)
+        assert.equals(data.farmCount, #data.farms)
+        assert.is_table(data.byID)
+        assert.is_table(data.indexes)
+
+        local seen = {}
+        local target_count = 0
+        for position, farm in ipairs(data.farms) do
+            assert_non_empty_string(farm.id)
+            assert.is_nil(seen[farm.id])
+            seen[farm.id] = true
+            assert.equals(position, data.byID[farm.id])
+            assert.equals("wit", farm.provider)
+            assert_non_empty_string(farm.providerKey)
+            assert_non_empty_string(farm.providerFarmID)
+            assert_non_empty_string(farm.activity)
+            assert_non_empty_string(farm.sourceCategory)
+            assert_non_empty_string(farm.sourcePath)
+            assert_non_empty_string(farm.name)
+            assert_non_empty_string(farm.expansion)
+            assert.is_number(farm.recordedSeconds)
+            assert.is_true(farm.recordedSeconds > 0)
+            assert.is_table(farm.mapIDs)
+            assert.is_table(farm.targets)
+            target_count = target_count + #farm.targets
+            for _, target in ipairs(farm.targets) do
+                assert.is_number(target.itemID)
+                assert.is_true(target.itemID > 0)
+                assert.is_number(target.quantity)
+            end
+        end
+        assert.equals(data.targetCount, target_count)
+
+        local copper_position = data.byID["wit:gathering:mining:copperore"]
+        assert.is_number(copper_position)
+        assert.equals(2770, data.farms[copper_position].primaryItemID)
+        assert.is_true(#data.indexes.byItemID[2770] > 0)
+
+        local dark_iron_position = data.byID["wit:gathering:mining:darkironore"]
+        assert.is_number(dark_iron_position)
+        assert.same({
+            { itemID = 11370, quantity = 303 },
+            { itemID = 11382, quantity = 3 },
+        }, data.farms[dark_iron_position].targets)
+
+        local scarlet_position = data.byID["wit:drops:transmogs:scarletmonastayold"]
+        assert.is_number(scarlet_position)
+        assert.equals("transmog", data.farms[scarlet_position].activity)
+        assert.equals("WITDropsData", data.farms[scarlet_position].sourceDataset)
+        assert.equals("instances", data.farms[scarlet_position].sourceCategory)
+        assert.equals("Instances", data.farms[scarlet_position].sourcePath)
+
+        local ragefire_position = data.byID["wit:drops:openworldinstances:ragefire"]
+        assert.is_number(ragefire_position)
+        assert.equals("openWorldInstances", data.farms[ragefire_position].sourceCategory)
+        assert.equals("Open World > Instances", data.farms[ragefire_position].sourcePath)
+        assert.equals(213, data.farms[ragefire_position].mapIDs[1])
+        assert.equals(20, #data.indexes.bySourceCategory.openWorldInstances)
+        assert.equals(70, #data.indexes.bySourceCategory.instances)
     end)
 end)

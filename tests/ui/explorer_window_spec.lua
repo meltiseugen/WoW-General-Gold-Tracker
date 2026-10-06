@@ -83,6 +83,12 @@ local function button()
             self.points = self.points or {}
             self.points[#self.points + 1] = { ... }
         end,
+        SetFrameLevel = function(self, level)
+            self.level = level
+        end,
+        GetFrameLevel = function(self)
+            return self.level or 0
+        end,
     }
 end
 
@@ -91,6 +97,7 @@ local function tab_buttons()
         rares = button(),
         instances = button(),
         materials = button(),
+        farms = button(),
         drops = button(),
         favorites = button(),
         inventory = button(),
@@ -191,50 +198,21 @@ describe("UI/ExplorerWindow", function()
             labels[#labels + 1] = tab.label
         end
 
-        assert.same({ "Favorites", "Alerts", "Rares", "Instances", "Drops", "Materials", "Bags" }, labels)
+        assert.same({ "Favorites", "Alerts", "Rares", "Instances", "Drops", "Materials", "Farms", "Bags" }, labels)
     end)
 
-    it("explains the Bags tab TradeSkillMaster dependency", function()
-        loader.with_globals({ TSM_API = nil }, function()
-            local addon = load_explorer({})
-
-            assert.matches("Requires TradeSkillMaster", addon:GetExplorerTabTooltip("inventory"))
-            assert.matches("unavailable", addon:GetExplorerTabTooltip("inventory"))
-            assert.is_nil(addon:GetExplorerTabTooltip("materials"))
-        end)
-
-        loader.with_globals({
-            TSM_API = {
-                GetCustomPriceValue = function() end,
-            },
-        }, function()
-            local addon = load_explorer({})
-
-            assert.matches("using TradeSkillMaster", addon:GetExplorerTabTooltip("inventory"))
-        end)
-    end)
-
-    it("refreshes the Bags tab tooltip with TSM availability", function()
+    it("removes the Bags tab tooltip", function()
         local buttons = tab_buttons()
+        buttons.inventory.tooltipText = "Old Bags tooltip"
         local addon = load_explorer({
             explorerFrame = {
                 tabButtons = buttons,
             },
         })
 
-        loader.with_globals({ TSM_API = nil }, function()
-            addon:RefreshExplorerTabs()
-            assert.matches("Requires TradeSkillMaster", buttons.inventory.tooltipText)
-        end)
+        addon:RefreshExplorerTabs()
 
-        loader.with_globals({
-            TSM_API = {
-                GetCustomPriceValue = function() end,
-            },
-        }, function()
-            addon:RefreshExplorerTabs()
-            assert.matches("using TradeSkillMaster", buttons.inventory.tooltipText)
-        end)
+        assert.is_nil(buttons.inventory.tooltipText)
     end)
 
     it("shows only saved scans and new scan sub-tabs on rare farming", function()
@@ -272,6 +250,8 @@ describe("UI/ExplorerWindow", function()
         instance_frame.scanState = { active = true }
         instance_frame.savedTabButton = button()
         instance_frame.favoritesTabButton = button()
+        instance_frame.transmogsTabButton = button()
+        instance_frame.petsTabButton = button()
         instance_frame.newScanTabButton = button()
         local selected_view = nil
         local addon = load_explorer({
@@ -296,6 +276,8 @@ describe("UI/ExplorerWindow", function()
         assert.equals("scan", selected_view)
         assert.is_true(instance_frame.savedTabButton.shown)
         assert.is_false(instance_frame.favoritesTabButton.shown)
+        assert.is_true(instance_frame.transmogsTabButton.shown)
+        assert.is_true(instance_frame.petsTabButton.shown)
         assert.is_true(instance_frame.newScanTabButton.shown)
     end)
 
@@ -373,6 +355,13 @@ describe("UI/ExplorerWindow", function()
 
     it("opens observed drops and refreshes its prices view", function()
         local drops_frame = frame()
+        drops_frame.chrome = frame()
+        drops_frame.chrome.level = 10
+        drops_frame.savedScansTabButton = button()
+        drops_frame.sourceTabButtons = {
+            observed = button(),
+            zones = button(),
+        }
         local refreshed = 0
         local addon = load_explorer({
             db = {},
@@ -393,6 +382,35 @@ describe("UI/ExplorerWindow", function()
         assert.equals("drops", addon.db.explorerTab)
         assert.is_true(addon.explorerFrame.tabButtons.drops.selected)
         assert.is_true(drops_frame.shown)
+        assert.equals(1, refreshed)
+        assert.equals(drops_frame.chrome.level + 2, drops_frame.savedScansTabButton.level)
+        assert.equals(drops_frame.chrome.level + 2, drops_frame.sourceTabButtons.observed.level)
+        assert.equals(drops_frame.chrome.level + 2, drops_frame.sourceTabButtons.zones.level)
+    end)
+
+    it("opens the My Farms workspace as the Farms explorer tab", function()
+        local farms_frame = frame()
+        local refreshed = 0
+        local addon = load_explorer({
+            db = {},
+            explorerFrame = {
+                contentFrame = frame(),
+                tabButtons = tab_buttons(),
+            },
+            CreateMyFarmsWindow = function(self)
+                self.myFarmsFrame = farms_frame
+            end,
+            RefreshMyFarmsWindow = function()
+                refreshed = refreshed + 1
+            end,
+        })
+
+        addon:SetExplorerTab("farms")
+
+        assert.equals("farms", addon.db.explorerTab)
+        assert.is_true(addon.explorerFrame.tabButtons.farms.selected)
+        assert.is_true(farms_frame.shown)
+        assert.equals(addon.explorerFrame.contentFrame, farms_frame.parent)
         assert.equals(1, refreshed)
     end)
 

@@ -157,6 +157,41 @@ local function make_frame()
 end
 
 describe("UI/StandaloneMapWindow", function()
+    it("renders a source preview overlay independently and clears old art on a missing map", function()
+        local addon = load_window()
+        local standalone = { mapID = 999 }
+        addon.standaloneMapFrame = standalone
+        local frame = { mapContent = make_frame(), mapViewport = make_frame(), statusText = make_frame() }
+        local rendered
+        addon.MapAreaOverlay.Render = function(_, owner, _, key, polygons)
+            if key == "standaloneMapArea" then
+                rendered = { owner = owner, polygons = polygons }
+            end
+            return #polygons
+        end
+        loader.with_globals({ C_Map = {
+            GetMapArtLayers = function(mapID)
+                if mapID == 100 then
+                    return { { layerWidth = 512, layerHeight = 512, tileWidth = 512, tileHeight = 512 } }
+                end
+            end,
+            GetMapArtLayerTextures = function() return { 123 } end,
+        } }, function()
+            addon:RefreshFarmingMapPreview(frame, { mapID = 100, pins = {
+                { mapID = 100, x = 0.4, y = 0.6, sourceType = "user", label = "Fire" },
+            } })
+            assert.is_true(frame.mapContent.shown)
+            assert.equals(frame, rendered.owner)
+            assert.equals(1, #rendered.polygons)
+            assert.is_nil(frame.detailsContent)
+            assert.equals(999, standalone.mapID)
+            addon:RefreshFarmingMapPreview(frame, { mapID = 104, pins = {} })
+            assert.is_false(frame.mapContent.shown)
+            assert.is_true(frame.statusText.shown)
+            assert.matches("No map art layer", frame.statusText.text)
+        end)
+    end)
+
     it("builds readable farming details for the selected map", function()
         local addon = load_window()
 
@@ -508,6 +543,132 @@ describe("UI/StandaloneMapWindow", function()
         assert.is_true(details_scroll_frame.updated)
     end)
 
+    it("uses selected-option titles and custom detail lines for map-first views", function()
+        local addon = load_window()
+        local details_content = make_frame()
+        local details_scroll_frame = make_frame()
+        details_scroll_frame.width = 240
+        details_scroll_frame.UpdateScrollChildRect = function(self)
+            self.updated = true
+        end
+        local selectedOption = {
+            mapID = 107,
+            mapLabel = "Nagrand",
+            label = "Old Ore Route - Nagrand Loop",
+            windowTitle = "Old Ore Route",
+            mapOnly = true,
+            pins = {},
+        }
+        local builderOption
+        local toggleClicked = false
+        local tooltip = {
+            SetOwner = function(self, owner, anchor)
+                self.owner = owner
+                self.anchor = anchor
+            end,
+            SetHyperlink = function(self, link)
+                self.link = link
+            end,
+            Show = function(self)
+                self.shown = true
+            end,
+            Hide = function(self)
+                self.shown = false
+            end,
+        }
+
+        addon.standaloneMapFrame = {
+            mapID = 107,
+            windowTitle = "Fallback title",
+            mapOptions = { selectedOption },
+            selectedMapOptionIndex = 1,
+            mapPins = {},
+            mapTitle = make_frame(),
+            mapDropdown = make_frame(),
+            detailsContent = details_content,
+            detailsScrollFrame = details_scroll_frame,
+            detailTextLines = {},
+            detailSourceRows = {},
+            detailTableRows = {},
+            detailLinesBuilder = function(option, mapID, mapLabel)
+                builderOption = option
+                assert.equals(107, mapID)
+                assert.equals("Nagrand", mapLabel)
+                return {
+                    { type = "text", text = "Farm estimate", fontObject = "GameFontNormal" },
+                    { type = "text", text = "12,345g/hour", fontObject = "GameFontNormalLarge" },
+                    {
+                        type = "farmTarget",
+                        itemID = 3002,
+                        itemLink = "item:3002",
+                        itemName = "New Herb",
+                        quantityText = "x2",
+                        totalValueText = "5g",
+                        selected = true,
+                    },
+                    {
+                        type = "detailToggle",
+                        text = "+ 7 more recorded items",
+                        onClick = function()
+                            toggleClicked = true
+                        end,
+                    },
+                }
+            end,
+            mapTileTextures = {},
+            mapExploredTileTextures = {},
+            mapContent = make_frame(),
+            statusText = make_frame(),
+        }
+
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local created = make_frame()
+                created.parent = parent
+                return created
+            end,
+            GameTooltip = tooltip,
+            C_Map = {
+                GetMapArtLayers = function()
+                    return { { layerWidth = 512, layerHeight = 512, tileWidth = 512, tileHeight = 512 } }
+                end,
+                GetMapArtLayerTextures = function() return { 123 } end,
+            },
+        }, function()
+            addon:RefreshStandaloneMapWindow()
+
+            local itemRow = addon.standaloneMapFrame.detailTableRows[3]
+            itemRow.scripts.OnEnter(itemRow)
+            assert.equals(itemRow, tooltip.owner)
+            assert.equals("ANCHOR_CURSOR", tooltip.anchor)
+            assert.equals("item:3002", tooltip.link)
+            assert.is_true(tooltip.shown)
+            itemRow.scripts.OnLeave(itemRow)
+            assert.is_false(tooltip.shown)
+
+            local toggleRow = addon.standaloneMapFrame.detailToggleRows[4]
+            toggleRow.scripts.OnClick(toggleRow)
+        end)
+
+        assert.equals(selectedOption, builderOption)
+        assert.equals("Old Ore Route", addon.standaloneMapFrame.mapTitle.text)
+        assert.equals("Farm estimate", addon.standaloneMapFrame.detailTextLines[1].text)
+        assert.equals("12,345g/hour", addon.standaloneMapFrame.detailTextLines[2].text)
+        assert.equals("New Herb", addon.standaloneMapFrame.detailTableRows[3].itemText.text)
+        assert.equals("x2", addon.standaloneMapFrame.detailTableRows[3].quantityText.text)
+        assert.equals("5g", addon.standaloneMapFrame.detailTableRows[3].valueText.text)
+        assert.equals(3002, addon.standaloneMapFrame.detailTableRows[3].itemID)
+        assert.equals("item:3002", addon.standaloneMapFrame.detailTableRows[3].itemLink)
+        assert.same({ 0.45, 0.92, 1.0, 1 }, addon.standaloneMapFrame.detailTableRows[3].itemText.textColor)
+        assert.equals("+ 7 more recorded items", addon.standaloneMapFrame.detailToggleRows[4].label.text)
+        assert.is_true(toggleClicked)
+        assert.equals(
+            "Instance map shown; no route coordinates are available. Zoom 1.00x",
+            addon.standaloneMapFrame.statusText.text
+        )
+        assert.is_true(details_scroll_frame.updated)
+    end)
+
     it("draws standalone route lines between ordered material farming pins", function()
         local addon = load_window()
         local map_content = make_frame()
@@ -673,7 +834,7 @@ describe("UI/StandaloneMapWindow", function()
             )
             assert.same({ "CENTER", map_content, "TOPLEFT", 100, -150 }, addon.standaloneMapFrame.mapPinFrames[1].points[1])
             assert.is_false(addon.standaloneMapFrame.standaloneMapAreaFillLines[1].shown)
-            assert.matches("2 farming location icons visible", addon.standaloneMapFrame.statusText.text, 1, true)
+            assert.matches("Select one of the 2 farming overlays", addon.standaloneMapFrame.statusText.text, 1, true)
 
             assert.is_true(addon:ToggleStandaloneMapDisplayMode())
             assert.equals("overlay", addon.standaloneMapFrame.mapDisplayMode)
@@ -681,6 +842,302 @@ describe("UI/StandaloneMapWindow", function()
             assert.is_false(addon.standaloneMapFrame.mapPinFrames[1].shown)
             assert.is_true(addon.standaloneMapFrame.standaloneMapAreaFillLines[1].shown)
         end)
+    end)
+
+    it("sets route waypoints at the first ordered route point", function()
+        local addon = load_window()
+        local waypoint
+        local superTracked
+        addon.standaloneMapFrame = {
+            mapID = 107,
+            mapPins = {
+                { mapID = 107, x = 0.22, y = 0.31, label = "Route start", isRoute = true, routeID = "ore-route" },
+                { mapID = 107, x = 0.48, y = 0.57, label = "Route middle", isRoute = true, routeID = "ore-route" },
+            },
+            statusText = make_frame(),
+        }
+
+        loader.with_globals({
+            UiMapPoint = {
+                CreateFromCoordinates = function(mapID, x, y)
+                    return { mapID = mapID, x = x, y = y }
+                end,
+            },
+            C_Map = {
+                SetUserWaypoint = function(point)
+                    waypoint = point
+                end,
+            },
+            C_SuperTrack = {
+                SetSuperTrackedUserWaypoint = function(value)
+                    superTracked = value
+                end,
+            },
+        }, function()
+            assert.is_true(addon:SetStandaloneMapWaypoint())
+        end)
+
+        assert.same({ mapID = 107, x = 0.22, y = 0.31 }, waypoint)
+        assert.is_true(superTracked)
+        assert.matches("Route start %(route start%)", addon.standaloneMapFrame.statusText.text)
+    end)
+
+    it("waypoints the selected overlay even when a route is present", function()
+        local addon = load_window()
+        local waypoint
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            mapPins = {
+                { mapID = 100, x = 0.1, y = 0.1, isRoute = true, routeID = "route" },
+                { mapID = 100, x = 0.8, y = 0.8, label = "Selected camp", routeID = "camp" },
+            },
+            statusText = make_frame(),
+        }
+        addon.RefreshStandaloneMapWindow = function() end
+        assert.is_true(addon:SelectStandaloneMapAreaAt(0.8, 0.8))
+        loader.with_globals({
+            UiMapPoint = { CreateFromCoordinates = function(mapID, x, y)
+                return { mapID = mapID, x = x, y = y }
+            end },
+            C_Map = { SetUserWaypoint = function(point) waypoint = point end },
+            C_SuperTrack = false,
+        }, function()
+            assert.is_true(addon:SetStandaloneMapWaypoint())
+        end)
+        assert.same({ mapID = 100, x = 0.8, y = 0.8 }, waypoint)
+        assert.is_false(addon:SelectStandaloneMapAreaAt(0.5, 0.5))
+        assert.equals("route", addon:GetStandaloneMapWaypointDestination().waypointKind)
+    end)
+
+    it("adds only the selected overlay through the existing farm dialog", function()
+        local payload
+        local addon = load_window({
+            db = {},
+            Print = function() end,
+            ShowCustomFarmMethodDialog = function(_, value) payload = value; return true end,
+        })
+        local source = { itemID = 2770, itemName = "Copper Ore", farmingSourceType = "materials" }
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            customFarmRow = source,
+            mapOptions = { { id = "ore-spots", mapID = 100, sourceType = "static" } },
+            mapPins = {
+                { mapID = 100, x = 0.2, y = 0.2, routeID = "ore", spotLocation = "West camp" },
+                { mapID = 100, x = 0.8, y = 0.8, routeID = "ore", spotLocation = "East camp" },
+            },
+            statusText = make_frame(),
+        }
+        addon.RefreshStandaloneMapWindow = function() end
+        assert.is_false(addon:AddStandaloneMapToCustomFarm())
+        assert.is_nil(payload)
+        assert.is_true(addon:SelectStandaloneMapAreaAt(0.8, 0.8))
+        assert.is_true(addon:AddStandaloneMapToCustomFarm())
+        assert.equals(2770, payload.entry.itemID)
+        assert.equals("materials", payload.entry.sourceType)
+        assert.equals("East camp", payload.entry.locationLabel)
+        assert.near(0.8, payload.entry.x, 0.0001)
+        assert.equals(1, #payload.entry.mapSource.pins)
+        assert.near(0.8, payload.entry.mapSource.pins[1].x, 0.0001)
+        assert.is_nil(source.x)
+        assert.equals(0, #addon:GetCustomFarms())
+
+        assert.is_true(addon:CommitCustomFarmEntry(payload, nil, payload.entry.mapSource))
+        local saved = addon:GetCustomFarms()[1].entries[1]
+        assert.equals(payload.entry.mapSource.key, saved.mapSource.key)
+        assert.equals(1, #saved.mapSource.pins)
+
+        addon.standaloneMapFrame.mapOptions = { saved.mapSource }
+        addon.standaloneMapFrame.mapPins = saved.mapSource.pins
+        addon.standaloneMapFrame.selectedMapAreaKey = nil
+        assert.is_true(addon:AddStandaloneMapToCustomFarm())
+        assert.equals(saved.entryKey, payload.entry.entryKey)
+    end)
+
+    it("creates an Add to farm button that submits the current map selection", function()
+        local captured
+        local addon = load_window()
+        addon.RequestAddToCustomFarm = function(_, row, sourceType, mapSource)
+            captured = { row = row, sourceType = sourceType, mapSource = mapSource }
+            return true
+        end
+        local function create_frame()
+            local frame = make_frame()
+            for _, method in ipairs({
+                "SetBackdrop", "SetBackdropColor", "SetBackdropBorderColor", "SetFrameStrata",
+                "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse", "RegisterForDrag",
+                "RegisterEvent", "EnableMouseWheel", "SetClipsChildren", "SetScrollChild",
+                "SetVerticalScroll", "Raise", "SetAlpha",
+            }) do
+                frame[method] = function() end
+            end
+            return frame
+        end
+        loader.with_globals({
+            CreateFrame = create_frame,
+            UIDropDownMenu_SetWidth = function() end,
+            UIDropDownMenu_Initialize = function() end,
+            C_Map = false,
+        }, function()
+            addon:OpenStandaloneMapWindow({
+                mapID = 100,
+                customFarmRow = { itemID = 2770, itemName = "Copper Ore" },
+                customFarmSourceType = "materials",
+                pins = { { mapID = 100, x = 0.2, y = 0.3 } },
+            })
+            local button = addon.standaloneMapFrame.addToFarmButton
+            assert.equals("Add to farm", button.text)
+            button.scripts.OnClick(button)
+            assert.equals(2770, captured.row.itemID)
+            assert.equals("materials", captured.sourceType)
+            assert.equals(1, #captured.mapSource.pins)
+            assert.near(0.2, captured.row.x, 0.0001)
+        end)
+    end)
+
+    it("adds an ordered route while preserving its route pins", function()
+        local addon = load_window()
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            customFarmRow = { itemID = 2770 },
+            mapPins = {
+                { mapID = 100, x = 0.2, y = 0.3, isRoute = true, routeID = "ore" },
+                { mapID = 100, x = 0.4, y = 0.5, isRoute = true, routeID = "ore" },
+                { mapID = 100, x = 0.8, y = 0.8, routeID = "camp" },
+            },
+        }
+        local row, reason, source = addon:GetStandaloneMapCustomFarmRow()
+        assert.is_nil(reason)
+        assert.equals(0.2, row.x)
+        assert.equals(2, #source.pins)
+        assert.equals(0.4, source.pins[2].x)
+    end)
+
+    it("uses the selected farm item without naming it after the farm", function()
+        local addon = load_window()
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            mapOptions = { { mapID = 100, selectedItemID = 2770 } },
+            mapPins = { { mapID = 100, x = 0.2, y = 0.3, itemName = "Mining farm" } },
+        }
+        loader.with_globals({ GetItemInfo = function() return "Copper Ore" end }, function()
+            local row = addon:GetStandaloneMapCustomFarmRow()
+            local entry = addon:BuildCustomFarmEntry(row)
+            assert.equals(2770, entry.itemID)
+            assert.equals("Copper Ore", entry.itemName)
+        end)
+        addon.standaloneMapFrame.mapOptions = nil
+        assert.is_nil(addon:GetStandaloneMapCustomFarmRow())
+    end)
+
+    it("snapshots map item context and clears it when another map opens", function()
+        local addon = load_window()
+        local frame = make_frame()
+        frame.Raise = function() end
+        addon.standaloneMapFrame = frame
+        addon.RefreshStandaloneMapWindow = function() end
+        local source = { itemID = 2770, itemName = "Copper Ore", x = 0.9, y = 0.9, coordX = 90, coordY = 90 }
+        addon:OpenStandaloneMapWindow({
+            customFarmRow = source, customFarmSourceType = "materials",
+            mapOptions = { { mapID = 100, pins = {}, mapOnly = true } },
+        })
+        source.itemID = 999
+        local row = addon:GetStandaloneMapCustomFarmRow()
+        local entry = addon:BuildCustomFarmEntry(row)
+        assert.equals(2770, entry.itemID)
+        assert.equals(100, entry.mapID)
+        assert.is_nil(entry.x)
+        assert.is_nil(entry.y)
+        addon:OpenStandaloneMapWindow({ mapID = 101, pins = {} })
+        assert.is_nil(addon:GetStandaloneMapCustomFarmRow())
+    end)
+
+    it("uses the center of a single farming overlay as its waypoint", function()
+        local addon = load_window()
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            mapPins = {
+                { mapID = 100, x = 0.20, y = 0.30, label = "West camp", routeID = "single-camp" },
+                { mapID = 100, x = 0.24, y = 0.34, label = "East camp", routeID = "single-camp" },
+            },
+            statusText = make_frame(),
+        }
+
+        local destination, reason, groupCount = addon:GetStandaloneMapWaypointDestination()
+
+        assert.is_nil(reason)
+        assert.equals(1, groupCount)
+        assert.equals("area", destination.waypointKind)
+        assert.equals(100, destination.mapID)
+        assert.near(0.22, destination.x, 0.0001)
+        assert.near(0.32, destination.y, 0.0001)
+    end)
+
+    it("requires selecting one of multiple overlays before setting its waypoint", function()
+        local addon = load_window()
+        local refreshed = false
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            mapPins = {
+                { mapID = 100, x = 0.20, y = 0.20, label = "West camp", routeID = "split-camp" },
+                { mapID = 100, x = 0.80, y = 0.80, label = "East camp", routeID = "split-camp" },
+            },
+            statusText = make_frame(),
+        }
+        addon.RefreshStandaloneMapWindow = function()
+            refreshed = true
+        end
+
+        local destination, reason, groupCount = addon:GetStandaloneMapWaypointDestination()
+        assert.is_nil(destination)
+        assert.equals("select-area", reason)
+        assert.equals(2, groupCount)
+        assert.is_false(addon:SetStandaloneMapWaypoint())
+        assert.matches("Select one of the 2 farming overlays", addon.standaloneMapFrame.statusText.text, 1, true)
+
+        assert.is_true(addon:SelectStandaloneMapAreaAt(0.80, 0.80))
+        assert.is_true(refreshed)
+        destination, reason, groupCount = addon:GetStandaloneMapWaypointDestination()
+        assert.is_nil(reason)
+        assert.equals(2, groupCount)
+        assert.equals("area", destination.waypointKind)
+        assert.near(0.80, destination.x, 0.0001)
+        assert.near(0.80, destination.y, 0.0001)
+    end)
+
+    it("explains the multi-overlay selection requirement in the waypoint tooltip", function()
+        local addon = load_window()
+        local details_scroll_frame = make_frame()
+        details_scroll_frame.width = 240
+        details_scroll_frame.UpdateScrollChildRect = function() end
+        local waypoint_button = make_frame()
+        addon.standaloneMapFrame = {
+            mapID = 100,
+            mapPins = {
+                { mapID = 100, x = 0.20, y = 0.20, label = "West camp", routeID = "split-camp" },
+                { mapID = 100, x = 0.80, y = 0.80, label = "East camp", routeID = "split-camp" },
+            },
+            mapTitle = make_frame(),
+            detailsContent = make_frame(),
+            detailsScrollFrame = details_scroll_frame,
+            detailTextLines = {},
+            detailSourceRows = {},
+            mapTileTextures = {},
+            mapExploredTileTextures = {},
+            mapRouteLines = {},
+            mapPinFrames = {},
+            mapContent = make_frame(),
+            statusText = make_frame(),
+            waypointButton = waypoint_button,
+        }
+
+        loader.with_globals({ C_Map = false }, function()
+            addon:RefreshStandaloneMapWindow()
+        end)
+
+        assert.equals(
+            "This map has 2 separate farming areas. Click the requested overlay first, then click Waypoint.",
+            waypoint_button.tooltipText
+        )
     end)
 
     it("navigates to the current map's parent and resets the view", function()

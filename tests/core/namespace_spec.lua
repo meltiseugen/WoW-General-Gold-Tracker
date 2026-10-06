@@ -419,6 +419,57 @@ describe("Core/Namespace farming favorite migration", function()
     end)
 end)
 
+describe("Core/Namespace account-wide scan migration", function()
+    it("migrates rare, instance, and drop scan data into shared stores", function()
+        local rare_scan = { results = { { itemID = 101 } } }
+        local instance_scan = { results = { { itemID = 202 } } }
+        local drop_scan = { results = { { itemID = 303 } }, dropSourceID = "att-zones" }
+        local session_drop = { itemID = 404, seenCount = 2 }
+        local saved_db = {
+            rareFarmingScanCache = { rareKey = rare_scan },
+            instanceFarmingScanCache = { instanceKey = instance_scan },
+            observedDropsScanCache = { dropKey = drop_scan },
+            observedSavedSessionDrops = { ["i:404"] = session_drop },
+            observedSavedSessionDropsScannedAt = 1710000000,
+        }
+
+        with_loaded_namespace(saved_db, function(addon)
+            addon:InitializeDatabase()
+
+            assert.equals(rare_scan, addon.db.rareFarmingShared.scanCache.rareKey)
+            assert.equals(instance_scan, addon.db.instanceFarmingShared.scanCache.instanceKey)
+            assert.equals(drop_scan, addon.db.observedDropsShared.scanCache.dropKey)
+            assert.equals(session_drop, addon.db.observedDropsShared.savedSessionDrops["i:404"])
+            assert.equals(1710000000, addon.db.observedDropsShared.savedSessionDropsScannedAt)
+            assert.is_true(addon.db.rareFarmingScanCache == addon.db.rareFarmingShared.scanCache)
+            assert.is_true(addon.db.instanceFarmingScanCache == addon.db.instanceFarmingShared.scanCache)
+            assert.is_true(addon.db.observedDropsScanCache == addon.db.observedDropsShared.scanCache)
+            assert.is_true(addon.db.observedSavedSessionDrops == addon.db.observedDropsShared.savedSessionDrops)
+        end)
+    end)
+
+    it("keeps a newer empty shared saved-session scan authoritative", function()
+        local saved_db = {
+            observedDropsShared = {
+                scanCache = {},
+                savedSessionDrops = {},
+                savedSessionDropsScannedAt = 200,
+            },
+            observedSavedSessionDrops = {
+                ["i:505"] = { itemID = 505 },
+            },
+            observedSavedSessionDropsScannedAt = 100,
+        }
+
+        with_loaded_namespace(saved_db, function(addon)
+            addon:InitializeDatabase()
+
+            assert.same({}, addon.db.observedSavedSessionDrops)
+            assert.equals(200, addon.db.observedSavedSessionDropsScannedAt)
+        end)
+    end)
+end)
+
 describe("Core/Namespace utility edges", function()
     it("clamps world map projection pin scale for saved options", function()
         local addon = load_namespace({})

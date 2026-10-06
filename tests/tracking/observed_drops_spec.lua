@@ -207,6 +207,8 @@ describe("Tracking/ObservedDrops", function()
         assert.equals("Classic", drop.lastExpansionName)
         assert.equals(111111, drop.value)
         assert.equals(1710000000, addon.db.observedSavedSessionDropsScannedAt)
+        assert.is_true(addon.db.observedSavedSessionDrops == addon.db.observedDropsShared.savedSessionDrops)
+        assert.equals(1710000000, addon.db.observedDropsShared.savedSessionDropsScannedAt)
     end)
 
     it("saves rare-quality saved trash drops and keeps their quality", function()
@@ -275,7 +277,7 @@ describe("Tracking/ObservedDrops", function()
         assert.equals(4, drop.itemQuality)
     end)
 
-    it("rebuilds the saved-session snapshot without duplicating entries", function()
+    it("updates the saved-session list without duplicating entries", function()
         local addon = load_observed_drops()
         addon.db.sessionHistory = {
             {
@@ -297,11 +299,49 @@ describe("Tracking/ObservedDrops", function()
         local second_result = addon:ScanSavedSessionsForObservedDrops()
 
         assert.equals(1, first_result.addedItems)
-        assert.equals(1, second_result.addedItems)
+        assert.equals(0, second_result.addedItems)
+        assert.equals(1, second_result.updatedItems)
         assert.equals(0, second_result.alreadyImportedItems)
         local drop = addon.db.observedSavedSessionDrops["i:99999"]
         assert.equals(4, drop.totalQuantity)
         assert.equals(1, drop.seenCount)
+    end)
+
+    it("keeps saved-session entries that are absent from a later history scan", function()
+        local addon = load_observed_drops()
+        addon.db.sessionHistory = {
+            {
+                id = 7,
+                itemLoots = {
+                    {
+                        itemLink = item_link,
+                        quantity = 4,
+                        itemQuality = 2,
+                        lootSourceType = "NPC",
+                    },
+                },
+            },
+        }
+        addon:ScanSavedSessionsForObservedDrops()
+
+        addon.db.sessionHistory = {
+            {
+                id = 8,
+                itemLoots = {
+                    {
+                        itemLink = "|cff1eff00|Hitem:88888::::::::|h[Later Green]|h|r",
+                        quantity = 2,
+                        itemQuality = 2,
+                        lootSourceType = "NPC",
+                    },
+                },
+            },
+        }
+        local result = addon:ScanSavedSessionsForObservedDrops()
+
+        assert.equals(1, result.addedItems)
+        assert.is_table(addon.db.observedSavedSessionDrops["i:99999"])
+        assert.is_table(addon.db.observedSavedSessionDrops["i:88888"])
     end)
 
     it("skips saved session loot that is not trash or not eligible observed-drop loot", function()

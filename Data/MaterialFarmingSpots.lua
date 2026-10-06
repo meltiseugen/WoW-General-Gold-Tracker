@@ -1,10 +1,10 @@
 local _, NS = ...
 
 NS.MaterialFarmingSpots = {
-    dataVersion = 19,
+    dataVersion = 20,
     schemaVersion = 2,
     researchedAt = "2026-09-21",
-    sourceNote = "Curated farming-spot data summarized from current retail item, NPC, object, instance, housing-guide, and high-signal comment sources. Burning Crusade mob and fishing-school routes retain every published coordinate without proximity deduplication. Wrath specialty farms cover clam contents, rare inscription drops, reputation items, legacy instance reagents, and dynamic housing lumber. Dynamic sources use explicitly labeled route anchors. Comments are paraphrased, not copied.",
+    sourceNote = "Curated farming-spot data summarized from current retail item, NPC, object, instance, housing-guide, and high-signal comment sources, plus a generated WIT v4.3.1 Gathering route snapshot. Burning Crusade mob and fishing-school routes retain every published coordinate without proximity deduplication. Wrath specialty farms cover clam contents, rare inscription drops, reputation items, legacy instance reagents, and dynamic housing lumber. Dynamic sources use explicitly labeled route anchors. Comments are paraphrased, not copied.",
     sources = {
         wowhead = "https://www.wowhead.com/",
         wowProfessions = "https://www.wow-professions.com/farming",

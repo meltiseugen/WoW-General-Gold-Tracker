@@ -15,14 +15,14 @@ local ICON_SIZE = 18
 local COLUMN_GAP = 10
 local ROW_RIGHT_PADDING = 6
 local HEADER_LEFT_INSET = 12
-local TRACKED_WIDTH = 56
+local TRACKED_WIDTH = 24
 local EXPANSION_WIDTH = 122
 local LOCATION_WIDTH = 152
 local SOURCE_WIDTH = 138
 local SEEN_WIDTH = 54
 local QUANTITY_WIDTH = 46
 local VALUE_WIDTH = 106
-local DETAILS_WIDTH = 70
+local ADD_WIDTH = 48
 local ITEM_MIN_WIDTH = 150
 local SORT_ICON_SIZE = 10
 local HORIZONTAL_SCROLL_HEIGHT = 14
@@ -31,15 +31,22 @@ local OBSERVED_DROPS_BACKGROUND_SCAN_ITEMS_PER_TICK = 30
 local OBSERVED_DROPS_SCAN_REFRESH_INTERVAL = 0.20
 local OBSERVED_DROPS_SCAN_CACHE_VERSION = 2
 local OBSERVED_DROPS_SCAN_CACHE_MAX_ENTRIES = 30
+local MINIMUM_ZONE_DROP_QUALITY = 1
 local EXPANSION_ALL_ID = "all"
 local DROP_SOURCE_OBSERVED_ID = "observed"
 local DROP_SOURCE_ATT_ZONES_ID = "att-zones"
 local DROP_SOURCE_ATT_WORLD_ID = "att-world"
+local DROP_SOURCE_WIT_MOUNTS_ID = "wit-mounts"
+local DROP_SOURCE_WIT_TOYS_ID = "wit-toys"
+local DROP_SOURCE_WIT_PETS_ID = "wit-pets"
 local ZONE_ALL_ID = "all"
 
 local DROP_SOURCE_OPTIONS = {
-    { id = DROP_SOURCE_OBSERVED_ID, label = "Observed" },
+    { id = DROP_SOURCE_OBSERVED_ID, label = "Session Observed", tabWidth = 132 },
     { id = DROP_SOURCE_ATT_ZONES_ID, label = "Zones" },
+    { id = DROP_SOURCE_WIT_MOUNTS_ID, label = "Mounts", witCategory = "mounts", tabWidth = 76, alwaysVisible = true },
+    { id = DROP_SOURCE_WIT_PETS_ID, label = "Pets", witCategory = "pets", tabWidth = 68, alwaysVisible = true },
+    { id = DROP_SOURCE_WIT_TOYS_ID, label = "Toys", witCategory = "toys", alwaysVisible = true },
     { id = DROP_SOURCE_ATT_WORLD_ID, label = "World", hidden = true },
 }
 
@@ -293,6 +300,67 @@ local function GetATTBoEDropsData()
     return data
 end
 
+local function GetWITDropsData()
+    local data = NS.WITDropsData
+    if type(data) ~= "table" then
+        return { categories = {}, categoryCounts = {} }
+    end
+    return data
+end
+
+local function GetDropSourceOption(sourceID)
+    for _, option in ipairs(DROP_SOURCE_OPTIONS) do
+        if option.id == sourceID then
+            return option
+        end
+    end
+    return nil
+end
+
+local function GetWITDropRows(sourceID)
+    local option = GetDropSourceOption(sourceID)
+    if not option or not option.witCategory then
+        return nil, nil
+    end
+    local data = GetWITDropsData()
+    local rows = data.categories and data.categories[option.witCategory]
+    return type(rows) == "table" and rows or {}, option.witCategory
+end
+
+local function IsAlwaysVisibleWITSource(sourceID)
+    local option = GetDropSourceOption(sourceID)
+    return option and option.witCategory and option.alwaysVisible == true or false
+end
+
+local function IsWITPetsSource(sourceID)
+    return sourceID == DROP_SOURCE_WIT_PETS_ID
+end
+
+local function ApplyObservedDropsDefaultSort(frame, sourceID)
+    if not frame then
+        return
+    end
+
+    if IsWITPetsSource(sourceID) then
+        frame.sortKey = "location"
+        frame.sortAscending = true
+    else
+        frame.sortKey = DEFAULT_SORT_KEY
+        frame.sortAscending = false
+    end
+    frame.sortCriteria = {
+        { key = frame.sortKey, ascending = frame.sortAscending },
+    }
+end
+
+local function EnsureObservedDropsLocationGroupingSort(addon, frame)
+    if frame and IsWITPetsSource(frame.dropSourceID) then
+        addon:EnsureTableSortLeadingCriterion(frame, "location", true, {
+            validKeys = SORT_KEYS,
+        })
+    end
+end
+
 local function NormalizeDropSourceID(sourceID)
     for _, option in ipairs(DROP_SOURCE_OPTIONS) do
         if option.id == sourceID then
@@ -309,7 +377,7 @@ local function GetDropSourceLabel(sourceID)
             return option.label
         end
     end
-    return "Observed"
+    return "Session Observed"
 end
 
 local function IsObservedDropsScanStateActive(state)
@@ -641,13 +709,21 @@ local function GetItemInstantInfoByID(itemID)
 end
 
 local function RequestObservedItemData(addon, itemID)
+    local frame = addon and addon.observedDropsFrame
+    if frame then
+        frame.pendingItemDataRequests = frame.pendingItemDataRequests or {}
+        if frame.pendingItemDataRequests[itemID] then
+            return
+        end
+        frame.pendingItemDataRequests[itemID] = true
+    end
+
     if Item and type(Item.CreateFromItemID) == "function" then
         local item = Item:CreateFromItemID(itemID)
         if item and type(item.ContinueOnItemLoad) == "function" then
             item:ContinueOnItemLoad(function()
-                if addon.observedDropsFrame and addon.observedDropsFrame:IsShown() then
-                    addon.observedDropsFrame.itemCache = {}
-                    addon:RefreshObservedDropsWindow(false)
+                if type(addon.RefreshObservedDropItemData) == "function" then
+                    addon:RefreshObservedDropItemData(itemID)
                 end
             end)
             return
@@ -656,6 +732,8 @@ local function RequestObservedItemData(addon, itemID)
 
     if C_Item and type(C_Item.RequestLoadItemDataByID) == "function" then
         pcall(C_Item.RequestLoadItemDataByID, itemID)
+    elseif frame then
+        frame.pendingItemDataRequests[itemID] = nil
     end
 end
 
@@ -674,7 +752,17 @@ local function GetObservedDropItemDisplay(addon, drop)
     end
 
     local itemName, resolvedItemLink, itemQuality, itemIcon
-    if itemID then
+    local battlePetSpeciesID = itemLink and tonumber(string.match(itemLink, "battlepet:(%d+)")) or nil
+    if battlePetSpeciesID then
+        resolvedItemLink = itemLink
+        itemName = string.match(itemLink, "%[([^%]]+)%]")
+        itemQuality = tonumber(string.match(itemLink, "battlepet:%d+:%d+:(%d+)")) or drop.itemQuality or 3
+        if C_PetJournal and type(C_PetJournal.GetPetInfoBySpeciesID) == "function" then
+            local petName, petIcon = C_PetJournal.GetPetInfoBySpeciesID(battlePetSpeciesID)
+            itemName = petName or itemName
+            itemIcon = petIcon
+        end
+    elseif itemID then
         itemName, resolvedItemLink, itemQuality, _, _, _, _, _, _, itemIcon = GetItemInfoByID(itemID)
         if not itemIcon then
             itemIcon = select(5, GetItemInstantInfoByID(itemID))
@@ -687,12 +775,11 @@ local function GetObservedDropItemDisplay(addon, drop)
     end
     if not itemName and itemID then
         itemName = "Item " .. tostring(math.floor(itemID + 0.5))
-        if not drop.staticKnownDrop then
-            RequestObservedItemData(addon, itemID)
-        end
+        RequestObservedItemData(addon, itemID)
     end
 
-    if type(cache) == "table" then
+    local isResolved = resolvedItemLink ~= nil or (itemName and not string.match(itemName, "^Item %d+$"))
+    if type(cache) == "table" and isResolved then
         cache[cacheKey] = {
             itemName = itemName,
             itemLink = resolvedItemLink,
@@ -702,6 +789,63 @@ local function GetObservedDropItemDisplay(addon, drop)
     end
 
     return itemName, resolvedItemLink, itemQuality or drop.itemQuality, itemIcon
+end
+
+function GoldTracker:RefreshObservedDropItemData(itemID)
+    local frame = self.observedDropsFrame
+    local normalizedItemID = tonumber(itemID)
+    if not frame or not normalizedItemID then
+        return false
+    end
+    normalizedItemID = math.floor(normalizedItemID + 0.5)
+
+    if type(frame.pendingItemDataRequests) == "table" then
+        frame.pendingItemDataRequests[normalizedItemID] = nil
+    end
+    if type(frame.itemCache) == "table" then
+        frame.itemCache["item:" .. tostring(normalizedItemID)] = nil
+    end
+
+    local refreshed = false
+    local function RefreshRows(rows)
+        for index = #(rows or {}), 1, -1 do
+            local row = rows[index]
+            if tonumber(row.itemID) == normalizedItemID then
+                local itemName, itemLink, itemQuality, icon = GetObservedDropItemDisplay(self, row)
+                local minimumQuality = tonumber(row.minimumQuality)
+                local normalizedItemQuality = tonumber(itemQuality)
+                if minimumQuality and normalizedItemQuality and normalizedItemQuality < minimumQuality then
+                    table.remove(rows, index)
+                else
+                    row.itemName = itemName or row.itemName
+                    row.itemLink = itemLink or row.itemLink
+                    row.itemQuality = normalizedItemQuality or itemQuality or row.itemQuality
+                    row.iconTexture = icon or row.iconTexture
+                    row.icon = icon or row.icon
+                end
+                refreshed = true
+            end
+        end
+    end
+    RefreshRows(frame.scannedObservedDropsRows)
+    RefreshRows(type(frame.scanState) == "table" and frame.scanState.results or nil)
+
+    if refreshed and frame:IsShown() then
+        if C_Timer and type(C_Timer.After) == "function" then
+            if not frame.itemDataRefreshPending then
+                frame.itemDataRefreshPending = true
+                C_Timer.After(0, function()
+                    frame.itemDataRefreshPending = nil
+                    if frame:IsShown() then
+                        self:RefreshObservedDropsWindow(false)
+                    end
+                end)
+            end
+        else
+            self:RefreshObservedDropsWindow(false)
+        end
+    end
+    return refreshed
 end
 
 local function GetRawTSMValue(addon, itemLink, itemID, tsmKey)
@@ -836,6 +980,14 @@ local function SortRows(rows, sortKey, sortAscending, sortCriteria)
     end)
 end
 
+local function GetObservedDropLocationGroupLabel(row)
+    local locationLabel = tostring(row and row.locationLabel or "")
+    local parsedLabel = locationLabel:match("^%s*(.-)%s+[%d%.]+%s*,%s*[%d%.]+")
+    local groupLabel = parsedLabel and parsedLabel ~= "" and parsedLabel or locationLabel
+    groupLabel = string.match(groupLabel, "^%s*(.-)%s*$") or ""
+    return groupLabel ~= "" and groupLabel or "Unknown location"
+end
+
 local function SetHeaderColumn(button, listPanel, leftOffset, width)
     if not button or not listPanel then
         return
@@ -899,16 +1051,20 @@ local function ApplyObservedTableColumnLayout(frame)
     local availableWidth = GetObservedTableViewportWidth(frame)
     local fixedWidth =
         TRACKED_WIDTH
+        + ADD_WIDTH
         + EXPANSION_WIDTH
         + LOCATION_WIDTH
         + SOURCE_WIDTH
         + SEEN_WIDTH
         + QUANTITY_WIDTH
         + (VALUE_WIDTH * 4)
-        + DETAILS_WIDTH
-        + (COLUMN_GAP * 10)
-    local tableWidth = math.max(availableWidth, fixedWidth + ITEM_MIN_WIDTH + ROW_RIGHT_PADDING)
-    local itemWidth = math.max(ITEM_MIN_WIDTH, tableWidth - fixedWidth)
+        + (COLUMN_GAP * 11)
+    local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rows, "itemText", ITEM_MIN_WIDTH, {
+        padding = 8,
+        leadingWidth = ICON_SIZE + 7,
+    })
+    local tableWidth = math.max(availableWidth, fixedWidth + requiredItemWidth + ROW_RIGHT_PADDING)
+    local itemWidth = math.max(requiredItemWidth, tableWidth - fixedWidth)
     frame.tableWidth = tableWidth
     if frame.content then
         frame.content:SetWidth(tableWidth)
@@ -917,54 +1073,60 @@ local function ApplyObservedTableColumnLayout(frame)
 
     local horizontalOffset = GetObservedHorizontalOffset(frame)
     local trackedX = HEADER_LEFT_INSET
-    local expansionX = trackedX + TRACKED_WIDTH + COLUMN_GAP
-    local locationX = expansionX + EXPANSION_WIDTH + COLUMN_GAP
+    local addX = trackedX + TRACKED_WIDTH + COLUMN_GAP
+    local itemX = addX + ADD_WIDTH + COLUMN_GAP
+    local valueX = itemX + itemWidth + COLUMN_GAP
+    local locationX = valueX + VALUE_WIDTH + COLUMN_GAP
     local sourceX = locationX + LOCATION_WIDTH + COLUMN_GAP
-    local itemX = sourceX + SOURCE_WIDTH + COLUMN_GAP
-    local seenX = itemX + itemWidth + COLUMN_GAP
+    local seenX = sourceX + SOURCE_WIDTH + COLUMN_GAP
     local quantityX = seenX + SEEN_WIDTH + COLUMN_GAP
-    local valueX = quantityX + QUANTITY_WIDTH + COLUMN_GAP
-    local marketX = valueX + VALUE_WIDTH + COLUMN_GAP
+    local marketX = quantityX + QUANTITY_WIDTH + COLUMN_GAP
     local regionX = marketX + VALUE_WIDTH + COLUMN_GAP
     local averageX = regionX + VALUE_WIDTH + COLUMN_GAP
-    local detailsX = averageX + VALUE_WIDTH + COLUMN_GAP
+    local expansionX = averageX + VALUE_WIDTH + COLUMN_GAP
 
     SetHeaderColumn(frame.trackedHeaderButton, frame.listPanel, trackedX - horizontalOffset, TRACKED_WIDTH)
-    SetHeaderColumn(frame.expansionHeaderButton, frame.listPanel, expansionX - horizontalOffset, EXPANSION_WIDTH)
+    SetHeaderColumn(frame.addHeaderButton, frame.listPanel, addX - horizontalOffset, ADD_WIDTH)
+    SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
+    SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, VALUE_WIDTH)
     SetHeaderColumn(frame.locationHeaderButton, frame.listPanel, locationX - horizontalOffset, LOCATION_WIDTH)
     SetHeaderColumn(frame.sourceHeaderButton, frame.listPanel, sourceX - horizontalOffset, SOURCE_WIDTH)
-    SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
     SetHeaderColumn(frame.seenHeaderButton, frame.listPanel, seenX - horizontalOffset, SEEN_WIDTH)
     SetHeaderColumn(frame.quantityHeaderButton, frame.listPanel, quantityX - horizontalOffset, QUANTITY_WIDTH)
-    SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, VALUE_WIDTH)
     SetHeaderColumn(frame.marketHeaderButton, frame.listPanel, marketX - horizontalOffset, VALUE_WIDTH)
     SetHeaderColumn(frame.regionHeaderButton, frame.listPanel, regionX - horizontalOffset, VALUE_WIDTH)
     SetHeaderColumn(frame.averageHeaderButton, frame.listPanel, averageX - horizontalOffset, VALUE_WIDTH)
-    SetHeaderColumn(frame.detailsHeaderButton, frame.listPanel, detailsX - horizontalOffset, DETAILS_WIDTH)
+    SetHeaderColumn(frame.expansionHeaderButton, frame.listPanel, expansionX - horizontalOffset, EXPANSION_WIDTH)
 
     for _, row in ipairs(frame.rows or {}) do
         if row.trackedButton then
             row.trackedButton:ClearAllPoints()
-            row.trackedButton:SetPoint("LEFT", row, "LEFT", trackedX + 8 - horizontalOffset, 0)
+            row.trackedButton:SetPoint(
+                "LEFT",
+                row,
+                "LEFT",
+                trackedX + math.floor((TRACKED_WIDTH - 24) / 2) - horizontalOffset,
+                0
+            )
+        end
+        if row.addButton then
+            row.addButton:ClearAllPoints()
+            row.addButton:SetPoint("LEFT", row, "LEFT", addX + 2 - horizontalOffset, 0)
         end
         if row.icon then
             row.icon:ClearAllPoints()
             row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
         end
-        SetRowColumn(row.expansionText, row, expansionX - horizontalOffset, EXPANSION_WIDTH)
+        SetRowColumn(row.itemText, row, itemX + ICON_SIZE + 7 - horizontalOffset, math.max(1, itemWidth - ICON_SIZE - 7))
+        SetRowColumn(row.valueText, row, valueX - horizontalOffset, VALUE_WIDTH)
         SetRowColumn(row.locationText, row, locationX - horizontalOffset, LOCATION_WIDTH)
         SetRowColumn(row.sourceText, row, sourceX - horizontalOffset, SOURCE_WIDTH)
-        SetRowColumn(row.itemText, row, itemX + ICON_SIZE + 7 - horizontalOffset, math.max(1, itemWidth - ICON_SIZE - 7))
         SetRowColumn(row.seenText, row, seenX - horizontalOffset, SEEN_WIDTH)
         SetRowColumn(row.quantityText, row, quantityX - horizontalOffset, QUANTITY_WIDTH)
-        SetRowColumn(row.valueText, row, valueX - horizontalOffset, VALUE_WIDTH)
         SetRowColumn(row.marketText, row, marketX - horizontalOffset, VALUE_WIDTH)
         SetRowColumn(row.regionText, row, regionX - horizontalOffset, VALUE_WIDTH)
         SetRowColumn(row.averageText, row, averageX - horizontalOffset, VALUE_WIDTH)
-        if row.detailsButton then
-            row.detailsButton:ClearAllPoints()
-            row.detailsButton:SetPoint("LEFT", row, "LEFT", detailsX - horizontalOffset, 0)
-        end
+        SetRowColumn(row.expansionText, row, expansionX - horizontalOffset, EXPANSION_WIDTH)
     end
 end
 
@@ -1038,14 +1200,34 @@ local function AddKnownDropRow(addon, rows, item, source)
     end
     itemID = math.floor(itemID + 0.5)
 
+    local minimumQuality = tonumber(source.minimumQuality)
+    local knownQuality = item.itemQuality
+    if knownQuality == nil and item.petID then
+        knownQuality = 3
+    elseif knownQuality == nil and not minimumQuality then
+        knownQuality = 2
+    end
+    local itemLink = item.itemLink
+    local petID = tonumber(item.petID)
+    if petID and type(itemLink) == "string" then
+        itemLink = itemLink:gsub("(|Hbattlepet:)%d+", function(prefix)
+            return prefix .. tostring(math.floor(petID + 0.5))
+        end, 1)
+    end
     local drop = {
         itemID = itemID,
-        itemKey = (source.keyPrefix or "att") .. ":" .. tostring(source.keyID or "all") .. ":" .. tostring(itemID),
-        itemQuality = 2,
+        itemLink = itemLink,
+        petID = petID,
+        itemKey = item.recordID or ((source.keyPrefix or "att") .. ":" .. tostring(source.keyID or "all") .. ":" .. tostring(itemID)),
+        itemQuality = knownQuality,
         staticKnownDrop = true,
         valueSourceID = source.valueSourceID,
     }
     local itemName, itemLink, itemQuality, icon = GetObservedDropItemDisplay(addon, drop)
+    local normalizedItemQuality = tonumber(itemQuality)
+    if minimumQuality and normalizedItemQuality and normalizedItemQuality < minimumQuality then
+        return
+    end
     local prices = GetObservedRowPriceSnapshot(addon, drop, itemLink)
     local selectedValue = prices.selectedValue
     local minimumValue = tonumber(source.minimumValue) or 0
@@ -1056,9 +1238,11 @@ local function AddKnownDropRow(addon, rows, item, source)
     rows[#rows + 1] = {
         observedDropKey = drop.itemKey,
         itemID = itemID,
+        petID = tonumber(item.petID),
         itemLink = itemLink,
         itemName = itemName,
-        itemQuality = itemQuality or 2,
+        itemQuality = normalizedItemQuality or itemQuality or 2,
+        minimumQuality = minimumQuality,
         iconTexture = icon,
         icon = icon,
         expansionID = tostring(source.expansionID or "unknown"),
@@ -1066,7 +1250,7 @@ local function AddKnownDropRow(addon, rows, item, source)
         locationLabel = source.locationLabel or "Unknown",
         sourceText = source.sourceText or "ATT",
         seenCount = 0,
-        quantity = 0,
+        quantity = tonumber(item.quantity) or tonumber(source.quantity) or 0,
         value = prices.selectedValue,
         unitValue = prices.selectedValue,
         totalValue = prices.selectedValue,
@@ -1097,6 +1281,7 @@ local function AddKnownExpansionWorldRowsForSelectedZone(addon, rows, expansionI
         sourceText = "Expansion World Drop",
         farmingSourceType = "att-zone-world",
         minimumValue = minimumValue,
+        minimumQuality = MINIMUM_ZONE_DROP_QUALITY,
     }
     for _, item in ipairs(GetATTBoEDropsData().world and GetATTBoEDropsData().world.items or {}) do
         local itemID = tonumber(item and item.itemID)
@@ -1128,6 +1313,7 @@ local function AddKnownZoneRows(addon, rows, expansionFilterID, zoneFilterID, mi
                 sourceText = "Zone Drop",
                 farmingSourceType = "att-zone",
                 minimumValue = minimumValue,
+                minimumQuality = MINIMUM_ZONE_DROP_QUALITY,
             }
             local seenItemIDs = {}
             for _, item in ipairs(zone.items or {}) do
@@ -1161,6 +1347,25 @@ local function AddKnownWorldRows(addon, rows, expansionFilterID, minimumValue)
                 minimumValue = minimumValue,
             }
             AddKnownDropRow(addon, rows, item, source)
+        end
+    end
+end
+
+local function AddWITDropRows(addon, rows, dropSourceID, expansionFilterID, minimumValue)
+    local witRows = GetWITDropRows(dropSourceID)
+    for _, item in ipairs(witRows or {}) do
+        local expansionID = tostring(item.contentID or "unknown")
+        if expansionFilterID == EXPANSION_ALL_ID or expansionFilterID == expansionID then
+            AddKnownDropRow(addon, rows, item, {
+                keyPrefix = dropSourceID,
+                keyID = item.farmID,
+                expansionID = expansionID,
+                expansionLabel = item.expansionLabel or GetATTExpansionLabel(expansionID),
+                locationLabel = item.locationLabel or item.farmName or "Unknown",
+                sourceText = "WIT: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
+                farmingSourceType = dropSourceID,
+                minimumValue = minimumValue,
+            })
         end
     end
 end
@@ -1216,10 +1421,15 @@ end
 function GoldTracker:BuildObservedDropsRows()
     local frame = self.observedDropsFrame
     local observedDrops = GetObservedSavedSessionDrops(self)
-    local expansionFilterID = NormalizeExpansionFilter(self, frame and frame.expansionFilterID)
     local dropSourceID = NormalizeDropSourceID(frame and frame.dropSourceID)
+    local alwaysVisible = IsAlwaysVisibleWITSource(dropSourceID)
+    local expansionFilterID = alwaysVisible
+        and EXPANSION_ALL_ID
+        or NormalizeExpansionFilter(self, frame and frame.expansionFilterID)
     local zoneFilterID = NormalizeKnownZoneFilter(frame and frame.zoneFilterID, expansionFilterID)
-    local minimumValue = math.max(0, math.floor(tonumber(frame and frame.minimumValueCopper) or 0))
+    local minimumValue = alwaysVisible
+        and 0
+        or math.max(0, math.floor(tonumber(frame and frame.minimumValueCopper) or 0))
     local rows = {}
 
     if dropSourceID == DROP_SOURCE_OBSERVED_ID then
@@ -1230,6 +1440,8 @@ function GoldTracker:BuildObservedDropsRows()
         AddKnownZoneRows(self, rows, expansionFilterID, zoneFilterID, minimumValue)
     elseif dropSourceID == DROP_SOURCE_ATT_WORLD_ID then
         AddKnownWorldRows(self, rows, expansionFilterID, minimumValue)
+    elseif GetWITDropRows(dropSourceID) then
+        AddWITDropRows(self, rows, dropSourceID, expansionFilterID, minimumValue)
     end
 
     for _, row in ipairs(rows) do
@@ -1242,6 +1454,22 @@ function GoldTracker:BuildObservedDropsRows()
         frame and self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS) or nil
     )
     return rows
+end
+
+local function LoadAlwaysVisibleWITRows(addon)
+    local frame = addon and addon.observedDropsFrame
+    if not frame or not IsAlwaysVisibleWITSource(frame.dropSourceID) then
+        return false
+    end
+
+    frame.scanState = nil
+    frame.loadedObservedDropsScanCache = nil
+    frame.loadedObservedDropsScanCacheKey = nil
+    frame.editingObservedDropsScanCacheKey = nil
+    frame.scannedObservedDropsRows = addon:BuildObservedDropsRows()
+    frame.hasObservedDropsScanRun = true
+    frame.currentPage = 1
+    return true
 end
 
 local function LoadObservedSavedSessionRows(addon, skipRefresh, statusMessage)
@@ -1260,11 +1488,8 @@ local function LoadObservedSavedSessionRows(addon, skipRefresh, statusMessage)
     if HasObservedSavedSessionScan(addon) then
         frame.hasObservedDropsScanRun = true
         frame.scannedObservedDropsRows = addon:BuildObservedDropsRows()
-        if frame.progressBar then
-            local totalRows = #(frame.scannedObservedDropsRows or {})
-            frame.progressBar:SetMinMaxValues(0, math.max(1, totalRows))
-            frame.progressBar:SetValue(totalRows)
-        end
+        local totalRows = #(frame.scannedObservedDropsRows or {})
+        Theme:SetProgressBarProgress(frame, math.max(1, totalRows), math.max(1, totalRows))
         if frame.statusText then
             frame.statusText:SetText(statusMessage or string.format(
                 "Loaded saved-session observed list for %s: %d matching drops.",
@@ -1275,10 +1500,7 @@ local function LoadObservedSavedSessionRows(addon, skipRefresh, statusMessage)
     else
         frame.hasObservedDropsScanRun = false
         frame.scannedObservedDropsRows = nil
-        if frame.progressBar then
-            frame.progressBar:SetMinMaxValues(0, 1)
-            frame.progressBar:SetValue(0)
-        end
+        Theme:SetProgressBarProgress(frame, 0, 1)
         if frame.statusText then
             frame.statusText:SetText(statusMessage or "Observed list is empty. Press Scan saved sessions to build it from history.")
         end
@@ -1308,6 +1530,7 @@ local function AddKnownZoneScanCandidates(candidates, expansionFilterID, zoneFil
                 sourceText = "Zone Drop",
                 farmingSourceType = "att-zone",
                 minimumValue = minimumValue,
+                minimumQuality = MINIMUM_ZONE_DROP_QUALITY,
             }
             local seenItemIDs = {}
             for _, item in ipairs(zone.items or {}) do
@@ -1331,6 +1554,7 @@ local function AddKnownZoneScanCandidates(candidates, expansionFilterID, zoneFil
                     sourceText = "Expansion World Drop",
                     farmingSourceType = "att-zone-world",
                     minimumValue = minimumValue,
+                    minimumQuality = MINIMUM_ZONE_DROP_QUALITY,
                 }
                 for _, item in ipairs(GetATTBoEDropsData().world and GetATTBoEDropsData().world.items or {}) do
                     local itemID = tonumber(item and item.itemID)
@@ -1373,6 +1597,29 @@ local function AddKnownWorldScanCandidates(candidates, expansionFilterID, minimu
     end
 end
 
+local function AddWITDropScanCandidates(candidates, dropSourceID, expansionFilterID, minimumValue)
+    local witRows = GetWITDropRows(dropSourceID)
+    for _, item in ipairs(witRows or {}) do
+        local expansionID = tostring(item.contentID or "unknown")
+        if expansionFilterID == EXPANSION_ALL_ID or expansionFilterID == expansionID then
+            candidates[#candidates + 1] = {
+                kind = "known",
+                item = item,
+                source = {
+                    keyPrefix = dropSourceID,
+                    keyID = item.farmID,
+                    expansionID = expansionID,
+                    expansionLabel = item.expansionLabel or GetATTExpansionLabel(expansionID),
+                    locationLabel = item.locationLabel or item.farmName or "Unknown",
+                    sourceText = "WIT: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
+                    farmingSourceType = dropSourceID,
+                    minimumValue = minimumValue,
+                },
+            }
+        end
+    end
+end
+
 local function BuildObservedDropScanCandidates(addon)
     local frame = addon.observedDropsFrame
     local observedDrops = GetObservedSavedSessionDrops(addon)
@@ -1396,6 +1643,8 @@ local function BuildObservedDropScanCandidates(addon)
         AddKnownZoneScanCandidates(candidates, expansionFilterID, zoneFilterID, minimumValue)
     elseif dropSourceID == DROP_SOURCE_ATT_WORLD_ID then
         AddKnownWorldScanCandidates(candidates, expansionFilterID, minimumValue)
+    elseif GetWITDropRows(dropSourceID) then
+        AddWITDropScanCandidates(candidates, dropSourceID, expansionFilterID, minimumValue)
     end
 
     return candidates, expansionFilterID, dropSourceID, zoneFilterID, minimumValue
@@ -1532,6 +1781,8 @@ function GoldTracker:ClearObservedDropsScanResults()
     frame.priceCache = {}
     if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
         LoadObservedSavedSessionRows(self, true)
+    elseif IsAlwaysVisibleWITSource(frame.dropSourceID) then
+        LoadAlwaysVisibleWITRows(self)
     end
     if type(self.RefreshObservedDropsWindow) == "function" then
         self:RefreshObservedDropsWindow(true)
@@ -1547,10 +1798,7 @@ function GoldTracker:UpdateObservedDropsScanProgress()
 
     local scanned = tonumber(state.scannedDrops) or 0
     local total = math.max(1, tonumber(state.totalDrops) or 1)
-    if frame.progressBar then
-        frame.progressBar:SetMinMaxValues(0, total)
-        frame.progressBar:SetValue(math.min(scanned, total))
-    end
+    Theme:SetProgressBarProgress(frame, scanned, total)
     if frame.statusText then
         frame.statusText:SetText(string.format(
             "Scanning %s (%s): %d / %d drops, %d matches",
@@ -1604,10 +1852,7 @@ function GoldTracker:FinishObservedDropsScan()
         frame.stopScanButton:SetEnabled(false)
         frame.stopScanButton:SetAlpha(0.45)
     end
-    if frame.progressBar then
-        local _, maximum = frame.progressBar:GetMinMaxValues()
-        frame.progressBar:SetValue(maximum or 1)
-    end
+    Theme:SetProgressBarProgress(frame, 1, 1)
     if frame.statusText then
         frame.statusText:SetText(string.format(
             "Scan complete for %s (%s): %d matching drops.",
@@ -1710,6 +1955,12 @@ function GoldTracker:StartObservedDropsScan()
     if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
         LoadObservedSavedSessionRows(self, false)
         return
+    elseif IsAlwaysVisibleWITSource(frame.dropSourceID) then
+        frame.itemCache = {}
+        frame.priceCache = {}
+        LoadAlwaysVisibleWITRows(self)
+        self:RefreshObservedDropsWindow(true)
+        return
     end
     frame.itemCache = {}
     frame.priceCache = {}
@@ -1722,10 +1973,7 @@ function GoldTracker:StartObservedDropsScan()
     if totalDrops <= 0 then
         frame.hasObservedDropsScanRun = false
         frame.scannedObservedDropsRows = nil
-        if frame.progressBar then
-            frame.progressBar:SetMinMaxValues(0, 1)
-            frame.progressBar:SetValue(0)
-        end
+        Theme:SetProgressBarProgress(frame, 0, 1)
         if frame.statusText then
             frame.statusText:SetText("No drops are available for the selected filters.")
         end
@@ -1754,10 +2002,7 @@ function GoldTracker:StartObservedDropsScan()
     }
     frame.hasObservedDropsScanRun = true
     frame.scannedObservedDropsRows = {}
-    if frame.progressBar then
-        frame.progressBar:SetMinMaxValues(0, math.max(1, totalDrops))
-        frame.progressBar:SetValue(0)
-    end
+    Theme:SetProgressBarProgress(frame, 0, totalDrops)
     if frame.scanButton then
         frame.scanButton:SetEnabled(false)
         frame.scanButton:SetText("Scanning")
@@ -1812,6 +2057,7 @@ local function CloneObservedDropResultForCache(row)
         itemLink = row.itemLink,
         itemName = row.itemName,
         itemQuality = tonumber(row.itemQuality),
+        minimumQuality = tonumber(row.minimumQuality),
         icon = row.icon or row.iconTexture,
         iconTexture = row.iconTexture or row.icon,
         expansionID = row.expansionID,
@@ -1867,7 +2113,10 @@ local function GetObservedDropsSavedScanEntries(addon)
         return entries
     end
     for key, entry in pairs(cache) do
-        if type(entry) == "table" and type(entry.results) == "table" then
+        if type(entry) == "table"
+            and type(entry.results) == "table"
+            and NormalizeDropSourceID(entry.dropSourceID) ~= DROP_SOURCE_OBSERVED_ID
+        then
             entries[#entries + 1] = {
                 key = key,
                 entry = entry,
@@ -1885,10 +2134,19 @@ function GoldTracker:SaveObservedDropsScanCache(state, replaceCacheKey)
     if type(self.db) ~= "table" or type(state) ~= "table" or type(state.results) ~= "table" then
         return nil
     end
-
-    if type(self.db.observedDropsScanCache) ~= "table" then
-        self.db.observedDropsScanCache = {}
+    if NormalizeDropSourceID(state.dropSourceID) == DROP_SOURCE_OBSERVED_ID then
+        return nil
     end
+
+    if type(self.db.observedDropsShared) ~= "table" then
+        self.db.observedDropsShared = {}
+    end
+    if type(self.db.observedDropsShared.scanCache) ~= "table" then
+        self.db.observedDropsShared.scanCache = type(self.db.observedDropsScanCache) == "table"
+            and self.db.observedDropsScanCache
+            or {}
+    end
+    self.db.observedDropsScanCache = self.db.observedDropsShared.scanCache
 
     local cacheKey = BuildObservedDropsScanCacheKey(self, state)
     if type(replaceCacheKey) == "string" and replaceCacheKey ~= "" and replaceCacheKey ~= cacheKey then
@@ -1928,7 +2186,11 @@ end
 
 function GoldTracker:SaveCurrentObservedDropsScan()
     local frame = self.observedDropsFrame
-    if not frame or IsObservedDropsScanStateActive(frame.scanState) then
+    if not frame
+        or NormalizeDropSourceID(frame.dropSourceID) == DROP_SOURCE_OBSERVED_ID
+        or IsAlwaysVisibleWITSource(frame.dropSourceID)
+        or IsObservedDropsScanStateActive(frame.scanState)
+    then
         return
     end
 
@@ -2008,11 +2270,8 @@ function GoldTracker:OpenObservedDropsSavedScan(cacheKey)
         end
     end
     frame.scannedObservedDropsRows = loadedResults
-    if frame.progressBar then
-        local totalDrops = math.max(1, tonumber(entry.totalDrops) or #loadedResults or 1)
-        frame.progressBar:SetMinMaxValues(0, totalDrops)
-        frame.progressBar:SetValue(totalDrops)
-    end
+    local totalDrops = math.max(1, tonumber(entry.totalDrops) or #loadedResults or 1)
+    Theme:SetProgressBarProgress(frame, totalDrops, totalDrops)
     if frame.statusText then
         frame.statusText:SetText(string.format(
             "Loaded saved scan for %s (%s): %d matching drops.",
@@ -2055,13 +2314,32 @@ function GoldTracker:OpenObservedDropsNewScan()
     frame.editingObservedDropsScanCacheKey = nil
     frame.observedDropsNavigationTab = "new"
     frame.currentPage = 1
-    if frame.progressBar then
-        frame.progressBar:SetMinMaxValues(0, 1)
-        frame.progressBar:SetValue(0)
-    end
+    Theme:SetProgressBarProgress(frame, 0, 1)
     if frame.statusText then
         frame.statusText:SetText("Ready.")
     end
+    self:SetObservedDropsWindowView("scan")
+end
+
+function GoldTracker:SetObservedDropsSourceTab(sourceID)
+    local frame = self.observedDropsFrame
+    local option = GetDropSourceOption(sourceID)
+    if not frame or not option or option.hidden then
+        return
+    end
+
+    local sourceChanged = frame.dropSourceID ~= option.id
+    frame.dropSourceID = option.id
+    if sourceChanged then
+        ApplyObservedDropsDefaultSort(frame, option.id)
+    end
+    frame.observedDropsNavigationTab = "new"
+    frame.zoneFilterID = NormalizeKnownZoneFilter(frame.zoneFilterID, frame.expansionFilterID)
+    if self.db then
+        self.db.observedDropsSourceFilter = option.id
+        self.db.observedDropsZoneFilter = frame.zoneFilterID
+    end
+    self:ClearObservedDropsScanResults()
     self:SetObservedDropsWindowView("scan")
 end
 
@@ -2126,10 +2404,10 @@ function GoldTracker:RefreshObservedDropsNavigationTabs()
     frame.observedDropsNavigationTab = activeTab
 
     if frame.savedScansTabButton then
-        frame.savedScansTabButton:SetPalette(activeTab == "saved" and "primary" or "neutral")
+        frame.savedScansTabButton:SetPalette(frame.observedDropsViewID ~= "scan" and "primary" or "neutral")
     end
-    if frame.newScanTabButton then
-        frame.newScanTabButton:SetPalette(activeTab == "new" and "primary" or "neutral")
+    for sourceID, button in pairs(frame.sourceTabButtons or {}) do
+        button:SetPalette(frame.observedDropsViewID == "scan" and frame.dropSourceID == sourceID and "primary" or "neutral")
     end
 end
 
@@ -2160,6 +2438,9 @@ function GoldTracker:SetObservedDropsWindowView(viewID)
     if frame.metaText then
         frame.metaText:SetShown(showScan)
     end
+    if frame.locationGroupsControl then
+        frame.locationGroupsControl:SetShown(showScan and IsWITPetsSource(frame.dropSourceID))
+    end
     if not showScan then
         SetObservedControlShown(frame.prevPageButton, false)
         SetObservedControlShown(frame.nextPageButton, false)
@@ -2170,12 +2451,36 @@ function GoldTracker:SetObservedDropsWindowView(viewID)
     if showScan then
         if NormalizeDropSourceID(frame.dropSourceID) == DROP_SOURCE_OBSERVED_ID then
             LoadObservedSavedSessionRows(self, true)
+        elseif IsAlwaysVisibleWITSource(frame.dropSourceID) then
+            LoadAlwaysVisibleWITRows(self)
         end
         self:RefreshObservedDropsWindowControls()
         self:RefreshObservedDropsWindow(true)
     else
         self:RefreshObservedDropsSavedScansWindow()
     end
+end
+
+local function GetObservedDropsListMaximizeTarget(addon, frame)
+    local explorer = addon and addon.explorerFrame
+    if explorer and explorer.contentFrame and frame and type(frame.GetParent) == "function"
+        and frame:GetParent() == explorer.contentFrame
+    then
+        return explorer
+    end
+    return frame
+end
+
+function GoldTracker:ToggleObservedDropsListMaximized()
+    local frame = self.observedDropsFrame
+    local target = GetObservedDropsListMaximizeTarget(self, frame)
+    if not target or not Theme or type(Theme.ToggleWindowMaximized) ~= "function" then
+        return false
+    end
+
+    local isMaximized = Theme:ToggleWindowMaximized(target)
+    self:RefreshObservedDropsWindowControls()
+    return isMaximized
 end
 
 function GoldTracker:RefreshObservedDropsSavedScansWindow()
@@ -2315,6 +2620,54 @@ function GoldTracker:RefreshObservedDropsWindowControls()
         UIDropDownMenu_SetSelectedValue(frame.dropSourceDropdown, frame.dropSourceID)
         UIDropDownMenu_SetText(frame.dropSourceDropdown, GetDropSourceLabel(frame.dropSourceID))
     end
+    for sourceID, button in pairs(frame.sourceTabButtons or {}) do
+        button:SetPalette(frame.observedDropsViewID == "scan" and sourceID == frame.dropSourceID and "primary" or "neutral")
+    end
+
+    local isAlwaysVisible = IsAlwaysVisibleWITSource(frame.dropSourceID)
+    if frame.addHeaderButton and frame.addHeaderButton.text then
+        frame.addHeaderButton.text:SetText(
+            (frame.dropSourceID == DROP_SOURCE_WIT_MOUNTS_ID
+                or frame.dropSourceID == DROP_SOURCE_WIT_PETS_ID
+                or frame.dropSourceID == DROP_SOURCE_WIT_TOYS_ID)
+                and "Map"
+                or "Add"
+        )
+    end
+    local showFilters = not isAlwaysVisible
+    local showProgress = not isAlwaysVisible and frame.progressComplete ~= true
+    local showLocationGroups = frame.observedDropsViewID == "scan" and IsWITPetsSource(frame.dropSourceID)
+    if frame.locationGroupsControl then
+        frame.locationGroupsControl:SetShown(showLocationGroups)
+    end
+    if frame.locationGroupsCheckbox then
+        frame.locationGroupsCheckbox:SetChecked(self:IsCollapsedLocationHeadersEnabled())
+    end
+    SetObservedControlShown(frame.valueSourceLabel, showFilters)
+    SetObservedControlShown(frame.valueSourceDropdown, showFilters)
+    SetObservedControlShown(frame.minimumValueLabel, showFilters)
+    SetObservedControlShown(frame.minimumValueInput, showFilters)
+    SetObservedControlShown(frame.expansionLabel, showFilters)
+    SetObservedControlShown(frame.expansionDropdown, showFilters)
+    if frame.controlsPanel then
+        frame.controlsPanel:SetHeight(isAlwaysVisible and 48 or (showProgress and 150 or 118))
+    end
+    if frame.progressBackdrop then
+        SetObservedControlShown(frame.progressBackdrop, showProgress)
+    end
+    if frame.statusText and frame.controlsPanel then
+        frame.statusText:ClearAllPoints()
+        if isAlwaysVisible then
+            frame.statusText:SetPoint("TOPLEFT", frame.controlsPanel, "TOPLEFT", 14, -16)
+            frame.statusText:SetPoint("TOPRIGHT", frame.controlsPanel, "TOPRIGHT", -14, -16)
+        elseif showProgress and frame.progressBackdrop then
+            frame.statusText:SetPoint("TOPLEFT", frame.progressBackdrop, "BOTTOMLEFT", 0, -8)
+            frame.statusText:SetPoint("TOPRIGHT", frame.progressBackdrop, "BOTTOMRIGHT", 0, -8)
+        else
+            frame.statusText:SetPoint("TOPLEFT", frame.controlsPanel, "TOPLEFT", 14, -96)
+            frame.statusText:SetPoint("TOPRIGHT", frame.controlsPanel, "TOPRIGHT", -14, -96)
+        end
+    end
 
     frame.expansionFilterID = NormalizeExpansionFilter(self, frame.expansionFilterID)
     local expansionLabel = "All expansions"
@@ -2330,7 +2683,7 @@ function GoldTracker:RefreshObservedDropsWindowControls()
     end
 
     frame.zoneFilterID = NormalizeKnownZoneFilter(frame.zoneFilterID, frame.expansionFilterID)
-    local showZoneFilter = frame.dropSourceID == DROP_SOURCE_ATT_ZONES_ID
+    local showZoneFilter = showFilters and frame.dropSourceID == DROP_SOURCE_ATT_ZONES_ID
     SetObservedControlShown(frame.zoneLabel, showZoneFilter)
     if frame.zoneDropdown then
         SetObservedControlShown(frame.zoneDropdown, showZoneFilter)
@@ -2348,6 +2701,13 @@ function GoldTracker:RefreshObservedDropsWindowControls()
             end
         end
     end
+    if frame.maximizeListButton then
+        local maximizeTarget = GetObservedDropsListMaximizeTarget(self, frame)
+        SetObservedControlShown(frame.maximizeListButton, showZoneFilter)
+        frame.maximizeListButton:SetText(
+            maximizeTarget and maximizeTarget.goldTrackerIsMaximized == true and "Restore list" or "Maximize list"
+        )
+    end
 
     if frame.minimumValueInput and not frame.minimumValueInput:HasFocus() then
         frame.minimumValueInput:SetText(FormatGoldInput(self, frame.minimumValueCopper or 0))
@@ -2356,29 +2716,51 @@ function GoldTracker:RefreshObservedDropsWindowControls()
     local isScanning = IsObservedDropsScanStateActive(frame.scanState)
     local isObservedSource = frame.dropSourceID == DROP_SOURCE_OBSERVED_ID
     if frame.scanButton then
-        SetObservedControlShown(frame.scanButton, not isObservedSource)
+        SetObservedControlShown(frame.scanButton, showFilters and not isObservedSource)
         frame.scanButton:SetEnabled(not isScanning)
         frame.scanButton:SetText(isScanning and "Scanning" or "Scan")
     end
     if frame.stopScanButton then
-        SetObservedControlShown(frame.stopScanButton, not isObservedSource)
+        SetObservedControlShown(frame.stopScanButton, showFilters and not isObservedSource)
         frame.stopScanButton:SetEnabled(isScanning)
         frame.stopScanButton:SetAlpha(isScanning and 1 or 0.45)
     end
     local hasRows = type(frame.scannedObservedDropsRows) == "table" and #frame.scannedObservedDropsRows > 0
     if frame.saveScanButton then
-        SetObservedControlShown(frame.saveScanButton, not isObservedSource)
-        frame.saveScanButton:SetEnabled(not isScanning)
-        frame.saveScanButton:SetAlpha(not isScanning and 1 or 0.45)
+        SetObservedControlShown(frame.saveScanButton, showFilters and not isObservedSource)
+        frame.saveScanButton:SetEnabled(not isScanning and hasRows and not isObservedSource)
+        frame.saveScanButton:SetAlpha((not isScanning and hasRows and not isObservedSource) and 1 or 0.45)
     end
     if frame.refreshButton then
+        SetObservedControlShown(frame.refreshButton, showFilters)
         frame.refreshButton:SetEnabled(not isScanning and hasRows)
         frame.refreshButton:SetAlpha((not isScanning and hasRows) and 1 or 0.45)
     end
     if frame.scanSavedSessionsButton then
-        SetObservedControlShown(frame.scanSavedSessionsButton, isObservedSource)
+        SetObservedControlShown(frame.scanSavedSessionsButton, showFilters and isObservedSource)
         frame.scanSavedSessionsButton:SetEnabled(not isScanning)
         frame.scanSavedSessionsButton:SetAlpha((not isScanning and isObservedSource) and 1 or 0.45)
+    end
+    if frame.controlsPanel then
+        if isObservedSource then
+            Theme:LayoutExplorerActionButtons(
+                frame.controlsPanel,
+                { frame.scanSavedSessionsButton, frame.refreshButton },
+                { top = true, offsetY = -62 }
+            )
+        else
+            Theme:LayoutExplorerActionButtons(
+                frame.controlsPanel,
+                {
+                    frame.scanButton,
+                    frame.saveScanButton,
+                    frame.stopScanButton,
+                    frame.refreshButton,
+                    frame.maximizeListButton,
+                },
+                { top = true, offsetY = -62 }
+            )
+        end
     end
     if isScanning then
         self:UpdateObservedDropsScanProgress()
@@ -2398,7 +2780,14 @@ function GoldTracker:RefreshObservedDropsWindowControls()
     end
     if frame.hasObservedDropsScanRun and type(frame.scannedObservedDropsRows) == "table" then
         if frame.statusText then
-            if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
+            if isAlwaysVisible then
+                local _, category = GetWITDropRows(frame.dropSourceID)
+                frame.statusText:SetText(string.format(
+                    "Showing all %d WIT %s entries.",
+                    #frame.scannedObservedDropsRows,
+                    category or "drop"
+                ))
+            elseif frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
                 frame.statusText:SetText(string.format(
                     "Showing saved-session observed list for %s: %d matching drops.",
                     GetExpansionFilterLabel(self, frame.expansionFilterID),
@@ -2429,6 +2818,14 @@ function GoldTracker:RefreshObservedDropsWindowControls()
             frame.statusText:SetText(string.format(
                 "Showing world-drop candidates: %d item sources. Choose All expansions to browse the world pool.",
                 tonumber(data.worldItemCount) or 0
+            ))
+        elseif GetWITDropRows(frame.dropSourceID) then
+            local rows, category = GetWITDropRows(frame.dropSourceID)
+            frame.statusText:SetText(string.format(
+                "WIT %s snapshot: %d %s item sources. Choose filters, then press Scan.",
+                tostring(GetWITDropsData().sourceVersion or "unknown"),
+                #rows,
+                category or "drop"
             ))
         elseif HasObservedSavedSessionScan(self) then
             frame.statusText:SetText("Showing the saved observed list from your last saved-session scan.")
@@ -2466,7 +2863,8 @@ function GoldTracker:UpdateObservedDropsSortHeaderState()
         self:AttachTableSortHeaderTooltip(button, button and button.sortLabel)
         local criterion, priority = self:GetTableSortCriterion(criteria, sortKey)
         if button and button.text and button.sortLabel then
-            button.text:SetText(showPriority and criterion and (button.sortLabel .. " " .. priority) or button.sortLabel)
+            local displayLabel = button.compactSortLabel or button.sortLabel
+            button.text:SetText(showPriority and criterion and (displayLabel .. " " .. priority) or displayLabel)
         end
         if button and button.sortIcon then
             if criterion then
@@ -2493,6 +2891,7 @@ function GoldTracker:ToggleObservedDropsSort(sortKey)
         normalizedSortKey == "itemName" or normalizedSortKey == "expansion",
         { validKeys = SORT_KEYS }
     )
+    EnsureObservedDropsLocationGroupingSort(self, frame)
 
     frame.currentPage = 1
     self:RefreshObservedDropsWindow(false)
@@ -2501,6 +2900,72 @@ end
 function GoldTracker:GetObservedDropsPageCount(rowCount)
     local totalRows = math.max(0, math.floor(tonumber(rowCount) or 0))
     return math.max(1, math.ceil(totalRows / ROWS_PER_PAGE))
+end
+
+function GoldTracker:ConfigureObservedDropRowActionButton(button, row, dropSourceID)
+    if not button or type(button.SetScript) ~= "function" then
+        return nil
+    end
+
+    local itemID = row and tonumber(row.itemID)
+    local petID = row and tonumber(row.petID)
+    local recordID = row and row.observedDropKey
+    local normalizedSourceID = NormalizeDropSourceID(dropSourceID)
+    local isMountSource = normalizedSourceID == DROP_SOURCE_WIT_MOUNTS_ID
+    local isPetSource = normalizedSourceID == DROP_SOURCE_WIT_PETS_ID
+    local isToySource = normalizedSourceID == DROP_SOURCE_WIT_TOYS_ID
+    local isResearchedSource = isMountSource or isPetSource or isToySource
+    local hasFarm = false
+    if isPetSource and petID and type(self.HasFarmForPet) == "function" then
+        hasFarm = self:HasFarmForPet(petID) == true
+    elseif (isPetSource or isToySource) and recordID and type(self.HasFarmForRecordID) == "function" then
+        hasFarm = self:HasFarmForRecordID(recordID) == true
+    elseif isResearchedSource and itemID and type(self.HasFarmForItem) == "function" then
+        hasFarm = self:HasFarmForItem(itemID) == true
+    end
+
+    if not hasFarm then
+        button:SetText("Add")
+        if type(button.SetPalette) == "function" then
+            button:SetPalette("neutral")
+        end
+        self:ConfigureCustomFarmAddButton(button, "drops")
+        return "add"
+    end
+
+    local addon = self
+    button:SetText("Map")
+    if type(button.SetPalette) == "function" then
+        button:SetPalette("primary")
+    end
+    button:SetScript("OnClick", function(control)
+        local targetRow = type(control.GetParent) == "function" and control:GetParent() or row
+        local targetItemID = targetRow and tonumber(targetRow.itemID) or itemID
+        local targetPetID = targetRow and tonumber(targetRow.petID) or petID
+        local targetRecordID = targetRow and targetRow.observedDropKey or recordID
+        if isPetSource and targetPetID and type(addon.OpenFarmDetailsForPet) == "function" then
+            addon:OpenFarmDetailsForPet(targetPetID)
+        elseif (isPetSource or isToySource) and targetRecordID and type(addon.OpenFarmDetailsForRecordID) == "function" then
+            addon:OpenFarmDetailsForRecordID(targetRecordID)
+        elseif targetItemID and type(addon.OpenFarmDetailsForItem) == "function" then
+            addon:OpenFarmDetailsForItem(targetItemID)
+        end
+    end)
+    button:SetScript("OnEnter", function(control)
+        if not GameTooltip then
+            return
+        end
+        GameTooltip:SetOwner(control, "ANCHOR_CURSOR")
+        GameTooltip:AddLine("Open researched farm map", 1.0, 0.82, 0.18)
+        GameTooltip:AddLine("Shows pins, routes, farming details, tips, and research sources.", 0.72, 0.86, 1.0, true)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    return "map"
 end
 
 function GoldTracker:SetObservedDropsPage(page)
@@ -2578,12 +3043,18 @@ function GoldTracker:GetObservedDropsWindowRow(index)
     row.regionText = CreateCell("RIGHT")
     row.averageText = CreateCell("RIGHT")
 
-    local detailsButton = CreateObservedButton(row, DETAILS_WIDTH - 8, 20, "Details", "neutral")
-    BindObservedResultsMouseWheel(detailsButton, frame)
-    detailsButton:SetScript("OnClick", function(self)
-        GoldTracker:OpenInventoryItemDetailsWindow(self:GetParent())
-    end)
-    row.detailsButton = detailsButton
+    local locationGroupText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    locationGroupText:SetPoint("LEFT", row, "LEFT", 10, 0)
+    locationGroupText:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+    locationGroupText:SetJustifyH("LEFT")
+    locationGroupText:SetWordWrap(false)
+    locationGroupText:Hide()
+    row.locationGroupText = locationGroupText
+
+    local addButton = CreateObservedButton(row, ADD_WIDTH - 4, 20, "Add", "neutral")
+    BindObservedResultsMouseWheel(addButton, frame)
+    GoldTracker:ConfigureCustomFarmAddButton(addButton, "drops")
+    row.addButton = addButton
 
     local divider = row:CreateTexture(nil, "ARTWORK")
     divider:SetColorTexture(1, 1, 1, 0.045)
@@ -2592,11 +3063,11 @@ function GoldTracker:GetObservedDropsWindowRow(index)
     divider:SetHeight(1)
     row.divider = divider
 
-    row:SetScript("OnEnter", function(self)
+    local itemTooltipTarget = self:CreateItemTooltipTarget(row, row.itemText, icon, function(self, target)
         if (type(self.itemLink) ~= "string" or self.itemLink == "") and not self.itemID then
             return
         end
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
         if type(self.itemLink) == "string" and self.itemLink ~= "" then
             GameTooltip:SetHyperlink(self.itemLink)
         elseif type(GameTooltip.SetItemByID) == "function" then
@@ -2615,13 +3086,28 @@ function GoldTracker:GetObservedDropsWindowRow(index)
         end
         GameTooltip:AddDoubleLine("Price source", priceSourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Click Details for price history.", 0.72, 0.86, 1.0)
+        GameTooltip:AddLine("Click the row for price history.", 0.72, 0.86, 1.0)
+        if type(GoldTracker.AddFarmActionTooltip) == "function" then
+            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
+        end
         GameTooltip:Show()
     end)
-    row:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    row:SetScript("OnClick", function(self)
+    row.itemTooltipTarget = itemTooltipTarget
+    BindObservedResultsMouseWheel(itemTooltipTarget, frame)
+    row:SetScript("OnClick", function(self, button)
+        if self.isLocationGroupHeader then
+            frame.collapsedLocationGroups = frame.collapsedLocationGroups or {}
+            GoldTracker:ToggleLocationGroupCollapsed(
+                frame.collapsedLocationGroups,
+                self.locationGroupKey,
+                self.locationGroupCollapsed
+            )
+            GoldTracker:RefreshObservedDropsWindow(false)
+            return
+        end
+        if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
+            return
+        end
         if GoldTracker:HandleModifiedItemClickIfModified(self) then
             return
         end
@@ -2657,12 +3143,21 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
     for _, row in ipairs(rows) do
         row.tracked = type(self.IsFarmingItemFavorite) == "function" and self:IsFarmingItemFavorite(row)
     end
+    EnsureObservedDropsLocationGroupingSort(self, frame)
     SortRows(rows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
 
-    local totalPages = self:GetObservedDropsPageCount(#rows)
+    local showLocationHeaders = IsWITPetsSource(frame.dropSourceID) and self:IsCollapsedLocationHeadersEnabled()
+    local displayRows = self:BuildLocationGroupedDisplayRows(
+        rows,
+        GetObservedDropLocationGroupLabel,
+        frame.collapsedLocationGroups,
+        showLocationHeaders
+    )
+
+    local totalPages = self:GetObservedDropsPageCount(#displayRows)
     frame.currentPage = math.max(1, math.min(frame.currentPage or 1, totalPages))
     local startIndex = ((frame.currentPage - 1) * ROWS_PER_PAGE) + 1
-    local endIndex = math.min(#rows, startIndex + ROWS_PER_PAGE - 1)
+    local endIndex = math.min(#displayRows, startIndex + ROWS_PER_PAGE - 1)
     local visibleRowCount = math.max(0, endIndex - startIndex + 1)
     local yOffset = 0
     local totalValue = 0
@@ -2670,12 +3165,61 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         totalValue = totalValue + math.max(0, tonumber(result.value) or 0)
     end
     for resultIndex = startIndex, endIndex do
-        local result = rows[resultIndex]
+        local result = displayRows[resultIndex]
         local visibleIndex = resultIndex - startIndex + 1
         local row = self:GetObservedDropsWindowRow(visibleIndex)
         if row then
+            row.isLocationGroupHeader = result.isLocationGroupHeader == true
+            row.locationGroupKey = result.locationGroupKey
+            row.locationGroupCollapsed = result.collapsed == true
+            if row.locationGroupText then
+                row.locationGroupText:SetShown(row.isLocationGroupHeader)
+            end
+            if row.itemTooltipTarget then
+                row.itemTooltipTarget:SetShown(not row.isLocationGroupHeader)
+            end
+            for _, control in ipairs({
+                row.trackedButton,
+                row.icon,
+                row.expansionText,
+                row.locationText,
+                row.sourceText,
+                row.itemText,
+                row.seenText,
+                row.quantityText,
+                row.valueText,
+                row.marketText,
+                row.regionText,
+                row.averageText,
+                row.addButton,
+            }) do
+                control:SetShown(not row.isLocationGroupHeader)
+            end
+            if row.isLocationGroupHeader then
+                row.observedDropKey = nil
+                row.itemID = nil
+                row.petID = nil
+                row.itemName = nil
+                row.itemLink = nil
+                row.locationGroupText:SetText(string.format(
+                    "%s %s (%d)",
+                    result.collapsed and "+" or "-",
+                    result.locationGroupLabel or "Unknown location",
+                    tonumber(result.itemCount) or 0
+                ))
+                row.locationGroupText:SetTextColor(1.0, 0.82, 0.18)
+                if row.background then
+                    row.background:SetColorTexture(1.0, 0.82, 0.18, 0.10)
+                end
+                if row.divider then
+                    row.divider:SetShown(true)
+                    row.divider:SetColorTexture(1.0, 0.82, 0.18, 0.42)
+                    row.divider:SetHeight(1)
+                end
+            else
             row.observedDropKey = result.observedDropKey
             row.itemID = result.itemID
+            row.petID = result.petID
             row.itemName = result.itemName
             row.itemLink = result.itemLink
             row.itemQuality = result.itemQuality
@@ -2699,6 +3243,8 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             row.farmingSourceType = result.farmingSourceType
             row.bossName = result.bossName
             row.instanceName = result.instanceName
+
+            self:ConfigureObservedDropRowActionButton(row.addButton, row, frame.dropSourceID)
 
             row.trackedButton:SetText(result.tracked and "-" or "+")
             if row.trackedButton.SetSelected then
@@ -2724,7 +3270,21 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
                 row.background:SetColorTexture(1, 1, 1, resultIndex % 2 == 0 and 0.045 or 0.022)
             end
             if row.divider then
-                row.divider:SetShown(visibleIndex < visibleRowCount)
+                local nextResult = displayRows[resultIndex + 1]
+                local endsLocationGroup = IsWITPetsSource(frame.dropSourceID)
+                    and NormalizeSortKey(frame.sortKey) == "location"
+                    and nextResult
+                    and not nextResult.isLocationGroupHeader
+                    and GetObservedDropLocationGroupLabel(result) ~= GetObservedDropLocationGroupLabel(nextResult)
+                row.divider:SetShown(resultIndex < #displayRows)
+                if endsLocationGroup then
+                    row.divider:SetColorTexture(1.0, 0.82, 0.18, 0.42)
+                    row.divider:SetHeight(2)
+                else
+                    row.divider:SetColorTexture(1, 1, 1, 0.045)
+                    row.divider:SetHeight(1)
+                end
+            end
             end
 
             row:ClearAllPoints()
@@ -2739,7 +3299,6 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             end
         end
     end
-
     for index = (visibleRowCount + 1), #(frame.rows or {}) do
         if frame.rows[index] then
             frame.rows[index]:Hide()
@@ -2749,9 +3308,13 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
     frame.content:SetHeight(math.max(1, yOffset))
     if frame.emptyText then
         if #rows == 0 then
-            frame.emptyText:SetText(frame.hasObservedDropsScanRun
-                and "No drops match the selected filters."
-                or "Choose filters, then press Scan to build the drops list.")
+            if IsAlwaysVisibleWITSource(frame.dropSourceID) then
+                frame.emptyText:SetText("No WIT entries are available for this category.")
+            else
+                frame.emptyText:SetText(frame.hasObservedDropsScanRun
+                    and "No drops match the selected filters."
+                    or "Choose filters, then press Scan to build the drops list.")
+            end
             frame.emptyText:Show()
         else
             frame.emptyText:Hide()
@@ -2764,19 +3327,35 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             storedCount = storedCount + 1
         end
         local source = GetObservedValueSource(self)
-        local shownFrom = #rows == 0 and 0 or startIndex
-        local shownTo = #rows == 0 and 0 or endIndex
+        local shownFrom = #displayRows == 0 and 0 or startIndex
+        local shownTo = #displayRows == 0 and 0 or endIndex
+        local sourceSummary
+        if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
+            sourceSummary = string.format("%d captured", storedCount)
+        elseif GetWITDropRows(frame.dropSourceID) then
+            sourceSummary = string.format("WIT %s", tostring(GetWITDropsData().sourceVersion or "unknown"))
+        else
+            sourceSummary = GetDropSourceLabel(frame.dropSourceID)
+        end
+        local rangeSummary = string.format("Showing %d-%d of %d", shownFrom, shownTo, #rows)
+        if showLocationHeaders then
+            local locationCount = 0
+            for _, displayRow in ipairs(displayRows) do
+                if displayRow.isLocationGroupHeader then
+                    locationCount = locationCount + 1
+                end
+            end
+            rangeSummary = string.format("%d items in %d locations", #rows, locationCount)
+        end
         frame.metaText:SetText(string.format(
-            "Showing %d-%d of %d | %d captured | %s | Total selected value %s",
-            shownFrom,
-            shownTo,
-            #rows,
-            storedCount,
+            "%s | %s | %s | Total selected value %s",
+            rangeSummary,
+            sourceSummary,
             source and source.label or "Unknown source",
             self:FormatMoney(totalValue)
         ))
     end
-    local showPagination = frame.observedDropsViewID == "scan" and #rows > ROWS_PER_PAGE
+    local showPagination = frame.observedDropsViewID == "scan" and #displayRows > ROWS_PER_PAGE
     if frame.prevPageButton then
         frame.prevPageButton:SetShown(showPagination)
         frame.prevPageButton:SetEnabled(frame.currentPage > 1)
@@ -2847,19 +3426,41 @@ function GoldTracker:CreateObservedDropsWindow()
     frame.priceCache = {}
     frame.hasObservedDropsScanRun = false
     frame.scannedObservedDropsRows = nil
-    frame.observedDropsViewID = "library"
-    frame.observedDropsNavigationTab = "saved"
+    frame.observedDropsViewID = "scan"
+    frame.observedDropsNavigationTab = "new"
     frame.sortKey = DEFAULT_SORT_KEY
     frame.sortAscending = false
     frame.sortCriteria = {
         { key = DEFAULT_SORT_KEY, ascending = false },
     }
+    ApplyObservedDropsDefaultSort(frame, frame.dropSourceID)
     frame.currentPage = 1
+    frame.collapsedLocationGroups = {}
 
-    local chrome = Theme:ApplyWindowChrome(frame, "Observed BoE Drops")
+    local chrome = Theme:ApplyWindowChrome(frame, "Drops")
     Theme:RegisterSpecialFrame("GoldTrackerObservedDropsFrame")
 
-    local savedScansTabButton = CreateObservedButton(frame, 104, 24, "Saved Scans", "primary")
+    local locationGroupsControl = CreateFrame("Frame", nil, frame)
+    SetObservedFrameLevel(locationGroupsControl, chrome, 2)
+    locationGroupsControl:SetSize(218, 24)
+    locationGroupsControl:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -52)
+    local locationGroupsCheckbox = CreateFrame("CheckButton", nil, locationGroupsControl, "UICheckButtonTemplate")
+    locationGroupsCheckbox:SetPoint("LEFT", locationGroupsControl, "LEFT", 0, 0)
+    locationGroupsCheckbox:SetChecked(self:IsCollapsedLocationHeadersEnabled())
+    locationGroupsCheckbox:SetScript("OnClick", function(button)
+        addon:SetCollapsedLocationHeadersEnabled(button:GetChecked() == true)
+        frame.currentPage = 1
+        addon:RefreshObservedDropsWindow(true)
+    end)
+    local locationGroupsLabel = locationGroupsControl:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    locationGroupsLabel:SetPoint("LEFT", locationGroupsCheckbox, "RIGHT", 2, 1)
+    locationGroupsLabel:SetText("Collapsed location headers")
+    locationGroupsControl:Hide()
+    frame.locationGroupsControl = locationGroupsControl
+    frame.locationGroupsCheckbox = locationGroupsCheckbox
+
+    local savedScansTabButton = CreateObservedButton(frame, 104, 24, "Saved Scans", "neutral")
+    SetObservedFrameLevel(savedScansTabButton, chrome, 2)
     savedScansTabButton:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
     savedScansTabButton:SetScript("OnClick", function()
         frame.observedDropsNavigationTab = "saved"
@@ -2868,12 +3469,28 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     frame.savedScansTabButton = savedScansTabButton
 
-    local newScanTabButton = CreateObservedButton(frame, 96, 24, "New Scan", "neutral")
-    newScanTabButton:SetPoint("LEFT", savedScansTabButton, "RIGHT", 8, 0)
-    newScanTabButton:SetScript("OnClick", function()
-        addon:OpenObservedDropsNewScan()
-    end)
-    frame.newScanTabButton = newScanTabButton
+    frame.sourceTabButtons = {}
+    local previousSourceTab = savedScansTabButton
+    for _, option in ipairs(DROP_SOURCE_OPTIONS) do
+        if not option.hidden then
+            local button = CreateObservedButton(frame, option.tabWidth or 68, 24, option.label, "neutral")
+            SetObservedFrameLevel(button, chrome, 2)
+            button:SetPoint("LEFT", previousSourceTab, "RIGHT", 6, 0)
+            local sourceID = option.id
+            button:SetScript("OnClick", function()
+                addon:SetObservedDropsSourceTab(sourceID)
+            end)
+            frame.sourceTabButtons[sourceID] = button
+            previousSourceTab = button
+        end
+    end
+    local observedTabs = { savedScansTabButton }
+    for _, option in ipairs(DROP_SOURCE_OPTIONS) do
+        if not option.hidden and frame.sourceTabButtons[option.id] then
+            observedTabs[#observedTabs + 1] = frame.sourceTabButtons[option.id]
+        end
+    end
+    Theme:LayoutExplorerTabs(chrome, observedTabs)
 
     local libraryPanel = CreateObservedPanel(frame, { 0.04, 0.05, 0.07, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     SetObservedFrameLevel(libraryPanel, chrome, 1)
@@ -2928,7 +3545,8 @@ function GoldTracker:CreateObservedDropsWindow()
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Preferred value source")
+    sourceLabel:SetText("Value source")
+    frame.valueSourceLabel = sourceLabel
 
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerObservedDropsValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)
@@ -2959,6 +3577,7 @@ function GoldTracker:CreateObservedDropsWindow()
     local minValueLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     minValueLabel:SetPoint("TOPLEFT", sourceLabel, "TOPLEFT", 250, 0)
     minValueLabel:SetText("Min value (g)")
+    frame.minimumValueLabel = minValueLabel
 
     local minimumValueInput = CreateFrame("EditBox", nil, controlsPanel, "InputBoxTemplate")
     minimumValueInput:SetSize(110, 22)
@@ -2981,6 +3600,7 @@ function GoldTracker:CreateObservedDropsWindow()
     local expansionLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     expansionLabel:SetPoint("TOPLEFT", minValueLabel, "TOPLEFT", 180, 0)
     expansionLabel:SetText("Expansion")
+    frame.expansionLabel = expansionLabel
 
     local expansionDropdown = CreateFrame("Frame", "GoldTrackerObservedDropsExpansionDropdown", controlsPanel, "UIDropDownMenuTemplate")
     expansionDropdown:SetPoint("TOPLEFT", expansionLabel, "BOTTOMLEFT", -16, -5)
@@ -3005,39 +3625,8 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     frame.expansionDropdown = expansionDropdown
 
-    local dropSourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    dropSourceLabel:SetPoint("TOPLEFT", expansionLabel, "TOPLEFT", 220, 0)
-    dropSourceLabel:SetText("Drop list")
-
-    local dropSourceDropdown = CreateFrame("Frame", "GoldTrackerObservedDropsSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
-    dropSourceDropdown:SetPoint("TOPLEFT", dropSourceLabel, "BOTTOMLEFT", -16, -5)
-    UIDropDownMenu_SetWidth(dropSourceDropdown, 150)
-    UIDropDownMenu_Initialize(dropSourceDropdown, function(_, level)
-        for _, option in ipairs(DROP_SOURCE_OPTIONS) do
-            if not option.hidden then
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = option.label
-                info.value = option.id
-                info.checked = frame.dropSourceID == option.id
-                info.func = function()
-                    frame.dropSourceID = option.id
-                    frame.zoneFilterID = NormalizeKnownZoneFilter(frame.zoneFilterID, frame.expansionFilterID)
-                    frame.itemCache = {}
-                    frame.priceCache = {}
-                    if addon.db then
-                        addon.db.observedDropsSourceFilter = option.id
-                        addon.db.observedDropsZoneFilter = frame.zoneFilterID
-                    end
-                    addon:ClearObservedDropsScanResults()
-                end
-                UIDropDownMenu_AddButton(info, level)
-            end
-        end
-    end)
-    frame.dropSourceDropdown = dropSourceDropdown
-
     local zoneLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    zoneLabel:SetPoint("TOPLEFT", dropSourceLabel, "TOPLEFT", 178, 0)
+    zoneLabel:SetPoint("TOPLEFT", expansionLabel, "TOPLEFT", 220, 0)
     zoneLabel:SetText("Zone")
     frame.zoneLabel = zoneLabel
 
@@ -3064,21 +3653,21 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     frame.zoneDropdown = zoneDropdown
 
-    local scanButton = CreateObservedButton(controlsPanel, 92, 22, "Scan", "primary")
+    local scanButton = CreateObservedButton(controlsPanel, 92, 24, "Scan", "primary")
     scanButton:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -62)
     scanButton:SetScript("OnClick", function()
         addon:ScanObservedDropsSelection()
     end)
     frame.scanButton = scanButton
 
-    local saveScanButton = CreateObservedButton(controlsPanel, 82, 22, "Save", "neutral")
+    local saveScanButton = CreateObservedButton(controlsPanel, 82, 24, "Save", "neutral")
     saveScanButton:SetPoint("RIGHT", scanButton, "LEFT", -8, 0)
     saveScanButton:SetScript("OnClick", function()
         addon:SaveCurrentObservedDropsScan()
     end)
     frame.saveScanButton = saveScanButton
 
-    local stopScanButton = CreateObservedButton(controlsPanel, 70, 22, "Stop", "danger")
+    local stopScanButton = CreateObservedButton(controlsPanel, 82, 24, "Stop", "danger")
     stopScanButton:SetPoint("RIGHT", saveScanButton, "LEFT", -8, 0)
     stopScanButton:SetEnabled(false)
     stopScanButton:SetAlpha(0.45)
@@ -3087,7 +3676,7 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     frame.stopScanButton = stopScanButton
 
-    local refreshButton = CreateObservedButton(controlsPanel, 112, 22, "Refresh Prices", "neutral")
+    local refreshButton = CreateObservedButton(controlsPanel, 116, 24, "Refresh Prices", "neutral")
     refreshButton:SetPoint("RIGHT", stopScanButton, "LEFT", -8, 0)
     refreshButton:SetScript("OnClick", function()
         frame.itemCache = {}
@@ -3097,7 +3686,16 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     frame.refreshButton = refreshButton
 
-    local scanSavedSessionsButton = CreateObservedButton(controlsPanel, 142, 22, "Scan saved sessions", "neutral")
+    local maximizeListButton = CreateObservedButton(controlsPanel, 116, 24, "Maximize list", "neutral")
+    maximizeListButton:SetPoint("RIGHT", refreshButton, "LEFT", -8, 0)
+    maximizeListButton:SetScript("OnClick", function()
+        addon:ToggleObservedDropsListMaximized()
+    end)
+    maximizeListButton.tooltipText = "Maximize the window containing the current Zones list without changing its filters or results."
+    maximizeListButton:Hide()
+    frame.maximizeListButton = maximizeListButton
+
+    local scanSavedSessionsButton = CreateObservedButton(controlsPanel, 142, 24, "Scan saved sessions", "neutral")
     scanSavedSessionsButton:SetPoint("RIGHT", refreshButton, "LEFT", -8, 0)
     scanSavedSessionsButton:SetScript("OnClick", function()
         local result = type(addon.ScanSavedSessionsForObservedDrops) == "function"
@@ -3122,6 +3720,18 @@ function GoldTracker:CreateObservedDropsWindow()
         LoadObservedSavedSessionRows(addon, false, statusMessage)
     end)
     frame.scanSavedSessionsButton = scanSavedSessionsButton
+
+    Theme:LayoutExplorerFilterFields(controlsPanel, {
+        { label = sourceLabel, control = valueSourceDropdown, kind = "dropdown", widthKey = "valueSource" },
+        { label = minValueLabel, control = minimumValueInput, widthKey = "valueInput" },
+        { label = expansionLabel, control = expansionDropdown, kind = "dropdown", widthKey = "expansion" },
+        { label = zoneLabel, control = zoneDropdown, kind = "dropdown", widthKey = "dropdown" },
+    })
+    Theme:LayoutExplorerActionButtons(
+        controlsPanel,
+        { scanButton, saveScanButton, stopScanButton, refreshButton, maximizeListButton },
+        { top = true, offsetY = -62 }
+    )
 
     local progressBackdrop = CreateObservedPanel(controlsPanel, { 0.03, 0.04, 0.06, 0.96 }, { 1, 1, 1, 0.08 })
     progressBackdrop:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -100)
@@ -3166,7 +3776,10 @@ function GoldTracker:CreateObservedDropsWindow()
         return button
     end
 
-    frame.trackedHeaderButton = AddHeader("Tracked", TRACKED_WIDTH, "LEFT", "tracked")
+    frame.trackedHeaderButton = AddHeader("+", TRACKED_WIDTH, "CENTER", "tracked")
+    frame.trackedHeaderButton.sortLabel = "Track"
+    frame.trackedHeaderButton.compactSortLabel = "+"
+    frame.addHeaderButton = AddHeader("Add", ADD_WIDTH, "CENTER")
     frame.expansionHeaderButton = AddHeader("Expansion", EXPANSION_WIDTH, "LEFT", "expansion")
     frame.locationHeaderButton = AddHeader("Location", LOCATION_WIDTH, "LEFT", "location")
     frame.sourceHeaderButton = AddHeader("Source", SOURCE_WIDTH, "LEFT", "source")
@@ -3177,7 +3790,6 @@ function GoldTracker:CreateObservedDropsWindow()
     frame.marketHeaderButton = AddHeader("Market", VALUE_WIDTH, "RIGHT", "marketValue")
     frame.regionHeaderButton = AddHeader("Region", VALUE_WIDTH, "RIGHT", "regionMarketValue")
     frame.averageHeaderButton = AddHeader("Avg", VALUE_WIDTH, "RIGHT", "averageValue")
-    frame.detailsHeaderButton = AddHeader("", DETAILS_WIDTH, "LEFT", nil)
 
     local headerUnderline = listPanel:CreateTexture(nil, "ARTWORK")
     headerUnderline:SetColorTexture(1, 0.82, 0.18, 0.18)
@@ -3264,6 +3876,7 @@ function GoldTracker:CreateObservedDropsWindow()
     frame.pageText = pageText
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = WINDOW_MIN_WIDTH,
         minHeight = WINDOW_MIN_HEIGHT,
         maxWidth = WINDOW_MAX_WIDTH,
@@ -3277,10 +3890,7 @@ function GoldTracker:CreateObservedDropsWindow()
     frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
     frame:SetScript("OnEvent", function(_, _, itemID)
         if itemID then
-            frame.itemCache = {}
-            if frame:IsShown() then
-                addon:RefreshObservedDropsWindow(false)
-            end
+            addon:RefreshObservedDropItemData(itemID)
         end
     end)
     frame:SetScript("OnSizeChanged", function()
@@ -3305,7 +3915,7 @@ function GoldTracker:CreateObservedDropsWindow()
 
     self.observedDropsFrame = frame
     self:RefreshObservedDropsWindowControls()
-    self:SetObservedDropsWindowView("library")
+    self:SetObservedDropsWindowView("scan")
 end
 
 function GoldTracker:OpenObservedDropsWindow()
@@ -3321,7 +3931,7 @@ function GoldTracker:OpenObservedDropsWindow()
 
     self.observedDropsFrame:Show()
     self.observedDropsFrame:Raise()
-    self:SetObservedDropsWindowView("library")
+    self:SetObservedDropsWindowView("scan")
 end
 
 function GoldTracker:ToggleObservedDropsWindow()

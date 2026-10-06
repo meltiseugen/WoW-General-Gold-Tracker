@@ -232,7 +232,7 @@ function Theme:FindFocusableWindow(frame)
     return nil
 end
 
-function Theme:DemoteInactiveAddonWindows(activeFrame, strataOverride)
+function Theme:DemoteInactiveAddonWindows(activeFrame)
     self:EnsureWindowFocusState()
     for frame in pairs(self.addonFocusFrames) do
         local managedFrame = frame.goldTrackerManagedWindow or frame
@@ -240,9 +240,7 @@ function Theme:DemoteInactiveAddonWindows(activeFrame, strataOverride)
             and managedFrame ~= activeFrame
             and IsFrameShown(frame)
             and type(frame.SetFrameStrata) == "function" then
-            frame:SetFrameStrata(
-                strataOverride or frame.goldTrackerWindowRestingStrata or ADDON_WINDOW_RESTING_STRATA
-            )
+            frame:SetFrameStrata(frame.goldTrackerWindowRestingStrata or ADDON_WINDOW_RESTING_STRATA)
         end
     end
 end
@@ -348,6 +346,152 @@ function Theme:CreateButton(parent, width, height, text, paletteKey)
         end)
     end
     return button
+end
+
+Theme.EXPLORER_LIST_LAYOUT = Theme.EXPLORER_LIST_LAYOUT or {
+    panelInset = 14,
+    fieldGap = 24,
+    labelTop = -10,
+    controlTop = -27,
+    controlHeight = 22,
+    actionGap = 8,
+    actionBottom = 12,
+    tabGap = 8,
+    tabHeight = 24,
+    widths = {
+        valueSource = 210,
+        wideDropdown = 210,
+        expansion = 190,
+        dropdown = 190,
+        compactDropdown = 120,
+        valueInput = 96,
+        search = 280,
+    },
+}
+
+function Theme:GetExplorerListLayout()
+    return self.EXPLORER_LIST_LAYOUT
+end
+
+function Theme:LayoutExplorerFilterFields(panel, fields, options)
+    if not panel then
+        return
+    end
+
+    local layout = self:GetExplorerListLayout()
+    options = type(options) == "table" and options or {}
+    local left = tonumber(options.left) or layout.panelInset
+    local row = math.max(1, math.floor(tonumber(options.row) or 1))
+    local rowOffset = (row - 1) * (tonumber(options.rowStride) or 52)
+    local gap = tonumber(options.gap) or layout.fieldGap
+
+    for _, field in ipairs(type(fields) == "table" and fields or {}) do
+        local label = field.label
+        local control = field.control
+        local width = math.max(
+            1,
+            tonumber(field.width)
+                or tonumber(type(field.widthKey) == "string" and layout.widths[field.widthKey])
+                or layout.widths.dropdown
+        )
+        if label and control then
+            if type(label.ClearAllPoints) == "function" then
+                label:ClearAllPoints()
+            end
+            label:SetPoint("TOPLEFT", panel, "TOPLEFT", left, layout.labelTop - rowOffset)
+
+            if type(control.ClearAllPoints) == "function" then
+                control:ClearAllPoints()
+            end
+            local isDropdown = field.kind == "dropdown"
+            control:SetPoint(
+                "TOPLEFT",
+                panel,
+                "TOPLEFT",
+                left + (isDropdown and -16 or 0),
+                layout.controlTop - rowOffset
+            )
+            if isDropdown and type(UIDropDownMenu_SetWidth) == "function" then
+                UIDropDownMenu_SetWidth(control, width)
+            elseif type(control.SetWidth) == "function" then
+                control:SetWidth(width)
+            end
+            if not isDropdown and type(control.SetHeight) == "function" then
+                control:SetHeight(tonumber(field.height) or layout.controlHeight)
+            end
+        end
+        left = left + width + gap
+    end
+end
+
+function Theme:LayoutExplorerActionButtons(panel, buttons, options)
+    if not panel then
+        return
+    end
+
+    local layout = self:GetExplorerListLayout()
+    options = type(options) == "table" and options or {}
+    local gap = tonumber(options.gap) or layout.actionGap
+    local previousButton
+    for _, button in ipairs(type(buttons) == "table" and buttons or {}) do
+        if button then
+            if type(button.ClearAllPoints) == "function" then
+                button:ClearAllPoints()
+            end
+            if previousButton then
+                button:SetPoint("RIGHT", previousButton, "LEFT", -gap, 0)
+            elseif options.top then
+                button:SetPoint(
+                    "TOPRIGHT",
+                    panel,
+                    "TOPRIGHT",
+                    tonumber(options.offsetX) or -layout.panelInset,
+                    tonumber(options.offsetY) or layout.controlTop
+                )
+            else
+                button:SetPoint(
+                    "BOTTOMRIGHT",
+                    panel,
+                    "BOTTOMRIGHT",
+                    tonumber(options.offsetX) or -layout.panelInset,
+                    tonumber(options.offsetY) or layout.actionBottom
+                )
+            end
+            previousButton = button
+        end
+    end
+end
+
+function Theme:LayoutExplorerTabs(chrome, buttons, options)
+    if not chrome then
+        return
+    end
+
+    local layout = self:GetExplorerListLayout()
+    options = type(options) == "table" and options or {}
+    local previousButton
+    for _, button in ipairs(type(buttons) == "table" and buttons or {}) do
+        if button then
+            if type(button.ClearAllPoints) == "function" then
+                button:ClearAllPoints()
+            end
+            if previousButton then
+                button:SetPoint("LEFT", previousButton, "RIGHT", tonumber(options.gap) or layout.tabGap, 0)
+            else
+                button:SetPoint(
+                    "TOPLEFT",
+                    chrome,
+                    "TOPLEFT",
+                    tonumber(options.left) or layout.panelInset,
+                    tonumber(options.top) or -54
+                )
+            end
+            if type(button.SetHeight) == "function" then
+                button:SetHeight(tonumber(options.height) or layout.tabHeight)
+            end
+            previousButton = button
+        end
+    end
 end
 
 Theme:RegisterExternalFocusFrames(COMMON_EXTERNAL_WINDOW_NAMES)
@@ -510,5 +654,239 @@ function Theme:CreateResizeButton(frame, options)
     resizeButton:SetScript("OnHide", StopResize)
 
     frame.resizeButton = resizeButton
+    if options.maximize == true and type(self.CreateMaximizeButton) == "function" then
+        self:CreateMaximizeButton(frame, {
+            onToggle = options.onResizeStop,
+        })
+    end
     return resizeButton
+end
+
+local function CaptureFramePoints(frame)
+    local points = {}
+    if not frame or type(frame.GetPoint) ~= "function" then
+        return points
+    end
+
+    local pointCount = type(frame.GetNumPoints) == "function" and tonumber(frame:GetNumPoints()) or 1
+    pointCount = math.max(0, math.floor(pointCount or 0))
+    for index = 1, pointCount do
+        local point, relativeTo, relativePoint, offsetX, offsetY = frame:GetPoint(index)
+        if point then
+            points[#points + 1] = {
+                point = point,
+                relativeTo = relativeTo,
+                relativePoint = relativePoint,
+                offsetX = offsetX,
+                offsetY = offsetY,
+            }
+        end
+    end
+    return points
+end
+
+local function RestoreFramePoints(frame, points, parent)
+    frame:ClearAllPoints()
+    if type(points) == "table" and #points > 0 then
+        for _, savedPoint in ipairs(points) do
+            frame:SetPoint(
+                savedPoint.point,
+                savedPoint.relativeTo,
+                savedPoint.relativePoint,
+                savedPoint.offsetX,
+                savedPoint.offsetY
+            )
+        end
+        return
+    end
+    frame:SetPoint("CENTER", parent or UIParent, "CENTER", 0, 0)
+end
+
+local function SetMaximizeButtonState(frame, isMaximized)
+    local button = frame and frame.maximizeButton
+    if not button then
+        return
+    end
+
+    local options = frame.goldTrackerMaximizeOptions or {}
+    button:SetText(isMaximized and (options.restoreText or "Restore") or (options.maximizeText or "Maximize"))
+    button.tooltipText = isMaximized
+        and (options.restoreTooltip or "Restore the list window to its previous size and position.")
+        or (options.maximizeTooltip or "Maximize the list window.")
+end
+
+function Theme:SetWindowMaximized(frame, shouldMaximize)
+    if not frame then
+        return false
+    end
+
+    local options = frame.goldTrackerMaximizeOptions or {}
+    local parent = options.parent or UIParent or (type(frame.GetParent) == "function" and frame:GetParent())
+    local maximize = shouldMaximize == true
+    if maximize == (frame.goldTrackerIsMaximized == true) then
+        SetMaximizeButtonState(frame, maximize)
+        return maximize
+    end
+
+    if maximize then
+        local width, height = frame:GetSize()
+        frame.goldTrackerRestoreState = {
+            width = tonumber(width),
+            height = tonumber(height),
+            points = CaptureFramePoints(frame),
+            movable = type(frame.IsMovable) == "function" and frame:IsMovable() or true,
+            resizable = type(frame.IsResizable) == "function" and frame:IsResizable() or false,
+        }
+        frame.goldTrackerIsMaximized = true
+        frame:ClearAllPoints()
+        local padding = math.max(0, tonumber(options.padding) or 18)
+        frame:SetPoint("TOPLEFT", parent, "TOPLEFT", padding, -padding)
+        frame:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -padding, padding)
+        if type(frame.SetMovable) == "function" then
+            frame:SetMovable(false)
+        end
+        if type(frame.SetResizable) == "function" then
+            frame:SetResizable(false)
+        end
+        if frame.resizeButton and type(frame.resizeButton.Hide) == "function" then
+            frame.resizeButton:Hide()
+        end
+    else
+        local restoreState = frame.goldTrackerRestoreState or {}
+        frame.goldTrackerIsMaximized = false
+        frame:ClearAllPoints()
+        if restoreState.width and restoreState.height and type(frame.SetSize) == "function" then
+            frame:SetSize(restoreState.width, restoreState.height)
+        end
+        RestoreFramePoints(frame, restoreState.points, parent)
+        if type(frame.SetMovable) == "function" then
+            frame:SetMovable(restoreState.movable ~= false)
+        end
+        if type(frame.SetResizable) == "function" then
+            frame:SetResizable(restoreState.resizable == true)
+        end
+        if restoreState.resizable == true and frame.resizeButton and type(frame.resizeButton.Show) == "function" then
+            frame.resizeButton:Show()
+        end
+        frame.goldTrackerRestoreState = nil
+    end
+
+    SetMaximizeButtonState(frame, maximize)
+    if type(options.onToggle) == "function" then
+        options.onToggle(frame, maximize)
+    end
+    return maximize
+end
+
+function Theme:ToggleWindowMaximized(frame)
+    return self:SetWindowMaximized(frame, not (frame and frame.goldTrackerIsMaximized == true))
+end
+
+function Theme:SetProgressBarProgress(frame, currentValue, maximumValue, completed)
+    if not frame or not frame.progressBar then
+        return false
+    end
+
+    local maximum = math.max(1, tonumber(maximumValue) or 1)
+    local current = math.max(0, math.min(maximum, tonumber(currentValue) or 0))
+    frame.progressBar:SetMinMaxValues(0, maximum)
+    frame.progressBar:SetValue(current)
+
+    local isComplete = completed == nil and current >= maximum or completed == true
+    frame.progressComplete = isComplete
+    local container = frame.progressBackdrop or frame.progressBar
+    if container and type(container.SetShown) == "function" then
+        container:SetShown(not isComplete)
+    elseif container then
+        local visibilityMethod = isComplete and container.Hide or container.Show
+        if type(visibilityMethod) == "function" then
+            visibilityMethod(container)
+        end
+    end
+    return isComplete
+end
+
+function Theme:CreateMaximizeButton(frame, options)
+    if not frame then
+        return nil
+    end
+    if frame.maximizeButton then
+        return frame.maximizeButton
+    end
+
+    options = type(options) == "table" and options or {}
+    frame.goldTrackerMaximizeOptions = options
+
+    local parent = options.buttonParent or frame.headerBar or frame
+    local button = self:CreateButton(
+        parent,
+        tonumber(options.width) or 74,
+        tonumber(options.height) or 22,
+        options.maximizeText or "Maximize",
+        options.paletteKey or "neutral"
+    )
+    local anchor = options.anchor or frame.closeButton
+    if anchor then
+        button:SetPoint("RIGHT", anchor, "LEFT", tonumber(options.offsetX) or -6, tonumber(options.offsetY) or 0)
+    else
+        button:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -38, -10)
+    end
+    button:SetScript("OnClick", function()
+        self:ToggleWindowMaximized(frame)
+    end)
+    frame.maximizeButton = button
+    SetMaximizeButtonState(frame, false)
+
+    if frame.headerTitleText and type(frame.headerTitleText.SetPoint) == "function" then
+        frame.headerTitleText:SetPoint("RIGHT", button, "LEFT", -10, 0)
+    end
+    return button
+end
+
+function Theme:GetRequiredTextColumnWidth(rows, textKey, minimumWidth, options)
+    options = type(options) == "table" and options or {}
+    local requiredWidth = math.max(1, tonumber(minimumWidth) or 1)
+    local padding = math.max(0, tonumber(options.padding) or 0)
+    local leadingWidth = math.max(0, tonumber(options.leadingWidth) or 0)
+
+    for _, row in ipairs(type(rows) == "table" and rows or {}) do
+        local isShown = type(row.IsShown) ~= "function" or row:IsShown()
+        local fontString = isShown and row[textKey] or nil
+        if fontString and type(fontString.IsShown) == "function" and not fontString:IsShown() then
+            fontString = nil
+        end
+        if fontString then
+            local textWidth
+            if type(fontString.GetUnboundedStringWidth) == "function" then
+                local ok, measuredWidth = pcall(fontString.GetUnboundedStringWidth, fontString)
+                if ok then
+                    textWidth = tonumber(measuredWidth)
+                end
+            end
+
+            if not textWidth and type(fontString.GetStringWidth) == "function" then
+                local originalWidth = type(fontString.GetWidth) == "function" and fontString:GetWidth() or nil
+                if originalWidth and type(fontString.SetWidth) == "function" then
+                    fontString:SetWidth(10000)
+                end
+                local ok, measuredWidth = pcall(fontString.GetStringWidth, fontString)
+                if originalWidth and type(fontString.SetWidth) == "function" then
+                    fontString:SetWidth(originalWidth)
+                end
+                if ok then
+                    textWidth = tonumber(measuredWidth)
+                end
+            end
+
+            local rowLeadingWidth = leadingWidth
+            if type(options.getLeadingWidth) == "function" then
+                rowLeadingWidth = math.max(0, tonumber(options.getLeadingWidth(row)) or 0)
+            end
+            if textWidth then
+                requiredWidth = math.max(requiredWidth, math.ceil(textWidth + padding + rowLeadingWidth))
+            end
+        end
+    end
+
+    return requiredWidth
 end

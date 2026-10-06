@@ -116,6 +116,100 @@ function GoldTracker:GetTableSortCriterion(criteria, sortKey)
     return nil, nil
 end
 
+function GoldTracker:EnsureTableSortLeadingCriterion(frame, sortKey, ascending, options)
+    options = options or {}
+    local validKeys = options.validKeys
+    if not frame or not IsValidSortKey(validKeys, sortKey) then
+        return {}
+    end
+
+    local sortKeyField = options.sortKeyField or "sortKey"
+    local sortAscendingField = options.sortAscendingField or "sortAscending"
+    local criteria = self:GetTableSortCriteria(frame, sortKeyField, sortAscendingField, validKeys)
+    local normalized = {
+        {
+            key = sortKey,
+            ascending = ascending == true,
+        },
+    }
+
+    for _, criterion in ipairs(criteria) do
+        if criterion.key ~= sortKey then
+            normalized[#normalized + 1] = criterion
+        elseif criterion.ascending ~= nil then
+            normalized[1].ascending = criterion.ascending == true
+        end
+    end
+
+    return self:SetTableSortCriteria(frame, normalized, sortKeyField, sortAscendingField, validKeys)
+end
+
+local function NormalizeLocationGroupLabel(label)
+    local normalized = tostring(label or "")
+    normalized = string.match(normalized, "^%s*(.-)%s*$") or ""
+    return normalized ~= "" and normalized or "Unknown location"
+end
+
+function GoldTracker:BuildLocationGroupedDisplayRows(rows, getGroupLabel, collapsedGroups, showHeaders)
+    if showHeaders ~= true or type(getGroupLabel) ~= "function" then
+        return rows or {}
+    end
+
+    local sourceRows = rows or {}
+    local displayRows = {}
+    local index = 1
+    while index <= #sourceRows do
+        local label = NormalizeLocationGroupLabel(getGroupLabel(sourceRows[index]))
+        local key = string.lower(label)
+        local lastIndex = index
+        while lastIndex < #sourceRows do
+            local nextLabel = NormalizeLocationGroupLabel(getGroupLabel(sourceRows[lastIndex + 1]))
+            if string.lower(nextLabel) ~= key then
+                break
+            end
+            lastIndex = lastIndex + 1
+        end
+
+        local isCollapsed = type(collapsedGroups) ~= "table" or collapsedGroups[key] ~= false
+        displayRows[#displayRows + 1] = {
+            isLocationGroupHeader = true,
+            locationGroupKey = key,
+            locationGroupLabel = label,
+            itemCount = lastIndex - index + 1,
+            collapsed = isCollapsed,
+        }
+        if not isCollapsed then
+            for rowIndex = index, lastIndex do
+                displayRows[#displayRows + 1] = sourceRows[rowIndex]
+            end
+        end
+        index = lastIndex + 1
+    end
+
+    return displayRows
+end
+
+function GoldTracker:ToggleLocationGroupCollapsed(collapsedGroups, groupKey, currentlyCollapsed)
+    if type(collapsedGroups) ~= "table" or groupKey == nil then
+        return nil
+    end
+
+    local nextCollapsed = currentlyCollapsed ~= true
+    collapsedGroups[groupKey] = nextCollapsed
+    return nextCollapsed
+end
+
+function GoldTracker:IsCollapsedLocationHeadersEnabled()
+    return type(self.db) ~= "table" or self.db.collapsedLocationHeaders ~= false
+end
+
+function GoldTracker:SetCollapsedLocationHeadersEnabled(enabled)
+    if type(self.db) == "table" then
+        self.db.collapsedLocationHeaders = enabled == true
+    end
+    return enabled == true
+end
+
 function GoldTracker:AttachTableSortHeaderTooltip(button, label)
     if not button or button.goldTrackerSortTooltipAttached then
         return

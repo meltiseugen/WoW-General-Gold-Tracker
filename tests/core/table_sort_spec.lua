@@ -74,6 +74,82 @@ describe("multi-column table sorting", function()
         }, addon:GetTableSortCriteria(frame, "sortKey", "sortAscending", valid_keys))
     end)
 
+    it("keeps a required grouping column first while retaining secondary sorting", function()
+        local addon = build_addon()
+        local frame = {
+            sortKey = "value",
+            sortAscending = false,
+            sortCriteria = {
+                { key = "value", ascending = false },
+                { key = "name", ascending = true },
+            },
+        }
+
+        addon:EnsureTableSortLeadingCriterion(frame, "name", true, {
+            validKeys = valid_keys,
+        })
+
+        assert.same({
+            { key = "name", ascending = true },
+            { key = "value", ascending = false },
+        }, frame.sortCriteria)
+        assert.equals("name", frame.sortKey)
+        assert.is_true(frame.sortAscending)
+    end)
+
+    it("builds collapsed location headers and expands selected groups", function()
+        local addon = build_addon()
+        local rows = {
+            { id = 1, location = "Ashenvale" },
+            { id = 2, location = "Ashenvale" },
+            { id = 3, location = "Feralas" },
+        }
+
+        local collapsed = addon:BuildLocationGroupedDisplayRows(rows, function(row)
+            return row.location
+        end, {}, true)
+        assert.equals(2, #collapsed)
+        assert.same({
+            isLocationGroupHeader = true,
+            locationGroupKey = "ashenvale",
+            locationGroupLabel = "Ashenvale",
+            itemCount = 2,
+            collapsed = true,
+        }, collapsed[1])
+
+        local expanded = addon:BuildLocationGroupedDisplayRows(rows, function(row)
+            return row.location
+        end, { ashenvale = false }, true)
+        assert.equals(4, #expanded)
+        assert.equals(1, expanded[2].id)
+        assert.equals(2, expanded[3].id)
+        assert.equals("feralas", expanded[4].locationGroupKey)
+    end)
+
+    it("toggles location groups between collapsed and expanded", function()
+        local addon = build_addon()
+        local groups = {}
+
+        assert.is_false(addon:ToggleLocationGroupCollapsed(groups, "ashenvale", true))
+        assert.is_false(groups.ashenvale)
+        assert.is_true(addon:ToggleLocationGroupCollapsed(groups, "ashenvale", false))
+        assert.is_true(groups.ashenvale)
+    end)
+
+    it("returns the original flat grouped rows when location headers are disabled", function()
+        local addon = build_addon()
+        local rows = {
+            { id = 1, location = "Ashenvale" },
+            { id = 2, location = "Feralas" },
+        }
+
+        local display_rows = addon:BuildLocationGroupedDisplayRows(rows, function(row)
+            return row.location
+        end, {}, false)
+
+        assert.equals(rows, display_rows)
+    end)
+
     it("preserves the history header's descending, ascending, cleared cycle", function()
         local addon = build_addon()
         local frame = {}

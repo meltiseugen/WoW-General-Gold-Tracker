@@ -46,9 +46,17 @@ function GoldTracker:NormalizeObservedSavedSessionDrops()
     if type(self.db) ~= "table" then
         return {}
     end
+    if type(self.db.observedDropsShared) ~= "table" then
+        self.db.observedDropsShared = {}
+    end
     if type(self.db.observedSavedSessionDrops) ~= "table" then
         self.db.observedSavedSessionDrops = {}
     end
+    if type(self.db.observedDropsShared.savedSessionDrops) ~= "table"
+        or (next(self.db.observedDropsShared.savedSessionDrops) == nil and next(self.db.observedSavedSessionDrops) ~= nil) then
+        self.db.observedDropsShared.savedSessionDrops = self.db.observedSavedSessionDrops
+    end
+    self.db.observedSavedSessionDrops = self.db.observedDropsShared.savedSessionDrops
     return self.db.observedSavedSessionDrops
 end
 
@@ -282,6 +290,7 @@ end
 function GoldTracker:ScanSavedSessionsForObservedDrops()
     local history = type(self.GetSessionHistory) == "function" and self:GetSessionHistory() or (self.db and self.db.sessionHistory) or {}
     NormalizeObservedWorldDropSessionImports(self)
+    local previousSavedSessionDrops = self:NormalizeObservedSavedSessionDrops()
     local savedSessionDrops = {}
     local result = {
         scannedSessions = 0,
@@ -318,7 +327,8 @@ function GoldTracker:ScanSavedSessionsForObservedDrops()
                             result.skippedItems = result.skippedItems + 1
                         else
                             local itemKey = self:GetObservedWorldDropKey(itemLink)
-                            local existed = type(itemKey) == "string" and savedSessionDrops[itemKey] ~= nil
+                            local existedInCurrentScan = type(itemKey) == "string" and savedSessionDrops[itemKey] ~= nil
+                            local existedPreviously = type(itemKey) == "string" and previousSavedSessionDrops[itemKey] ~= nil
                             result.eligibleItems = result.eligibleItems + 1
                             local recorded = RecordObservedWorldDropInStore(
                                 self,
@@ -331,7 +341,7 @@ function GoldTracker:ScanSavedSessionsForObservedDrops()
                                 BuildSavedSessionValuationData(self, entry, session)
                             )
                             if recorded then
-                                if existed then
+                                if existedInCurrentScan or existedPreviously then
                                     result.updatedItems = result.updatedItems + 1
                                 else
                                     result.addedItems = result.addedItems + 1
@@ -350,9 +360,24 @@ function GoldTracker:ScanSavedSessionsForObservedDrops()
         end
     end
 
+    -- A saved-session scan is one persistent list, not a replaceable scan
+    -- snapshot. Keep entries whose source sessions are no longer in history,
+    -- while replacing entries found above with their freshly rebuilt totals.
+    for itemKey, drop in pairs(previousSavedSessionDrops) do
+        if savedSessionDrops[itemKey] == nil then
+            savedSessionDrops[itemKey] = drop
+        end
+    end
+
     if type(self.db) == "table" then
+        if type(self.db.observedDropsShared) ~= "table" then
+            self.db.observedDropsShared = {}
+        end
+        local scannedAt = type(time) == "function" and time() or nil
+        self.db.observedDropsShared.savedSessionDrops = savedSessionDrops
+        self.db.observedDropsShared.savedSessionDropsScannedAt = scannedAt
         self.db.observedSavedSessionDrops = savedSessionDrops
-        self.db.observedSavedSessionDropsScannedAt = type(time) == "function" and time() or nil
+        self.db.observedSavedSessionDropsScannedAt = scannedAt
     end
     if type(self.RecordDiscoveredItemMarketSnapshots) == "function" then
         local discoveredItems = {}

@@ -120,6 +120,7 @@ local function CopyMapOptions(mapOptions)
                 spotCount = option.spotCount,
                 sourceType = option.sourceType,
                 sourceLabel = option.sourceLabel,
+                selectedItemID = option.selectedItemID,
                 pins = {},
             }
             for _, pinData in ipairs(option.pins or {}) do
@@ -198,34 +199,6 @@ local function AddProjectionTooltipLines(tooltip, pinData)
     end
 end
 
-local function BringWorldMapToFront(mapFrame)
-    if not mapFrame then
-        return
-    end
-
-    -- WorldMapFrame is a composite Blizzard panel. Its quest log and other
-    -- controls use their own frames and levels, so changing or raising only
-    -- the map root can place the map canvas in front of its own UI. Keep the
-    -- native map hierarchy intact and move only our addon windows behind it.
-    local theme = NS.JanisTheme
-    if theme and type(theme.DemoteInactiveAddonWindows) == "function" then
-        pcall(theme.DemoteInactiveAddonWindows, theme, mapFrame, "LOW")
-    end
-end
-
-local function KeepWorldMapInFrontAfterOpen(mapFrame)
-    if not C_Timer or type(C_Timer.After) ~= "function" then
-        return
-    end
-
-    C_Timer.After(0, function()
-        if mapFrame == WorldMapFrame
-            and (not mapFrame.IsShown or mapFrame:IsShown()) then
-            BringWorldMapToFront(mapFrame)
-        end
-    end)
-end
-
 local function OpenWorldMapToMapID(mapID)
     LoadBlizzardMapAddOns()
 
@@ -234,8 +207,6 @@ local function OpenWorldMapToMapID(mapID)
         if mapFrame.SetMapID then
             mapFrame:SetMapID(mapID)
         end
-        BringWorldMapToFront(mapFrame)
-        KeepWorldMapInFrontAfterOpen(mapFrame)
         return true
     end
 
@@ -256,8 +227,6 @@ local function OpenWorldMapToMapID(mapID)
     if mapFrame and mapFrame.SetMapID then
         pcall(mapFrame.SetMapID, mapFrame, mapID)
     end
-    BringWorldMapToFront(mapFrame)
-    KeepWorldMapInFrontAfterOpen(mapFrame)
     return opened
 end
 
@@ -1086,6 +1055,7 @@ function GoldTracker:BuildWorldMapProjectionPayload(options)
         pins = pins,
         mapOptions = mapOptions,
         selectedMapOptionIndex = tonumber(options.selectedMapOptionIndex) or 1,
+        customFarmRow = options.customFarmRow,
     }
 end
 
@@ -1290,6 +1260,7 @@ function GoldTracker:OpenWorldMapProjectionDetails()
         pins = projection.pins,
         mapOptions = projection.mapOptions,
         selectedMapOptionIndex = projection.selectedMapOptionIndex,
+        customFarmRow = projection.customFarmRow,
     })
     return true
 end

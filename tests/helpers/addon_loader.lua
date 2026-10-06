@@ -13,6 +13,16 @@ function M.load_module(relative_path, addon, ns_overrides)
         assert(sort_chunk, sort_err)
         sort_chunk("General-Gold-Tracker", ns)
     end
+    if relative_path:match("^UI/") and type(ns.GoldTracker.CreateItemTooltipTarget) ~= "function" then
+        local tooltip_chunk, tooltip_err = loadfile("Core/ItemTooltip.lua")
+        assert(tooltip_chunk, tooltip_err)
+        tooltip_chunk("General-Gold-Tracker", ns)
+    end
+    if relative_path:match("^UI/") and type(ns.GoldTracker.ConfigureCustomFarmAddButton) ~= "function" then
+        local farms_chunk, farms_err = loadfile("Core/CustomFarms.lua")
+        assert(farms_chunk, farms_err)
+        farms_chunk("General-Gold-Tracker", ns)
+    end
     local chunk, err = loadfile(relative_path)
     assert(chunk, err)
     chunk("General-Gold-Tracker", ns)

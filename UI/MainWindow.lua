@@ -49,6 +49,7 @@ local MAIN_TRANSPARENT_BUTTON_KEYS = {
     "expandButton",
     "tinyButton",
     "opacityButton",
+    "maximizeButton",
     "lastHighlightButton",
     "compactHighlightButton",
     "sessionStyleSelectorButton",
@@ -372,11 +373,7 @@ local function GetMainLootLogContentWidth(frame)
     return math.max(1, math.floor(width + 0.5))
 end
 
-local function GetMainLootLogItemLeftReserve(showTimestamps)
-    if showTimestamps then
-        return 8 + MAIN_LOOT_LOG_TIME_WIDTH + 6 + MAIN_LOOT_LOG_ICON_SIZE + 6
-    end
-
+local function GetMainLootLogItemLeftReserve()
     return 8 + MAIN_LOOT_LOG_ICON_SIZE + 6
 end
 
@@ -394,8 +391,11 @@ local function BuildMainLootLogLayoutMetrics(addon, frame)
     local allowSource = addon and type(addon.IsLootSourceTrackingEnabled) == "function" and addon:IsLootSourceTrackingEnabled()
 
     local function CanFit(showTimestamps, showSource)
-        local itemLeftReserve = GetMainLootLogItemLeftReserve(showTimestamps)
+        local itemLeftReserve = GetMainLootLogItemLeftReserve()
         local rightReserve = MAIN_LOOT_LOG_ROW_RIGHT_INSET + valueWidth + MAIN_LOOT_LOG_COLUMN_GAP
+        if showTimestamps then
+            rightReserve = rightReserve + MAIN_LOOT_LOG_TIME_WIDTH + MAIN_LOOT_LOG_COLUMN_GAP
+        end
         if showSource then
             rightReserve = rightReserve + sourceWidth + MAIN_LOOT_LOG_COLUMN_GAP
         end
@@ -435,11 +435,28 @@ local function ApplyMainLootLogRowColumnLayout(row, layout)
         end
     end
 
+    if row.timeText then
+        row.timeText:ClearAllPoints()
+        row.timeText:SetWidth(MAIN_LOOT_LOG_TIME_WIDTH)
+        row.timeText:SetShown(layout.showTimestamps)
+        if layout.showTimestamps then
+            if layout.showSource and row.sourceText then
+                row.timeText:SetPoint("RIGHT", row.sourceText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+            else
+                row.timeText:SetPoint("RIGHT", row, "RIGHT", -MAIN_LOOT_LOG_ROW_RIGHT_INSET, 0)
+            end
+        else
+            row.timeText:SetPoint("LEFT", row, "RIGHT", 0, 0)
+        end
+    end
+
     if row.valueText then
         row.valueText:ClearAllPoints()
         row.valueText:SetWidth(layout.valueWidth)
         row.valueText:SetJustifyH("RIGHT")
-        if layout.showSource and row.sourceText then
+        if layout.showTimestamps and row.timeText then
+            row.valueText:SetPoint("RIGHT", row.timeText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+        elseif layout.showSource and row.sourceText then
             row.valueText:SetPoint("RIGHT", row.sourceText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
         else
             row.valueText:SetPoint("RIGHT", row, "RIGHT", -MAIN_LOOT_LOG_ROW_RIGHT_INSET, 0)
@@ -590,6 +607,9 @@ function GoldTracker:ApplyMainWindowAlpha()
     end
     if frame.resizeButton then
         frame.resizeButton:SetAlpha(isTransparent and 0 or 0.7)
+    end
+    if frame.transparentInteractionHint then
+        frame.transparentInteractionHint:SetShown(isTransparent)
     end
     if frame.logScrollFrame and frame.logScrollFrame.ScrollBar then
         frame.logScrollFrame.ScrollBar:SetAlpha(chromeAlpha)
@@ -782,6 +802,9 @@ function GoldTracker:SetMainWindowCompact(isCompact, forceLayout)
     end
 
     local shouldCompact = isCompact == true
+    if shouldCompact and frame.goldTrackerIsMaximized == true and Theme and type(Theme.SetWindowMaximized) == "function" then
+        Theme:SetWindowMaximized(frame, false)
+    end
     if shouldCompact == (frame.isCompactMode == true) and frame.isTinyMode ~= true and forceLayout ~= true then
         self:RefreshMainWindowLayout()
         self:UpdateMainWindow()
@@ -846,6 +869,9 @@ function GoldTracker:SetMainWindowTiny(isTiny, forceLayout)
     end
 
     local shouldTiny = isTiny == true
+    if shouldTiny and frame.goldTrackerIsMaximized == true and Theme and type(Theme.SetWindowMaximized) == "function" then
+        Theme:SetWindowMaximized(frame, false)
+    end
     if shouldTiny == (frame.isTinyMode == true) and forceLayout ~= true then
         self:RefreshMainWindowLayout()
         self:UpdateMainWindow()
@@ -960,6 +986,10 @@ function GoldTracker:RefreshMainWindowLayout()
         frame.opacityButton:ClearAllPoints()
         frame.opacityButton:Show()
     end
+    if frame.maximizeButton then
+        frame.maximizeButton:ClearAllPoints()
+        frame.maximizeButton:SetShown(not isCompactMode and not isTinyMode)
+    end
 
     if isTinyMode then
         if frame.expandButton and frame.closeButton then
@@ -1000,10 +1030,15 @@ function GoldTracker:RefreshMainWindowLayout()
         elseif frame.opacityButton and frame.minimizeButton then
             frame.opacityButton:SetPoint("RIGHT", frame.minimizeButton, "LEFT", -6, 0)
         end
+        if frame.maximizeButton and frame.opacityButton then
+            frame.maximizeButton:SetPoint("RIGHT", frame.opacityButton, "LEFT", -6, 0)
+        end
     end
     if frame.sessionStatusBadge then
         frame.sessionStatusBadge:ClearAllPoints()
-        if frame.opacityButton and not isCompactMode and not isTinyMode then
+        if frame.maximizeButton and not isCompactMode and not isTinyMode then
+            frame.sessionStatusBadge:SetPoint("RIGHT", frame.maximizeButton, "LEFT", -10, 0)
+        elseif frame.opacityButton and not isCompactMode and not isTinyMode then
             frame.sessionStatusBadge:SetPoint("RIGHT", frame.opacityButton, "LEFT", -10, 0)
         elseif frame.tinyButton and not isCompactMode and not isTinyMode then
             frame.sessionStatusBadge:SetPoint("RIGHT", frame.tinyButton, "LEFT", -10, 0)
@@ -1185,9 +1220,29 @@ function GoldTracker:RefreshMainWindowLayout()
             )
         end
     end
+    if frame.logTimeHeaderText then
+        frame.logTimeHeaderText:ClearAllPoints()
+        frame.logTimeHeaderText:SetWidth(MAIN_LOOT_LOG_TIME_WIDTH)
+        frame.logTimeHeaderText:SetShown(logLayout.showTimestamps)
+        if logLayout.showTimestamps then
+            if logLayout.showSource and frame.logSourceHeaderText then
+                frame.logTimeHeaderText:SetPoint("RIGHT", frame.logSourceHeaderText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+            elseif frame.logScrollFrame then
+                frame.logTimeHeaderText:SetPoint(
+                    "TOPRIGHT",
+                    frame.logScrollFrame,
+                    "TOPRIGHT",
+                    -(MAIN_LOOT_LOG_SCROLL_CONTENT_RIGHT_PADDING + MAIN_LOOT_LOG_ROW_RIGHT_INSET),
+                    MAIN_LOOT_LOG_HEADER_SCROLL_TOP_OFFSET
+                )
+            end
+        end
+    end
     if frame.logValueHeaderText and frame.logSourceHeaderText then
         frame.logValueHeaderText:ClearAllPoints()
-        if logLayout.showSource then
+        if logLayout.showTimestamps and frame.logTimeHeaderText then
+            frame.logValueHeaderText:SetPoint("RIGHT", frame.logTimeHeaderText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
+        elseif logLayout.showSource then
             frame.logValueHeaderText:SetPoint("RIGHT", frame.logSourceHeaderText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
         elseif frame.logScrollFrame then
             frame.logValueHeaderText:SetPoint(
@@ -1202,16 +1257,9 @@ function GoldTracker:RefreshMainWindowLayout()
         end
         frame.logValueHeaderText:SetJustifyH("RIGHT")
     end
-    if frame.logTimeHeaderText then
-        frame.logTimeHeaderText:SetShown(logLayout.showTimestamps)
-    end
     if frame.logItemHeaderText then
         frame.logItemHeaderText:ClearAllPoints()
-        if logLayout.showTimestamps and frame.logTimeHeaderText then
-            frame.logItemHeaderText:SetPoint("LEFT", frame.logTimeHeaderText, "RIGHT", MAIN_LOOT_LOG_ICON_SIZE + 12, 0)
-        else
-            frame.logItemHeaderText:SetPoint("TOPLEFT", frame.logPanel, "TOPLEFT", 24, -42)
-        end
+        frame.logItemHeaderText:SetPoint("TOPLEFT", frame.logPanel, "TOPLEFT", 24, -42)
     end
     for _, row in ipairs(frame.logRows or {}) do
         ApplyMainLootLogRowColumnLayout(row, logLayout)
@@ -1375,19 +1423,25 @@ function GoldTracker:GetMainLootLogRow(index)
     itemText:SetPoint("LEFT", icon, "RIGHT", 6, 0)
     itemText:SetPoint("RIGHT", valueText, "LEFT", -MAIN_LOOT_LOG_COLUMN_GAP, 0)
 
-    row:SetScript("OnEnter", function(self)
+    local itemTooltipTarget = self:CreateItemTooltipTarget(row, itemText, icon, function(self, target)
         if type(self.itemLink) ~= "string" or self.itemLink == "" then
             return
         end
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
         GameTooltip:SetHyperlink(self.itemLink)
+        if type(GoldTracker.AddFarmActionTooltip) == "function" then
+            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
+        end
         GameTooltip:Show()
     end)
-    row:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    if frame.mainWindowClickThrough == true then
+        SetMainWindowFrameClickThrough(itemTooltipTarget, true)
+    end
     row:SetScript("OnMouseUp", function(self, button)
         if button == "LeftButton" then
+            if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
+                return
+            end
             GoldTracker:HandleModifiedItemClickIfModified(self)
         end
     end)
@@ -1442,21 +1496,13 @@ function GoldTracker:RefreshMainLootLog(scrollToBottom)
                 row.itemIcon:SetTexture(iconTexture)
                 row.itemIcon:Show()
                 row.itemIcon:ClearAllPoints()
-                if showTimestamps then
-                    row.itemIcon:SetPoint("LEFT", row.timeText, "RIGHT", 6, 0)
-                else
-                    row.itemIcon:SetPoint("LEFT", row, "LEFT", 8, 0)
-                end
+                row.itemIcon:SetPoint("LEFT", row, "LEFT", 8, 0)
                 row.itemText:ClearAllPoints()
                 row.itemText:SetPoint("LEFT", row.itemIcon, "RIGHT", 6, 0)
             else
                 row.itemIcon:Hide()
                 row.itemText:ClearAllPoints()
-                if showTimestamps then
-                    row.itemText:SetPoint("LEFT", row.timeText, "RIGHT", 10, 0)
-                else
-                    row.itemText:SetPoint("LEFT", row, "LEFT", 8, 0)
-                end
+                row.itemText:SetPoint("LEFT", row, "LEFT", 8, 0)
             end
             ApplyMainLootLogRowColumnLayout(row, logLayout)
 
@@ -2072,6 +2118,10 @@ function GoldTracker:CreateMainWindow()
         local isExpanded = addon:IsMainLootStreamExpanded()
         local clampedWidth = ClampMainWindowWidth(addon, width, isExpanded)
         local clampedHeight = math.floor(math.max(MAIN_WINDOW_MIN_HEIGHT, math.min(MAIN_WINDOW_MAX_HEIGHT, tonumber(height) or MAIN_WINDOW_MIN_HEIGHT)) + 0.5)
+        if frame.goldTrackerIsMaximized == true then
+            addon:RefreshMainWindowLayout()
+            return
+        end
         if isExpanded then
             addon.db.windowWidth = clampedWidth
         else
@@ -2168,6 +2218,21 @@ function GoldTracker:CreateMainWindow()
         addon:ToggleMainWindowTransparency()
     end)
     frame.opacityButton = opacityButton
+
+    if type(Theme.CreateMaximizeButton) == "function" then
+        Theme:CreateMaximizeButton(frame, {
+            anchor = opacityButton,
+            width = 22,
+            maximizeText = "M",
+            restoreText = "R",
+            maximizeTooltip = "Maximize the loot list.",
+            restoreTooltip = "Restore the loot list to its previous size and position.",
+            onToggle = function()
+                addon:RefreshMainWindowLayout()
+                addon:UpdateMainWindow()
+            end,
+        })
+    end
 
     local sessionStatusBadge = CreateFrame("Frame", nil, headerBar, "BackdropTemplate")
     sessionStatusBadge:SetSize(64, 20)
@@ -2720,6 +2785,23 @@ function GoldTracker:CreateMainWindow()
     logEmptyText:SetTextColor(0.62, 0.66, 0.74)
     logEmptyText:SetText("Looted items, raw gold, alerts, and session messages will appear here.")
     frame.logEmptyText = logEmptyText
+
+    local transparentInteractionHint = CreateFrame("Frame", nil, frame)
+    transparentInteractionHint:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 6)
+    transparentInteractionHint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 6)
+    transparentInteractionHint:SetHeight(16)
+    transparentInteractionHint:SetFrameLevel(frame:GetFrameLevel() + 20)
+    transparentInteractionHint:EnableMouse(false)
+
+    local transparentInteractionHintText = transparentInteractionHint:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    transparentInteractionHintText:SetPoint("CENTER")
+    transparentInteractionHintText:SetTextColor(1.0, 0.82, 0.18)
+    transparentInteractionHintText:SetShadowColor(0, 0, 0, 1)
+    transparentInteractionHintText:SetShadowOffset(1, -1)
+    transparentInteractionHintText:SetText("Hold Ctrl to interact")
+    transparentInteractionHint:Hide()
+    frame.transparentInteractionHint = transparentInteractionHint
+    frame.transparentInteractionHintText = transparentInteractionHintText
 
     Theme:CreateResizeButton(frame, {
         getBounds = function()

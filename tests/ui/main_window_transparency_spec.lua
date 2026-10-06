@@ -17,6 +17,15 @@ local function panel()
     }
 end
 
+local function visibility_region()
+    return {
+        shown = nil,
+        SetShown = function(self, shown)
+            self.shown = shown
+        end,
+    }
+end
+
 local function load_main_window(addon)
     return loader.load_module("UI/MainWindow.lua", addon or {}, {
         JanisTheme = {},
@@ -49,6 +58,7 @@ describe("UI/MainWindow transparency", function()
                 heroDivider = panel(),
                 actionDivider = panel(),
                 logHeaderUnderline = panel(),
+                transparentInteractionHint = visibility_region(),
                 resizeButton = panel(),
                 logScrollFrame = {
                     ScrollBar = panel(),
@@ -96,6 +106,7 @@ describe("UI/MainWindow transparency", function()
         assert.equals(0, addon.mainFrame.heroDivider.alpha)
         assert.equals(0, addon.mainFrame.actionDivider.alpha)
         assert.equals(0, addon.mainFrame.logHeaderUnderline.alpha)
+        assert.is_true(addon.mainFrame.transparentInteractionHint.shown)
         assert.equals(0, addon.mainFrame.resizeButton.alpha)
         assert.equals(0, addon.mainFrame.logScrollFrame.ScrollBar.alpha)
         assert.equals(0, addon.mainFrame.logRows[1].background.alpha)
@@ -104,6 +115,10 @@ describe("UI/MainWindow transparency", function()
         assert.equals(0, addon.mainFrame.closeButton.bg[4])
         assert.equals(0, addon.mainFrame.opacityButton.bg[4])
         assert.is_true(selected)
+
+        addon.db.mainWindowTransparent = false
+        addon:ApplyMainWindowAlpha()
+        assert.is_false(addon.mainFrame.transparentInteractionHint.shown)
     end)
 
     it("toggles and persists the transparent state", function()

@@ -215,6 +215,7 @@ describe("UI/WorldMapOverlay", function()
         })
         addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
             title = "New Herb Farming Map",
+            customFarmRow = { itemID = 2770, farmingSourceType = "materials" },
             mapID = 100,
             mapLabel = "Hellfire Peninsula",
             pins = {
@@ -223,6 +224,7 @@ describe("UI/WorldMapOverlay", function()
             mapOptions = {
                 {
                     id = "hellfire-main",
+                    selectedItemID = 2770,
                     mapID = 100,
                     mapLabel = "Hellfire Peninsula",
                     label = "Hellfire Peninsula: Citadel perimeter",
@@ -236,6 +238,9 @@ describe("UI/WorldMapOverlay", function()
 
         assert.is_true(addon:OpenWorldMapProjectionDetails())
         assert.equals("New Herb Farming Map", capturedOptions.title)
+        assert.equals(2770, capturedOptions.customFarmRow.itemID)
+        assert.equals("materials", capturedOptions.customFarmRow.farmingSourceType)
+        assert.equals(2770, capturedOptions.mapOptions[1].selectedItemID)
         assert.equals(100, capturedOptions.mapID)
         assert.equals(1, #capturedOptions.mapOptions)
         assert.equals("hellfire-main", capturedOptions.mapOptions[1].id)
@@ -284,8 +289,7 @@ describe("UI/WorldMapOverlay", function()
         end)
     end)
 
-    it("keeps route lines while showing filled areas for non-route locations", function()
-        local deferredCallbacks = {}
+    it("renders projections without changing Blizzard map window layering", function()
         local worldMapFrame = {
             AddDataProvider = function(self, provider)
                 self.provider = provider
@@ -325,12 +329,6 @@ describe("UI/WorldMapOverlay", function()
             },
             MapCanvasDataProviderMixin = {},
             WorldMapFrame = worldMapFrame,
-            C_Timer = {
-                After = function(delay, callback)
-                    assert.equals(0, delay)
-                    deferredCallbacks[#deferredCallbacks + 1] = callback
-                end,
-            },
             CreateFrame = function()
                 return make_frame()
             end,
@@ -371,9 +369,7 @@ describe("UI/WorldMapOverlay", function()
             })
             local demotionCount = 0
             ns.JanisTheme = {
-                DemoteInactiveAddonWindows = function(_, activeFrame, strataOverride)
-                    assert.equals(worldMapFrame, activeFrame)
-                    assert.equals("LOW", strataOverride)
+                DemoteInactiveAddonWindows = function()
                     demotionCount = demotionCount + 1
                 end,
             }
@@ -400,14 +396,7 @@ describe("UI/WorldMapOverlay", function()
             assert.is_nil(worldMapFrame.frameStrataSetCount)
             assert.is_nil(worldMapFrame.toplevelSetCount)
             assert.is_nil(worldMapFrame.raiseCount)
-            assert.equals(2, demotionCount)
-            assert.equals(2, #deferredCallbacks)
-
-            deferredCallbacks[#deferredCallbacks]()
-            assert.is_nil(worldMapFrame.frameStrataSetCount)
-            assert.is_nil(worldMapFrame.toplevelSetCount)
-            assert.is_nil(worldMapFrame.raiseCount)
-            assert.equals(3, demotionCount)
+            assert.equals(0, demotionCount)
 
             worldMapFrame.provider:RefreshAllData()
 

@@ -16,6 +16,25 @@ local SNAPSHOT_SOURCES = {
     auctioningMax = "AuctioningOpMax",
 }
 
+local KNOWN_PRICE_SCAN_INTERVAL = 12 * 60 * 60
+local KNOWN_PRICE_SCAN_BATCH_SIZE = 40
+local KNOWN_PRICE_SOURCES = {
+    { key = "dbMarket", tsmKey = "DBMarket", label = "DBMarket" },
+    { key = "dbMinBuyout", tsmKey = "DBMinBuyout", label = "Min Buyout" },
+}
+local KNOWN_PRICE_STATIC_ROOT_KEYS = {
+    "FarmingItems",
+    "MaterialFarmingSpots",
+    "CraftingFarmingLearnedData",
+    "InstanceDropsData",
+    "ATTBoEDropsData",
+    "WITDropsData",
+    "RareDropsData",
+    "MountFarmData",
+    "PetFarmData",
+    "ToyFarmData",
+}
+
 local WEEKDAY_LABELS = {
     [0] = "Sunday",
     [1] = "Monday",
@@ -296,14 +315,16 @@ local function GetPriceIncreaseAlertCurrentPrice(item, snapshot)
 end
 
 local function GetTSMRawCustomValueForMarketHistory(addon, priceSource, itemLink, itemID)
-    if type(itemLink) == "string" and itemLink ~= "" and type(addon.GetTSMRawCustomValue) == "function" then
-        local value = addon:GetTSMRawCustomValue(priceSource, itemLink)
+    local normalizedItemID = tonumber(itemID)
+    local priceQuery = type(itemLink) == "string" and itemLink ~= "" and itemLink
+        or (normalizedItemID and string.format("i:%d", math.floor(normalizedItemID + 0.5)))
+    if priceQuery and type(addon.GetTSMRawCustomValue) == "function" then
+        local value = addon:GetTSMRawCustomValue(priceSource, priceQuery)
         if value then
             return value
         end
     end
 
-    local normalizedItemID = tonumber(itemID)
     if not normalizedItemID or type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
         return nil
     end
@@ -1122,6 +1143,353 @@ function GoldTracker:RecordCraftingFarmingMarketSnapshots(rows)
     return self:RecordDiscoveredItemMarketSnapshots(rows)
 end
 
+local function CopyKnownPriceSample(sample)
+    if type(sample) ~= "table" then
+        return nil
+    end
+    return {
+        value = tonumber(sample.value),
+        timestamp = tonumber(sample.timestamp),
+        hourKey = sample.hourKey,
+    }
+end
+
+local function RecordKnownPriceSourceSample(sourceHistory, value, timestamp, hourKey)
+    value = FloorNumber(value)
+    if not value or value <= 0 then
+        return false
+    end
+
+    sourceHistory = type(sourceHistory) == "table" and sourceHistory or {}
+    local latest = sourceHistory.latest
+    if type(latest) == "table" and latest.hourKey == hourKey then
+        latest.value = value
+        latest.timestamp = timestamp
+        return true, sourceHistory
+    end
+
+    if type(latest) == "table" then
+        sourceHistory.previous = CopyKnownPriceSample(latest)
+    end
+    sourceHistory.latest = {
+        value = value,
+        timestamp = timestamp,
+        hourKey = hourKey,
+    }
+    return true, sourceHistory
+end
+
+function GoldTracker:NormalizeKnownPriceHistory()
+    if type(self.db) ~= "table" then
+        return nil
+    end
+    if type(self.db.knownPriceHistory) ~= "table" then
+        self.db.knownPriceHistory = {}
+    end
+    local store = self.db.knownPriceHistory
+    store.schemaVersion = 1
+    if type(store.items) ~= "table" then
+        store.items = {}
+    end
+    return store
+end
+
+local function GetKnownPriceCandidatePetID(item)
+    return tonumber(item and (item.petID or item.petId or item.PetId))
+end
+
+local function AddKnownPriceCandidate(addon, candidates, byKey, item, sourceLabel)
+    if type(item) ~= "table" then
+        return
+    end
+
+    local petID = GetKnownPriceCandidatePetID(item)
+    local itemID = tonumber(item.itemID)
+    itemID = itemID and math.floor(itemID + 0.5) or nil
+    petID = petID and math.floor(petID + 0.5) or nil
+    if not itemID and not petID then
+        return
+    end
+
+    local itemLink = type(item.itemLink) == "string" and item.itemLink ~= "" and item.itemLink or nil
+    local itemKey
+    local priceQuery
+    if petID then
+        itemKey = "p:" .. tostring(petID)
+        priceQuery = itemLink or itemKey
+    else
+        itemKey = addon:GetMarketHistoryItemKey(itemLink, itemID) or ("i:" .. tostring(itemID))
+        priceQuery = itemLink
+    end
+    if not itemKey then
+        return
+    end
+
+    local existing = byKey[itemKey]
+    if existing then
+        existing.itemLink = existing.itemLink or itemLink
+        existing.itemName = existing.itemName or item.itemName or item.name
+        existing.itemQuality = existing.itemQuality or item.itemQuality
+        existing.icon = existing.icon or item.icon
+        existing.sourceLabel = existing.sourceLabel or sourceLabel
+        existing.materialExpansionID = existing.materialExpansionID
+            or item.materialExpansionID or item.expansionID or item.expansion
+        existing.materialExpansionLabel = existing.materialExpansionLabel or item.materialExpansionLabel or item.expansionLabel
+        existing.materialProfessionIDs = existing.materialProfessionIDs or item.materialProfessionIDs or item.professions
+        existing.materialProfessionLabel = existing.materialProfessionLabel or item.materialProfessionLabel or item.professionLabel
+        return
+    end
+
+    local candidate = {
+        itemKey = itemKey,
+        itemID = petID and nil or itemID,
+        petID = petID,
+        priceQuery = priceQuery,
+        itemLink = itemLink,
+        itemName = item.itemName or item.name,
+        itemQuality = item.itemQuality,
+        icon = item.icon,
+        sourceLabel = sourceLabel,
+        materialExpansionID = item.materialExpansionID or item.expansionID or item.expansion,
+        materialExpansionLabel = item.materialExpansionLabel or item.expansionLabel,
+        materialProfessionIDs = item.materialProfessionIDs or item.professions,
+        materialProfessionLabel = item.materialProfessionLabel or item.professionLabel,
+    }
+    byKey[itemKey] = candidate
+    candidates[#candidates + 1] = candidate
+end
+
+local function CollectKnownPriceCandidatesFromTable(addon, candidates, byKey, root, sourceLabel, seenTables)
+    if type(root) ~= "table" or seenTables[root] then
+        return
+    end
+    seenTables[root] = true
+
+    if root.itemID or root.petID or root.petId or root.PetId then
+        AddKnownPriceCandidate(addon, candidates, byKey, root, sourceLabel)
+    end
+    for _, value in pairs(root) do
+        if type(value) == "table" then
+            CollectKnownPriceCandidatesFromTable(addon, candidates, byKey, value, sourceLabel, seenTables)
+        end
+    end
+end
+
+function GoldTracker:BuildKnownPriceScanCandidates()
+    local candidates = {}
+    local byKey = {}
+
+    -- These are all of the addon's static item catalogs except NS.FarmCatalog.
+    -- FarmCatalog is intentionally omitted until its much larger pricing scope has a separate policy.
+    for _, rootKey in ipairs(KNOWN_PRICE_STATIC_ROOT_KEYS) do
+        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, NS[rootKey], "Static", {})
+    end
+
+    if type(self.db) == "table" then
+        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.sessionHistory, "Session", {})
+        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.craftingFarmingCustomItems, "Session", {})
+        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.craftingFarmingDropRates, "Session", {})
+        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.farmingItemFavorites, "Favorite", {})
+    end
+
+    local marketHistory = self:NormalizeMarketHistory()
+    for itemKey, history in pairs(type(marketHistory and marketHistory.items) == "table" and marketHistory.items or {}) do
+        if type(history) == "table" then
+            history.marketHistoryItemKey = itemKey
+            AddKnownPriceCandidate(self, candidates, byKey, history, "History")
+        end
+    end
+
+    if type(self.BuildInventoryAuctionItemList) == "function" then
+        local source = self.GetAuctionableInventoryValueSource and self:GetAuctionableInventoryValueSource() or nil
+        local bagItems = self:BuildInventoryAuctionItemList(source and source.id, 0, 0, "itemName", true)
+        for _, item in ipairs(type(bagItems) == "table" and bagItems or {}) do
+            AddKnownPriceCandidate(self, candidates, byKey, item, "Bags")
+        end
+    end
+
+    table.sort(candidates, function(left, right)
+        return tostring(left and left.itemKey or "") < tostring(right and right.itemKey or "")
+    end)
+    return candidates
+end
+
+local function SeedKnownPriceEntryFromMarketHistory(addon, entry)
+    if type(entry) ~= "table" or entry.seededFromMarketHistory == true then
+        return
+    end
+    entry.seededFromMarketHistory = true
+
+    local marketHistory = addon:NormalizeMarketHistory()
+    local history = marketHistory and marketHistory.items and marketHistory.items[entry.itemKey]
+    for _, snapshot in ipairs(type(history and history.snapshots) == "table" and history.snapshots or {}) do
+        local timestamp = tonumber(snapshot and snapshot.timestamp)
+        local hourKey = snapshot and snapshot.hourKey
+        if timestamp and hourKey then
+            for _, source in ipairs(KNOWN_PRICE_SOURCES) do
+                local recorded, sourceHistory = RecordKnownPriceSourceSample(
+                    entry.sources[source.key],
+                    snapshot[source.key],
+                    timestamp,
+                    hourKey
+                )
+                if recorded then
+                    entry.sources[source.key] = sourceHistory
+                end
+            end
+        end
+    end
+end
+
+function GoldTracker:RecordKnownPriceCandidate(candidate, timestamp)
+    if type(candidate) ~= "table" then
+        return false
+    end
+    local store = self:NormalizeKnownPriceHistory()
+    if not store then
+        return false
+    end
+
+    local itemKey = candidate.itemKey or self:GetMarketHistoryItemKey(candidate.itemLink, candidate.itemID)
+    if not itemKey then
+        return false
+    end
+    local entry = store.items[itemKey]
+    if type(entry) ~= "table" then
+        entry = { itemKey = itemKey, sources = {} }
+        store.items[itemKey] = entry
+    end
+    if type(entry.sources) ~= "table" then
+        entry.sources = {}
+    end
+
+    entry.itemID = candidate.itemID or entry.itemID
+    entry.petID = candidate.petID or entry.petID
+    entry.itemLink = candidate.itemLink or entry.itemLink
+    entry.itemName = candidate.itemName or entry.itemName
+    entry.itemQuality = candidate.itemQuality or entry.itemQuality
+    entry.icon = candidate.icon or entry.icon
+    entry.sourceLabel = candidate.sourceLabel or entry.sourceLabel
+    entry.materialExpansionID = candidate.materialExpansionID or entry.materialExpansionID
+    entry.materialExpansionLabel = candidate.materialExpansionLabel or entry.materialExpansionLabel
+    entry.materialProfessionIDs = candidate.materialProfessionIDs or entry.materialProfessionIDs
+    entry.materialProfessionLabel = candidate.materialProfessionLabel or entry.materialProfessionLabel
+    SeedKnownPriceEntryFromMarketHistory(self, entry)
+
+    timestamp = tonumber(timestamp) or time()
+    local hourKey = date("%Y-%m-%d %H", timestamp)
+    local priced = false
+    for _, source in ipairs(KNOWN_PRICE_SOURCES) do
+        local value = GetTSMRawCustomValueForMarketHistory(
+            self,
+            source.tsmKey,
+            candidate.priceQuery or candidate.itemLink,
+            candidate.itemID
+        )
+        local recorded, sourceHistory = RecordKnownPriceSourceSample(entry.sources[source.key], value, timestamp, hourKey)
+        if recorded then
+            entry.sources[source.key] = sourceHistory
+            priced = true
+        end
+    end
+    if priced then
+        entry.lastSeen = timestamp
+    end
+    return priced
+end
+
+function GoldTracker:GetKnownPriceScanState()
+    return self.knownPriceScanState
+end
+
+function GoldTracker:StartKnownPriceScan(options)
+    options = type(options) == "table" and options or {}
+    if type(self.knownPriceScanState) == "table" and self.knownPriceScanState.running == true then
+        return false, self.knownPriceScanState
+    end
+
+    local candidates = self:BuildKnownPriceScanCandidates()
+    local state = {
+        running = true,
+        automatic = options.automatic == true,
+        processed = 0,
+        priced = 0,
+        total = #candidates,
+        startedAt = time(),
+    }
+    self.knownPriceScanState = state
+
+    local function NotifyProgress()
+        if type(options.onProgress) == "function" then
+            options.onProgress(state)
+        end
+    end
+    local function Finish()
+        state.running = false
+        state.completedAt = time()
+        local store = self:NormalizeKnownPriceHistory()
+        if store then
+            store.lastScanAt = state.completedAt
+            store.lastScanCandidateCount = state.total
+            store.lastScanPricedCount = state.priced
+        end
+        NotifyProgress()
+        if type(options.onComplete) == "function" then
+            options.onComplete(state)
+        end
+    end
+    local function ProcessBatch()
+        local lastIndex = math.min(state.total, state.processed + KNOWN_PRICE_SCAN_BATCH_SIZE)
+        for index = state.processed + 1, lastIndex do
+            if self:RecordKnownPriceCandidate(candidates[index]) then
+                state.priced = state.priced + 1
+            end
+        end
+        state.processed = lastIndex
+        NotifyProgress()
+        if state.processed >= state.total then
+            Finish()
+        elseif C_Timer and type(C_Timer.After) == "function" then
+            C_Timer.After(0, ProcessBatch)
+        end
+    end
+
+    NotifyProgress()
+    if state.total == 0 then
+        Finish()
+    elseif C_Timer and type(C_Timer.After) == "function" then
+        C_Timer.After(0, ProcessBatch)
+    else
+        while state.running do
+            ProcessBatch()
+        end
+    end
+    return true, state
+end
+
+function GoldTracker:QueueAutomaticKnownPriceScan()
+    local store = self:NormalizeKnownPriceHistory()
+    local lastScanAt = tonumber(store and store.lastScanAt) or 0
+    if time() - lastScanAt < KNOWN_PRICE_SCAN_INTERVAL then
+        return false
+    end
+
+    local function StartScan()
+        local currentStore = self:NormalizeKnownPriceHistory()
+        local currentLastScanAt = tonumber(currentStore and currentStore.lastScanAt) or 0
+        if time() - currentLastScanAt < KNOWN_PRICE_SCAN_INTERVAL then
+            return
+        end
+        self:StartKnownPriceScan({ automatic = true })
+    end
+    if C_Timer and type(C_Timer.After) == "function" then
+        C_Timer.After(12, StartScan)
+    else
+        StartScan()
+    end
+    return true
+end
+
 function GoldTracker:GetPriceIncreaseAlertConfig(options)
     options = type(options) == "table" and options or {}
     local defaults = self.DEFAULTS or {}
@@ -1183,110 +1551,191 @@ function GoldTracker:GetPriceIncreaseAlertForItem(item, options)
     )
 end
 
-function GoldTracker:BuildPriceIncreaseAlertRows(options)
+local function SeedKnownPriceStoreFromMarketHistory(addon, store)
+    local marketHistory = addon:NormalizeMarketHistory()
+    local histories = type(marketHistory and marketHistory.items) == "table" and marketHistory.items or {}
+    for itemKey, history in pairs(histories) do
+        if type(history) == "table" then
+            local entry = store.items[itemKey]
+            if type(entry) ~= "table" then
+                entry = { itemKey = itemKey, sources = {} }
+                store.items[itemKey] = entry
+            end
+            if type(entry.sources) ~= "table" then
+                entry.sources = {}
+            end
+            entry.itemID = history.itemID or entry.itemID
+            entry.itemLink = history.itemLink or entry.itemLink
+            entry.itemName = history.itemName or entry.itemName
+            entry.itemQuality = history.itemQuality or entry.itemQuality
+            SeedKnownPriceEntryFromMarketHistory(addon, entry)
+        end
+    end
+end
+
+local function GetKnownPriceSourceComparison(entry, source)
+    local sourceHistory = entry and entry.sources and entry.sources[source.key]
+    local previous = type(sourceHistory) == "table" and sourceHistory.previous or nil
+    local latest = type(sourceHistory) == "table" and sourceHistory.latest or nil
+    local previousValue = tonumber(previous and previous.value)
+    local latestValue = tonumber(latest and latest.value)
+    local rawChange = CalculateRawPercentChange(latestValue, previousValue)
+    if not rawChange then
+        return nil
+    end
+    return {
+        sourceKey = source.key,
+        sourceLabel = source.label,
+        baselinePrice = previousValue,
+        currentPrice = latestValue,
+        baselineTimestamp = previous.timestamp,
+        latestTimestamp = latest.timestamp,
+        rawChangePercent = rawChange,
+        changePercent = RoundPercentChange(rawChange),
+    }
+end
+
+local function IsKnownPriceComparisonQualified(comparison, direction, thresholdPercent, minimumValueCopper)
+    if type(comparison) ~= "table" or (tonumber(comparison.currentPrice) or 0) < minimumValueCopper then
+        return false
+    end
+    local change = tonumber(comparison.rawChangePercent)
+    if not change then
+        return false
+    end
+    if direction == "decrease" then
+        return change <= -thresholdPercent
+    end
+    return change >= thresholdPercent
+end
+
+function GoldTracker:BuildPriceAlertRows(options)
+    options = type(options) == "table" and options or {}
     local config = self:GetPriceIncreaseAlertConfig(options)
-    local source = self.GetAuctionableInventoryValueSource and self:GetAuctionableInventoryValueSource() or nil
-    local sourceID = source and source.id
-    local configuredMinimumQuality =
-        self.GetConfiguredMinimumTrackedItemQuality and self:GetConfiguredMinimumTrackedItemQuality() or 0
-    local minimumQuality = math.max(1, tonumber(configuredMinimumQuality) or 0)
-    local items = {}
-    local totalValue = 0
-    local totalQuantity = 0
-    local scannedStacks = 0
-    local matchedStacks = 0
-
-    if type(self.BuildInventoryAuctionItemList) == "function" then
-        items, totalValue, totalQuantity, scannedStacks, matchedStacks = self:BuildInventoryAuctionItemList(
-            sourceID,
-            minimumQuality,
-            math.max(0, config.minimumValueCopper - 1),
-            "itemName",
-            true
-        )
-        items = type(items) == "table" and items or {}
+    local direction = options.direction == "decrease" and "decrease" or "increase"
+    local store = self:NormalizeKnownPriceHistory()
+    if not store then
+        return {}, {
+            direction = direction,
+            thresholdPercent = config.thresholdPercent,
+            minimumValueCopper = config.minimumValueCopper,
+            knownItemCount = 0,
+        }
     end
-
-    local seen = {}
-    local candidateItems = {}
-    local inventoryCandidates = {}
-    local inventoryMaterialCount = 0
-    for _, item in ipairs(items) do
-        if IsPriceIncreaseAlertQualityAllowed(item) and IsPriceIncreaseAlertMaterialItem(self, item) then
-            inventoryMaterialCount = inventoryMaterialCount + 1
-            local itemKey = item and (item.marketHistoryItemKey or self:GetMarketHistoryItemKey(item.itemLink, item.itemID))
-            if itemKey and not seen[itemKey] then
-                seen[itemKey] = true
-                candidateItems[#candidateItems + 1] = item
-                inventoryCandidates[#inventoryCandidates + 1] = item
-            end
-        end
-    end
-
-    if type(self.RecordDiscoveredItemMarketSnapshots) == "function" and #inventoryCandidates > 0 then
-        self:RecordDiscoveredItemMarketSnapshots(inventoryCandidates)
-    end
-
-    local indexedMaterialCount = 0
-    local materialItems = GetPriceIncreaseAlertMaterialData(self)
-    if materialItems then
-        for itemID, materialData in pairs(materialItems) do
-            local normalizedItemID = math.floor((tonumber(itemID) or tonumber(materialData and materialData.itemID) or 0) + 0.5)
-            if normalizedItemID > 0 then
-                local itemKey = self:GetMarketHistoryItemKey(nil, normalizedItemID)
-                if itemKey and not seen[itemKey] then
-                    seen[itemKey] = true
-                    local materialCandidate = BuildPriceIncreaseIndexedMaterialCandidate(materialData)
-                    if materialCandidate and IsPriceIncreaseAlertQualityAllowed(materialCandidate) then
-                        indexedMaterialCount = indexedMaterialCount + 1
-                        candidateItems[#candidateItems + 1] = materialCandidate
-                    end
-                end
-            end
-        end
-    end
+    SeedKnownPriceStoreFromMarketHistory(self, store)
 
     local rows = {}
-    for _, item in ipairs(candidateItems) do
-        local row = self:GetPriceIncreaseAlertForItem(item, config)
-        if row then
-            rows[#rows + 1] = row
+    local knownItemCount = 0
+    for itemKey, entry in pairs(store.items) do
+        if type(entry) == "table" and IsPriceIncreaseAlertQualityAllowed(entry) then
+            knownItemCount = knownItemCount + 1
+            local comparisons = {}
+            local qualifyingComparison
+            for _, source in ipairs(KNOWN_PRICE_SOURCES) do
+                local comparison = GetKnownPriceSourceComparison(entry, source)
+                comparisons[source.key] = comparison
+                if IsKnownPriceComparisonQualified(
+                    comparison,
+                    direction,
+                    config.thresholdPercent,
+                    config.minimumValueCopper
+                ) and (not qualifyingComparison
+                    or math.abs(comparison.rawChangePercent) > math.abs(qualifyingComparison.rawChangePercent))
+                then
+                    qualifyingComparison = comparison
+                end
+            end
+
+            if qualifyingComparison then
+                local itemID = tonumber(entry.itemID)
+                itemID = itemID and math.floor(itemID + 0.5) or nil
+                if itemID and type(C_Item) == "table" and type(C_Item.GetItemInfo) == "function" then
+                    local itemName, itemLink, itemQuality, _, _, _, _, _, _, itemIcon = C_Item.GetItemInfo(itemID)
+                    entry.itemName = itemName or entry.itemName
+                    entry.itemLink = itemLink or entry.itemLink
+                    entry.itemQuality = itemQuality or entry.itemQuality
+                    entry.icon = itemIcon or entry.icon
+                end
+                local materialData = GetPriceIncreaseIndexedMaterialItem(self, itemID)
+                local isIndexedMaterial = materialData ~= nil
+                local expansionID,
+                    expansionLabel,
+                    professionIDs,
+                    professionLabel = ResolvePriceIncreaseMaterialMetadata(self, entry, itemID, materialData)
+                local dbMarketComparison = comparisons.dbMarket
+                local dbMinBuyoutComparison = comparisons.dbMinBuyout
+                rows[#rows + 1] = {
+                    itemKey = itemKey,
+                    itemID = itemID,
+                    petID = entry.petID,
+                    itemLink = entry.itemLink,
+                    itemName = entry.itemName or (itemID and ("Item " .. tostring(itemID))) or itemKey,
+                    itemQuality = entry.itemQuality,
+                    icon = entry.icon,
+                    quantity = 1,
+                    unitValue = qualifyingComparison.currentPrice,
+                    totalValue = qualifyingComparison.currentPrice,
+                    baselinePrice = qualifyingComparison.baselinePrice,
+                    latestPrice = qualifyingComparison.currentPrice,
+                    changePercent = qualifyingComparison.changePercent,
+                    rawChangePercent = qualifyingComparison.rawChangePercent,
+                    dbMarketChangePercent = dbMarketComparison and dbMarketComparison.changePercent,
+                    dbMarketRawChangePercent = dbMarketComparison and dbMarketComparison.rawChangePercent,
+                    dbMinBuyoutChangePercent = dbMinBuyoutComparison and dbMinBuyoutComparison.changePercent,
+                    dbMinBuyoutRawChangePercent = dbMinBuyoutComparison and dbMinBuyoutComparison.rawChangePercent,
+                    baselineTimestamp = qualifyingComparison.baselineTimestamp,
+                    latestTimestamp = qualifyingComparison.latestTimestamp,
+                    alertBasis = qualifyingComparison.sourceLabel,
+                    alertSourceKey = qualifyingComparison.sourceKey,
+                    alertDirection = direction,
+                    isMaterial = IsPriceIncreaseAlertMaterialItem(self, entry),
+                    isIndexedMaterial = isIndexedMaterial,
+                    hasFarmingMap = isIndexedMaterial and HasPriceIncreaseAlertMaterialMap(self, itemID) or false,
+                    materialExpansionID = expansionID,
+                    materialExpansionLabel = expansionLabel,
+                    materialProfessionIDs = professionIDs,
+                    materialProfessionLabel = professionLabel,
+                }
+            end
         end
     end
 
     table.sort(rows, function(left, right)
-        local leftChange = tonumber(left and left.rawChangePercent) or -1000000
-        local rightChange = tonumber(right and right.rawChangePercent) or -1000000
+        local leftChange = math.abs(tonumber(left and left.rawChangePercent) or 0)
+        local rightChange = math.abs(tonumber(right and right.rawChangePercent) or 0)
         if leftChange ~= rightChange then
             return leftChange > rightChange
         end
-
-        local leftValue = tonumber(left and left.totalValue) or 0
-        local rightValue = tonumber(right and right.totalValue) or 0
+        local leftValue = tonumber(left and left.unitValue) or 0
+        local rightValue = tonumber(right and right.unitValue) or 0
         if leftValue ~= rightValue then
             return leftValue > rightValue
         end
-
         return string.lower(tostring(left and (left.itemName or left.itemLink or left.itemID) or ""))
             < string.lower(tostring(right and (right.itemName or right.itemLink or right.itemID) or ""))
     end)
 
-    self:RecordDiscoveredItemMarketSnapshots(rows)
-
     return rows, {
+        direction = direction,
         thresholdPercent = config.thresholdPercent,
-        lookbackDays = config.lookbackDays,
-        minimumSamples = config.minimumSamples,
         minimumValueCopper = config.minimumValueCopper,
-        minimumQuality = minimumQuality,
-        scannedStacks = tonumber(scannedStacks) or 0,
-        matchedStacks = tonumber(matchedStacks) or 0,
-        inventoryItemCount = #items,
-        inventoryMaterialCount = inventoryMaterialCount,
-        indexedMaterialCount = indexedMaterialCount,
-        totalValue = tonumber(totalValue) or 0,
-        totalQuantity = tonumber(totalQuantity) or 0,
+        knownItemCount = knownItemCount,
+        lastScanAt = tonumber(store.lastScanAt),
+        lastScanCandidateCount = tonumber(store.lastScanCandidateCount) or 0,
+        lastScanPricedCount = tonumber(store.lastScanPricedCount) or 0,
     }
+end
+
+function GoldTracker:BuildPriceIncreaseAlertRows(options)
+    options = type(options) == "table" and options or {}
+    options.direction = "increase"
+    return self:BuildPriceAlertRows(options)
+end
+
+function GoldTracker:BuildPriceDecreaseAlertRows(options)
+    options = type(options) == "table" and options or {}
+    options.direction = "decrease"
+    return self:BuildPriceAlertRows(options)
 end
 
 function GoldTracker:RecordCurrentBagMarketSnapshot()

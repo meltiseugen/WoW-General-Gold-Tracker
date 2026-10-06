@@ -3,8 +3,10 @@ local GoldTracker = NS.GoldTracker
 
 local MapAreaOverlay = {}
 
-local DEFAULT_PADDING_X = 0.018
-local DEFAULT_PADDING_Y = 0.026
+local DEFAULT_PADDING_X = 0.014
+local DEFAULT_PADDING_Y = 0.020
+local DEFAULT_CLUSTER_DISTANCE_X = 0.105
+local DEFAULT_CLUSTER_DISTANCE_Y = 0.150
 local DEFAULT_ROUNDING_POINTS = 12
 local DEFAULT_FILL_STEP = 3
 
@@ -63,15 +65,13 @@ local function IsUserDiscoveredPin(pinData)
         and (pinData.sourceType == "user" or pinData.routeType == "user-discovered")
 end
 
-local function UserPinAreasOverlap(left, right, paddingX, paddingY)
-    local diameterX = math.max(0.0001, paddingX * 2)
-    local diameterY = math.max(0.0001, paddingY * 2)
-    local normalizedX = (left.x - right.x) / diameterX
-    local normalizedY = (left.y - right.y) / diameterY
+local function PinsAreWithinDistance(left, right, distanceX, distanceY)
+    local normalizedX = (left.x - right.x) / math.max(0.0001, distanceX)
+    local normalizedY = (left.y - right.y) / math.max(0.0001, distanceY)
     return ((normalizedX * normalizedX) + (normalizedY * normalizedY)) <= 1
 end
 
-local function BuildUserPinGroups(pins, paddingX, paddingY)
+local function BuildPinClusters(pins, distanceX, distanceY)
     if #pins == 0 then
         return {}
     end
@@ -104,7 +104,7 @@ local function BuildUserPinGroups(pins, paddingX, paddingY)
 
     for leftIndex = 1, #pins - 1 do
         for rightIndex = leftIndex + 1, #pins do
-            if UserPinAreasOverlap(pins[leftIndex], pins[rightIndex], paddingX, paddingY) then
+            if PinsAreWithinDistance(pins[leftIndex], pins[rightIndex], distanceX, distanceY) then
                 union(leftIndex, rightIndex)
             end
         end
@@ -114,20 +114,28 @@ local function BuildUserPinGroups(pins, paddingX, paddingY)
     local groups = {}
     for index, pinData in ipairs(pins) do
         local root = find(index)
-        local group = groupsByRoot[root]
-        if not group then
-            group = {
-                key = "user-cluster-" .. tostring(#groups + 1),
-                pins = {},
-                label = "User-discovered farming cluster",
-                isUserCluster = true,
-            }
-            groupsByRoot[root] = group
-            groups[#groups + 1] = group
+        local cluster = groupsByRoot[root]
+        if not cluster then
+            cluster = {}
+            groupsByRoot[root] = cluster
+            groups[#groups + 1] = cluster
         end
-        group.pins[#group.pins + 1] = pinData
+        cluster[#cluster + 1] = pinData
     end
     return groups
+end
+
+local function AddSeparatedGroups(target, group, distanceX, distanceY)
+    local clusters = BuildPinClusters(group.pins, distanceX, distanceY)
+    for clusterIndex, clusterPins in ipairs(clusters) do
+        target[#target + 1] = {
+            key = #clusters > 1 and (group.key .. "-cluster-" .. tostring(clusterIndex)) or group.key,
+            pins = clusterPins,
+            routeID = group.routeID,
+            label = group.label,
+            isUserCluster = group.isUserCluster == true,
+        }
+    end
 end
 
 local function BuildPaddedHull(pins, paddingX, paddingY, roundingPoints)
@@ -148,9 +156,12 @@ function MapAreaOverlay:BuildGroups(pins, mapID, options)
     options = type(options) == "table" and options or {}
     local paddingX = tonumber(options.paddingX) or DEFAULT_PADDING_X
     local paddingY = tonumber(options.paddingY) or DEFAULT_PADDING_Y
+    local clusterDistanceX = tonumber(options.clusterDistanceX) or DEFAULT_CLUSTER_DISTANCE_X
+    local clusterDistanceY = tonumber(options.clusterDistanceY) or DEFAULT_CLUSTER_DISTANCE_Y
     local normalizedMapID = tonumber(mapID)
     local groups = {}
-    local orderedGroups = {}
+    local baseGroups = {}
+    local separatedGroups = {}
     local userPins = {}
 
     for _, pinData in ipairs(pins or {}) do
@@ -176,18 +187,26 @@ function MapAreaOverlay:BuildGroups(pins, mapID, options)
                         label = pinData.spotLocation or pinData.label or pinData.itemName,
                     }
                     groups[key] = group
-                    orderedGroups[#orderedGroups + 1] = group
+                    baseGroups[#baseGroups + 1] = group
                 end
                 group.pins[#group.pins + 1] = pinData
             end
         end
     end
 
-    for _, group in ipairs(BuildUserPinGroups(userPins, paddingX, paddingY)) do
-        orderedGroups[#orderedGroups + 1] = group
+    for _, group in ipairs(baseGroups) do
+        AddSeparatedGroups(separatedGroups, group, clusterDistanceX, clusterDistanceY)
     end
 
-    return orderedGroups
+    local userGroup = {
+        key = "user-cluster",
+        pins = userPins,
+        label = "User-discovered farming cluster",
+        isUserCluster = true,
+    }
+    AddSeparatedGroups(separatedGroups, userGroup, paddingX * 2, paddingY * 2)
+
+    return separatedGroups
 end
 
 function MapAreaOverlay:BuildPolygons(pins, mapID, options)

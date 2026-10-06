@@ -6,12 +6,16 @@ local WINDOW_WIDTH = 1240
 local WINDOW_HEIGHT = 620
 local WINDOW_MIN_WIDTH = 1100
 local WINDOW_MIN_HEIGHT = 420
+local TRANSMOG_EXPANDED_WINDOW_WIDTH = 1420
+local TRANSMOG_EXPANDED_WINDOW_HEIGHT = 780
+local TRANSMOG_EXPANDED_WINDOW_MIN_WIDTH = 1040
+local TRANSMOG_EXPANDED_WINDOW_MIN_HEIGHT = 520
 local ROW_HEIGHT = 24
 local ROW_SPACING = 2
 local ROW_STRIDE = ROW_HEIGHT + ROW_SPACING
 local ICON_SIZE = 18
 local COLUMN_GAP = 8
-local TRACK_WIDTH = 58
+local TRACK_WIDTH = 24
 local EXPANSION_MIN_WIDTH = 102
 local INSTANCE_MIN_WIDTH = 130
 local BOSS_MIN_WIDTH = 118
@@ -19,6 +23,7 @@ local TYPE_WIDTH = 60
 local VALUE_MIN_WIDTH = 92
 local DETAILS_WIDTH = 64
 local MAP_WIDTH = 48
+local ADD_WIDTH = 48
 local ITEM_MIN_WIDTH = 170
 local HEADER_LEFT_INSET = 12
 local ROW_RIGHT_PADDING = 6
@@ -28,12 +33,13 @@ local TRACKED_BUTTON_WIDTH = 24
 local TRACKED_BUTTON_HEIGHT = 20
 local BACKGROUND_SCAN_ITEMS_PER_TICK = 120
 local FOREGROUND_SCAN_ITEMS_PER_TICK = 2200
+local TRANSMOG_PRICE_ITEMS_PER_TICK = 120
 local SCAN_REFRESH_INTERVAL = 0.35
 local ITEM_REFRESH_DELAY = 0.5
 local SCAN_CACHE_VERSION = 2
 local SCAN_CACHE_MAX_ENTRIES = 30
 local MAX_PENDING_BINDING_RETRIES = 12
-local DEFAULT_SORT_KEY = "value"
+local DEFAULT_SORT_KEY = "instanceName"
 local EXPANSION_CURRENT_ID = "current"
 local EXPANSION_ALL_ID = "all"
 
@@ -64,6 +70,7 @@ local SCAN_MODE_OPTIONS = {
 local GetInstanceDisplayName
 local GetBossDisplayName
 local GetPendingBindingCount
+local SortRows
 
 local CONTENT_TYPE_OPTIONS = {
     { id = "all", label = "All" },
@@ -127,6 +134,366 @@ local function GetATTBoEData()
         return { instances = {} }
     end
     return data
+end
+
+local function GetWITRaidPetData()
+    local data = NS.WITDropsData
+    local categories = type(data) == "table" and data.categories or nil
+    local rows = type(categories) == "table" and categories.raidPets or nil
+    return type(rows) == "table" and rows or {}
+end
+
+local WIT_TRANSMOG_CATEGORIES = {
+    { id = "transmogs", sourceLabel = "Instances > Noteworthy Items", farmingSourceType = "wit-transmogs" },
+    { id = "openWorldInstances", sourceLabel = "Open World > Transmog", farmingSourceType = "wit-open-world-transmogs" },
+}
+local WIT_RAID_FARM_IDS = {
+    Karazhan = true,
+    Sunwell = true,
+}
+local WIT_FARM_INSTANCE_ALIASES = {
+    AhnKahetTheOldKingdom = "AhnKahet",
+    AuchenaiCrypts = "AuchAuchenaiCrypts",
+    BloodFurnace = "HCBloodFurnace",
+    Botanica = "TempestKeepBotanica",
+    BRD = "BlackrockDepths",
+    ForgeofSouls = "FHTheForgeOfSouls",
+    HallsofLightning = "UlduarHallsofLightning",
+    HallsofStone = "UlduarHallsofStone",
+    HellFireRamparts = "HCHellfireRamparts",
+    MagistersTerrece = "MagistersTerrace",
+    ManaTombs = "AuchManaTombs",
+    PitofSaron = "FHPitOfSaron",
+    ScarletArmoryOld = "Scarlet Monastery of Old",
+    ScarletGraveyardOLD = "Scarlet Monastery of Old",
+    ScarletMonastaryNew = "ScarletMonastery",
+    SethekkHalls = "AuchSethekkHalls",
+    ShadowLab = "AuchShadowLabyrinth",
+    ShatteredHalls = "HCTheShatteredHalls",
+    SteamVaults = "CFRTheSteamvault",
+    StratholmeMainEntrence = "StratholmeCrusader",
+    StratholmeServiceEnterence = "StratholmeGauntlet",
+    SunkenTemple = "TheSunkenTemple",
+    Sunwell = "SunwellPlateau",
+    TheArcatraz = "TempestKeepArcatraz",
+    TheDeadMines = "Deadmines",
+    TheDeadmines = "Deadmines",
+    TheMechanar = "TempestKeepMechanar",
+    TheSlavePens = "CFRTheSlavePens",
+    TheStockades = "TheStockade",
+    TheTempleOfAtalHakkar = "TheSunkenTemple",
+    TheUnderbog = "CFRTheUnderbog",
+    ThroneofTides = "ThroneOfTheTides",
+    UtguardPinnacle = "UtgardePinnacle",
+    VortextPinnacle = "TheVortexPinnacle",
+}
+local instanceTransmogExpansionOptions
+local witFarmInstanceIndex
+
+local function GetWITTransmogCategories()
+    local data = NS.WITDropsData
+    return type(data) == "table" and type(data.categories) == "table" and data.categories or {}
+end
+
+local function NormalizeInstanceLookupName(value)
+    local normalized = string.lower(tostring(value or ""))
+    normalized = normalized:gsub("%b()", "")
+    return normalized:gsub("[^a-z0-9]", "")
+end
+
+local function GetWITFarmInstanceIndex()
+    if witFarmInstanceIndex then
+        return witFarmInstanceIndex
+    end
+
+    local index = {
+        byExpansionAndName = {},
+        byName = {},
+    }
+    for _, instance in pairs(GetData().instances or {}) do
+        local normalizedName = NormalizeInstanceLookupName(instance and instance.name)
+        if normalizedName ~= "" then
+            local expansionID = tostring(instance.expansionID or "unknown")
+            index.byExpansionAndName[expansionID .. ":" .. normalizedName] = instance
+            index.byName[normalizedName] = index.byName[normalizedName] or instance
+        end
+    end
+    witFarmInstanceIndex = index
+    return index
+end
+
+local function ResolveWITFarmInstance(item)
+    local index = GetWITFarmInstanceIndex()
+    local expansionID = tostring(item and (item.contentID or item.expansion) or "unknown")
+    local farmID = tostring(item and item.farmID or "")
+    local candidates = {
+        WIT_FARM_INSTANCE_ALIASES[farmID] or farmID,
+        farmID,
+        item and item.farmName,
+        item and item.locationLabel,
+    }
+
+    for _, candidate in ipairs(candidates) do
+        local normalizedName = NormalizeInstanceLookupName(candidate)
+        local instance = normalizedName ~= ""
+            and index.byExpansionAndName[expansionID .. ":" .. normalizedName]
+            or nil
+        if instance then
+            return instance
+        end
+    end
+    for _, candidate in ipairs(candidates) do
+        local normalizedName = NormalizeInstanceLookupName(candidate)
+        local instance = normalizedName ~= "" and index.byName[normalizedName] or nil
+        if instance then
+            return instance
+        end
+    end
+    return nil
+end
+
+local function GetInstanceTransmogExpansionOptions()
+    if instanceTransmogExpansionOptions then
+        return instanceTransmogExpansionOptions
+    end
+    local options = {
+        { id = EXPANSION_ALL_ID, label = "All expansions" },
+    }
+    local seen = {
+        [EXPANSION_ALL_ID] = true,
+    }
+    for _, category in ipairs(WIT_TRANSMOG_CATEGORIES) do
+        for _, item in ipairs(GetWITTransmogCategories()[category.id] or {}) do
+            local expansionID = tostring(item.contentID or item.expansion or "unknown")
+            if not seen[expansionID] then
+                seen[expansionID] = true
+                options[#options + 1] = {
+                    id = expansionID,
+                    label = item.expansionLabel or tostring(item.expansion or expansionID),
+                }
+            end
+        end
+    end
+    table.sort(options, function(left, right)
+        if left.id == EXPANSION_ALL_ID then
+            return true
+        end
+        if right.id == EXPANSION_ALL_ID then
+            return false
+        end
+        local leftNumber = tonumber(left.id)
+        local rightNumber = tonumber(right.id)
+        if leftNumber and rightNumber and leftNumber ~= rightNumber then
+            return leftNumber < rightNumber
+        end
+        return string.lower(tostring(left.label or left.id)) < string.lower(tostring(right.label or right.id))
+    end)
+    instanceTransmogExpansionOptions = options
+    return options
+end
+
+local function NormalizeInstanceTransmogExpansionFilter(filterID)
+    local normalizedID = tostring(filterID or EXPANSION_ALL_ID)
+    for _, option in ipairs(GetInstanceTransmogExpansionOptions()) do
+        if option.id == normalizedID then
+            return normalizedID
+        end
+    end
+    return EXPANSION_ALL_ID
+end
+
+local function GetInstanceTransmogExpansionLabel(filterID)
+    local normalizedID = NormalizeInstanceTransmogExpansionFilter(filterID)
+    for _, option in ipairs(GetInstanceTransmogExpansionOptions()) do
+        if option.id == normalizedID then
+            return option.label
+        end
+    end
+    return "All expansions"
+end
+
+local function SortInstanceTransmogRows(rows)
+    table.sort(rows, function(left, right)
+        local leftExpansion = tonumber(left.expansionID)
+        local rightExpansion = tonumber(right.expansionID)
+        if leftExpansion and rightExpansion and leftExpansion ~= rightExpansion then
+            return leftExpansion < rightExpansion
+        end
+        local leftExpansionLabel = string.lower(tostring(left.expansionLabel or left.expansionID or ""))
+        local rightExpansionLabel = string.lower(tostring(right.expansionLabel or right.expansionID or ""))
+        if leftExpansionLabel ~= rightExpansionLabel then
+            return leftExpansionLabel < rightExpansionLabel
+        end
+        local leftInstance = string.lower(tostring(left.instanceName or ""))
+        local rightInstance = string.lower(tostring(right.instanceName or ""))
+        if leftInstance ~= rightInstance then
+            return leftInstance < rightInstance
+        end
+        local leftItem = string.lower(tostring(left.itemName or left.itemID or ""))
+        local rightItem = string.lower(tostring(right.itemName or right.itemID or ""))
+        if leftItem ~= rightItem then
+            return leftItem < rightItem
+        end
+        return tostring(left.recordID or "") < tostring(right.recordID or "")
+    end)
+end
+
+local function BuildInstanceTransmogRows(expansionFilterID)
+    local normalizedFilterID = NormalizeInstanceTransmogExpansionFilter(expansionFilterID)
+    local rows = {}
+    for _, category in ipairs(WIT_TRANSMOG_CATEGORIES) do
+        for _, item in ipairs(GetWITTransmogCategories()[category.id] or {}) do
+            local expansionID = tostring(item.contentID or item.expansion or "unknown")
+            if normalizedFilterID == EXPANSION_ALL_ID or normalizedFilterID == expansionID then
+                local itemID = tonumber(item.itemID)
+                if itemID then
+                    rows[#rows + 1] = {
+                        recordID = item.recordID,
+                        farmID = item.farmID,
+                        itemID = math.floor(itemID + 0.5),
+                        itemLink = item.itemLink,
+                        itemName = item.itemName,
+                        expansionID = expansionID,
+                        expansionLabel = item.expansionLabel or tostring(item.expansion or expansionID),
+                        contentType = "transmog",
+                        instanceName = item.farmName or item.locationLabel or "Unknown instance",
+                        locationLabel = item.locationLabel or item.farmName or "Unknown instance",
+                        instanceMapID = tonumber(item.locationID),
+                        bossName = category.sourceLabel,
+                        sourceLabel = category.sourceLabel,
+                        sourceCategory = category.id,
+                        quantity = tonumber(item.quantity) or 0,
+                        farmingSourceType = category.farmingSourceType,
+                        value = 0,
+                        marketValue = 0,
+                        regionMarketValue = 0,
+                        averageValue = 0,
+                    }
+                end
+            end
+        end
+    end
+    SortInstanceTransmogRows(rows)
+    return rows
+end
+
+local function FilterInstanceTransmogRows(rows, minimumValueCopper, valueSourceID)
+    local filteredRows = {}
+    local minimumValue = math.max(0, math.floor((tonumber(minimumValueCopper) or 0) + 0.5))
+    for _, row in ipairs(rows or {}) do
+        local priceIsCurrent = row.transmogPricesLoaded == true
+            and (not valueSourceID or row.transmogRequestedValueSourceID == valueSourceID)
+        if minimumValue == 0 or (priceIsCurrent and (tonumber(row.value) or 0) >= minimumValue) then
+            filteredRows[#filteredRows + 1] = row
+        end
+    end
+    return filteredRows
+end
+
+local function BuildInstanceTransmogDisplayRows(rows, expandedGroups, flatList, sortKey, sortAscending, sortCriteria)
+    if flatList == true then
+        local flatRows = {}
+        for _, row in ipairs(rows or {}) do
+            flatRows[#flatRows + 1] = row
+        end
+        return flatRows
+    end
+
+    expandedGroups = type(expandedGroups) == "table" and expandedGroups or {}
+    local expansionGroups = {}
+    local expansionOrder = {}
+    for _, row in ipairs(rows or {}) do
+        local expansionID = tostring(row.expansionID or "unknown")
+        local expansionKey = "expansion:" .. expansionID
+        local expansionGroup = expansionGroups[expansionKey]
+        if not expansionGroup then
+            expansionGroup = {
+                key = expansionKey,
+                id = expansionID,
+                label = row.expansionLabel or expansionID,
+                instances = {},
+                instanceOrder = {},
+                itemCount = 0,
+            }
+            expansionGroups[expansionKey] = expansionGroup
+            expansionOrder[#expansionOrder + 1] = expansionGroup
+        end
+        local instanceLabel = row.instanceName or row.locationLabel or "Unknown instance"
+        local instanceKey = expansionKey .. "|instance:" .. string.lower(tostring(instanceLabel))
+        local instanceGroup = expansionGroup.instances[instanceKey]
+        if not instanceGroup then
+            instanceGroup = {
+                key = instanceKey,
+                label = instanceLabel,
+                rows = {},
+            }
+            expansionGroup.instances[instanceKey] = instanceGroup
+            expansionGroup.instanceOrder[#expansionGroup.instanceOrder + 1] = instanceGroup
+        end
+        instanceGroup.rows[#instanceGroup.rows + 1] = row
+        expansionGroup.itemCount = expansionGroup.itemCount + 1
+    end
+
+    table.sort(expansionOrder, function(left, right)
+        local leftNumber = tonumber(left.id)
+        local rightNumber = tonumber(right.id)
+        if leftNumber and rightNumber and leftNumber ~= rightNumber then
+            return leftNumber < rightNumber
+        end
+        return string.lower(tostring(left.label)) < string.lower(tostring(right.label))
+    end)
+
+    local displayRows = {}
+    for _, expansionGroup in ipairs(expansionOrder) do
+        local expansionExpanded = expandedGroups[expansionGroup.key] == true
+        displayRows[#displayRows + 1] = {
+            isLocationGroupHeader = true,
+            locationGroupKey = expansionGroup.key,
+            locationGroupLabel = expansionGroup.label,
+            collapsed = not expansionExpanded,
+            itemCount = expansionGroup.itemCount,
+            groupDepth = 0,
+        }
+        if expansionExpanded then
+            table.sort(expansionGroup.instanceOrder, function(left, right)
+                return string.lower(tostring(left.label)) < string.lower(tostring(right.label))
+            end)
+            for _, instanceGroup in ipairs(expansionGroup.instanceOrder) do
+                local instanceExpanded = expandedGroups[instanceGroup.key] == true
+                displayRows[#displayRows + 1] = {
+                    isLocationGroupHeader = true,
+                    locationGroupKey = instanceGroup.key,
+                    locationGroupLabel = instanceGroup.label,
+                    collapsed = not instanceExpanded,
+                    itemCount = #instanceGroup.rows,
+                    groupDepth = 1,
+                }
+                if instanceExpanded then
+                    SortRows(instanceGroup.rows, sortKey, sortAscending, sortCriteria)
+                    for _, row in ipairs(instanceGroup.rows) do
+                        displayRows[#displayRows + 1] = row
+                    end
+                end
+            end
+        end
+    end
+    return displayRows
+end
+
+function GoldTracker:GetInstanceTransmogExpansionOptions()
+    return GetInstanceTransmogExpansionOptions()
+end
+
+function GoldTracker:BuildInstanceTransmogRows(expansionFilterID)
+    return BuildInstanceTransmogRows(expansionFilterID)
+end
+
+function GoldTracker:FilterInstanceTransmogRows(rows, minimumValueCopper, valueSourceID)
+    return FilterInstanceTransmogRows(rows, minimumValueCopper, valueSourceID)
+end
+
+function GoldTracker:BuildInstanceTransmogDisplayRows(rows, expandedGroups, flatList, sortKey, sortAscending, sortCriteria)
+    return BuildInstanceTransmogDisplayRows(rows, expandedGroups, flatList, sortKey, sortAscending, sortCriteria)
 end
 
 local function GetItemInfoByID(itemID)
@@ -497,6 +864,239 @@ local function BuildStaticEntrancePin(row, mapID)
     }
 end
 
+local function EnsureInstanceTransmogRowPriceData(addon, frame, row)
+    if type(row) ~= "table" or not tonumber(row.itemID) then
+        return
+    end
+    local valueSource = addon.VALUE_SOURCE_BY_ID and addon.VALUE_SOURCE_BY_ID[frame.valueSourceID]
+        or (type(addon.GetInstanceFarmingValueSource) == "function" and addon:GetInstanceFarmingValueSource())
+    local requestedValueSourceID = valueSource and valueSource.id
+    if row.transmogPricesLoaded and row.transmogRequestedValueSourceID == requestedValueSourceID then
+        return
+    end
+    local prices = GetPriceSnapshot(addon, row.itemID, valueSource)
+    row.value = prices.value
+    row.marketValue = prices.marketValue
+    row.regionMarketValue = prices.regionMarketValue
+    row.averageValue = prices.averageValue
+    row.valueSourceID = prices.valueSourceID
+    row.valueSourceLabel = prices.valueSourceLabel
+    row.valueSourceWasFallback = prices.valueSourceWasFallback == true
+    row.transmogRequestedValueSourceID = requestedValueSourceID
+    row.transmogPricesLoaded = true
+end
+
+local function EnsureInstanceTransmogRowData(addon, frame, row)
+    if type(row) ~= "table" or not tonumber(row.itemID) then
+        return
+    end
+    EnsureRowItemDisplayData(addon, row)
+    EnsureInstanceTransmogRowPriceData(addon, frame, row)
+end
+
+local function ProcessInstanceTransmogPriceFrame(worker, elapsed)
+    local addon = worker and worker.addon
+    local frame = addon and addon.instanceFarmingFrame
+    local state = frame and frame.transmogPriceLoadState
+    if not state or state.rows ~= frame.transmogRows or state.valueSourceID ~= frame.valueSourceID then
+        if addon and type(addon.StopInstanceTransmogPriceWorker) == "function" then
+            addon:StopInstanceTransmogPriceWorker()
+        end
+        return
+    end
+
+    local processed = 0
+    while state.index < state.total and processed < TRANSMOG_PRICE_ITEMS_PER_TICK do
+        state.index = state.index + 1
+        EnsureInstanceTransmogRowPriceData(addon, frame, state.rows[state.index])
+        processed = processed + 1
+    end
+
+    state.refreshElapsed = (state.refreshElapsed or 0) + (tonumber(elapsed) or 0)
+    local complete = state.index >= state.total
+    if complete then
+        frame.transmogPricesReadyRows = state.rows
+        frame.transmogPricesReadySourceID = state.valueSourceID
+        frame.transmogPriceLoadState = nil
+        addon:StopInstanceTransmogPriceWorker()
+    end
+    if complete or state.refreshElapsed >= SCAN_REFRESH_INTERVAL then
+        state.refreshElapsed = 0
+        addon:RefreshInstanceFarmingWindow(false)
+    end
+end
+
+function GoldTracker:GetInstanceTransmogPriceWorker()
+    if not self.instanceTransmogPriceWorker then
+        self.instanceTransmogPriceWorker = CreateFrame("Frame")
+        self.instanceTransmogPriceWorker:Hide()
+    end
+    return self.instanceTransmogPriceWorker
+end
+
+function GoldTracker:StopInstanceTransmogPriceWorker()
+    local worker = self.instanceTransmogPriceWorker
+    if worker then
+        worker:SetScript("OnUpdate", nil)
+        worker:Hide()
+    end
+    if self.instanceFarmingFrame then
+        self.instanceFarmingFrame.transmogPriceLoadState = nil
+    end
+end
+
+local function IsInstanceTransmogPriceSortActive(addon, frame)
+    local criteria = addon:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS)
+    for _, criterion in ipairs(criteria) do
+        if criterion.key == "value"
+            or criterion.key == "marketValue"
+            or criterion.key == "regionMarketValue"
+            or criterion.key == "averageValue"
+        then
+            return true
+        end
+    end
+    return false
+end
+
+function GoldTracker:StartInstanceTransmogPriceLoading()
+    local frame = self.instanceFarmingFrame
+    local rows = frame and frame.transmogRows
+    local minimumValue = tonumber(frame and frame.transmogMinimumValueCopper) or 0
+    local pricesNeeded = frame and (minimumValue > 0 or IsInstanceTransmogPriceSortActive(self, frame))
+    if not frame or frame.instanceFarmingViewID ~= "transmogs" or type(rows) ~= "table" or not pricesNeeded then
+        self:StopInstanceTransmogPriceWorker()
+        return
+    end
+    if frame.transmogPriceLoadState
+        and frame.transmogPriceLoadState.rows == rows
+        and frame.transmogPriceLoadState.valueSourceID == frame.valueSourceID then
+        return
+    end
+    if frame.transmogPricesReadyRows == rows and frame.transmogPricesReadySourceID == frame.valueSourceID then
+        return
+    end
+
+    local needsPrices = false
+    for _, row in ipairs(rows) do
+        if row.transmogPricesLoaded ~= true or row.transmogRequestedValueSourceID ~= frame.valueSourceID then
+            needsPrices = true
+            break
+        end
+    end
+    if not needsPrices then
+        frame.transmogPricesReadyRows = rows
+        frame.transmogPricesReadySourceID = frame.valueSourceID
+        return
+    end
+
+    frame.transmogPriceLoadState = {
+        rows = rows,
+        index = 0,
+        total = #rows,
+        valueSourceID = frame.valueSourceID,
+        refreshElapsed = 0,
+    }
+    local worker = self:GetInstanceTransmogPriceWorker()
+    worker.addon = self
+    worker:SetScript("OnUpdate", ProcessInstanceTransmogPriceFrame)
+    worker:Show()
+end
+
+local function GetTSMLinkValue(addon, priceSource, itemLink, itemID)
+    if type(itemLink) == "string" and itemLink ~= "" and type(addon.GetTSMRawCustomValue) == "function" then
+        return tonumber(addon:GetTSMRawCustomValue(priceSource, itemLink)) or 0
+    end
+    return GetTSMValue(addon, priceSource, itemID)
+end
+
+local function GetRaidPetDisplay(item)
+    local itemLink = type(item and item.itemLink) == "string" and item.itemLink ~= "" and item.itemLink or nil
+    local linkedSpeciesID = itemLink and tonumber(itemLink:match("battlepet:(%d+)")) or nil
+    local speciesID = tonumber(item and item.petID) or linkedSpeciesID
+    if itemLink and speciesID and linkedSpeciesID ~= speciesID then
+        itemLink = itemLink:gsub("(battlepet:)%d+", function(prefix)
+            return prefix .. tostring(speciesID)
+        end, 1)
+    end
+    local itemName = itemLink and itemLink:match("%[([^%]]+)%]") or nil
+    local itemQuality = itemLink and tonumber(itemLink:match("battlepet:%d+:%d+:(%d+)")) or 3
+    local icon
+    if speciesID and C_PetJournal and type(C_PetJournal.GetPetInfoBySpeciesID) == "function" then
+        local petName, petIcon = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+        itemName = petName or itemName
+        icon = petIcon
+    end
+    return itemName or ("Pet " .. tostring(speciesID or "?")), itemLink, itemQuality, icon, speciesID
+end
+
+local function GetRaidPetPriceSnapshot(addon, item, valueSource, resolvedItemLink)
+    local itemID = tonumber(item and item.itemID)
+    local itemLink = resolvedItemLink or (item and item.itemLink)
+    local selectedValue = 0
+    local resolvedSourceID = valueSource and valueSource.id
+    local resolvedSourceLabel = valueSource and valueSource.label
+    local valueSourceWasFallback = false
+    if valueSource and type(addon.ResolveItemUnitValue) == "function" then
+        selectedValue, resolvedSourceID, resolvedSourceLabel, valueSourceWasFallback =
+            addon:ResolveItemUnitValue(valueSource.id, itemLink, itemID, true)
+    elseif valueSource and valueSource.tsmKey then
+        selectedValue = GetTSMLinkValue(addon, valueSource.tsmKey, itemLink, itemID)
+    end
+    return {
+        value = tonumber(selectedValue) or 0,
+        valueSourceID = resolvedSourceID,
+        valueSourceLabel = resolvedSourceLabel,
+        valueSourceWasFallback = valueSourceWasFallback == true,
+        marketValue = GetTSMLinkValue(addon, "DBMarket", itemLink, itemID),
+        regionMarketValue = GetTSMLinkValue(addon, "DBRegionMarketAvg", itemLink, itemID),
+        averageValue = GetTSMLinkValue(addon, "DBRegionSaleAvg", itemLink, itemID),
+    }
+end
+
+local function BuildInstanceRaidPetRows(addon)
+    local rows = {}
+    local valueSource = addon.VALUE_SOURCE_BY_ID and addon.VALUE_SOURCE_BY_ID[addon.instanceFarmingFrame and addon.instanceFarmingFrame.valueSourceID]
+        or (type(addon.GetInstanceFarmingValueSource) == "function" and addon:GetInstanceFarmingValueSource())
+    for _, item in ipairs(GetWITRaidPetData()) do
+        local itemName, itemLink, itemQuality, icon, speciesID = GetRaidPetDisplay(item)
+        local prices = GetRaidPetPriceSnapshot(addon, item, valueSource, itemLink)
+        rows[#rows + 1] = {
+            recordID = item.recordID,
+            itemID = tonumber(item.itemID),
+            itemName = itemName,
+            itemLink = itemLink,
+            itemQuality = itemQuality,
+            icon = icon,
+            petID = speciesID,
+            expansionID = tonumber(item.contentID),
+            expansionLabel = item.expansionLabel,
+            contentType = "pet",
+            instanceName = item.locationLabel or "Unknown",
+            locationLabel = item.locationLabel or "Unknown",
+            bossName = item.farmName or item.farmID or "Raid pet",
+            farmName = item.farmName,
+            quantity = tonumber(item.quantity) or 1,
+            value = prices.value,
+            marketValue = prices.marketValue,
+            regionMarketValue = prices.regionMarketValue,
+            averageValue = prices.averageValue,
+            valueSourceID = prices.valueSourceID,
+            valueSourceLabel = prices.valueSourceLabel,
+            valueSourceWasFallback = prices.valueSourceWasFallback,
+            marketHistoryItemKey = type(addon.GetMarketHistoryItemKey) == "function"
+                and addon:GetMarketHistoryItemKey(itemLink, item.itemID)
+                or nil,
+            farmingSourceType = "wit-raid-pet",
+        }
+    end
+    return rows
+end
+
+function GoldTracker:BuildInstanceRaidPetRows()
+    return BuildInstanceRaidPetRows(self)
+end
+
 local function FindBossOnMap(row, mapID)
     local normalizedMapID = tonumber(mapID)
     local encounterID = tonumber(row and row.bossEncounterJournalID)
@@ -853,6 +1453,58 @@ local function AddResult(state, sourceRow, itemCache)
     return row
 end
 
+local function AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansionFilterID, contentTypeFilterID)
+    for _, category in ipairs(WIT_TRANSMOG_CATEGORIES) do
+        for _, item in ipairs(GetWITTransmogCategories()[category.id] or {}) do
+            local itemID = tonumber(item and item.itemID)
+            if itemID then
+                local normalizedItemID = math.floor(itemID + 0.5)
+                local instance = ResolveWITFarmInstance(item)
+                local expansionID = tonumber(item.contentID) or tonumber(instance and instance.expansionID)
+                local contentType = instance and instance.contentType
+                    or (WIT_RAID_FARM_IDS[tostring(item.farmID or "")] and "raid" or "dungeon")
+                local fallbackInstance = {
+                    expansionID = expansionID,
+                    contentType = contentType,
+                }
+                if InstanceMatchesExpansion(fallbackInstance, expansionFilterID)
+                    and InstanceMatchesContentType(fallbackInstance, contentTypeFilterID)
+                then
+                    local instanceName = instance and instance.name
+                        or item.farmName
+                        or item.locationLabel
+                        or item.farmID
+                        or "Unknown instance"
+                    local instanceKey = tostring(
+                        instance and (instance.encounterJournalID or instance.mapID or instance.name)
+                        or ("wit:" .. tostring(category.id) .. ":" .. tostring(item.farmID or instanceName))
+                    )
+                    local seenKey = instanceKey .. ":" .. tostring(normalizedItemID)
+                    if not seenByInstanceAndItem[seenKey] then
+                        seenByInstanceAndItem[seenKey] = true
+                        rows[#rows + 1] = {
+                            itemID = normalizedItemID,
+                            expansionID = expansionID,
+                            expansionLabel = item.expansionLabel
+                                or (instance and instance.expansion)
+                                or GetExpansionFilterLabel(expansionID),
+                            contentType = contentType,
+                            instanceName = instanceName,
+                            instanceEncounterJournalID = instance and instance.encounterJournalID,
+                            instanceMapID = tonumber(instance and instance.mapID) or tonumber(item.locationID),
+                            instanceEntrance = instance and (instance.entrance or instance.entranceLocation),
+                            bossName = "Static Farm Results",
+                            farmingSourceType = category.farmingSourceType,
+                            sourceRecordID = item.recordID,
+                            recordedQuantity = tonumber(item.quantity) or 0,
+                        }
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function BuildSourceRows(expansionFilterID, contentTypeFilterID)
     local rows = {}
     local seenByInstanceAndItem = {}
@@ -912,6 +1564,7 @@ local function BuildSourceRows(expansionFilterID, contentTypeFilterID)
             end
         end
     end
+    AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansionFilterID, contentTypeFilterID)
     return rows
 end
 
@@ -920,6 +1573,10 @@ local function NormalizeSortKey(sortKey)
         return sortKey
     end
     return DEFAULT_SORT_KEY
+end
+
+local function GetInstanceGroupKey(row)
+    return string.lower(tostring(GetInstanceDisplayName(row) or ""))
 end
 
 local function GetSortValue(row, sortKey)
@@ -933,7 +1590,7 @@ local function GetSortValue(row, sortKey)
         return string.lower(tostring(row and row.contentType or ""))
     end
     if sortKey == "instanceName" then
-        return string.lower(tostring(row and row.instanceName or ""))
+        return GetInstanceGroupKey(row)
     end
     if sortKey == "bossName" then
         return string.lower(tostring(row and row.bossName or ""))
@@ -944,7 +1601,7 @@ local function GetSortValue(row, sortKey)
     return tonumber(row and row[sortKey]) or 0
 end
 
-local function SortRows(rows, sortKey, sortAscending, sortCriteria)
+SortRows = function(rows, sortKey, sortAscending, sortCriteria)
     local criteria = type(sortCriteria) == "table" and sortCriteria or {
         { key = NormalizeSortKey(sortKey), ascending = sortAscending == true },
     }
@@ -966,8 +1623,36 @@ local function SortRows(rows, sortKey, sortAscending, sortCriteria)
     end)
 end
 
-local function SetItemTooltip(row)
-    GameTooltip:SetOwner(row, "ANCHOR_CURSOR")
+local function IsInstanceGroupBoundary(rows, index, sortKey)
+    if NormalizeSortKey(sortKey) ~= "instanceName" then
+        return false
+    end
+
+    local row = rows and rows[index]
+    local nextRow = rows and rows[index + 1]
+    return row ~= nil
+        and nextRow ~= nil
+        and GetInstanceGroupKey(row) ~= GetInstanceGroupKey(nextRow)
+end
+
+local function EnsureInstanceLocationGroupingSort(addon, frame)
+    if frame then
+        addon:EnsureTableSortLeadingCriterion(frame, "instanceName", true, {
+            validKeys = SORT_KEYS,
+        })
+    end
+end
+
+function GoldTracker:SortInstanceFarmingRows(rows, sortKey, sortAscending, sortCriteria)
+    SortRows(rows or {}, sortKey, sortAscending, sortCriteria)
+end
+
+function GoldTracker:IsInstanceFarmingGroupBoundary(rows, index, sortKey)
+    return IsInstanceGroupBoundary(rows, index, sortKey)
+end
+
+local function SetItemTooltip(row, target)
+    GameTooltip:SetOwner(target or row, "ANCHOR_CURSOR")
     if row.itemLink then
         GameTooltip:SetHyperlink(row.itemLink)
     elseif row.itemID and GameTooltip.SetItemByID then
@@ -997,6 +1682,9 @@ local function SetHeaderColumn(frameOrText, listPanel, left, width)
 end
 
 local function FormatContentType(contentType)
+    if contentType == "pet" then
+        return "Pet"
+    end
     if contentType == "raid" then
         return "Raid"
     end
@@ -1124,6 +1812,8 @@ function GoldTracker:OpenInstanceFarmingMap(row)
         }, ":"),
         mapOptions = mapOptions,
         selectedMapOptionIndex = 1,
+        customFarmRow = row,
+        customFarmSourceType = "instances",
     })
     return true
 end
@@ -1239,7 +1929,11 @@ function GoldTracker:SetInstanceFarmingValueSource(sourceID)
         self.db.instanceFarmingValueSource = source.id
     end
     if self.instanceFarmingFrame and source then
+        local sourceChanged = self.instanceFarmingFrame.valueSourceID ~= source.id
         self.instanceFarmingFrame.valueSourceID = source.id
+        if sourceChanged then
+            self:StopInstanceTransmogPriceWorker()
+        end
         self:RefreshInstanceFarmingWindow(false)
     end
 end
@@ -1256,6 +1950,24 @@ function GoldTracker:SetInstanceFarmingMinimumValue(value)
     end
     if self.instanceFarmingFrame then
         self.instanceFarmingFrame.minimumValueCopper = normalizedValue
+    end
+end
+
+function GoldTracker:GetInstanceTransmogMinimumValue()
+    local defaultValue = tonumber(self.DEFAULTS and self.DEFAULTS.instanceTransmogMinimumValue) or 0
+    local value = tonumber(self.db and self.db.instanceTransmogMinimumValue) or defaultValue
+    return math.max(0, math.floor(value + 0.5))
+end
+
+function GoldTracker:SetInstanceTransmogMinimumValue(value)
+    local normalizedValue = math.max(0, math.floor((tonumber(value) or 0) + 0.5))
+    if self.db then
+        self.db.instanceTransmogMinimumValue = normalizedValue
+    end
+    local frame = self.instanceFarmingFrame
+    if frame then
+        frame.transmogMinimumValueCopper = normalizedValue
+        self:StopInstanceTransmogPriceWorker()
     end
 end
 
@@ -1316,6 +2028,21 @@ function GoldTracker:SaveInstanceFarmingMinimumValueInput(skipRefresh)
     self:SetInstanceFarmingMinimumValue(minimumValue)
     frame.minimumValueInput:SetText(FormatGoldInput(self, minimumValue))
     if skipRefresh ~= true and not frame.scanState then
+        self:RefreshInstanceFarmingWindow(true)
+    end
+end
+
+function GoldTracker:SaveInstanceTransmogMinimumValueInput(skipRefresh)
+    local frame = self.instanceFarmingFrame
+    if not frame then
+        return
+    end
+    local minimumValue = ReadMinimumValueCopper(self, frame.transmogMinimumValueInput)
+    self:SetInstanceTransmogMinimumValue(minimumValue)
+    if frame.transmogMinimumValueInput then
+        frame.transmogMinimumValueInput:SetText(FormatGoldInput(self, minimumValue))
+    end
+    if skipRefresh ~= true then
         self:RefreshInstanceFarmingWindow(true)
     end
 end
@@ -1395,6 +2122,74 @@ function GoldTracker:ScheduleInstanceFarmingWindowRefresh(scrollToTop)
     end)
 end
 
+function GoldTracker:RefreshInstanceTransmogControls()
+    local frame = self.instanceFarmingFrame
+    if not frame then
+        return
+    end
+    frame.transmogExpansionFilterID = NormalizeInstanceTransmogExpansionFilter(frame.transmogExpansionFilterID)
+    if frame.transmogExpansionDropdown then
+        UIDropDownMenu_SetSelectedValue(frame.transmogExpansionDropdown, frame.transmogExpansionFilterID)
+        UIDropDownMenu_SetText(
+            frame.transmogExpansionDropdown,
+            GetInstanceTransmogExpansionLabel(frame.transmogExpansionFilterID)
+        )
+    end
+    if frame.transmogFlatListCheckbox then
+        frame.transmogFlatListCheckbox:SetChecked(frame.transmogFlatList == true)
+    end
+    if frame.transmogMinimumValueInput and not frame.transmogMinimumValueInput:HasFocus() then
+        frame.transmogMinimumValueInput:SetText(FormatGoldInput(self, frame.transmogMinimumValueCopper))
+    end
+end
+
+function GoldTracker:SetInstanceTransmogExpansionFilter(filterID)
+    local normalizedFilterID = NormalizeInstanceTransmogExpansionFilter(filterID)
+    if self.db then
+        self.db.instanceTransmogExpansionFilter = normalizedFilterID
+    end
+    local frame = self.instanceFarmingFrame
+    if frame then
+        self:StopInstanceTransmogPriceWorker()
+        frame.transmogExpansionFilterID = normalizedFilterID
+        frame.transmogRows = nil
+        frame.transmogRowsExpansionFilterID = nil
+        frame.expandedTransmogGroups = {}
+        self:RefreshInstanceTransmogControls()
+        self:RefreshInstanceFarmingWindow(true)
+    end
+end
+
+function GoldTracker:SetInstanceTransmogFlatList(enabled)
+    local flatList = enabled == true
+    if self.db then
+        self.db.instanceTransmogFlatList = flatList
+    end
+    local frame = self.instanceFarmingFrame
+    if frame then
+        frame.transmogFlatList = flatList
+        self:RefreshInstanceTransmogControls()
+        self:RefreshInstanceFarmingWindow(true)
+    end
+end
+
+local function AnchorInstanceFarmingListPanel(frame, viewID)
+    if not frame or not frame.listPanel or not frame.chrome then
+        return
+    end
+    frame.listPanel:ClearAllPoints()
+    if viewID == "scan" then
+        frame.listPanel:SetPoint("TOPLEFT", frame.controlsPanel, "BOTTOMLEFT", 0, -10)
+        frame.listPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -12, 38)
+    elseif viewID == "transmogs" then
+        frame.listPanel:SetPoint("TOPLEFT", frame.transmogControlsPanel, "BOTTOMLEFT", 0, -10)
+        frame.listPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -12, 38)
+    else
+        frame.listPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", 12, -86)
+        frame.listPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -12, 38)
+    end
+end
+
 function GoldTracker:RefreshInstanceFarmingWindowControls()
     local frame = self.instanceFarmingFrame
     if not frame then
@@ -1420,6 +2215,9 @@ function GoldTracker:RefreshInstanceFarmingWindowControls()
     frame.rescanButton:SetShown(frame.editingInstanceFarmingCacheKey ~= nil)
     frame.updatePricesButton:SetEnabled(not scanning and type(frame.lastResults) == "table" and #frame.lastResults > 0)
     frame.rescanButton:SetEnabled(not scanning)
+    if frame.locationGroupsCheckbox then
+        frame.locationGroupsCheckbox:SetChecked(self:IsCollapsedLocationHeadersEnabled())
+    end
 end
 
 function GoldTracker:RefreshInstanceFarmingNavigationTabs()
@@ -1430,6 +2228,12 @@ function GoldTracker:RefreshInstanceFarmingNavigationTabs()
     local active = frame.instanceFarmingNavigationTab or "saved"
     frame.savedTabButton:SetSelected(active == "saved")
     frame.favoritesTabButton:SetSelected(active == "favorites")
+    if frame.petsTabButton then
+        frame.petsTabButton:SetSelected(active == "pets")
+    end
+    if frame.transmogsTabButton then
+        frame.transmogsTabButton:SetSelected(active == "transmogs")
+    end
     frame.newScanTabButton:SetSelected(active == "new")
 end
 
@@ -1439,14 +2243,37 @@ function GoldTracker:SetInstanceFarmingWindowView(viewID)
         return
     end
     local showScan = viewID == "scan"
-    frame.instanceFarmingViewID = showScan and "scan" or "library"
-    frame.libraryPanel:SetShown(not showScan)
+    local showPets = viewID == "pets"
+    local showTransmogs = viewID == "transmogs"
+    if not showTransmogs then
+        self:StopInstanceTransmogPriceWorker()
+    end
+    if not showTransmogs and self.instanceTransmogExpandedFrame and self.instanceTransmogExpandedFrame:IsShown() then
+        self:CloseInstanceTransmogExpandedWindow()
+    end
+    frame.instanceFarmingViewID = showTransmogs and "transmogs"
+        or (showPets and "pets" or (showScan and "scan" or "library"))
+    frame.libraryPanel:SetShown(not showScan and not showPets and not showTransmogs)
     frame.controlsPanel:SetShown(showScan)
-    frame.listPanel:SetShown(showScan)
-    frame.metaText:SetShown(showScan)
-    frame.libraryUpdateFavoritesButton:SetShown(not showScan and frame.instanceFarmingLibraryTab == "favorites")
+    if frame.transmogControlsPanel then
+        frame.transmogControlsPanel:SetShown(showTransmogs)
+    end
+    frame.listPanel:SetShown(showScan or showPets or showTransmogs)
+    frame.metaText:SetShown((showScan or showPets or showTransmogs) and not frame.transmogListIsExpanded)
+    if frame.locationGroupsControl then
+        frame.locationGroupsControl:SetShown(showScan or showPets)
+    end
+    frame.libraryUpdateFavoritesButton:SetShown(
+        not showScan and not showPets and not showTransmogs and frame.instanceFarmingLibraryTab == "favorites"
+    )
+    AnchorInstanceFarmingListPanel(frame, frame.instanceFarmingViewID)
     if showScan then
         self:RefreshInstanceFarmingWindowControls()
+        self:RefreshInstanceFarmingWindow(true)
+    elseif showPets then
+        self:RefreshInstanceFarmingWindow(true)
+    elseif showTransmogs then
+        self:RefreshInstanceTransmogControls()
         self:RefreshInstanceFarmingWindow(true)
     else
         self:RefreshInstanceFarmingLibraryWindow()
@@ -1469,10 +2296,7 @@ function GoldTracker:OpenInstanceFarmingNewScan()
     if frame.statusText then
         frame.statusText:SetText("Ready.")
     end
-    if frame.progressBar then
-        frame.progressBar:SetMinMaxValues(0, 1)
-        frame.progressBar:SetValue(0)
-    end
+    Theme:SetProgressBarProgress(frame, 0, 1)
     self:SetInstanceFarmingWindowView("scan")
 end
 
@@ -1545,10 +2369,10 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
     end
 
     local activeTab = frame.instanceFarmingLibraryTab or "saved"
-    if frame.instanceFarmingViewID ~= "scan" then
+    if frame.instanceFarmingViewID == "library" then
         frame.instanceFarmingNavigationTab = activeTab
     end
-    frame.libraryUpdateFavoritesButton:SetShown(frame.instanceFarmingViewID ~= "scan" and activeTab == "favorites")
+    frame.libraryUpdateFavoritesButton:SetShown(frame.instanceFarmingViewID == "library" and activeTab == "favorites")
     local entries = activeTab == "favorites" and GetFavoriteEntries(self) or GetSavedScanEntries(self)
     local favoriteCount = activeTab == "favorites" and #entries or nil
     if activeTab == "favorites" then
@@ -1594,6 +2418,8 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.favoriteItemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             row.favoriteItemText:SetJustifyH("LEFT")
             row.favoriteItemText:SetWordWrap(false)
+            row.itemTooltipTarget = self:CreateItemTooltipTarget(row, row.favoriteItemText, nil, SetItemTooltip)
+            row.itemTooltipTarget:Hide()
             row.favoriteSelectedText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             row.favoriteSelectedText:SetJustifyH("RIGHT")
             row.favoriteSelectedText:SetWordWrap(false)
@@ -1618,20 +2444,15 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.detailsButton:SetScript("OnClick", function(self)
                 GoldTracker:OpenInventoryItemDetailsWindow(self:GetParent())
             end)
-            row:SetScript("OnEnter", function(self)
-                if self.itemID then
-                    SetItemTooltip(self)
-                end
-            end)
-            row:SetScript("OnLeave", function()
-                GameTooltip:Hide()
-            end)
+            row.favoriteAddButton = CreateButton(row, ADD_WIDTH, 20, "Add", "neutral")
+            GoldTracker:ConfigureCustomFarmAddButton(row.favoriteAddButton, "favorites")
             frame.libraryRows[index] = row
         else
             SetInstanceFarmingFrameLevel(row, frame.libraryContent, 1)
         end
 
         local isExpansionHeader = activeTab == "favorites" and data.isExpansionHeader == true
+        row.itemTooltipTarget:SetShown(activeTab == "favorites" and not isExpansionHeader)
         local rowHeight = isExpansionHeader and 24 or (activeTab == "favorites" and 30 or 54)
         row:SetHeight(rowHeight)
         row:ClearAllPoints()
@@ -1656,6 +2477,7 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
         row.favoriteAverageText:Hide()
         row.deleteScanButton:Hide()
         row.detailsButton:Hide()
+        row.favoriteAddButton:Hide()
         row.itemID = nil
         row.scanKey = nil
 
@@ -1677,12 +2499,15 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             local columnGap = 10
             local expansionWidth = 116
             local sourceWidth = 170
-            local detailsX = contentWidth - DETAILS_WIDTH - 12
-            local averageX = detailsX - valueWidth - columnGap
+            local expansionX = contentWidth - expansionWidth - 12
+            local addX = expansionX - ADD_WIDTH - columnGap
+            local detailsX = addX - DETAILS_WIDTH - columnGap
+            local sourceX = detailsX - sourceWidth - columnGap
+            local averageX = sourceX - valueWidth - columnGap
             local regionX = averageX - valueWidth - columnGap
             local marketX = regionX - valueWidth - columnGap
             local selectedX = marketX - valueWidth - columnGap
-            local itemX = removeWidth + columnGap + expansionWidth + columnGap + sourceWidth + columnGap
+            local itemX = removeWidth + columnGap
             local itemWidth = math.max(120, selectedX - itemX - columnGap)
             local expansionLabel = favorite.expansionFilterLabel
                 or favorite.expansionLabel
@@ -1738,12 +2563,12 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             end)
             row.favoriteExpansionText:Show()
             row.favoriteExpansionText:ClearAllPoints()
-            row.favoriteExpansionText:SetPoint("LEFT", row, "LEFT", removeWidth + columnGap, 0)
+            row.favoriteExpansionText:SetPoint("LEFT", row, "LEFT", expansionX, 0)
             row.favoriteExpansionText:SetWidth(expansionWidth)
             row.favoriteExpansionText:SetText(expansionLabel)
             row.favoriteSourceText:Show()
             row.favoriteSourceText:ClearAllPoints()
-            row.favoriteSourceText:SetPoint("LEFT", row, "LEFT", removeWidth + columnGap + expansionWidth + columnGap, 0)
+            row.favoriteSourceText:SetPoint("LEFT", row, "LEFT", sourceX, 0)
             row.favoriteSourceText:SetWidth(sourceWidth)
             row.favoriteSourceText:SetText(sourceLabel)
             row.favoriteItemText:Show()
@@ -1774,6 +2599,9 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.detailsButton:Show()
             row.detailsButton:ClearAllPoints()
             row.detailsButton:SetPoint("LEFT", row, "LEFT", detailsX, 0)
+            row.favoriteAddButton:Show()
+            row.favoriteAddButton:ClearAllPoints()
+            row.favoriteAddButton:SetPoint("LEFT", row, "LEFT", addX, 0)
             row:SetScript("OnClick", nil)
         else
             local entry = data.entry
@@ -1963,8 +2791,9 @@ function GoldTracker:UpdateInstanceFarmingScanProgress()
         return
     end
     local total = math.max(1, tonumber(state.total) or 1)
-    frame.progressBar:SetMinMaxValues(0, total)
-    frame.progressBar:SetValue(math.min(total, tonumber(state.index) or 0))
+    local scanned = math.min(total, tonumber(state.index) or 0)
+    local isComplete = scanned >= total and GetPendingBindingCount(state) == 0
+    Theme:SetProgressBarProgress(frame, scanned, total, isComplete)
     frame.statusText:SetText(string.format(
         "Scanning %s / %s in %s mode: %d of %d sources checked, %d matches, %d pending item loads, %d restricted skipped.",
         state.expansionFilterLabel,
@@ -1991,6 +2820,7 @@ function GoldTracker:FinishInstanceFarmingScan()
     frame.loadedInstanceFarmingCacheKey = nil
     frame.editingInstanceFarmingCacheKey = state.editingInstanceFarmingCacheKey
     frame.hasInstanceFarmingScanRun = true
+    Theme:SetProgressBarProgress(frame, 1, 1, true)
     if type(self.RecordInstanceFarmingMarketSnapshots) == "function" then
         self:RecordInstanceFarmingMarketSnapshots(frame.lastResults)
     end
@@ -2191,10 +3021,49 @@ function GoldTracker:ToggleInstanceFarmingSort(sortKey)
         return
     end
     local normalizedSortKey = NormalizeSortKey(sortKey)
-    self:ToggleTableSortCriterion(frame, normalizedSortKey, normalizedSortKey ~= DEFAULT_SORT_KEY, {
+    local defaultAscending = normalizedSortKey ~= "value"
+        and normalizedSortKey ~= "marketValue"
+        and normalizedSortKey ~= "regionMarketValue"
+        and normalizedSortKey ~= "averageValue"
+        and normalizedSortKey ~= "tracked"
+    self:ToggleTableSortCriterion(frame, normalizedSortKey, defaultAscending, {
         validKeys = SORT_KEYS,
     })
+    if frame.instanceFarmingViewID ~= "transmogs" or frame.transmogFlatList ~= true then
+        EnsureInstanceLocationGroupingSort(self, frame)
+    end
     self:RefreshInstanceFarmingWindow(false)
+end
+
+function GoldTracker:OpenInstanceFarmingPets()
+    local frame = self.instanceFarmingFrame
+    if not frame then
+        return
+    end
+    frame.instanceFarmingNavigationTab = "pets"
+    frame.petRows = BuildInstanceRaidPetRows(self)
+    frame.sortKey = "instanceName"
+    frame.sortAscending = true
+    frame.sortCriteria = {
+        { key = "instanceName", ascending = true },
+    }
+    self:SetInstanceFarmingWindowView("pets")
+end
+
+function GoldTracker:OpenInstanceFarmingTransmogs()
+    local frame = self.instanceFarmingFrame
+    if not frame then
+        return
+    end
+    frame.instanceFarmingNavigationTab = "transmogs"
+    frame.sortKey = "expansion"
+    frame.sortAscending = true
+    frame.sortCriteria = {
+        { key = "expansion", ascending = true },
+        { key = "instanceName", ascending = true },
+        { key = "itemName", ascending = true },
+    }
+    self:SetInstanceFarmingWindowView("transmogs")
 end
 
 function GoldTracker:UpdateInstanceFarmingSortHeaderState()
@@ -2208,7 +3077,8 @@ function GoldTracker:UpdateInstanceFarmingSortHeaderState()
         self:AttachTableSortHeaderTooltip(button, button.sortLabel)
         local criterion, priority = self:GetTableSortCriterion(criteria, key)
         if button.text and button.sortLabel then
-            button.text:SetText(showPriority and criterion and (button.sortLabel .. " " .. priority) or button.sortLabel)
+            local displayLabel = button.compactSortLabel or button.sortLabel
+            button.text:SetText(showPriority and criterion and (displayLabel .. " " .. priority) or displayLabel)
         end
         if button.sortIcon then
             local active = criterion ~= nil
@@ -2508,6 +3378,12 @@ function GoldTracker:GetInstanceFarmingWindowRow(index)
     row.regionText:SetJustifyH("RIGHT")
     row.averageText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.averageText:SetJustifyH("RIGHT")
+    row.locationGroupText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row.locationGroupText:SetPoint("LEFT", row, "LEFT", 10, 0)
+    row.locationGroupText:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+    row.locationGroupText:SetJustifyH("LEFT")
+    row.locationGroupText:SetWordWrap(false)
+    row.locationGroupText:Hide()
     row.detailsButton = CreateButton(row, DETAILS_WIDTH, 20, "Details", "neutral")
     BindInstanceFarmingResultsMouseWheel(row.detailsButton, frame)
     row.detailsButton:SetScript("OnClick", function(self)
@@ -2518,12 +3394,41 @@ function GoldTracker:GetInstanceFarmingWindowRow(index)
     row.mapButton:SetScript("OnClick", function(self)
         GoldTracker:OpenInstanceFarmingMap(self:GetParent())
     end)
-    row:SetScript("OnEnter", SetItemTooltip)
-    row:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    row.addButton = CreateButton(row, ADD_WIDTH, 20, "Add", "neutral")
+    BindInstanceFarmingResultsMouseWheel(row.addButton, frame)
+    GoldTracker:ConfigureCustomFarmAddButton(row.addButton, "instances")
+    row.divider = row:CreateTexture(nil, "ARTWORK")
+    row.divider:SetColorTexture(1, 1, 1, 0.045)
+    row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+    row.divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+    row.divider:SetHeight(1)
+    local itemTooltipTarget = self:CreateItemTooltipTarget(row, row.itemText, row.icon, SetItemTooltip)
+    row.itemTooltipTarget = itemTooltipTarget
+    BindInstanceFarmingResultsMouseWheel(itemTooltipTarget, frame)
     row:SetScript("OnClick", function(self)
-        GoldTracker:HandleModifiedItemClickIfModified(self)
+        if self.isLocationGroupHeader then
+            if frame.instanceFarmingViewID == "transmogs" then
+                frame.expandedTransmogGroups = frame.expandedTransmogGroups or {}
+                frame.expandedTransmogGroups[self.locationGroupKey] = self.locationGroupCollapsed == true
+            else
+                frame.collapsedLocationGroups = frame.collapsedLocationGroups or {}
+                GoldTracker:ToggleLocationGroupCollapsed(
+                    frame.collapsedLocationGroups,
+                    self.locationGroupKey,
+                    self.locationGroupCollapsed
+                )
+            end
+            GoldTracker:RefreshInstanceFarmingWindow(false)
+            return
+        end
+        if GoldTracker:HandleModifiedItemClickIfModified(self) then
+            return
+        end
+        if frame.instanceFarmingViewID == "transmogs"
+            and type(GoldTracker.OpenInventoryItemDetailsWindow) == "function"
+        then
+            GoldTracker:OpenInventoryItemDetailsWindow(self)
+        end
     end)
     frame.rowPool[index] = row
     return row
@@ -2533,18 +3438,29 @@ ApplyTableColumnLayout = function(frame)
     if not frame or not frame.listPanel then
         return
     end
+    local showingPets = frame.instanceFarmingViewID == "pets"
+    local showingTransmogs = frame.instanceFarmingViewID == "transmogs"
     local contentWidth = GetInstanceFarmingTableViewportWidth(frame)
-    local gapCount = 11
+    local trackWidth = showingPets and 0 or TRACK_WIDTH
+    local mapWidth = showingPets and 0 or MAP_WIDTH
+    local detailsWidth = (showingPets or showingTransmogs) and 0 or DETAILS_WIDTH
+    local addWidth = ADD_WIDTH
+    local gapCount = showingPets and 9 or (showingTransmogs and 11 or 12)
+    local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rowPool, "itemText", ITEM_MIN_WIDTH, {
+        padding = 10,
+        leadingWidth = ICON_SIZE + 8,
+    })
     local fixedMinimum =
-        TRACK_WIDTH
+        trackWidth
         + EXPANSION_MIN_WIDTH
         + TYPE_WIDTH
         + INSTANCE_MIN_WIDTH
         + BOSS_MIN_WIDTH
-        + ITEM_MIN_WIDTH
+        + requiredItemWidth
         + (VALUE_MIN_WIDTH * 4)
-        + DETAILS_WIDTH
-        + MAP_WIDTH
+        + detailsWidth
+        + mapWidth
+        + addWidth
         + (COLUMN_GAP * gapCount)
     local tableWidth = math.max(contentWidth, fixedMinimum)
     frame.tableWidth = tableWidth
@@ -2576,34 +3492,38 @@ ApplyTableColumnLayout = function(frame)
         + (instanceWidth - INSTANCE_MIN_WIDTH)
         + (bossWidth - BOSS_MIN_WIDTH)
         + ((valueWidth - VALUE_MIN_WIDTH) * 4)
-    local itemWidth = math.max(ITEM_MIN_WIDTH, ITEM_MIN_WIDTH + extraWidth - itemExtraUsed)
+    local itemWidth = math.max(requiredItemWidth, requiredItemWidth + extraWidth - itemExtraUsed)
 
     local trackX = HEADER_LEFT_INSET
-    local mapX = trackX + TRACK_WIDTH + COLUMN_GAP
-    local expansionX = mapX + MAP_WIDTH + COLUMN_GAP
-    local typeX = expansionX + expansionWidth + COLUMN_GAP
-    local instanceX = typeX + TYPE_WIDTH + COLUMN_GAP
+    local mapX = showingPets and trackX or (trackX + trackWidth + COLUMN_GAP)
+    local addX = showingPets and trackX or (mapX + mapWidth + COLUMN_GAP)
+    local itemX = addX + addWidth + COLUMN_GAP
+    local typeX = itemX + itemWidth + COLUMN_GAP
+    local valueX = typeX + TYPE_WIDTH + COLUMN_GAP
+    local instanceX = valueX + valueWidth + COLUMN_GAP
     local bossX = instanceX + instanceWidth + COLUMN_GAP
-    local itemX = bossX + bossWidth + COLUMN_GAP
-    local valueX = itemX + itemWidth + COLUMN_GAP
-    local marketX = valueX + valueWidth + COLUMN_GAP
+    local marketX = bossX + bossWidth + COLUMN_GAP
     local regionX = marketX + valueWidth + COLUMN_GAP
     local averageX = regionX + valueWidth + COLUMN_GAP
     local detailsX = averageX + valueWidth + COLUMN_GAP
+    local expansionX = (showingPets or showingTransmogs)
+        and detailsX
+        or (detailsX + detailsWidth + COLUMN_GAP)
     local horizontalOffset = math.max(0, tonumber(frame.horizontalScrollOffset) or 0)
 
-    SetHeaderColumn(frame.trackHeaderButton, frame.listPanel, trackX - horizontalOffset, TRACK_WIDTH)
-    SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, MAP_WIDTH)
-    SetHeaderColumn(frame.expansionHeaderButton, frame.listPanel, expansionX - horizontalOffset, expansionWidth)
+    SetHeaderColumn(frame.trackHeaderButton, frame.listPanel, trackX - horizontalOffset, trackWidth)
+    SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, mapWidth)
+    SetHeaderColumn(frame.addHeaderButton, frame.listPanel, addX - horizontalOffset, addWidth)
+    SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
     SetHeaderColumn(frame.typeHeaderButton, frame.listPanel, typeX - horizontalOffset, TYPE_WIDTH)
+    SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, valueWidth)
     SetHeaderColumn(frame.instanceHeaderButton, frame.listPanel, instanceX - horizontalOffset, instanceWidth)
     SetHeaderColumn(frame.bossHeaderButton, frame.listPanel, bossX - horizontalOffset, bossWidth)
-    SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
-    SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, valueWidth)
     SetHeaderColumn(frame.marketHeaderButton, frame.listPanel, marketX - horizontalOffset, valueWidth)
     SetHeaderColumn(frame.regionHeaderButton, frame.listPanel, regionX - horizontalOffset, valueWidth)
     SetHeaderColumn(frame.averageHeaderButton, frame.listPanel, averageX - horizontalOffset, valueWidth)
-    SetHeaderColumn(frame.detailsHeaderButton, frame.listPanel, detailsX - horizontalOffset, DETAILS_WIDTH)
+    SetHeaderColumn(frame.detailsHeaderButton, frame.listPanel, detailsX - horizontalOffset, detailsWidth)
+    SetHeaderColumn(frame.expansionHeaderButton, frame.listPanel, expansionX - horizontalOffset, expansionWidth)
 
     for _, row in ipairs(frame.rowPool or {}) do
         if row.trackButton then
@@ -2612,46 +3532,139 @@ ApplyTableColumnLayout = function(frame)
                 "LEFT",
                 row,
                 "LEFT",
-                trackX + math.floor((TRACK_WIDTH - TRACKED_BUTTON_WIDTH) / 2) - horizontalOffset,
+                trackX + math.floor((trackWidth - TRACKED_BUTTON_WIDTH) / 2) - horizontalOffset,
                 0
             )
             row.trackButton:SetSize(TRACKED_BUTTON_WIDTH, TRACKED_BUTTON_HEIGHT)
         end
-        SetColumn(row.mapButton, row, mapX - horizontalOffset, MAP_WIDTH)
-        SetColumn(row.expansionText, row, expansionX - horizontalOffset, expansionWidth)
-        SetColumn(row.typeText, row, typeX - horizontalOffset, TYPE_WIDTH)
-        SetColumn(row.instanceText, row, instanceX - horizontalOffset, instanceWidth)
-        SetColumn(row.bossText, row, bossX - horizontalOffset, bossWidth)
+        SetColumn(row.mapButton, row, mapX - horizontalOffset, mapWidth)
+        SetColumn(row.addButton, row, addX - horizontalOffset, addWidth)
         row.icon:ClearAllPoints()
         row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
         SetColumn(row.itemText, row, itemX + ICON_SIZE + 8 - horizontalOffset, math.max(80, itemWidth - ICON_SIZE - 8))
+        SetColumn(row.typeText, row, typeX - horizontalOffset, TYPE_WIDTH)
         SetColumn(row.valueText, row, valueX - horizontalOffset, valueWidth)
+        SetColumn(row.instanceText, row, instanceX - horizontalOffset, instanceWidth)
+        SetColumn(row.bossText, row, bossX - horizontalOffset, bossWidth)
         SetColumn(row.marketText, row, marketX - horizontalOffset, valueWidth)
         SetColumn(row.regionText, row, regionX - horizontalOffset, valueWidth)
         SetColumn(row.averageText, row, averageX - horizontalOffset, valueWidth)
-        SetColumn(row.detailsButton, row, detailsX - horizontalOffset, DETAILS_WIDTH)
+        SetColumn(row.detailsButton, row, detailsX - horizontalOffset, detailsWidth)
+        SetColumn(row.expansionText, row, expansionX - horizontalOffset, expansionWidth)
     end
 end
 
 function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
     local frame = self.instanceFarmingFrame
-    if not frame or frame.instanceFarmingViewID ~= "scan" then
+    if not frame
+        or (
+            frame.instanceFarmingViewID ~= "scan"
+            and frame.instanceFarmingViewID ~= "pets"
+            and frame.instanceFarmingViewID ~= "transmogs"
+        )
+    then
         return
     end
 
-    self:RefreshInstanceFarmingWindowControls()
+    local showingPets = frame.instanceFarmingViewID == "pets"
+    local showingTransmogs = frame.instanceFarmingViewID == "transmogs"
+    if frame.locationGroupsCheckbox then
+        frame.locationGroupsCheckbox:SetChecked(self:IsCollapsedLocationHeadersEnabled())
+    end
+
+    if not showingPets and not showingTransmogs then
+        self:RefreshInstanceFarmingWindowControls()
+    end
+    local function SetHeaderLabel(button, label)
+        if button then
+            button.sortLabel = label
+            if button.text then
+                button.text:SetText(label)
+            end
+        end
+    end
+    SetHeaderLabel(frame.instanceHeaderButton, showingPets and "Location" or "Instance")
+    SetHeaderLabel(frame.bossHeaderButton, showingPets and "Raid" or (showingTransmogs and "Source" or "Boss"))
+    if frame.trackHeaderButton then
+        frame.trackHeaderButton:SetShown(not showingPets)
+    end
+    if frame.mapHeaderButton then
+        frame.mapHeaderButton:SetShown(not showingPets)
+    end
+    if frame.detailsHeaderButton then
+        frame.detailsHeaderButton:SetShown(not showingPets and not showingTransmogs)
+    end
     self:UpdateInstanceFarmingSortHeaderState()
     ApplyTableColumnLayout(frame)
 
-    local displayRows = {}
-    for _, row in ipairs(frame.lastResults or {}) do
-        EnsureRowItemDisplayData(self, row)
-        if IsDisplayRowAuctionable(self, row) then
+    if showingTransmogs
+        and (
+            type(frame.transmogRows) ~= "table"
+            or frame.transmogRowsExpansionFilterID ~= frame.transmogExpansionFilterID
+        )
+    then
+        frame.transmogRows = BuildInstanceTransmogRows(frame.transmogExpansionFilterID)
+        frame.transmogRowsExpansionFilterID = frame.transmogExpansionFilterID
+    end
+    if showingTransmogs then
+        self:StartInstanceTransmogPriceLoading()
+    end
+
+    local itemRows = {}
+    local sourceRows = showingPets and (frame.petRows or {})
+        or (
+            showingTransmogs
+                and FilterInstanceTransmogRows(
+                    frame.transmogRows,
+                    frame.transmogMinimumValueCopper,
+                    frame.valueSourceID
+                )
+            or (frame.lastResults or {})
+        )
+    for _, row in ipairs(sourceRows) do
+        if showingPets then
+            row.tracked = false
+            itemRows[#itemRows + 1] = row
+        elseif showingTransmogs then
             row.tracked = self:IsInstanceFarmingFavorite(row)
-            displayRows[#displayRows + 1] = row
+            itemRows[#itemRows + 1] = row
+        else
+            EnsureRowItemDisplayData(self, row)
+            if IsDisplayRowAuctionable(self, row) then
+                row.tracked = self:IsInstanceFarmingFavorite(row)
+                itemRows[#itemRows + 1] = row
+            end
         end
     end
-    SortRows(displayRows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
+    local showLocationHeaders = not showingTransmogs and self:IsCollapsedLocationHeadersEnabled()
+    local displayRows
+    if showingTransmogs then
+        if frame.transmogFlatList then
+            SortRows(
+                itemRows,
+                frame.sortKey,
+                frame.sortAscending,
+                self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS)
+            )
+        end
+        displayRows = BuildInstanceTransmogDisplayRows(
+            itemRows,
+            frame.expandedTransmogGroups,
+            frame.transmogFlatList,
+            frame.sortKey,
+            frame.sortAscending,
+            self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS)
+        )
+    else
+        EnsureInstanceLocationGroupingSort(self, frame)
+        SortRows(itemRows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
+        displayRows = self:BuildLocationGroupedDisplayRows(
+            itemRows,
+            GetInstanceDisplayName,
+            frame.collapsedLocationGroups,
+            showLocationHeaders
+        )
+    end
     frame.displayRows = displayRows
 
     local scrollFrame = frame.scrollFrame
@@ -2689,6 +3702,52 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
         row:SetPoint("TOPLEFT", frame.listPanel, "TOPLEFT", 0, -34 - ((poolIndex - 1) * ROW_STRIDE))
         row:SetPoint("TOPRIGHT", frame.listPanel, "TOPRIGHT", -24, -34 - ((poolIndex - 1) * ROW_STRIDE))
         if data then
+            row.isLocationGroupHeader = data.isLocationGroupHeader == true
+            row.locationGroupKey = data.locationGroupKey
+            row.locationGroupCollapsed = data.collapsed == true
+            row.locationGroupText:SetShown(row.isLocationGroupHeader)
+            if row.itemTooltipTarget then
+                row.itemTooltipTarget:SetShown(not row.isLocationGroupHeader)
+            end
+            for _, control in ipairs({
+                row.expansionText,
+                row.typeText,
+                row.instanceText,
+                row.bossText,
+                row.icon,
+                row.itemText,
+                row.valueText,
+                row.marketText,
+                row.regionText,
+                row.averageText,
+            }) do
+                control:SetShown(not row.isLocationGroupHeader)
+            end
+            if row.isLocationGroupHeader then
+                row.itemID = nil
+                row.itemName = nil
+                row.itemLink = nil
+                row.trackButton:Hide()
+                row.mapButton:Hide()
+                row.detailsButton:Hide()
+                row.addButton:Hide()
+                local groupIndent = string.rep("   ", math.max(0, tonumber(data.groupDepth) or 0))
+                row.locationGroupText:SetText(string.format(
+                    "%s%s %s (%d)",
+                    groupIndent,
+                    data.collapsed and "+" or "-",
+                    data.locationGroupLabel or "Unknown location",
+                    tonumber(data.itemCount) or 0
+                ))
+                row.locationGroupText:SetTextColor(1.0, 0.82, 0.18)
+                row.background:SetColorTexture(1.0, 0.82, 0.18, 0.10)
+                row.divider:SetShown(true)
+                row.divider:SetColorTexture(1.0, 0.82, 0.18, 0.42)
+                row.divider:SetHeight(1)
+            else
+            if showingTransmogs then
+                EnsureInstanceTransmogRowData(self, frame, data)
+            end
             row.itemID = data.itemID
             row.itemName = data.itemName
             row.itemLink = data.itemLink
@@ -2716,9 +3775,13 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             row.valueSourceLabel = data.valueSourceLabel
             row.valueSourceWasFallback = data.valueSourceWasFallback == true
             row.marketHistoryItemKey = data.marketHistoryItemKey
-            row.tracked = self:IsInstanceFarmingFavorite(data)
+            row.tracked = not showingPets and self:IsInstanceFarmingFavorite(data) or false
             row.favoriteKey = GetFavoriteKey(data)
             row.background:SetColorTexture(1, 1, 1, rowIndex % 2 == 0 and 0.045 or 0.022)
+            row.trackButton:SetShown(not showingPets)
+            row.mapButton:SetShown(not showingPets)
+            row.detailsButton:SetShown(not showingPets and not showingTransmogs)
+            row.addButton:Show()
             row.trackButton:SetText(row.tracked and "-" or "+")
             if row.trackButton.SetSelected then
                 row.trackButton:SetSelected(row.tracked)
@@ -2738,6 +3801,19 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             row.marketText:SetText(self:FormatMoney(data.marketValue or 0))
             row.regionText:SetText(self:FormatMoney(data.regionMarketValue or 0))
             row.averageText:SetText(self:FormatMoney(data.averageValue or 0))
+            if row.divider then
+                local endsInstanceGroup = not showLocationHeaders
+                    and IsInstanceGroupBoundary(displayRows, rowIndex, frame.sortKey)
+                row.divider:SetShown(rowIndex < #displayRows)
+                if endsInstanceGroup then
+                    row.divider:SetColorTexture(1.0, 0.82, 0.18, 0.42)
+                    row.divider:SetHeight(2)
+                else
+                    row.divider:SetColorTexture(1, 1, 1, 0.045)
+                    row.divider:SetHeight(1)
+                end
+            end
+            end
             row:Show()
         else
             row:Hide()
@@ -2749,9 +3825,17 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
 
     if frame.emptyText then
         local state = frame.scanState
-        if #displayRows == 0 then
+        if #itemRows == 0 then
             if state then
                 frame.emptyText:SetText("Scanning...")
+            elseif showingPets then
+                frame.emptyText:SetText("No WIT raid pets are available in the static snapshot.")
+            elseif showingTransmogs then
+                if frame.transmogPriceLoadState then
+                    frame.emptyText:SetText("Loading noteworthy item values for the selected filter...")
+                else
+                    frame.emptyText:SetText("No WIT noteworthy items match the selected expansion and value filter.")
+                end
             elseif frame.hasInstanceFarmingScanRun then
                 frame.emptyText:SetText("No matching auctionable instance drops found.")
             else
@@ -2763,16 +3847,207 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
         end
     end
     if frame.metaText then
-        frame.metaText:SetText(string.format(
-            "%d shown | %s | %s | Threshold %s | %s",
-            #displayRows,
-            GetExpansionFilterLabel(frame.expansionFilterID),
-            GetContentTypeFilterLabel(frame.contentTypeFilterID),
-            self:FormatMoney(frame.minimumValueCopper or 0),
-            (self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()).label
-        ))
+        if showingPets then
+            local witData = NS.WITDropsData or {}
+            local valueSource = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()
+            frame.metaText:SetText(string.format(
+                "%d raid pets | WIT %s | Grouped by location | %s",
+                #itemRows,
+                tostring(witData.sourceVersion or "unknown"),
+                valueSource and valueSource.label or "Unknown value source"
+            ))
+        elseif showingTransmogs then
+            local witData = NS.WITDropsData or {}
+            local groupingLabel = frame.transmogFlatList and "Flat list" or "Grouped by expansion and instance"
+            local valueSource = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()
+            local priceState = frame.transmogPriceLoadState
+            local pricingLabel = priceState and string.format(
+                " | Pricing %d/%d",
+                math.min(tonumber(priceState.index) or 0, tonumber(priceState.total) or 0),
+                tonumber(priceState.total) or 0
+            ) or ""
+            frame.metaText:SetText(string.format(
+                "%d of %d noteworthy item sources | Threshold %s | %s | %s | WIT %s%s",
+                #itemRows,
+                #(frame.transmogRows or {}),
+                self:FormatMoney(frame.transmogMinimumValueCopper or 0),
+                valueSource and valueSource.label or "Unknown value source",
+                groupingLabel,
+                tostring(witData.sourceVersion or "unknown"),
+                pricingLabel
+            ))
+        else
+            frame.metaText:SetText(string.format(
+                "%d shown | %s | %s | Threshold %s | %s",
+                #itemRows,
+                GetExpansionFilterLabel(frame.expansionFilterID),
+                GetContentTypeFilterLabel(frame.contentTypeFilterID),
+                self:FormatMoney(frame.minimumValueCopper or 0),
+                (self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()).label
+            ))
+        end
+        if frame.transmogExpandedMetaText and showingTransmogs then
+            frame.transmogExpandedMetaText:SetText(frame.metaText:GetText() or "")
+        end
     end
     ApplyTableColumnLayout(frame)
+end
+
+local function AttachInstanceTransmogResults(addon, expanded)
+    local frame = addon.instanceFarmingFrame
+    local expandedFrame = addon.instanceTransmogExpandedFrame
+    if not frame or not frame.transmogControlsPanel or not frame.listPanel then
+        return
+    end
+
+    frame.transmogControlsPanel:ClearAllPoints()
+    frame.listPanel:ClearAllPoints()
+    if expanded and expandedFrame and expandedFrame.chrome then
+        frame.transmogControlsPanel:SetParent(expandedFrame)
+        frame.listPanel:SetParent(expandedFrame)
+        SetInstanceFarmingFrameLevel(frame.transmogControlsPanel, expandedFrame.chrome, 1)
+        SetInstanceFarmingFrameLevel(frame.listPanel, expandedFrame.chrome, 1)
+        frame.transmogControlsPanel:SetPoint("TOPLEFT", expandedFrame.chrome, "TOPLEFT", 12, -54)
+        frame.transmogControlsPanel:SetPoint("TOPRIGHT", expandedFrame.chrome, "TOPRIGHT", -12, -54)
+        frame.listPanel:SetPoint("TOPLEFT", frame.transmogControlsPanel, "BOTTOMLEFT", 0, -10)
+        frame.listPanel:SetPoint("BOTTOMRIGHT", expandedFrame.chrome, "BOTTOMRIGHT", -12, 38)
+        frame.transmogListIsExpanded = true
+        frame.metaText:Hide()
+        expandedFrame.metaText:Show()
+        if frame.maximizeTransmogListButton then
+            frame.maximizeTransmogListButton:SetText("Restore list")
+        end
+    else
+        frame.transmogControlsPanel:SetParent(frame)
+        frame.listPanel:SetParent(frame)
+        SetInstanceFarmingFrameLevel(frame.transmogControlsPanel, frame.chrome, 1)
+        SetInstanceFarmingFrameLevel(frame.listPanel, frame.chrome, 1)
+        frame.transmogControlsPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", 12, -86)
+        frame.transmogControlsPanel:SetPoint("TOPRIGHT", frame.chrome, "TOPRIGHT", -12, -86)
+        frame.transmogListIsExpanded = false
+        AnchorInstanceFarmingListPanel(frame, frame.instanceFarmingViewID)
+        frame.transmogControlsPanel:SetShown(frame.instanceFarmingViewID == "transmogs")
+        frame.listPanel:SetShown(
+            frame.instanceFarmingViewID == "scan"
+                or frame.instanceFarmingViewID == "pets"
+                or frame.instanceFarmingViewID == "transmogs"
+        )
+        frame.metaText:SetShown(
+            frame.instanceFarmingViewID == "scan"
+                or frame.instanceFarmingViewID == "pets"
+                or frame.instanceFarmingViewID == "transmogs"
+        )
+        if expandedFrame and expandedFrame.metaText then
+            expandedFrame.metaText:Hide()
+        end
+        if frame.maximizeTransmogListButton then
+            frame.maximizeTransmogListButton:SetText("Maximize list")
+        end
+    end
+    ApplyTableColumnLayout(frame)
+end
+
+function GoldTracker:CreateInstanceTransmogExpandedWindow()
+    if self.instanceTransmogExpandedFrame then
+        return
+    end
+
+    local addon = self
+    local frame = CreateFrame(
+        "Frame",
+        "GoldTrackerInstanceTransmogExpandedFrame",
+        UIParent,
+        "BasicFrameTemplateWithInset"
+    )
+    frame:SetSize(TRANSMOG_EXPANDED_WINDOW_WIDTH, TRANSMOG_EXPANDED_WINDOW_HEIGHT)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
+    frame:SetFrameStrata("DIALOG")
+    if frame.SetToplevel then
+        frame:SetToplevel(true)
+    end
+    frame:SetMovable(true)
+    frame:SetResizable(true)
+    if frame.SetResizeBounds then
+        frame:SetResizeBounds(
+            TRANSMOG_EXPANDED_WINDOW_MIN_WIDTH,
+            TRANSMOG_EXPANDED_WINDOW_MIN_HEIGHT,
+            1600,
+            1000
+        )
+    end
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self)
+        self:Raise()
+        self:StartMoving()
+    end)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetClampedToScreen(true)
+    frame:Hide()
+
+    local chrome = Theme:ApplyWindowChrome(frame, "WIT Noteworthy Items")
+    frame.chrome = chrome
+    Theme:RegisterSpecialFrame("GoldTrackerInstanceTransmogExpandedFrame")
+
+    local metaText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    metaText:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", 22, 16)
+    metaText:SetPoint("RIGHT", chrome, "RIGHT", -40, 16)
+    metaText:SetJustifyH("LEFT")
+    metaText:SetTextColor(0.72, 0.76, 0.84)
+    metaText:Hide()
+    frame.metaText = metaText
+    if self.instanceFarmingFrame then
+        self.instanceFarmingFrame.transmogExpandedMetaText = metaText
+    end
+
+    Theme:CreateResizeButton(frame, {
+        maximize = true,
+        minWidth = TRANSMOG_EXPANDED_WINDOW_MIN_WIDTH,
+        minHeight = TRANSMOG_EXPANDED_WINDOW_MIN_HEIGHT,
+        maxWidth = 1600,
+        maxHeight = 1000,
+        onResizeStop = function()
+            if addon.instanceFarmingFrame and addon.instanceFarmingFrame.transmogListIsExpanded then
+                ApplyTableColumnLayout(addon.instanceFarmingFrame)
+                addon:RefreshInstanceFarmingWindow(false)
+            end
+        end,
+    })
+    frame:SetScript("OnSizeChanged", function()
+        if addon.instanceFarmingFrame and addon.instanceFarmingFrame.transmogListIsExpanded then
+            ApplyTableColumnLayout(addon.instanceFarmingFrame)
+        end
+    end)
+    frame:SetScript("OnHide", function()
+        AttachInstanceTransmogResults(addon, false)
+        if addon.instanceFarmingFrame and addon.instanceFarmingFrame.instanceFarmingViewID == "transmogs" then
+            addon:RefreshInstanceFarmingWindow(false)
+        end
+    end)
+
+    self.instanceTransmogExpandedFrame = frame
+end
+
+function GoldTracker:OpenInstanceTransmogExpandedWindow()
+    local sourceFrame = self.instanceFarmingFrame
+    if not sourceFrame or sourceFrame.instanceFarmingViewID ~= "transmogs" then
+        return
+    end
+    self:CreateInstanceTransmogExpandedWindow()
+    local frame = self.instanceTransmogExpandedFrame
+    AttachInstanceTransmogResults(self, true)
+    frame:Show()
+    frame:Raise()
+    self:RefreshInstanceFarmingWindow(false)
+end
+
+function GoldTracker:CloseInstanceTransmogExpandedWindow()
+    local frame = self.instanceTransmogExpandedFrame
+    if frame and frame:IsShown() then
+        frame:Hide()
+    else
+        AttachInstanceTransmogResults(self, false)
+    end
 end
 
 function GoldTracker:CreateInstanceFarmingWindow()
@@ -2796,7 +4071,35 @@ function GoldTracker:CreateInstanceFarmingWindow()
     frame:Hide()
 
     local chrome = Theme:ApplyWindowChrome(frame, "Dungeon & Raid Farming")
+    frame.chrome = chrome
     Theme:RegisterSpecialFrame("GoldTrackerInstanceFarmingFrame")
+    if type(Theme.CreateMaximizeButton) == "function" then
+        Theme:CreateMaximizeButton(frame, {
+            onToggle = function()
+                ApplyTableColumnLayout(frame)
+                self:RefreshInstanceFarmingWindow(false)
+                self:RefreshInstanceFarmingLibraryWindow()
+            end,
+        })
+    end
+
+    local locationGroupsControl = CreateFrame("Frame", nil, frame)
+    SetInstanceFarmingFrameLevel(locationGroupsControl, chrome, 2)
+    locationGroupsControl:SetSize(218, 24)
+    locationGroupsControl:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -52)
+    local locationGroupsCheckbox = CreateFrame("CheckButton", nil, locationGroupsControl, "UICheckButtonTemplate")
+    locationGroupsCheckbox:SetPoint("LEFT", locationGroupsControl, "LEFT", 0, 0)
+    locationGroupsCheckbox:SetChecked(self:IsCollapsedLocationHeadersEnabled())
+    locationGroupsCheckbox:SetScript("OnClick", function(button)
+        self:SetCollapsedLocationHeadersEnabled(button:GetChecked() == true)
+        self:RefreshInstanceFarmingWindow(true)
+    end)
+    local locationGroupsLabel = locationGroupsControl:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    locationGroupsLabel:SetPoint("LEFT", locationGroupsCheckbox, "RIGHT", 2, 1)
+    locationGroupsLabel:SetText("Collapsed location headers")
+    locationGroupsControl:Hide()
+    frame.locationGroupsControl = locationGroupsControl
+    frame.locationGroupsCheckbox = locationGroupsCheckbox
 
     frame.valueSourceID = self:GetInstanceFarmingValueSource().id
     frame.minimumValueCopper = self:GetInstanceFarmingMinimumValue()
@@ -2804,10 +4107,17 @@ function GoldTracker:CreateInstanceFarmingWindow()
     frame.contentTypeFilterID = self:GetInstanceFarmingContentTypeFilter()
     frame.scanModeID = self:GetInstanceFarmingScanMode()
     frame.sortKey = DEFAULT_SORT_KEY
-    frame.sortAscending = false
+    frame.sortAscending = true
     frame.sortCriteria = {
-        { key = DEFAULT_SORT_KEY, ascending = false },
+        { key = DEFAULT_SORT_KEY, ascending = true },
     }
+    frame.collapsedLocationGroups = {}
+    frame.expandedTransmogGroups = {}
+    frame.transmogExpansionFilterID = NormalizeInstanceTransmogExpansionFilter(
+        self.db and self.db.instanceTransmogExpansionFilter
+    )
+    frame.transmogMinimumValueCopper = self:GetInstanceTransmogMinimumValue()
+    frame.transmogFlatList = self.db and self.db.instanceTransmogFlatList == true or false
     frame.lastResults = {}
     frame.instanceFarmingLibraryTab = "saved"
     frame.instanceFarmingNavigationTab = "saved"
@@ -2830,15 +4140,36 @@ function GoldTracker:CreateInstanceFarmingWindow()
     end)
     frame.favoritesTabButton = favoritesTabButton
 
+    local transmogsTabButton = CreateButton(frame, 136, 24, "Noteworthy Items", "neutral")
+    transmogsTabButton:SetPoint("LEFT", favoritesTabButton, "RIGHT", 8, 0)
+    transmogsTabButton:SetScript("OnClick", function()
+        self:OpenInstanceFarmingTransmogs()
+    end)
+    frame.transmogsTabButton = transmogsTabButton
+
+    local petsTabButton = CreateButton(frame, 72, 24, "Pets", "neutral")
+    petsTabButton:SetPoint("LEFT", transmogsTabButton, "RIGHT", 8, 0)
+    petsTabButton:SetScript("OnClick", function()
+        self:OpenInstanceFarmingPets()
+    end)
+    frame.petsTabButton = petsTabButton
+
     local newScanTabButton = CreateButton(frame, 96, 24, "New Scan", "neutral")
-    newScanTabButton:SetPoint("LEFT", favoritesTabButton, "RIGHT", 8, 0)
+    newScanTabButton:SetPoint("LEFT", petsTabButton, "RIGHT", 8, 0)
     newScanTabButton:SetScript("OnClick", function()
         self:OpenInstanceFarmingNewScan()
     end)
     frame.newScanTabButton = newScanTabButton
+    Theme:LayoutExplorerTabs(chrome, {
+        savedTabButton,
+        favoritesTabButton,
+        transmogsTabButton,
+        petsTabButton,
+        newScanTabButton,
+    })
 
     local libraryUpdateFavoritesButton = CreateButton(frame, 126, 24, "Update Prices", "neutral")
-    libraryUpdateFavoritesButton:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -14, -54)
+    libraryUpdateFavoritesButton:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -54)
     libraryUpdateFavoritesButton:SetScript("OnClick", function()
         self:UpdateInstanceFarmingFavoritePrices()
     end)
@@ -2846,8 +4177,8 @@ function GoldTracker:CreateInstanceFarmingWindow()
 
     local libraryPanel = CreatePanel(frame, { 0.04, 0.05, 0.07, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     SetInstanceFarmingFrameLevel(libraryPanel, chrome, 1)
-    libraryPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 14, -86)
-    libraryPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -14, 38)
+    libraryPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -86)
+    libraryPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 38)
     frame.libraryPanel = libraryPanel
 
     local libraryStatusText = libraryPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -2890,14 +4221,14 @@ function GoldTracker:CreateInstanceFarmingWindow()
 
     local controlsPanel = CreatePanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
     SetInstanceFarmingFrameLevel(controlsPanel, chrome, 1)
-    controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 14, -86)
-    controlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -14, -86)
+    controlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -86)
+    controlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -86)
     controlsPanel:SetHeight(158)
     frame.controlsPanel = controlsPanel
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Preferred value source")
+    sourceLabel:SetText("Value source")
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerInstanceFarmingValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)
     UIDropDownMenu_SetWidth(valueSourceDropdown, 190)
@@ -3030,6 +4361,19 @@ function GoldTracker:CreateInstanceFarmingWindow()
     end)
     frame.rescanButton = rescanButton
 
+    Theme:LayoutExplorerFilterFields(controlsPanel, {
+        { label = sourceLabel, control = valueSourceDropdown, kind = "dropdown", widthKey = "valueSource" },
+        { label = minimumLabel, control = minimumValueInput, widthKey = "valueInput" },
+        { label = expansionLabel, control = expansionDropdown, kind = "dropdown", widthKey = "expansion" },
+        { label = typeLabel, control = contentTypeDropdown, kind = "dropdown", widthKey = "compactDropdown" },
+        { label = modeLabel, control = scanModeDropdown, kind = "dropdown", widthKey = "compactDropdown" },
+    })
+    Theme:LayoutExplorerActionButtons(
+        controlsPanel,
+        { scanButton, saveButton, stopScanButton, updatePricesButton, rescanButton },
+        { top = true, offsetY = -62 }
+    )
+
     local helpText = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     helpText:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -104)
     helpText:SetPoint("TOPRIGHT", controlsPanel, "TOPRIGHT", -14, -104)
@@ -3040,6 +4384,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
     progressBackdrop:SetPoint("TOPLEFT", helpText, "BOTTOMLEFT", 0, -8)
     progressBackdrop:SetPoint("TOPRIGHT", helpText, "BOTTOMRIGHT", 0, -8)
     progressBackdrop:SetHeight(14)
+    frame.progressBackdrop = progressBackdrop
     local progressBar = CreateFrame("StatusBar", nil, progressBackdrop)
     progressBar:SetAllPoints(progressBackdrop)
     progressBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -3052,10 +4397,110 @@ function GoldTracker:CreateInstanceFarmingWindow()
     statusText:SetText("Ready.")
     frame.statusText = statusText
 
+    local transmogControlsPanel = CreatePanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
+    SetInstanceFarmingFrameLevel(transmogControlsPanel, chrome, 1)
+    transmogControlsPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -86)
+    transmogControlsPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -86)
+    transmogControlsPanel:SetHeight(66)
+    transmogControlsPanel:Hide()
+    frame.transmogControlsPanel = transmogControlsPanel
+
+    local transmogExpansionLabel = transmogControlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    transmogExpansionLabel:SetPoint("TOPLEFT", transmogControlsPanel, "TOPLEFT", 14, -10)
+    transmogExpansionLabel:SetText("Expansion")
+    local transmogExpansionDropdown = CreateFrame(
+        "Frame",
+        "GoldTrackerInstanceTransmogExpansionDropdown",
+        transmogControlsPanel,
+        "UIDropDownMenuTemplate"
+    )
+    transmogExpansionDropdown:SetPoint("TOPLEFT", transmogExpansionLabel, "BOTTOMLEFT", -16, -5)
+    UIDropDownMenu_SetWidth(transmogExpansionDropdown, 190)
+    UIDropDownMenu_Initialize(transmogExpansionDropdown, function(_, level)
+        for _, option in ipairs(GetInstanceTransmogExpansionOptions()) do
+            local optionID = option.id
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = option.label
+            info.value = optionID
+            info.checked = frame.transmogExpansionFilterID == optionID
+            info.func = function()
+                self:SetInstanceTransmogExpansionFilter(optionID)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    frame.transmogExpansionDropdown = transmogExpansionDropdown
+
+    local transmogMinimumLabel = transmogControlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    transmogMinimumLabel:SetPoint("TOPLEFT", transmogExpansionLabel, "TOPLEFT", 240, 0)
+    transmogMinimumLabel:SetText("Min value (g)")
+    local transmogMinimumValueInput = CreateFrame("EditBox", nil, transmogControlsPanel, "InputBoxTemplate")
+    transmogMinimumValueInput:SetSize(96, 22)
+    transmogMinimumValueInput:SetPoint("TOPLEFT", transmogMinimumLabel, "BOTTOMLEFT", 0, -8)
+    transmogMinimumValueInput:SetAutoFocus(false)
+    transmogMinimumValueInput:SetNumeric(false)
+    transmogMinimumValueInput:SetText(FormatGoldInput(self, frame.transmogMinimumValueCopper))
+    transmogMinimumValueInput:SetScript("OnEnterPressed", function(editBox)
+        self:SaveInstanceTransmogMinimumValueInput()
+        editBox:ClearFocus()
+    end)
+    transmogMinimumValueInput:SetScript("OnEditFocusLost", function()
+        self:SaveInstanceTransmogMinimumValueInput()
+    end)
+    frame.transmogMinimumValueInput = transmogMinimumValueInput
+
+    local transmogFlatListCheckbox = CreateFrame(
+        "CheckButton",
+        nil,
+        transmogControlsPanel,
+        "UICheckButtonTemplate"
+    )
+    transmogFlatListCheckbox:SetPoint("LEFT", transmogMinimumValueInput, "RIGHT", 16, 0)
+    transmogFlatListCheckbox:SetChecked(frame.transmogFlatList)
+    transmogFlatListCheckbox:SetScript("OnClick", function(button)
+        self:SetInstanceTransmogFlatList(button:GetChecked() == true)
+    end)
+    frame.transmogFlatListCheckbox = transmogFlatListCheckbox
+    local transmogFlatListLabel = transmogControlsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    transmogFlatListLabel:SetPoint("LEFT", transmogFlatListCheckbox, "RIGHT", 2, 1)
+    transmogFlatListLabel:SetText("Flat list")
+
+    local maximizeTransmogListButton = CreateButton(transmogControlsPanel, 116, 22, "Maximize list", "neutral")
+    maximizeTransmogListButton:SetPoint("TOPRIGHT", transmogControlsPanel, "TOPRIGHT", -14, -22)
+    maximizeTransmogListButton:SetScript("OnClick", function()
+        if frame.transmogListIsExpanded then
+            self:CloseInstanceTransmogExpandedWindow()
+        else
+            self:OpenInstanceTransmogExpandedWindow()
+        end
+    end)
+    maximizeTransmogListButton.tooltipText = "Open the static WIT noteworthy-items list in a larger window."
+    frame.maximizeTransmogListButton = maximizeTransmogListButton
+
+    Theme:LayoutExplorerFilterFields(transmogControlsPanel, {
+        {
+            label = transmogExpansionLabel,
+            control = transmogExpansionDropdown,
+            kind = "dropdown",
+            widthKey = "expansion",
+        },
+        { label = transmogMinimumLabel, control = transmogMinimumValueInput, widthKey = "valueInput" },
+    })
+    transmogFlatListCheckbox:ClearAllPoints()
+    transmogFlatListCheckbox:SetPoint("LEFT", transmogMinimumValueInput, "RIGHT", 16, 0)
+    Theme:LayoutExplorerActionButtons(transmogControlsPanel, { maximizeTransmogListButton }, { top = true })
+
+    local transmogHelpText = transmogControlsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    transmogHelpText:SetPoint("LEFT", transmogFlatListLabel, "RIGHT", 24, 0)
+    transmogHelpText:SetPoint("RIGHT", maximizeTransmogListButton, "LEFT", -16, 0)
+    transmogHelpText:SetJustifyH("LEFT")
+    transmogHelpText:SetTextColor(0.62, 0.66, 0.74)
+    transmogHelpText:SetText("Uses the Instances value source; pricing loads progressively for filters and value sorting.")
+
     local listPanel = CreatePanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
     SetInstanceFarmingFrameLevel(listPanel, chrome, 1)
     listPanel:SetPoint("TOPLEFT", controlsPanel, "BOTTOMLEFT", 0, -10)
-    listPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -14, 36)
+    listPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 38)
     if listPanel.SetClipsChildren then
         listPanel:SetClipsChildren(true)
     end
@@ -3066,7 +4511,9 @@ function GoldTracker:CreateInstanceFarmingWindow()
     divider:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -28, -30)
     divider:SetHeight(1)
 
-    frame.trackHeaderButton = CreateHeaderButton(listPanel, "Tracked", TRACK_WIDTH, "CENTER")
+    frame.trackHeaderButton = CreateHeaderButton(listPanel, "+", TRACK_WIDTH, "CENTER")
+    frame.trackHeaderButton.sortLabel = "Track"
+    frame.trackHeaderButton.compactSortLabel = "+"
     SetInstanceFarmingFrameLevel(frame.trackHeaderButton, listPanel, 2)
     frame.expansionHeaderButton = CreateHeaderButton(listPanel, "Expansion", 102, "LEFT")
     SetInstanceFarmingFrameLevel(frame.expansionHeaderButton, listPanel, 2)
@@ -3090,6 +4537,8 @@ function GoldTracker:CreateInstanceFarmingWindow()
     SetInstanceFarmingFrameLevel(frame.detailsHeaderButton, listPanel, 2)
     frame.mapHeaderButton = CreateHeaderButton(listPanel, "Map", MAP_WIDTH, "CENTER")
     SetInstanceFarmingFrameLevel(frame.mapHeaderButton, listPanel, 2)
+    frame.addHeaderButton = CreateHeaderButton(listPanel, "Add", ADD_WIDTH, "CENTER")
+    SetInstanceFarmingFrameLevel(frame.addHeaderButton, listPanel, 2)
     frame.sortHeaders = {
         tracked = frame.trackHeaderButton,
         expansion = frame.expansionHeaderButton,
@@ -3164,7 +4613,10 @@ function GoldTracker:CreateInstanceFarmingWindow()
             return
         end
         self:RefreshInstanceFarmingWindowControls()
-        if frame.instanceFarmingViewID == "scan" then
+        if frame.instanceFarmingViewID == "scan"
+            or frame.instanceFarmingViewID == "pets"
+            or frame.instanceFarmingViewID == "transmogs"
+        then
             self:RefreshInstanceFarmingWindow(true)
         else
             self:RefreshInstanceFarmingLibraryWindow()

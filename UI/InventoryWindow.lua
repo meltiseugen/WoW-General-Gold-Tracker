@@ -17,12 +17,15 @@ local INVENTORY_ROW_ICON_LEFT = 8
 local INVENTORY_ROW_ICON_GAP = 8
 local INVENTORY_ROW_RIGHT_PADDING = 6
 local INVENTORY_ACTION_COLUMN_GAP = 6
-local INVENTORY_TRACKED_COLUMN_WIDTH = 60
+local INVENTORY_TRACKED_COLUMN_WIDTH = 24
 local INVENTORY_MAP_COLUMN_WIDTH = 44
+local INVENTORY_ADD_COLUMN_WIDTH = 44
 local INVENTORY_TRACKED_BUTTON_WIDTH = 24
 local INVENTORY_TRACKED_BUTTON_HEIGHT = 20
 local INVENTORY_MAP_BUTTON_WIDTH = 40
 local INVENTORY_MAP_BUTTON_HEIGHT = 20
+local INVENTORY_ADD_BUTTON_WIDTH = 40
+local INVENTORY_HORIZONTAL_SCROLL_HEIGHT = 14
 local INVENTORY_QUANTITY_WIDTH = 56
 local INVENTORY_HISTORY_WIDTH = 46
 local INVENTORY_DEMAND_WIDTH = 82
@@ -385,6 +388,40 @@ local function FormatGoldInput(addon, copperValue)
     return string.format("%.2f", normalizedCopper / addon.COPPER_PER_GOLD)
 end
 
+local function GetInventoryItemDisplayText(item)
+    local itemName = type(item) == "table" and item.itemName or nil
+    if type(itemName) ~= "string" or itemName == "" then
+        itemName = nil
+    elseif string.find(itemName, "|H", 1, true) then
+        local embeddedName = string.match(itemName, "|h%[(.-)%]|h")
+        itemName = embeddedName and embeddedName ~= "" and embeddedName or nil
+    end
+
+    local itemLink = type(item) == "table" and item.itemLink or nil
+    if type(itemLink) == "string" and itemLink ~= "" then
+        local linkLabel = string.match(itemLink, "|h%[(.-)%]|h")
+        if linkLabel and linkLabel ~= "" then
+            return itemLink
+        end
+        if linkLabel == "" and itemName then
+            return (string.gsub(itemLink, "%[%]", function()
+                return "[" .. itemName .. "]"
+            end, 1))
+        end
+    end
+
+    if itemName then
+        return itemName
+    end
+
+    local itemID = type(item) == "table" and tonumber(item.itemID) or nil
+    return itemID and ("Item " .. tostring(math.floor(itemID + 0.5))) or "Unknown item"
+end
+
+function GoldTracker:GetInventoryItemDisplayText(item)
+    return GetInventoryItemDisplayText(item)
+end
+
 local function ResolveInventoryWindowSource(addon, frame)
     local source = addon.VALUE_SOURCE_BY_ID[frame and frame.valueSourceID]
     if source then
@@ -690,8 +727,10 @@ local function BuildInventoryDetailsStats(samples)
     end
 
     stats.averageValue = total / #samples
-    if stats.firstValue and stats.firstValue > 0 and stats.lastValue then
-        stats.changePercent = ((stats.lastValue - stats.firstValue) * 100) / stats.firstValue
+    local previousSample = samples[#samples - 1]
+    local previousValue = tonumber(previousSample and previousSample.value)
+    if previousValue and previousValue > 0 and stats.lastValue then
+        stats.changePercent = ((stats.lastValue - previousValue) * 100) / previousValue
     end
 
     return stats
@@ -1555,6 +1594,10 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
             itemKey and (" for " .. tostring(itemKey)) or ""
         ))
     end
+    if frame.farmButton then
+        local hasFarm = type(self.HasFarmForItem) == "function" and self:HasFarmForItem(itemID) or false
+        frame.farmButton:SetShown(hasFarm)
+    end
     -- Every item details surface should expose a copyable Wowhead item URL when an item ID is available.
     local hasItemWowheadLink = tonumber(itemID) ~= nil
     local hasSourceWowheadLink = npcID ~= nil or type(bossName) == "string" or type(instanceName) == "string"
@@ -1812,6 +1855,29 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     metaText:SetText("")
     frame.metaText = metaText
 
+    local farmButton = CreateInventoryButton(bodyPanel, 72, 24, "Farm", "primary")
+    farmButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -12)
+    farmButton:SetScript("OnClick", function()
+        local itemID = frame.itemData and frame.itemData.itemID
+        if itemID and type(addon.OpenFarmDetailsForItem) == "function" then
+            addon:OpenFarmDetailsForItem(itemID)
+        end
+    end)
+    farmButton:SetScript("OnEnter", function(self)
+        if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText("Open farm map", 1.0, 0.82, 0.18)
+            GameTooltip:AddLine("Shows matching routes with expected yields, byproducts, tips, and sources.", 0.72, 0.86, 1.0, true)
+            GameTooltip:Show()
+        end
+    end)
+    farmButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    frame.farmButton = farmButton
+
     local sourceLabel = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     sourceLabel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -238, -13)
     sourceLabel:SetText("Data source")
@@ -2032,10 +2098,11 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
         lowest = CreateInventoryDetailsStatField(statsPanel, "Lowest", 1, 4),
         highest = CreateInventoryDetailsStatField(statsPanel, "Highest", 2, 4),
         average = CreateInventoryDetailsStatField(statsPanel, "Average", 1, 5),
-        change = CreateInventoryDetailsStatField(statsPanel, "Change", 2, 5),
+        change = CreateInventoryDetailsStatField(statsPanel, "Vs previous", 2, 5),
     }
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = INVENTORY_DETAILS_WINDOW_MIN_WIDTH,
         minHeight = INVENTORY_DETAILS_WINDOW_MIN_HEIGHT,
         maxWidth = 1040,
@@ -2331,6 +2398,35 @@ local function GetInventoryTableAvailableWidth(frame)
     return math.max(1, width - 6)
 end
 
+local function UpdateInventoryHorizontalScroll(frame)
+    if not frame then
+        return 0
+    end
+
+    local contentWidth = frame.inventoryContent and (tonumber(frame.inventoryContent:GetWidth()) or 0) or 0
+    local maxOffset = math.max(0, math.floor(contentWidth - GetInventoryTableAvailableWidth(frame)))
+    local offset = math.min(math.max(0, math.floor(tonumber(frame.horizontalScrollOffset) or 0)), maxOffset)
+    frame.horizontalScrollOffset = offset
+    if frame.inventoryScrollFrame and frame.inventoryScrollFrame.UpdateScrollChildRect then
+        frame.inventoryScrollFrame:UpdateScrollChildRect()
+    end
+    if frame.inventoryScrollFrame and frame.inventoryScrollFrame.SetHorizontalScroll then
+        frame.inventoryScrollFrame:SetHorizontalScroll(offset)
+    end
+    if frame.horizontalScrollBar then
+        frame.horizontalScrollBar:SetMinMaxValues(0, maxOffset)
+        frame.horizontalScrollBar:SetValueStep(20)
+        if frame.horizontalScrollBar.SetObeyStepOnDrag then
+            frame.horizontalScrollBar:SetObeyStepOnDrag(false)
+        end
+        frame.horizontalScrollBar:SetShown(maxOffset > 0)
+        frame.horizontalScrollBar.updating = true
+        frame.horizontalScrollBar:SetValue(offset)
+        frame.horizontalScrollBar.updating = false
+    end
+    return offset
+end
+
 local function SetInventoryHeaderColumn(button, listPanel, leftOffset, width)
     if not button or not listPanel then
         return
@@ -2373,42 +2469,61 @@ local function ApplyInventoryTableColumnLayout(frame)
 
     local favoriteX = INVENTORY_ROW_ICON_LEFT
     local mapX = favoriteX + INVENTORY_TRACKED_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
-    local iconX = mapX + INVENTORY_MAP_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
+    local addX = mapX + INVENTORY_MAP_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
+    local iconX = addX + INVENTORY_ADD_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
     local itemX = iconX + INVENTORY_ICON_SIZE + INVENTORY_ROW_ICON_GAP
     local rightEdge = availableWidth - INVENTORY_ROW_RIGHT_PADDING
     local totalX = rightEdge - INVENTORY_TOTAL_VALUE_WIDTH
     local quantityX = totalX - INVENTORY_COLUMN_GAP - INVENTORY_QUANTITY_WIDTH
-    local unitX = quantityX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
-    local trendX = unitX - INVENTORY_COLUMN_GAP - INVENTORY_TREND_WIDTH
+    local trendX = quantityX - INVENTORY_COLUMN_GAP - INVENTORY_TREND_WIDTH
     local sellRateX = trendX - INVENTORY_COLUMN_GAP - INVENTORY_SELL_RATE_WIDTH
     local demandX = sellRateX - INVENTORY_COLUMN_GAP - INVENTORY_DEMAND_WIDTH
     local historyX = demandX - INVENTORY_COLUMN_GAP - INVENTORY_HISTORY_WIDTH
-    local itemWidth = math.max(1, historyX - INVENTORY_COLUMN_GAP - itemX)
+    local unitX = historyX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
+    local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.inventoryRows, "itemText", 1, { padding = 8 })
+    local itemWidth = math.max(1, unitX - INVENTORY_COLUMN_GAP - itemX)
+    local itemOverflow = math.max(0, requiredItemWidth - itemWidth)
+    if itemOverflow > 0 then
+        unitX = unitX + itemOverflow
+        historyX = historyX + itemOverflow
+        demandX = demandX + itemOverflow
+        sellRateX = sellRateX + itemOverflow
+        trendX = trendX + itemOverflow
+        quantityX = quantityX + itemOverflow
+        totalX = totalX + itemOverflow
+        itemWidth = requiredItemWidth
+        if frame.inventoryContent then
+            frame.inventoryContent:SetWidth(availableWidth + itemOverflow)
+        end
+    end
+    local horizontalOffset = UpdateInventoryHorizontalScroll(frame)
 
     if frame.listPanel then
         local headerX = INVENTORY_HEADER_LEFT_INSET
-        SetInventoryHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX, INVENTORY_TRACKED_COLUMN_WIDTH)
-        SetInventoryHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX, INVENTORY_MAP_COLUMN_WIDTH)
-        SetInventoryHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX, itemWidth)
-        SetInventoryHeaderColumn(frame.historyHeaderButton, frame.listPanel, headerX + historyX, INVENTORY_HISTORY_WIDTH)
-        SetInventoryHeaderColumn(frame.demandHeaderButton, frame.listPanel, headerX + demandX, INVENTORY_DEMAND_WIDTH)
-        SetInventoryHeaderColumn(frame.sellRateHeaderButton, frame.listPanel, headerX + sellRateX, INVENTORY_SELL_RATE_WIDTH)
-        SetInventoryHeaderColumn(frame.trendHeaderButton, frame.listPanel, headerX + trendX, INVENTORY_TREND_WIDTH)
-        SetInventoryHeaderColumn(frame.unitHeaderButton, frame.listPanel, headerX + unitX, INVENTORY_UNIT_VALUE_WIDTH)
-        SetInventoryHeaderColumn(frame.quantityHeaderButton, frame.listPanel, headerX + quantityX, INVENTORY_QUANTITY_WIDTH)
-        SetInventoryHeaderColumn(frame.totalHeaderButton, frame.listPanel, headerX + totalX, INVENTORY_TOTAL_VALUE_WIDTH)
+        SetInventoryHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, INVENTORY_TRACKED_COLUMN_WIDTH)
+        SetInventoryHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, INVENTORY_MAP_COLUMN_WIDTH)
+        SetInventoryHeaderColumn(frame.addHeaderButton, frame.listPanel, headerX + addX - horizontalOffset, INVENTORY_ADD_COLUMN_WIDTH)
+        SetInventoryHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
+        SetInventoryHeaderColumn(frame.unitHeaderButton, frame.listPanel, headerX + unitX - horizontalOffset, INVENTORY_UNIT_VALUE_WIDTH)
+        SetInventoryHeaderColumn(frame.historyHeaderButton, frame.listPanel, headerX + historyX - horizontalOffset, INVENTORY_HISTORY_WIDTH)
+        SetInventoryHeaderColumn(frame.demandHeaderButton, frame.listPanel, headerX + demandX - horizontalOffset, INVENTORY_DEMAND_WIDTH)
+        SetInventoryHeaderColumn(frame.sellRateHeaderButton, frame.listPanel, headerX + sellRateX - horizontalOffset, INVENTORY_SELL_RATE_WIDTH)
+        SetInventoryHeaderColumn(frame.trendHeaderButton, frame.listPanel, headerX + trendX - horizontalOffset, INVENTORY_TREND_WIDTH)
+        SetInventoryHeaderColumn(frame.quantityHeaderButton, frame.listPanel, headerX + quantityX - horizontalOffset, INVENTORY_QUANTITY_WIDTH)
+        SetInventoryHeaderColumn(frame.totalHeaderButton, frame.listPanel, headerX + totalX - horizontalOffset, INVENTORY_TOTAL_VALUE_WIDTH)
     end
 
     for _, row in ipairs(frame.inventoryRows or {}) do
         SetInventoryRowControl(row.favoriteButton, row, favoriteX + math.floor((INVENTORY_TRACKED_COLUMN_WIDTH - INVENTORY_TRACKED_BUTTON_WIDTH) / 2), INVENTORY_TRACKED_BUTTON_WIDTH)
         SetInventoryRowControl(row.mapButton, row, mapX + math.floor((INVENTORY_MAP_COLUMN_WIDTH - INVENTORY_MAP_BUTTON_WIDTH) / 2), INVENTORY_MAP_BUTTON_WIDTH)
+        SetInventoryRowControl(row.addButton, row, addX + math.floor((INVENTORY_ADD_COLUMN_WIDTH - INVENTORY_ADD_BUTTON_WIDTH) / 2), INVENTORY_ADD_BUTTON_WIDTH)
         SetInventoryRowControl(row.icon, row, iconX, INVENTORY_ICON_SIZE)
         SetInventoryRowColumn(row.itemText, row, itemX, itemWidth)
+        SetInventoryRowColumn(row.unitValueText, row, unitX, INVENTORY_UNIT_VALUE_WIDTH)
         SetInventoryRowColumn(row.historySamplesText, row, historyX, INVENTORY_HISTORY_WIDTH)
         SetInventoryRowColumn(row.demandText, row, demandX, INVENTORY_DEMAND_WIDTH)
         SetInventoryRowColumn(row.sellRateText, row, sellRateX, INVENTORY_SELL_RATE_WIDTH)
         SetInventoryRowColumn(row.trendText, row, trendX, INVENTORY_TREND_WIDTH)
-        SetInventoryRowColumn(row.unitValueText, row, unitX, INVENTORY_UNIT_VALUE_WIDTH)
         SetInventoryRowColumn(row.quantityText, row, quantityX, INVENTORY_QUANTITY_WIDTH)
         SetInventoryRowColumn(row.totalValueText, row, totalX, INVENTORY_TOTAL_VALUE_WIDTH)
     end
@@ -2488,6 +2603,10 @@ function GoldTracker:GetInventoryWindowRow(index)
     end)
     row.mapButton = mapButton
 
+    local addButton = CreateInventoryButton(row, INVENTORY_ADD_BUTTON_WIDTH, INVENTORY_MAP_BUTTON_HEIGHT, "Add", "neutral")
+    GoldTracker:ConfigureCustomFarmAddButton(addButton, "inventory")
+    row.addButton = addButton
+
     local icon = row:CreateTexture(nil, "ARTWORK")
     icon:SetSize(INVENTORY_ICON_SIZE, INVENTORY_ICON_SIZE)
     icon:SetPoint("LEFT", row, "LEFT", 8, 0)
@@ -2556,11 +2675,11 @@ function GoldTracker:GetInventoryWindowRow(index)
     divider:SetHeight(1)
     row.divider = divider
 
-    row:SetScript("OnEnter", function(self)
+    self:CreateItemTooltipTarget(row, itemText, icon, function(self, target)
         if type(self.itemLink) ~= "string" or self.itemLink == "" then
             return
         end
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
         GameTooltip:SetHyperlink(self.itemLink)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("TSM regional demand", 1.0, 0.82, 0.18)
@@ -2638,13 +2757,16 @@ function GoldTracker:GetInventoryWindowRow(index)
         end
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("Left-click for market details. Right-click to load into the Auction House sell tab.", 0.72, 0.86, 1.0)
+        if type(GoldTracker.AddFarmActionTooltip) == "function" then
+            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
+        end
         GameTooltip:Show()
-    end)
-    row:SetScript("OnLeave", function()
-        GameTooltip:Hide()
     end)
     row:SetScript("OnMouseUp", function(self, button)
         if button == "LeftButton" and type(self.itemLink) == "string" and self.itemLink ~= "" then
+            if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
+                return
+            end
             if GoldTracker:HandleModifiedItemClickIfModified(self) then
                 return
             end
@@ -2762,6 +2884,9 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                 if row.mapButton then
                     row.mapButton:Hide()
                 end
+                if row.addButton then
+                    row.addButton:Hide()
+                end
                 if row.icon then
                     row.icon:Hide()
                 end
@@ -2833,6 +2958,9 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                     end
                     row.mapButton:Show()
                 end
+                if row.addButton then
+                    row.addButton:Show()
+                end
                 row.itemText:Show()
                 row.quantityText:Show()
                 row.historySamplesText:Show()
@@ -2841,7 +2969,7 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                 row.trendText:Show()
                 row.unitValueText:Show()
                 row.totalValueText:Show()
-                row.itemText:SetText(item.itemLink)
+                row.itemText:SetText(self:GetInventoryItemDisplayText(item))
                 row.quantityText:SetText(tostring(item.quantity or 0))
                 row.demandText:SetText(FormatInventorySoldPerDay(item.regionSoldPerDay))
                 local sellRateLabel, sellRateR, sellRateG, sellRateB = GetInventorySellRateTier(item.regionSaleRate)
@@ -2988,7 +3116,7 @@ function GoldTracker:CreateInventoryWindow()
 
     local sourceLabel = controlsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     sourceLabel:SetPoint("TOPLEFT", controlsPanel, "TOPLEFT", 14, -10)
-    sourceLabel:SetText("Preferred value source")
+    sourceLabel:SetText("Value source")
 
     local valueSourceDropdown = CreateFrame("Frame", "GoldTrackerInventoryValueSourceDropdown", controlsPanel, "UIDropDownMenuTemplate")
     valueSourceDropdown:SetPoint("TOPLEFT", sourceLabel, "BOTTOMLEFT", -16, -5)
@@ -3016,7 +3144,7 @@ function GoldTracker:CreateInventoryWindow()
 
     local qualityDropdown = CreateFrame("Frame", "GoldTrackerInventoryQualityDropdown", controlsPanel, "UIDropDownMenuTemplate")
     qualityDropdown:SetPoint("TOPLEFT", qualityLabel, "BOTTOMLEFT", -16, -5)
-    UIDropDownMenu_SetWidth(qualityDropdown, 180)
+    UIDropDownMenu_SetWidth(qualityDropdown, 190)
     UIDropDownMenu_Initialize(qualityDropdown, function(_, level)
         for _, qualityOption in ipairs(addon.TRACKED_ITEM_QUALITY_OPTIONS) do
             local info = UIDropDownMenu_CreateInfo()
@@ -3038,7 +3166,7 @@ function GoldTracker:CreateInventoryWindow()
     valueLabel:SetText("Min stack value (g)")
 
     local minimumValueInput = CreateFrame("EditBox", nil, controlsPanel, "InputBoxTemplate")
-    minimumValueInput:SetSize(92, 22)
+    minimumValueInput:SetSize(96, 22)
     minimumValueInput:SetPoint("TOPLEFT", valueLabel, "BOTTOMLEFT", 0, -8)
     minimumValueInput:SetAutoFocus(false)
     minimumValueInput:SetNumeric(false)
@@ -3097,13 +3225,23 @@ function GoldTracker:CreateInventoryWindow()
     groupByCategoryLabel:SetTextColor(0.92, 0.95, 1.0)
     frame.groupByCategoryLabel = groupByCategoryLabel
 
-    local refreshButton = CreateInventoryButton(controlsPanel, 86, 22, "Refresh", "neutral")
-    refreshButton:SetSize(86, 22)
-    refreshButton:SetPoint("RIGHT", controlsPanel, "RIGHT", -14, -10)
+    local refreshButton = CreateInventoryButton(controlsPanel, 96, 24, "Refresh", "neutral")
     refreshButton:SetScript("OnClick", function()
         addon:SaveInventoryMinimumValueInput()
     end)
     frame.refreshButton = refreshButton
+
+    Theme:LayoutExplorerFilterFields(controlsPanel, {
+        { label = sourceLabel, control = valueSourceDropdown, kind = "dropdown", widthKey = "valueSource" },
+        { label = qualityLabel, control = qualityDropdown, kind = "dropdown", widthKey = "dropdown" },
+        { label = valueLabel, control = minimumValueInput, widthKey = "valueInput" },
+    })
+    Theme:LayoutExplorerFilterFields(controlsPanel, {
+        { label = categoryLabel, control = categoryDropdown, kind = "dropdown", widthKey = "wideDropdown" },
+    }, { row = 2 })
+    groupByCategoryCheckbox:ClearAllPoints()
+    groupByCategoryCheckbox:SetPoint("LEFT", categoryDropdown, "RIGHT", 12, 0)
+    Theme:LayoutExplorerActionButtons(controlsPanel, { refreshButton })
 
     local listPanel = CreateInventoryPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
     listPanel:SetPoint("TOPLEFT", controlsPanel, "BOTTOMLEFT", 0, -10)
@@ -3159,7 +3297,7 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.historyHeaderButton = historyHeaderButton
 
-    local favoriteHeaderButton = CreateInventoryHeaderButton(listPanel, "Tracked", INVENTORY_TRACKED_COLUMN_WIDTH, "CENTER")
+    local favoriteHeaderButton = CreateInventoryHeaderButton(listPanel, "+", INVENTORY_TRACKED_COLUMN_WIDTH, "CENTER")
     favoriteHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 20, -12)
     frame.favoriteHeaderButton = favoriteHeaderButton
 
@@ -3167,8 +3305,12 @@ function GoldTracker:CreateInventoryWindow()
     mapHeaderButton:SetPoint("LEFT", favoriteHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
     frame.mapHeaderButton = mapHeaderButton
 
+    local addHeaderButton = CreateInventoryHeaderButton(listPanel, "Add", INVENTORY_ADD_COLUMN_WIDTH, "CENTER")
+    addHeaderButton:SetPoint("LEFT", mapHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
+    frame.addHeaderButton = addHeaderButton
+
     local itemHeaderButton = CreateInventoryHeaderButton(listPanel, "Item", nil, "LEFT")
-    itemHeaderButton:SetPoint("LEFT", mapHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
+    itemHeaderButton:SetPoint("LEFT", addHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
     itemHeaderButton:SetPoint("RIGHT", historyHeaderButton, "LEFT", -12, 0)
     itemHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("itemName")
@@ -3183,7 +3325,7 @@ function GoldTracker:CreateInventoryWindow()
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, listPanel, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 12, -36)
-    scrollFrame:SetPoint("BOTTOMRIGHT", listPanel, "BOTTOMRIGHT", -26, 12)
+    scrollFrame:SetPoint("BOTTOMRIGHT", listPanel, "BOTTOMRIGHT", -26, 12 + INVENTORY_HORIZONTAL_SCROLL_HEIGHT)
     scrollFrame:EnableMouseWheel(true)
     scrollFrame:SetScript("OnMouseWheel", function(self, delta)
         local step = math.max(18, math.floor(self:GetHeight() * 0.12))
@@ -3203,6 +3345,29 @@ function GoldTracker:CreateInventoryWindow()
     scrollFrame:SetScrollChild(content)
     frame.inventoryContent = content
 
+    local horizontalScrollBar = CreateFrame("Slider", "GoldTrackerInventoryHorizontalScrollBar", listPanel, "OptionsSliderTemplate")
+    horizontalScrollBar:SetOrientation("HORIZONTAL")
+    horizontalScrollBar:SetPoint("BOTTOMLEFT", listPanel, "BOTTOMLEFT", 14, 9)
+    horizontalScrollBar:SetPoint("BOTTOMRIGHT", listPanel, "BOTTOMRIGHT", -32, 9)
+    horizontalScrollBar:SetHeight(12)
+    horizontalScrollBar:SetMinMaxValues(0, 0)
+    horizontalScrollBar:SetValue(0)
+    horizontalScrollBar:SetScript("OnValueChanged", function(self, value)
+        if self.updating then
+            return
+        end
+        frame.horizontalScrollOffset = math.max(0, math.floor((tonumber(value) or 0) + 0.5))
+        addon:RefreshInventoryWindowLayout()
+    end)
+    local sliderName = horizontalScrollBar:GetName()
+    if sliderName then
+        _G[sliderName .. "Low"]:Hide()
+        _G[sliderName .. "High"]:Hide()
+        _G[sliderName .. "Text"]:Hide()
+    end
+    horizontalScrollBar:Hide()
+    frame.horizontalScrollBar = horizontalScrollBar
+
     local emptyText = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     emptyText:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -12)
     emptyText:SetPoint("TOPRIGHT", content, "TOPRIGHT", -10, -12)
@@ -3221,6 +3386,7 @@ function GoldTracker:CreateInventoryWindow()
     frame.metaText = metaText
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = INVENTORY_WINDOW_MIN_WIDTH,
         minHeight = INVENTORY_WINDOW_MIN_HEIGHT,
         maxWidth = INVENTORY_WINDOW_MAX_WIDTH,
@@ -3233,7 +3399,10 @@ function GoldTracker:CreateInventoryWindow()
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
-    frame:SetScript("OnEvent", function(self)
+    frame:SetScript("OnEvent", function(self, event)
+        if event == "GET_ITEM_INFO_RECEIVED" or event == "ITEM_DATA_LOAD_RESULT" then
+            addon:InvalidateInventoryWindowCache()
+        end
         if self:IsShown() then
             addon:RefreshInventoryWindow(false)
         end

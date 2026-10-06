@@ -517,7 +517,7 @@ function GoldTracker:BuildAuctionableInventoryItemList(valueSourceID, minimumQua
                                 AddInventoryItem(itemsByLink, candidateItems, {
                                     itemID = itemID,
                                     itemLink = itemLink,
-                                    itemName = itemName or itemLink,
+                                    itemName = itemName,
                                     itemQuality = itemQuality,
                                     icon = itemIcon,
                                     itemType = itemMetadata.itemType,

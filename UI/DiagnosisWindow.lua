@@ -376,6 +376,7 @@ function GoldTracker:CreateDiagnosisWindow()
     end
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = 520,
         minHeight = 360,
         maxWidth = 1000,

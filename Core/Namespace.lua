@@ -99,6 +99,9 @@ GoldTracker.DEFAULTS = {
     instanceFarmingExpansionFilter = "current",
     instanceFarmingContentTypeFilter = "all",
     instanceFarmingScanMode = "background",
+    instanceTransmogExpansionFilter = "all",
+    instanceTransmogMinimumValue = 0,
+    instanceTransmogFlatList = false,
     instanceFarmingShared = {
         scanCache = {},
         favorites = {},
@@ -115,6 +118,13 @@ GoldTracker.DEFAULTS = {
     userMaterialFarmingPins = {
         schemaVersion = 1,
         items = {},
+    },
+    customFarms = {
+        schemaVersion = 3,
+        nextID = 1,
+        activeBuildFarmID = nil,
+        knownCharacters = {},
+        farms = {},
     },
     explorerTab = "rares",
     inventoryCategoryOrder = {
@@ -144,10 +154,15 @@ GoldTracker.DEFAULTS = {
     allowResumeHistorySession = true,
     enableLootSourceTracking = true,
     enableObservedWorldDrops = false,
+    collapsedLocationHeaders = true,
     observedWorldDropsValueSource = "TSM_DBMARKET",
     observedWorldDropsMinimumValue = 0,
     observedWorldDropsExpansionFilter = "all",
     observedWorldDrops = {},
+    observedDropsShared = {
+        scanCache = {},
+        savedSessionDrops = {},
+    },
     observedSavedSessionDrops = {},
     observedSavedSessionDropsScannedAt = nil,
     showLootLogTimestamps = true,
@@ -1486,6 +1501,14 @@ function GoldTracker:InitializeDatabase()
     if self.db.instanceFarmingScanMode ~= "background" and self.db.instanceFarmingScanMode ~= "foreground" then
         self.db.instanceFarmingScanMode = self.DEFAULTS.instanceFarmingScanMode
     end
+    if type(self.db.instanceTransmogExpansionFilter) ~= "string" or self.db.instanceTransmogExpansionFilter == "" then
+        self.db.instanceTransmogExpansionFilter = self.DEFAULTS.instanceTransmogExpansionFilter
+    end
+    self.db.instanceTransmogMinimumValue = math.max(
+        0,
+        math.floor((tonumber(self.db.instanceTransmogMinimumValue) or self.DEFAULTS.instanceTransmogMinimumValue) + 0.5)
+    )
+    self.db.instanceTransmogFlatList = self.db.instanceTransmogFlatList == true
     if type(self.db.instanceFarmingShared) ~= "table" then
         self.db.instanceFarmingShared = {}
     end
@@ -1726,12 +1749,42 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.observedWorldDrops) ~= "table" then
         self.db.observedWorldDrops = {}
     end
-    if type(self.db.observedSavedSessionDrops) ~= "table" then
-        self.db.observedSavedSessionDrops = {}
+    if type(self.db.observedDropsShared) ~= "table" then
+        self.db.observedDropsShared = {}
     end
-    if self.db.observedSavedSessionDropsScannedAt ~= nil then
-        self.db.observedSavedSessionDropsScannedAt = tonumber(self.db.observedSavedSessionDropsScannedAt)
+
+    local legacyObservedDropsScanCache = type(self.db.observedDropsScanCache) == "table"
+        and self.db.observedDropsScanCache
+        or {}
+    if type(self.db.observedDropsShared.scanCache) ~= "table" then
+        self.db.observedDropsShared.scanCache = {}
     end
+    for cacheKey, cacheEntry in pairs(legacyObservedDropsScanCache) do
+        if self.db.observedDropsShared.scanCache[cacheKey] == nil then
+            self.db.observedDropsShared.scanCache[cacheKey] = cacheEntry
+        end
+    end
+
+    local legacySavedSessionDrops = type(self.db.observedSavedSessionDrops) == "table"
+        and self.db.observedSavedSessionDrops
+        or {}
+    local sharedSavedSessionScanTime = tonumber(self.db.observedDropsShared.savedSessionDropsScannedAt)
+    local legacySavedSessionScanTime = tonumber(self.db.observedSavedSessionDropsScannedAt)
+    if type(self.db.observedDropsShared.savedSessionDrops) ~= "table"
+        or (next(self.db.observedDropsShared.savedSessionDrops) == nil and not sharedSavedSessionScanTime)
+        or (legacySavedSessionScanTime and (not sharedSavedSessionScanTime or legacySavedSessionScanTime > sharedSavedSessionScanTime)) then
+        self.db.observedDropsShared.savedSessionDrops = legacySavedSessionDrops
+    end
+    if not sharedSavedSessionScanTime or (legacySavedSessionScanTime and legacySavedSessionScanTime > sharedSavedSessionScanTime) then
+        sharedSavedSessionScanTime = legacySavedSessionScanTime
+    end
+    self.db.observedDropsShared.savedSessionDropsScannedAt = sharedSavedSessionScanTime
+
+    -- These aliases keep older modules and SavedVariables layouts compatible while
+    -- making every saved drop scan, including session and zone scans, account-wide.
+    self.db.observedDropsScanCache = self.db.observedDropsShared.scanCache
+    self.db.observedSavedSessionDrops = self.db.observedDropsShared.savedSessionDrops
+    self.db.observedSavedSessionDropsScannedAt = sharedSavedSessionScanTime
     if type(self.db.showLootLogTimestamps) ~= "boolean" then
         self.db.showLootLogTimestamps = self.DEFAULTS.showLootLogTimestamps
     end

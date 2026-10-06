@@ -16,28 +16,13 @@ local EXPLORER_TABS = {
     { id = "instances", label = "Instances" },
     { id = "drops", label = "Drops" },
     { id = "materials", label = "Materials" },
+    { id = "farms", label = "Farms" },
     { id = "inventory", label = "Bags" },
 }
 
 local EXPLORER_TAB_LOOKUP = {}
 for _, tab in ipairs(EXPLORER_TABS) do
     EXPLORER_TAB_LOOKUP[tab.id] = tab
-end
-
-local function IsTSMAvailable()
-    return type(TSM_API) == "table" and type(TSM_API.GetCustomPriceValue) == "function"
-end
-
-local function GetExplorerTabTooltip(tabID)
-    if tabID ~= "inventory" then
-        return nil
-    end
-
-    if IsTSMAvailable() then
-        return "Shows auctionable bag items using TradeSkillMaster (TSM) market data."
-    end
-
-    return "Requires TradeSkillMaster (TSM). Bag values and market data are unavailable until TSM is installed and enabled."
 end
 
 local function NormalizeExplorerTab(tabID)
@@ -92,6 +77,7 @@ local function DisableEmbeddedWindowChrome(frame)
     HideFramePart(frame.headerAccent)
     HideFramePart(frame.headerTitleText)
     HideFramePart(frame.closeButton)
+    HideFramePart(frame.maximizeButton)
     HideFramePart(frame.resizeButton)
     HideFramePart(frame.CloseButton)
     HideFramePart(frame.TitleText)
@@ -147,7 +133,7 @@ local function RaiseEmbeddedWindowParts(frame)
         SetExplorerFrameLevel(chrome, frame, 1)
     end
 
-    for _, panelKey in ipairs({ "bodyPanel", "libraryPanel", "controlsPanel", "listPanel", "summaryPanel", "logPanel" }) do
+    for _, panelKey in ipairs({ "bodyPanel", "libraryPanel", "controlsPanel", "listPanel", "catalogPanel", "summaryPanel", "logPanel" }) do
         SetExplorerFrameLevel(frame[panelKey], chrome, 1)
     end
 
@@ -157,10 +143,22 @@ local function RaiseEmbeddedWindowParts(frame)
         "libraryNewScanButton",
         "savedTabButton",
         "favoritesTabButton",
+        "petsTabButton",
         "newScanTabButton",
+        "savedScansTabButton",
         "libraryUpdateFavoritesButton",
+        "locationGroupsControl",
+        "myFarmsTabButton",
+        "farmsTabButton",
+        "newFarmButton",
+        "catalogRefreshButton",
+        "catalogMaximizeButton",
     }) do
         SetExplorerFrameLevel(frame[buttonKey], chrome, 2)
+    end
+
+    for _, button in pairs(frame.sourceTabButtons or {}) do
+        SetExplorerFrameLevel(button, chrome, 2)
     end
 
     SetExplorerFrameLevel(frame.libraryFavoritesHeaderFrame, frame.libraryPanel, 2)
@@ -170,6 +168,9 @@ local function RaiseEmbeddedWindowParts(frame)
     SetExplorerFrameLevel(frame.content, frame.scrollFrame, 1)
     SetExplorerFrameLevel(GetEmbeddedVerticalScrollBar(frame), frame.listPanel or frame.bodyPanel, 3)
     SetExplorerFrameLevel(frame.horizontalScrollBar, frame.listPanel or frame.bodyPanel, 3)
+    SetExplorerFrameLevel(frame.catalogHeader, frame.catalogPanel, 2)
+    SetExplorerFrameLevel(frame.catalogScrollFrame, frame.catalogPanel, 2)
+    SetExplorerFrameLevel(frame.catalogContent, frame.catalogScrollFrame, 1)
 end
 
 local function GetActiveExplorerChildFrame(addon)
@@ -181,6 +182,7 @@ local function GetActiveExplorerChildFrame(addon)
         addon.rareFarmingFrame,
         addon.instanceFarmingFrame,
         addon.craftingFarmingFrame,
+        addon.myFarmsFrame,
         addon.observedDropsFrame,
         addon.inventoryFrame,
         addon.priceIncreaseAlertsFrame,
@@ -297,6 +299,7 @@ local function HideExplorerChildFrames(addon, activeFrame)
     hideIfInactive(addon.rareFarmingFrame)
     hideIfInactive(addon.instanceFarmingFrame)
     hideIfInactive(addon.craftingFarmingFrame)
+    hideIfInactive(addon.myFarmsFrame)
     hideIfInactive(addon.observedDropsFrame)
     hideIfInactive(addon.inventoryFrame)
     hideIfInactive(addon.priceIncreaseAlertsFrame)
@@ -343,17 +346,25 @@ local function ConfigureInstanceExplorerTabs(addon)
 
     SetFrameShown(frame.savedTabButton, true)
     SetFrameShown(frame.favoritesTabButton, false)
+    SetFrameShown(frame.transmogsTabButton, true)
+    SetFrameShown(frame.petsTabButton, true)
     SetFrameShown(frame.newScanTabButton, true)
     AnchorExplorerSubTab(frame.savedTabButton)
-    AnchorExplorerSubTab(frame.newScanTabButton, frame.savedTabButton)
+    local previousButton = frame.savedTabButton
+    if frame.transmogsTabButton then
+        AnchorExplorerSubTab(frame.transmogsTabButton, previousButton)
+        previousButton = frame.transmogsTabButton
+    end
+    if frame.petsTabButton then
+        AnchorExplorerSubTab(frame.petsTabButton, previousButton)
+        AnchorExplorerSubTab(frame.newScanTabButton, frame.petsTabButton)
+    else
+        AnchorExplorerSubTab(frame.newScanTabButton, previousButton)
+    end
 end
 
 function GoldTracker:GetExplorerTabDefinitions()
     return EXPLORER_TABS
-end
-
-function GoldTracker:GetExplorerTabTooltip(tabID)
-    return GetExplorerTabTooltip(tabID)
 end
 
 function GoldTracker:RefreshExplorerTabs()
@@ -364,7 +375,9 @@ function GoldTracker:RefreshExplorerTabs()
 
     local activeTabID = frame.activeTabID and NormalizeExplorerTab(frame.activeTabID) or nil
     for tabID, button in pairs(frame.tabButtons) do
-        button.tooltipText = GetExplorerTabTooltip(tabID)
+        if tabID == "inventory" then
+            button.tooltipText = nil
+        end
         if button.SetSelected then
             button:SetSelected(tabID == activeTabID)
         end
@@ -409,13 +422,19 @@ function GoldTracker:SetExplorerTab(tabID)
         return
     end
 
+    if normalizedTabID == "farms" then
+        self:CreateMyFarmsWindow()
+        ShowEmbeddedFrame(self, self.myFarmsFrame)
+        self:RefreshMyFarmsWindow()
+        return
+    end
+
     if normalizedTabID == "drops" then
         self:CreateObservedDropsWindow()
         ShowEmbeddedFrame(self, self.observedDropsFrame)
         if self.observedDropsFrame then
             if type(self.SetObservedDropsWindowView) == "function" then
-                self:SetObservedDropsWindowView("library")
-                self:RefreshObservedDropsSavedScansWindow()
+                self:SetObservedDropsWindowView("scan")
             elseif type(self.RefreshObservedDropsWindow) == "function" then
                 self:RefreshObservedDropsWindow(true)
             end
@@ -516,7 +535,6 @@ function GoldTracker:CreateExplorerWindow()
         button:SetScript("OnClick", function()
             addon:SetExplorerTab(tab.id)
         end)
-        button.tooltipText = GetExplorerTabTooltip(tab.id)
         frame.tabButtons[tab.id] = button
         previousButton = button
     end
@@ -532,6 +550,7 @@ function GoldTracker:CreateExplorerWindow()
     end
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = EXPLORER_WINDOW_MIN_WIDTH,
         minHeight = EXPLORER_WINDOW_MIN_HEIGHT,
         maxWidth = EXPLORER_WINDOW_MAX_WIDTH,
@@ -549,6 +568,9 @@ function GoldTracker:CreateExplorerWindow()
             if addon.craftingFarmingFrame and addon.craftingFarmingFrame:IsShown() then
                 addon:RefreshCraftingFarmingWindowLayout()
                 addon:RefreshCraftingFarmingWindow(false)
+            end
+            if addon.myFarmsFrame and addon.myFarmsFrame:IsShown() then
+                addon:RefreshMyFarmsWindow()
             end
             if addon.observedDropsFrame and addon.observedDropsFrame:IsShown() then
                 addon:RefreshObservedDropsWindowLayout()

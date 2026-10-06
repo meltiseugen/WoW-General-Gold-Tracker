@@ -343,20 +343,15 @@ local function GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, pre
     local totalWidth = itemWidth + valueWidth + sourceWidth
     if totalWidth > textWidth then
         local overflow = totalWidth - textWidth
-        local shrinkableItem = math.max(0, itemWidth - DETAILS_ITEMS_MIN_ITEM_WIDTH)
-        local itemShrink = math.min(shrinkableItem, overflow)
-        itemWidth = itemWidth - itemShrink
-        overflow = overflow - itemShrink
+        local shrinkableSource = math.max(0, sourceWidth - DETAILS_ITEMS_SOURCE_MIN_WIDTH)
+        local sourceShrink = math.min(shrinkableSource, overflow)
+        sourceWidth = sourceWidth - sourceShrink
+        overflow = overflow - sourceShrink
 
         if overflow > 0 then
-            local shrinkableSource = math.max(0, sourceWidth - DETAILS_ITEMS_SOURCE_MIN_WIDTH)
-            local sourceShrink = math.min(shrinkableSource, overflow)
-            sourceWidth = sourceWidth - sourceShrink
-            overflow = overflow - sourceShrink
-        end
-
-        if overflow > 0 then
-            valueWidth = math.max(DETAILS_ITEMS_VALUE_MIN_WIDTH, valueWidth - overflow)
+            local shrinkableValue = math.max(0, valueWidth - DETAILS_ITEMS_VALUE_MIN_WIDTH)
+            local valueShrink = math.min(shrinkableValue, overflow)
+            valueWidth = valueWidth - valueShrink
         end
     end
 
@@ -364,6 +359,7 @@ local function GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, pre
         itemWidth = math.max(1, math.floor(itemWidth + 0.5)),
         valueWidth = math.max(1, math.floor(valueWidth + 0.5)),
         sourceWidth = math.max(1, math.floor(sourceWidth + 0.5)),
+        availableWidth = availableWidth,
     }
 end
 
@@ -375,11 +371,14 @@ local function GetHistoryDetailsPreferredItemColumnWidths(frame)
         return preferredItemWidth, preferredValueWidth, preferredSourceWidth
     end
 
+    preferredItemWidth = Theme:GetRequiredTextColumnWidth(
+        frame.detailsItemRows,
+        "itemText",
+        preferredItemWidth,
+        { padding = 8 }
+    )
     for _, row in ipairs(frame.detailsItemRows or {}) do
         if row:IsShown() then
-            if row.itemText and type(row.itemText.GetStringWidth) == "function" then
-                preferredItemWidth = math.max(preferredItemWidth, math.ceil((row.itemText:GetStringWidth() or 0) + 8))
-            end
             if row.sourceText and type(row.sourceText.GetStringWidth) == "function" then
                 preferredSourceWidth = math.max(preferredSourceWidth, math.ceil((row.sourceText:GetStringWidth() or 0) + 8))
             end
@@ -398,6 +397,14 @@ local function ApplyHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, p
     end
 
     local layout = GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
+    if frame.detailsItemsContent then
+        local contentWidth = 8
+            + layout.itemWidth
+            + layout.valueWidth
+            + layout.sourceWidth
+            + (DETAILS_ITEMS_COLUMN_GAP * 2)
+        frame.detailsItemsContent:SetWidth(math.max(layout.availableWidth, contentWidth))
+    end
     if frame.itemsItemHeaderText and frame.itemsHeaderText then
         frame.itemsItemHeaderText:ClearAllPoints()
         frame.itemsItemHeaderText:SetPoint("TOPLEFT", frame.itemsHeaderText, "BOTTOMLEFT", 0, -4)
@@ -1252,6 +1259,7 @@ function GoldTracker:CreateHistoryWindow()
     end
 
     Theme:CreateResizeButton(frame, {
+        maximize = true,
         minWidth = HISTORY_WINDOW_MIN_WIDTH,
         minHeight = HISTORY_WINDOW_MIN_HEIGHT,
         maxWidth = HISTORY_WINDOW_MAX_WIDTH,
@@ -1260,6 +1268,10 @@ function GoldTracker:CreateHistoryWindow()
             RefreshHistoryAfterResize()
         end,
     })
+    if frame.maximizeButton then
+        frame.maximizeButton:ClearAllPoints()
+        frame.maximizeButton:SetPoint("RIGHT", backButton, "LEFT", -8, 0)
+    end
 
     frame:SetScript("OnSizeChanged", function()
         if frame.isManualResizing then
@@ -1599,14 +1611,14 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
     divider:Hide()
     row.divider = divider
 
-    row:SetScript("OnEnter", function(self)
+    self:CreateItemTooltipTarget(row, itemText, nil, function(self, target)
         local hasItemLink = type(self.itemLink) == "string" and self.itemLink ~= ""
         local hasLootSourceText = type(self.lootSourceText) == "string" and self.lootSourceText ~= ""
         if not hasItemLink and not hasLootSourceText then
             return
         end
 
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
         GameTooltip:ClearLines()
         if hasItemLink then
             GameTooltip:SetHyperlink(self.itemLink)
@@ -1616,13 +1628,16 @@ function GoldTracker:GetHistoryDetailsItemRow(index)
             GameTooltip:AddLine("From", 1.0, 0.82, 0.18)
             GameTooltip:AddLine(self.lootSourceText, 0.66, 0.84, 1.0, true)
         end
+        if type(GoldTracker.AddFarmActionTooltip) == "function" then
+            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
+        end
         GameTooltip:Show()
-    end)
-    row:SetScript("OnLeave", function()
-        GameTooltip:Hide()
     end)
     row:SetScript("OnMouseUp", function(self, button)
         if button == "LeftButton" then
+            if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
+                return
+            end
             GoldTracker:HandleModifiedItemClickIfModified(self)
         end
     end)
