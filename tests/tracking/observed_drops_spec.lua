@@ -158,7 +158,7 @@ describe("Tracking/ObservedDrops", function()
         assert.equals(2, drop.sources["Second Mob"])
     end)
 
-    it("saves eligible trash drops from saved sessions even when live collection is disabled", function()
+    it("saves eligible Unit-sourced trash drops from saved sessions even when live collection is disabled", function()
         local addon = load_observed_drops()
         addon.db.enableObservedWorldDrops = false
         addon.db.sessionHistory = {
@@ -178,7 +178,7 @@ describe("Tracking/ObservedDrops", function()
                         isSoulbound = false,
                         isCraftingReagent = false,
                         timestamp = 1710000123,
-                        lootSourceType = "NPC",
+                        lootSourceType = "Unit",
                         lootSourceName = "Prison Guard",
                         lootSourceText = "Prison Guard",
                         locationLabel = "Stormwind Stockade",

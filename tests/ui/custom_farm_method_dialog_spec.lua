@@ -55,6 +55,9 @@ local function with_dialog(callback)
             { mapID = 100, label = "Hellfire (User)", sourceType = "user", pins = { { mapID = 100, x = 0.6, y = 0.8 } } },
         }
         addon.BuildMaterialFarmingMapOptions = function() return options end
+        addon.BuildFarmDetailsMapOptions = function(_, farms)
+            return farms[1] and farms[1].mapOptions or {}
+        end
         local farm = addon:CreateCustomFarm("Fire", true)
         local entry = addon:BuildCustomFarmEntry({ itemID = 22574, itemName = "Mote of Fire" }, "materials")
         callback(addon, farm, entry, options, buttons, menu)
@@ -65,19 +68,18 @@ describe("UI/CustomFarmMethodDialog", function()
     it("switches sources, previews only the selected overlay and commits the user map", function()
         with_dialog(function(addon, farm, entry, options, _, menu)
             assert.is_true(addon:ShowCustomFarmMethodDialog({ farmID = farm.id, entry = entry,
-                farms = { { id = "wit:fire", name = "Fire", mapNames = { "Hellfire" }, targets = {} } } }))
+                farms = { { id = "wit:fire", name = "Fire", mapNames = { "Hellfire" }, targets = {},
+                    mapOptions = { options[1] } } } }))
             local frame = addon.customFarmMethodDialog
-            assert.equals("farm", frame.selectedDataType)
-            assert.is_false(frame.mapPreview.shown)
-            frame.dataTypeButtons.map.scripts.OnClick()
-            assert.is_false(frame.detailPanel.shown)
+            assert.equals("map", frame.selectedDataType)
+            assert.equals("catalog", frame.selectedMethodKind)
             assert.is_true(frame.mapPreview.shown)
             assert.equals(options[1], frame.mapPreview.option)
             frame.methodDropdown.initialize(nil, 1)
-            assert.equals(3, #menu)
-            menu[2].func()
-            assert.equals(options[2], frame.mapPreview.option)
+            assert.equals(4, #menu)
             menu[3].func()
+            assert.equals(options[2], frame.mapPreview.option)
+            menu[4].func()
             assert.equals(options[3], frame.mapPreview.option)
             local renders = frame.mapPreview.refreshes
             frame.scripts.OnEvent(frame)
@@ -96,7 +98,8 @@ describe("UI/CustomFarmMethodDialog", function()
             assert.is_true(addon:ShowCustomFarmMethodDialog({ entry = entry, farms = {}, mapOptions = options }))
             local frame = addon.customFarmMethodDialog
             assert.equals("map", frame.selectedDataType)
-            assert.is_false(frame.dataTypeButtons.farm.enabled)
+            assert.is_true(frame.dataTypeButtons.map.enabled)
+            assert.is_nil(frame.dataTypeButtons.farm)
             buttons.Cancel.scripts.OnClick()
             assert.equals(before, #addon:GetCustomFarms())
             assert.is_false(frame.shown)

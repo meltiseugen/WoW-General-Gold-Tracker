@@ -1595,8 +1595,9 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
         ))
     end
     if frame.farmButton then
+        local hasMap = self:HasInventoryMaterialFarmingMap(itemID)
         local hasFarm = type(self.HasFarmForItem) == "function" and self:HasFarmForItem(itemID) or false
-        frame.farmButton:SetShown(hasFarm)
+        frame.farmButton:SetShown(hasMap or hasFarm)
     end
     -- Every item details surface should expose a copyable Wowhead item URL when an item ID is available.
     local hasItemWowheadLink = tonumber(itemID) ~= nil
@@ -1855,19 +1856,19 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     metaText:SetText("")
     frame.metaText = metaText
 
-    local farmButton = CreateInventoryButton(bodyPanel, 72, 24, "Farm", "primary")
+    local farmButton = CreateInventoryButton(bodyPanel, 72, 24, "Map", "primary")
     farmButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -12)
     farmButton:SetScript("OnClick", function()
         local itemID = frame.itemData and frame.itemData.itemID
-        if itemID and type(addon.OpenFarmDetailsForItem) == "function" then
-            addon:OpenFarmDetailsForItem(itemID)
+        if itemID and type(addon.OpenMaterialFarmingMap) == "function" then
+            addon:OpenMaterialFarmingMap(itemID)
         end
     end)
     farmButton:SetScript("OnEnter", function(self)
         if GameTooltip then
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText("Open farm map", 1.0, 0.82, 0.18)
-            GameTooltip:AddLine("Shows matching routes with expected yields, byproducts, tips, and sources.", 0.72, 0.86, 1.0, true)
+            GameTooltip:SetText("Open farming map", 1.0, 0.82, 0.18)
+            GameTooltip:AddLine("Shows map locations and any available farm routes.", 0.72, 0.86, 1.0, true)
             GameTooltip:Show()
         end
     end)
@@ -2220,7 +2221,9 @@ end
 
 function GoldTracker:OpenInventoryMaterialFarmingMap(row)
     local itemID = tonumber(row and row.itemID)
-    if not itemID or not self:HasInventoryMaterialFarmingMap(itemID) then
+    local hasMap = itemID and self:HasInventoryMaterialFarmingMap(itemID)
+    local hasFarm = itemID and type(self.HasFarmForItem) == "function" and self:HasFarmForItem(itemID)
+    if not itemID or (not hasMap and not hasFarm) then
         local frame = self.inventoryFrame
         if frame and frame.metaText then
             frame.metaText:SetText("No coordinate-backed farming map data for this bag item yet.")
@@ -2473,15 +2476,15 @@ local function ApplyInventoryTableColumnLayout(frame)
     local iconX = addX + INVENTORY_ADD_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
     local itemX = iconX + INVENTORY_ICON_SIZE + INVENTORY_ROW_ICON_GAP
     local rightEdge = availableWidth - INVENTORY_ROW_RIGHT_PADDING
-    local totalX = rightEdge - INVENTORY_TOTAL_VALUE_WIDTH
-    local quantityX = totalX - INVENTORY_COLUMN_GAP - INVENTORY_QUANTITY_WIDTH
-    local trendX = quantityX - INVENTORY_COLUMN_GAP - INVENTORY_TREND_WIDTH
+    local trendX = rightEdge - INVENTORY_TREND_WIDTH
     local sellRateX = trendX - INVENTORY_COLUMN_GAP - INVENTORY_SELL_RATE_WIDTH
     local demandX = sellRateX - INVENTORY_COLUMN_GAP - INVENTORY_DEMAND_WIDTH
     local historyX = demandX - INVENTORY_COLUMN_GAP - INVENTORY_HISTORY_WIDTH
-    local unitX = historyX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
+    local totalX = historyX - INVENTORY_COLUMN_GAP - INVENTORY_TOTAL_VALUE_WIDTH
+    local unitX = totalX - INVENTORY_COLUMN_GAP - INVENTORY_UNIT_VALUE_WIDTH
+    local quantityX = unitX - INVENTORY_COLUMN_GAP - INVENTORY_QUANTITY_WIDTH
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.inventoryRows, "itemText", 1, { padding = 8 })
-    local itemWidth = math.max(1, unitX - INVENTORY_COLUMN_GAP - itemX)
+    local itemWidth = math.max(1, quantityX - INVENTORY_COLUMN_GAP - itemX)
     local itemOverflow = math.max(0, requiredItemWidth - itemWidth)
     if itemOverflow > 0 then
         unitX = unitX + itemOverflow
@@ -2555,7 +2558,7 @@ function GoldTracker:GetInventoryWindowRow(index)
     hover:SetColorTexture(1, 0.82, 0.18, 0.08)
     row.hover = hover
 
-    local favoriteButton = CreateInventoryButton(row, INVENTORY_TRACKED_BUTTON_WIDTH, INVENTORY_TRACKED_BUTTON_HEIGHT, "+", "neutral")
+    local favoriteButton = CreateInventoryButton(row, INVENTORY_TRACKED_BUTTON_WIDTH, INVENTORY_TRACKED_BUTTON_HEIGHT, "<3", "neutral")
     favoriteButton:RegisterForClicks("LeftButtonUp")
     favoriteButton:SetScript("OnClick", function(self)
         GoldTracker:ToggleInventoryItemFavorite(self:GetParent())
@@ -2619,22 +2622,22 @@ function GoldTracker:GetInventoryWindowRow(index)
     totalValueText:SetWordWrap(false)
     row.totalValueText = totalValueText
 
-    local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    quantityText:SetPoint("RIGHT", totalValueText, "LEFT", -12, 0)
-    quantityText:SetWidth(INVENTORY_QUANTITY_WIDTH)
-    quantityText:SetJustifyH("RIGHT")
-    quantityText:SetWordWrap(false)
-    row.quantityText = quantityText
-
     local unitValueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    unitValueText:SetPoint("RIGHT", quantityText, "LEFT", -12, 0)
+    unitValueText:SetPoint("RIGHT", totalValueText, "LEFT", -12, 0)
     unitValueText:SetWidth(INVENTORY_UNIT_VALUE_WIDTH)
     unitValueText:SetJustifyH("RIGHT")
     unitValueText:SetWordWrap(false)
     row.unitValueText = unitValueText
 
+    local quantityText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    quantityText:SetPoint("RIGHT", unitValueText, "LEFT", -12, 0)
+    quantityText:SetWidth(INVENTORY_QUANTITY_WIDTH)
+    quantityText:SetJustifyH("RIGHT")
+    quantityText:SetWordWrap(false)
+    row.quantityText = quantityText
+
     local trendText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    trendText:SetPoint("RIGHT", unitValueText, "LEFT", -12, 0)
+    trendText:SetPoint("RIGHT", quantityText, "LEFT", -12, 0)
     trendText:SetWidth(INVENTORY_TREND_WIDTH)
     trendText:SetJustifyH("RIGHT")
     trendText:SetWordWrap(false)
@@ -2942,7 +2945,7 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                 row.favorite = type(self.IsFarmingItemFavorite) == "function" and self:IsFarmingItemFavorite(row)
                 row.hasFarmingMap = self:HasInventoryMaterialFarmingMap(row)
                 if row.favoriteButton then
-                    row.favoriteButton:SetText(row.favorite and "-" or "+")
+                    row.favoriteButton:SetText(row.favorite and "-" or "<3")
                     if row.favoriteButton.SetSelected then
                         row.favoriteButton:SetSelected(row.favorite)
                     end
@@ -2951,10 +2954,10 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                 if row.mapButton then
                     row.mapButton:SetText("Map")
                     if row.mapButton.SetEnabled then
-                        row.mapButton:SetEnabled(row.hasFarmingMap)
+                    row.mapButton:SetEnabled(row.hasFarmingMap or (type(self.HasFarmForItem) == "function" and self:HasFarmForItem(row.itemID)))
                     end
                     if row.mapButton.SetAlpha then
-                        row.mapButton:SetAlpha(row.hasFarmingMap and 1 or 0.42)
+                        row.mapButton:SetAlpha((row.hasFarmingMap or (type(self.HasFarmForItem) == "function" and self:HasFarmForItem(row.itemID))) and 1 or 0.42)
                     end
                     row.mapButton:Show()
                 end
@@ -3255,22 +3258,22 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.totalHeaderButton = totalHeaderButton
 
-    local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
-    quantityHeaderButton:SetPoint("RIGHT", totalHeaderButton, "LEFT", -12, 0)
-    quantityHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("quantity")
-    end)
-    frame.quantityHeaderButton = quantityHeaderButton
-
     local unitHeaderButton = CreateInventoryHeaderButton(listPanel, "Unit value", INVENTORY_UNIT_VALUE_WIDTH, "RIGHT")
-    unitHeaderButton:SetPoint("RIGHT", quantityHeaderButton, "LEFT", -12, 0)
+    unitHeaderButton:SetPoint("RIGHT", totalHeaderButton, "LEFT", -12, 0)
     unitHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("unitValue")
     end)
     frame.unitHeaderButton = unitHeaderButton
 
+    local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
+    quantityHeaderButton:SetPoint("RIGHT", unitHeaderButton, "LEFT", -12, 0)
+    quantityHeaderButton:SetScript("OnClick", function()
+        addon:ToggleInventorySort("quantity")
+    end)
+    frame.quantityHeaderButton = quantityHeaderButton
+
     local trendHeaderButton = CreateInventoryHeaderButton(listPanel, "Trend", INVENTORY_TREND_WIDTH, "RIGHT")
-    trendHeaderButton:SetPoint("RIGHT", unitHeaderButton, "LEFT", -12, 0)
+    trendHeaderButton:SetPoint("RIGHT", quantityHeaderButton, "LEFT", -12, 0)
     trendHeaderButton:SetScript("OnClick", function()
         addon:ToggleInventorySort("marketTrend")
     end)
@@ -3297,7 +3300,7 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame.historyHeaderButton = historyHeaderButton
 
-    local favoriteHeaderButton = CreateInventoryHeaderButton(listPanel, "+", INVENTORY_TRACKED_COLUMN_WIDTH, "CENTER")
+    local favoriteHeaderButton = CreateInventoryHeaderButton(listPanel, "Fav", INVENTORY_TRACKED_COLUMN_WIDTH, "CENTER")
     favoriteHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 20, -12)
     frame.favoriteHeaderButton = favoriteHeaderButton
 

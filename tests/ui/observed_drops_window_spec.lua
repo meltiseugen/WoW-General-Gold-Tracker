@@ -149,6 +149,29 @@ local function project_rows(rows)
 end
 
 describe("UI/ObservedDropsWindow row snapshots", function()
+    it("uses Blizzard's battle-pet tooltip for Drops Pets rows", function()
+        local addon, item_links, item_names = build_addon()
+        addon = load_window(addon, item_links, item_names)
+        local owner
+        local shownLink
+
+        loader.with_globals({
+            GameTooltip = {
+                SetOwner = function(_, target, anchor) owner = { target, anchor } end,
+            },
+            BattlePetToolTip_ShowLink = function(link) shownLink = link end,
+        }, function()
+            assert.is_true(addon:ShowObservedDropItemTooltip({
+                itemID = 82800,
+                petID = 59,
+                itemLink = "|cff0070dd|Hbattlepet:59:1:3:161:10:11:0|h[Emerald Whelpling]|h|r",
+            }, "pet-row"))
+        end)
+
+        assert.same({ "pet-row", "ANCHOR_CURSOR" }, owner)
+        assert.is_truthy(string.find(shownLink, "battlepet:59", 1, true))
+    end)
+
     it("shows a direct researched Map action for Mounts rows", function()
         local addon, item_links, item_names = build_addon()
         addon.HasFarmForItem = function(_, itemID)

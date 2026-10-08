@@ -22918,6 +22918,10 @@ end
 for farmIndex, farm in ipairs(farms) do
     local itemID = tonumber(farm.itemID)
     if itemID and #farm.routes > 0 then
+        -- Map route lines are reserved for gathering circuits.  WIT also
+        -- supplies fishing, skinning, cloth, miscellaneous, and mixed-farm
+        -- point sets; keep those as pins without joining them into a route.
+        local isRoute = farm.category == "Mining" or farm.category == "Herb"
         local professions = professionsByCategory[farm.category] or { "miscellaneous" }
         if type(farmingCatalog) == "table" and not catalogIDs[itemID] then
             farmingCatalog[#farmingCatalog + 1] = {
@@ -22962,7 +22966,7 @@ for farmIndex, farm in ipairs(farms) do
                 tips = { "Follow the numbered WIT route points as a loop." },
                 confidence = "source-imported",
                 coords = BuildLoopCoords(route.coords),
-                isRoute = true,
+                isRoute = isRoute,
                 witFarmRecordID = farm.recordID,
             }
         end

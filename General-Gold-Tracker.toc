@@ -24,6 +24,7 @@ Core/Session.lua
 Core/InventoryScan.lua
 Data/RareDrops.lua
 Data/InstanceDrops.lua
+Data/InstanceLocationOverrides.lua
 Data/ATTBoEDrops.lua
 Data/WITDrops.lua
 Data/FarmingItems.lua
@@ -159,6 +160,7 @@ Data/MaterialFarmingSpots/Midnight/Jewelcrafting.lua
 Data/MaterialFarmingSpots/Midnight/Engineering.lua
 Data/MaterialFarmingSpots/WITGathering.lua
 Data/Farms.lua
+Data/FarmLocationOverrides.lua
 Data/MountFarms.lua
 Data/PetFarms.lua
 Data/ToyFarms.lua

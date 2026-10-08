@@ -235,6 +235,30 @@ describe("Core/MarketHistory", function()
         assert.equals(298, rows[1].dbMinBuyoutChangePercent)
     end)
 
+    it("shows only catalogued materials in the price alerts view", function()
+        local values = { DBMarket = 100000, DBMinBuyout = 100000 }
+        local addon = load_market_history(values, {
+            FarmingItems = { items = { { itemID = 12345, itemName = "Test Material" } } },
+        })
+        local nonMaterial = { itemID = 67890, itemName = "Non-material item" }
+
+        with_time(1710000000, function()
+            addon:StartKnownPriceScan()
+            addon:RecordKnownPriceCandidate(nonMaterial)
+        end)
+        values.DBMarket = 200000
+        values.DBMinBuyout = 200000
+        with_time(1710003600, function()
+            addon:StartKnownPriceScan()
+            addon:RecordKnownPriceCandidate(nonMaterial)
+        end)
+
+        local rows, meta = addon:BuildPriceIncreaseAlertRows({ minimumValueCopper = 0 })
+        assert.equals(1, #rows)
+        assert.equals("Test Material", rows[1].itemName)
+        assert.equals(1, meta.knownItemCount)
+    end)
+
     it("compares against the immediately previous scan instead of the first scan", function()
         local values = { DBMarket = 100000, DBMinBuyout = 100000 }
         local addon = load_market_history(values, {

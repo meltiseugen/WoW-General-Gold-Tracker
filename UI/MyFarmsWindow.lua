@@ -20,6 +20,7 @@ local SUGGESTION_ROW_HEIGHT = 36
 local SUGGESTION_LIMIT = 5
 local CATALOG_ROW_HEIGHT = 36
 local CATALOG_ROW_GAP = 2
+local CATALOG_GROUP_ROW_HEIGHT = 30
 local CATALOG_ITEM_ROW_HEIGHT = 30
 local CATALOG_ITEM_ROW_GAP = 1
 local CATALOG_DETAILS_WIDTH = 68
@@ -164,8 +165,48 @@ local function GetCatalogFarmSourceLabel(farm)
     return farm.sourcePath or farm.sourceCategory or farm.activity or farm.sourceType or "WIT farm"
 end
 
+local function GetCatalogMapName(farm, index)
+    local mapNames = type(farm) == "table" and farm.mapNames or nil
+    local label = type(mapNames) == "table" and mapNames[index] or nil
+    local mapID = type(farm) == "table" and type(farm.mapIDs) == "table" and tonumber(farm.mapIDs[index]) or nil
+    if (type(label) ~= "string" or label == "" or label:match("^Map%s+%d+$")) and mapID
+        and C_Map and type(C_Map.GetMapInfo) == "function"
+    then
+        local mapInfo = C_Map.GetMapInfo(mapID)
+        if type(mapInfo) == "table" and type(mapInfo.name) == "string" and mapInfo.name ~= "" then
+            label = mapInfo.name
+        end
+    end
+    if type(label) ~= "string" or label == "" or label:match("^Map%s+%d+$") then
+        for _, option in ipairs(type(farm) == "table" and farm.mapOptions or {}) do
+            if not mapID or tonumber(option.mapID) == mapID then
+                local optionLabel = option.mapLabel or option.location
+                if type(optionLabel) == "string" and optionLabel ~= "" and not optionLabel:match("^Map%s+%d+$") then
+                    return optionLabel
+                end
+            end
+        end
+    end
+    return type(label) == "string" and label ~= "" and label or nil
+end
+
 local function GetCatalogFarmLocationLabel(farm)
-    return Join(type(farm) == "table" and farm.mapNames or nil, "No mapped location")
+    local labels = {}
+    local count = math.max(
+        type(farm) == "table" and type(farm.mapNames) == "table" and #farm.mapNames or 0,
+        type(farm) == "table" and type(farm.mapIDs) == "table" and #farm.mapIDs or 0
+    )
+    for index = 1, count do
+        local label = GetCatalogMapName(farm, index)
+        if label then
+            labels[#labels + 1] = label
+        end
+    end
+    return Join(labels, "No mapped location")
+end
+
+local function GetCatalogFarmLocationGroupLabel(farm)
+    return GetCatalogMapName(farm, 1) or "No mapped location"
 end
 
 local function CatalogFarmMatchesSearch(farm, searchText)
@@ -253,10 +294,61 @@ local function IsFarmInCatalogSelection(farm, categoryID, subcategoryID)
     return false
 end
 
-function GoldTracker:GetWITFarmCatalogEntries(searchText, categoryID, subcategoryID)
+local FARM_CATALOG_EXPANSION_LABELS = {
+    classic = "Classic",
+    burningcrusade = "The Burning Crusade",
+    wrath = "Wrath of the Lich King",
+    cataclysm = "Cataclysm",
+    mists = "Mists of Pandaria",
+    warlords = "Warlords of Draenor",
+    legion = "Legion",
+    battleforazeroth = "Battle for Azeroth",
+    shadowlands = "Shadowlands",
+    dragonflight = "Dragonflight",
+    warwithin = "The War Within",
+    midnight = "Midnight",
+    unknown = "Unknown",
+}
+
+local function GetFarmCatalogExpansionOptions()
+    local options = { { id = "all", label = "All expansions" } }
+    local seen = { all = true }
+    for _, farm in ipairs(GetFarmCatalog().farms or {}) do
+        local expansion = tostring(farm.expansion or "Unknown")
+        local id = expansion:lower()
+        if not seen[id] then
+            seen[id] = true
+            options[#options + 1] = { id = id, label = FARM_CATALOG_EXPANSION_LABELS[id] or expansion }
+        end
+    end
+    table.sort(options, function(left, right)
+        if left.id == "all" then return true end
+        if right.id == "all" then return false end
+        return left.label < right.label
+    end)
+    return options
+end
+
+local function NormalizeFarmCatalogExpansionFilter(expansionID)
+    local normalized = tostring(expansionID or "all"):lower()
+    for _, option in ipairs(GetFarmCatalogExpansionOptions()) do
+        if option.id == normalized then
+            return normalized
+        end
+    end
+    return "all"
+end
+
+function GoldTracker:GetWITFarmCatalogExpansionOptions()
+    return GetFarmCatalogExpansionOptions()
+end
+
+function GoldTracker:GetWITFarmCatalogEntries(searchText, categoryID, subcategoryID, expansionID)
     local entries = {}
+    local normalizedExpansionID = NormalizeFarmCatalogExpansionFilter(expansionID)
     for _, farm in ipairs(GetFarmCatalog().farms or {}) do
         if IsFarmInCatalogSelection(farm, categoryID, subcategoryID)
+            and (normalizedExpansionID == "all" or tostring(farm.expansion or "Unknown"):lower() == normalizedExpansionID)
             and CatalogFarmMatchesSearch(farm, searchText) then
             entries[#entries + 1] = farm
         end
@@ -352,7 +444,7 @@ local function RefreshMethodDialog(frame)
             button:SetSelected(frame.selectedDataType == dataType)
         end
     end
-    frame.methodLabel:SetText(isMap and "Map source" or "Farming method")
+    frame.methodLabel:SetText("Map source")
     frame.methodDropdown:SetShown(frame.selectedDataType ~= "item")
     frame.methodLabel:SetShown(frame.selectedDataType ~= "item")
     frame.detailPanel:SetShown(not isMap)
@@ -360,10 +452,30 @@ local function RefreshMethodDialog(frame)
     frame.acceptButton:SetEnabled(true)
     UIDropDownMenu_SetWidth(frame.methodDropdown, isMap and 684 or 564)
     if isMap then
-        local option = (payload.mapOptions or {})[frame.selectedMapOptionIndex or 1]
-        UIDropDownMenu_SetSelectedValue(frame.methodDropdown, frame.selectedMapOptionIndex)
-        UIDropDownMenu_SetText(frame.methodDropdown, option and BuildMapSourceLabel(option) or "No map sources available")
-        frame.acceptButton:SetEnabled(option ~= nil)
+        local selectedFarm
+        if frame.selectedMethodKind == "catalog" then
+            for _, farm in ipairs(payload.farms or {}) do
+                if farm.id == frame.selectedCatalogFarmID then
+                    selectedFarm = farm
+                    break
+                end
+            end
+        end
+        local option = frame.selectedMethodKind == "map"
+            and (payload.mapOptions or {})[frame.selectedMapOptionIndex or 1]
+            or nil
+        if selectedFarm and type(GoldTracker.BuildFarmDetailsMapOptions) == "function" then
+            option = GoldTracker:BuildFarmDetailsMapOptions({ selectedFarm }, entry.itemID)[1]
+        end
+        local selectedValue = selectedFarm and ("catalog:" .. tostring(selectedFarm.id))
+            or (option and ("map:" .. tostring(frame.selectedMapOptionIndex or 1)))
+        UIDropDownMenu_SetSelectedValue(frame.methodDropdown, selectedValue)
+        UIDropDownMenu_SetText(
+            frame.methodDropdown,
+            selectedFarm and ("Catalog: " .. BuildMethodLabel(selectedFarm))
+                or (option and BuildMapSourceLabel(option) or "No map sources available")
+        )
+        frame.acceptButton:SetEnabled(selectedFarm ~= nil or option ~= nil)
         if option and frame.previewOption ~= option then
             frame.previewOption = option
             GoldTracker:RefreshFarmingMapPreview(frame.mapPreview, option)
@@ -375,56 +487,6 @@ local function RefreshMethodDialog(frame)
         return
     end
 
-    local selectedFarm
-    for _, farm in ipairs(payload.farms or {}) do
-        if farm.id == frame.selectedCatalogFarmID then
-            selectedFarm = farm
-            break
-        end
-    end
-    if not selectedFarm then
-        frame.selectedCatalogFarmID = nil
-        UIDropDownMenu_SetSelectedValue(frame.methodDropdown, ITEM_ONLY_METHOD)
-        UIDropDownMenu_SetText(frame.methodDropdown, "No farm data available")
-        frame.detailText:SetText("Choose Map data or Item only to add this target.")
-        frame.acceptButton:SetEnabled(false)
-        return
-    end
-
-    UIDropDownMenu_SetSelectedValue(frame.methodDropdown, selectedFarm.id)
-    UIDropDownMenu_SetText(frame.methodDropdown, BuildMethodLabel(selectedFarm))
-    local target = GetTargetForItem(selectedFarm, entry.itemID)
-    local details = {
-        selectedFarm.name or selectedFarm.id,
-        selectedFarm.sourcePath or selectedFarm.activity or selectedFarm.sourceType or "WIT farm",
-        "Location: " .. Join(selectedFarm.mapNames, "No mapped location"),
-        string.format("Routes: %d", tonumber(selectedFarm.routeCount) or 0),
-    }
-    if target then
-        details[#details + 1] = string.format(
-            "Recorded target: %s per %s",
-            FormatQuantity(target.quantity),
-            FormatDuration(selectedFarm.recordedSeconds)
-        )
-    end
-    local byproductNames = {}
-    for _, otherTarget in ipairs(selectedFarm.targets or {}) do
-        if tonumber(otherTarget.itemID) ~= tonumber(entry.itemID) then
-            byproductNames[#byproductNames + 1] = GetItemNameSafe(otherTarget.itemID)
-            if #byproductNames == 3 then
-                break
-            end
-        end
-    end
-    local otherTargets = math.max(0, #(selectedFarm.targets or {}) - (target and 1 or 0))
-    if #byproductNames > 0 then
-        local remaining = math.max(0, otherTargets - #byproductNames)
-        details[#details + 1] = "Also recorded: " .. table.concat(byproductNames, ", ")
-            .. (remaining > 0 and (" +" .. tostring(remaining) .. " more") or "")
-    else
-        details[#details + 1] = "Additional recorded drops: None"
-    end
-    frame.detailText:SetText(table.concat(details, "\n"))
 end
 
 local function CreateMethodDialog()
@@ -439,12 +501,12 @@ local function CreateMethodDialog()
     frame:EnableMouse(true)
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     frame:SetScript("OnEvent", function(self)
-        if self:IsShown() and self.selectedDataType == "farm" then
+        if self:IsShown() and self.selectedDataType == "map" then
             RefreshMethodDialog(self)
         end
     end)
     frame:Hide()
-    local chrome = Theme:ApplyWindowChrome(frame, "Choose farm or map data")
+    local chrome = Theme:ApplyWindowChrome(frame, "Choose map data")
     frame.chrome = chrome
     Theme:RegisterSpecialFrame("GoldTrackerCustomFarmMethodDialog")
 
@@ -457,7 +519,7 @@ local function CreateMethodDialog()
 
     frame.dataTypeButtons = {}
     local previousButton
-    for _, dataType in ipairs({ { "farm", "Farm data" }, { "map", "Map data" }, { "item", "Item only" } }) do
+    for _, dataType in ipairs({ { "map", "Map data" }, { "item", "Item only" } }) do
         local key = dataType[1]
         local button = CreateButton(frame, 140, 26, dataType[2], "neutral")
         if previousButton then
@@ -474,8 +536,8 @@ local function CreateMethodDialog()
     end
 
     local methodLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    methodLabel:SetPoint("TOPLEFT", frame.dataTypeButtons.farm, "BOTTOMLEFT", 0, -14)
-    methodLabel:SetText("Farming method")
+    methodLabel:SetPoint("TOPLEFT", frame.dataTypeButtons.map, "BOTTOMLEFT", 0, -14)
+    methodLabel:SetText("Map source")
     frame.methodLabel = methodLabel
     local methodDropdown = CreateFrame("Frame", "GoldTrackerCustomFarmMethodDropdown", frame, "UIDropDownMenuTemplate")
     methodDropdown:SetPoint("TOPLEFT", methodLabel, "BOTTOMLEFT", -16, -3)
@@ -485,31 +547,36 @@ local function CreateMethodDialog()
             return
         end
         if frame.selectedDataType == "map" then
+            for _, farm in ipairs(frame.payload.farms or {}) do
+                local selectedFarm = farm
+                local info = UIDropDownMenu_CreateInfo()
+                info.text = "Catalog: " .. BuildMethodLabel(selectedFarm)
+                info.value = "catalog:" .. tostring(selectedFarm.id)
+                info.checked = frame.selectedMethodKind == "catalog"
+                    and frame.selectedCatalogFarmID == selectedFarm.id
+                info.func = function()
+                    frame.selectedMethodKind = "catalog"
+                    frame.selectedCatalogFarmID = selectedFarm.id
+                    frame.previewOption = nil
+                    RefreshMethodDialog(frame)
+                end
+                UIDropDownMenu_AddButton(info, level)
+            end
             for index, option in ipairs(frame.payload.mapOptions or {}) do
                 local optionIndex = index
                 local info = UIDropDownMenu_CreateInfo()
                 info.text = BuildMapSourceLabel(option)
-                info.value = optionIndex
-                info.checked = frame.selectedMapOptionIndex == optionIndex
+                info.value = "map:" .. tostring(optionIndex)
+                info.checked = frame.selectedMethodKind == "map" and frame.selectedMapOptionIndex == optionIndex
                 info.func = function()
+                    frame.selectedMethodKind = "map"
                     frame.selectedMapOptionIndex = optionIndex
+                    frame.previewOption = nil
                     RefreshMethodDialog(frame)
                 end
                 UIDropDownMenu_AddButton(info, level)
             end
             return
-        end
-        for _, farm in ipairs(frame.payload.farms or {}) do
-            local selectedFarm = farm
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = BuildMethodLabel(selectedFarm)
-            info.value = selectedFarm.id
-            info.checked = frame.selectedCatalogFarmID == selectedFarm.id
-            info.func = function()
-                frame.selectedCatalogFarmID = selectedFarm.id
-                RefreshMethodDialog(frame)
-            end
-            UIDropDownMenu_AddButton(info, level)
         end
     end)
     frame.methodDropdown = methodDropdown
@@ -539,8 +606,10 @@ local function CreateMethodDialog()
     acceptButton:SetPoint("RIGHT", cancelButton, "LEFT", -8, 0)
     acceptButton:SetScript("OnClick", function()
         local payload = frame.payload
-        local catalogFarmID = frame.selectedDataType == "farm" and frame.selectedCatalogFarmID or nil
-        local mapOption = frame.selectedDataType == "map" and payload.mapOptions[frame.selectedMapOptionIndex] or nil
+        local catalogFarmID = frame.selectedDataType == "map" and frame.selectedMethodKind == "catalog"
+            and frame.selectedCatalogFarmID or nil
+        local mapOption = frame.selectedDataType == "map" and frame.selectedMethodKind == "map"
+            and payload.mapOptions[frame.selectedMapOptionIndex] or nil
         local committed
         local reason
         if payload and payload.entryID then
@@ -569,9 +638,11 @@ function GoldTracker:ShowCustomFarmMethodDialog(payload)
     frame.payload = payload
     frame.selectedCatalogFarmID = payload.selectedCatalogFarmID or (payload.farms[1] and payload.farms[1].id)
     frame.selectedMapOptionIndex = 1
-    frame.selectedDataType = #payload.farms > 0 and "farm" or (#payload.mapOptions > 0 and "map" or "item")
+    frame.selectedDataType = (#payload.farms > 0 or #payload.mapOptions > 0) and "map" or "item"
+    frame.selectedMethodKind = #payload.farms > 0 and "catalog" or "map"
     if payload.entry.mapSource then
         frame.selectedDataType = "map"
+        frame.selectedMethodKind = "map"
         local matched
         for index, option in ipairs(payload.mapOptions) do
             if self:GetCustomFarmMapSourceKey(option) == payload.entry.mapSource.key then
@@ -588,8 +659,7 @@ function GoldTracker:ShowCustomFarmMethodDialog(payload)
         frame.selectedDataType = "item"
     end
     frame.previewOption = nil
-    frame.dataTypeButtons.farm:SetEnabled(#payload.farms > 0)
-    frame.dataTypeButtons.map:SetEnabled(#payload.mapOptions > 0)
+    frame.dataTypeButtons.map:SetEnabled(#payload.farms > 0 or #payload.mapOptions > 0)
     RefreshMethodDialog(frame)
     frame:Show()
     frame:Raise()
@@ -810,7 +880,10 @@ local function GetOrCreateCatalogRow(frame, index)
     row.detailsButton:SetScript("OnClick", function(self)
         local owner = self:GetParent()
         if owner.catalogFarmID and type(GoldTracker.OpenFarmDetails) == "function" then
-            GoldTracker:OpenFarmDetails(owner.catalogFarmID, { farms = { owner.catalogFarm } })
+            GoldTracker:OpenFarmDetails(owner.catalogFarmID, {
+                farms = { owner.catalogFarm },
+                suppressFarmOptionNotice = true,
+            })
         end
     end)
     row:SetScript("OnClick", function(self)
@@ -820,6 +893,47 @@ local function GetOrCreateCatalogRow(frame, index)
     end)
     SetCatalogColumnLayout(frame, row, false, false)
     frame.catalogRows[index] = row
+    return row
+end
+
+function GoldTracker:GetWITFarmCatalogLocationGroupLabel(farm)
+    return GetCatalogFarmLocationGroupLabel(farm)
+end
+
+local RefreshAllFarmCatalogFrames
+
+local function GetOrCreateCatalogGroupRow(frame, index)
+    frame.catalogGroupRows = frame.catalogGroupRows or {}
+    local row = frame.catalogGroupRows[index]
+    if row then
+        return row
+    end
+    row = CreateFrame("Button", nil, frame.catalogContent)
+    row:SetHeight(CATALOG_GROUP_ROW_HEIGHT)
+    row:RegisterForClicks("LeftButtonUp")
+    row.background = row:CreateTexture(nil, "BACKGROUND")
+    row.background:SetAllPoints(row)
+    row.divider = row:CreateTexture(nil, "ARTWORK")
+    row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 8, 0)
+    row.divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -8, 0)
+    row.divider:SetHeight(1)
+    row.text = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    row.text:SetPoint("LEFT", row, "LEFT", 12, 0)
+    row.text:SetPoint("RIGHT", row, "RIGHT", -12, 0)
+    row.text:SetJustifyH("LEFT")
+    row:SetScript("OnClick", function(self)
+        if not self.locationGroupKey then
+            return
+        end
+        GoldTracker.farmCatalogCollapsedLocationGroups = GoldTracker.farmCatalogCollapsedLocationGroups or {}
+        GoldTracker:ToggleLocationGroupCollapsed(
+            GoldTracker.farmCatalogCollapsedLocationGroups,
+            self.locationGroupKey,
+            self.locationGroupCollapsed
+        )
+        RefreshAllFarmCatalogFrames(GoldTracker, false)
+    end)
+    frame.catalogGroupRows[index] = row
     return row
 end
 
@@ -870,7 +984,7 @@ end
 
 local function GetCatalogValueText(addon, snapshot)
     if snapshot == nil then
-        return "Loading..."
+        return "Not refreshed"
     end
     if (tonumber(snapshot.pricedTargets) or 0) <= 0 and (tonumber(snapshot.totalValue) or 0) <= 0 then
         return "Price unavailable"
@@ -888,7 +1002,7 @@ end
 
 local function GetCatalogItemValueText(addon, target, key)
     if target == nil then
-        return "Loading..."
+        return "Not refreshed"
     end
     local value = math.max(0, tonumber(target[key]) or 0)
     if value <= 0 then
@@ -911,19 +1025,29 @@ local function GetCatalogSelectionKey(addon)
     return table.concat({ category.id, subcategory.id, GetCatalogValueSourceKey(addon) }, "|")
 end
 
+local function GetFarmCatalogSnapshotCache(addon)
+    if type(addon.db) == "table" then
+        if type(addon.db.farmCatalogValueCache) ~= "table" then
+            addon.db.farmCatalogValueCache = {}
+        end
+        addon.farmCatalogViewSnapshots = addon.db.farmCatalogValueCache
+    elseif type(addon.farmCatalogViewSnapshots) ~= "table" then
+        addon.farmCatalogViewSnapshots = {}
+    end
+    return addon.farmCatalogViewSnapshots
+end
+
 local function UpdateCatalogMetaText(addon, frame, visibleCount)
     if not frame or not frame.catalogMetaText then
         return
     end
-    local category, subcategory = EnsureFarmCatalogSelection(addon)
+    local _, subcategory = EnsureFarmCatalogSelection(addon)
     local selectionKey = GetCatalogSelectionKey(addon)
-    local isCurrentSelection = addon.farmCatalogViewSelectionKey == selectionKey
-    local total = isCurrentSelection
-        and math.max(0, tonumber(addon.farmCatalogViewTotal) or 0)
+    local isRefreshing = addon.farmCatalogRefreshSelectionKey == selectionKey
+        and addon.farmCatalogRefreshInProgress == true
+    local total = isRefreshing and math.max(0, tonumber(addon.farmCatalogViewTotal) or 0)
         or math.max(0, tonumber(visibleCount) or 0)
-    local completed = isCurrentSelection
-        and math.min(total, tonumber(addon.farmCatalogViewCompleted) or 0)
-        or 0
+    local completed = isRefreshing and math.min(total, tonumber(addon.farmCatalogViewCompleted) or 0) or total
     local source = GetCatalogValueSource(addon)
     local parts = {
         string.format(
@@ -933,12 +1057,12 @@ local function UpdateCatalogMetaText(addon, frame, visibleCount)
             tonumber(visibleCount) == 1 and "" or "s",
             total
         ),
-        "Value source: " .. tostring(source and source.label or "current item values"),
+        "Selected source: " .. tostring(source and source.label or "current item values"),
     }
-    if completed < total then
+    if isRefreshing and completed < total then
         parts[#parts + 1] = string.format("Calculating %d/%d", completed, total)
     else
-        parts[#parts + 1] = "Gold/hour ready"
+        parts[#parts + 1] = "Cached values; use Refresh values to recalculate"
     end
     frame.catalogMetaText:SetText(table.concat(parts, "  |  "))
 end
@@ -960,8 +1084,13 @@ local function GetSnapshotTarget(snapshot, target, targetIndex)
 end
 
 local function SortCatalogFarms(addon, farms)
-    local cache = addon.farmCatalogViewSnapshots or {}
+    local cache = GetFarmCatalogSnapshotCache(addon)
     table.sort(farms, function(left, right)
+        local leftLocation = string.lower(GetCatalogFarmLocationGroupLabel(left))
+        local rightLocation = string.lower(GetCatalogFarmLocationGroupLabel(right))
+        if leftLocation ~= rightLocation then
+            return leftLocation < rightLocation
+        end
         local leftSnapshot = cache[left.id]
         local rightSnapshot = cache[right.id]
         local leftValue = leftSnapshot
@@ -1009,6 +1138,18 @@ local function SyncFarmCatalogControls(addon, frame)
         UIDropDownMenu_SetSelectedValue(frame.catalogSubcategoryDropdown, subcategory.id)
         UIDropDownMenu_SetText(frame.catalogSubcategoryDropdown, subcategory.label)
     end
+    addon.farmCatalogExpansionFilter = NormalizeFarmCatalogExpansionFilter(addon.farmCatalogExpansionFilter)
+    if frame.catalogExpansionDropdown then
+        UIDropDownMenu_SetSelectedValue(frame.catalogExpansionDropdown, addon.farmCatalogExpansionFilter)
+        local label = "All expansions"
+        for _, option in ipairs(GetFarmCatalogExpansionOptions()) do
+            if option.id == addon.farmCatalogExpansionFilter then
+                label = option.label
+                break
+            end
+        end
+        UIDropDownMenu_SetText(frame.catalogExpansionDropdown, label)
+    end
     if frame.catalogTitle then
         frame.catalogTitle:SetText("WIT " .. category.label .. " farms")
     end
@@ -1031,60 +1172,95 @@ local function RefreshFarmCatalogFrame(addon, frame, scrollToTop)
     local farms = addon:GetWITFarmCatalogEntries(
         addon.farmCatalogSearchText,
         category.id,
-        subcategory.id
+        subcategory.id,
+        addon.farmCatalogExpansionFilter
     )
-    local cache = addon.farmCatalogViewSnapshots or {}
+    local cache = GetFarmCatalogSnapshotCache(addon)
     SortCatalogFarms(addon, farms)
+    addon.farmCatalogCollapsedLocationGroups = addon.farmCatalogCollapsedLocationGroups or {}
+    local displayRows = addon:BuildLocationGroupedDisplayRows(
+        farms,
+        GetCatalogFarmLocationGroupLabel,
+        addon.farmCatalogCollapsedLocationGroups,
+        true
+    )
     frame.catalogRowByFarmID = {}
     frame.catalogItemRowsByFarmID = {}
     local yOffset = 0
+    local farmRowCount = 0
+    local groupRowCount = 0
     local itemRowCount = 0
-    for index, farm in ipairs(farms) do
-        local row = GetOrCreateCatalogRow(frame, index)
-        local snapshot = cache[farm.id]
-        row.catalogFarmID = farm.id
-        row.catalogFarm = farm
-        frame.catalogRowByFarmID[farm.id] = row
-        local isExpanded = addon.farmCatalogExpandedFarmIDs
-            and addon.farmCatalogExpandedFarmIDs[farm.id] == true
-        row.toggleText:SetText(isExpanded and "-" or "+")
-        row.nameText:SetText(farm.name or farm.id or "Unknown farm")
-        row.quantityText:SetText("")
-        row.unitValueText:SetText(GetCatalogRareBonusText(addon, snapshot))
-        row.locationText:SetText(GetCatalogFarmLocationLabel(farm))
-        row.totalValueText:SetText(GetCatalogValueText(addon, snapshot))
-        row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.022)
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", frame.catalogContent, "TOPLEFT", 0, -yOffset)
-        row:SetPoint("TOPRIGHT", frame.catalogContent, "TOPRIGHT", 0, -yOffset)
-        SetCatalogColumnLayout(frame, row, false, false)
-        row:Show()
-        yOffset = yOffset + CATALOG_ROW_HEIGHT + CATALOG_ROW_GAP
-        if isExpanded then
-            local farmItemRows = {}
-            frame.catalogItemRowsByFarmID[farm.id] = farmItemRows
-            for targetIndex, target in ipairs(farm.targets or {}) do
-                itemRowCount = itemRowCount + 1
-                local itemRow = GetOrCreateCatalogItemRow(frame, itemRowCount)
-                ConfigureCatalogItemRow(
-                    addon,
-                    itemRow,
-                    target,
-                    GetSnapshotTarget(snapshot, target, targetIndex),
-                    targetIndex
-                )
-                itemRow:ClearAllPoints()
-                itemRow:SetPoint("TOPLEFT", frame.catalogContent, "TOPLEFT", 0, -yOffset)
-                itemRow:SetPoint("TOPRIGHT", frame.catalogContent, "TOPRIGHT", 0, -yOffset)
-                SetCatalogColumnLayout(frame, itemRow, false, true)
-                itemRow:Show()
-                farmItemRows[#farmItemRows + 1] = itemRow
-                yOffset = yOffset + CATALOG_ITEM_ROW_HEIGHT + CATALOG_ITEM_ROW_GAP
+    for displayIndex, displayRow in ipairs(displayRows) do
+        if displayRow.isLocationGroupHeader then
+            groupRowCount = groupRowCount + 1
+            local groupRow = GetOrCreateCatalogGroupRow(frame, groupRowCount)
+            groupRow.locationGroupKey = displayRow.locationGroupKey
+            groupRow.locationGroupCollapsed = displayRow.collapsed == true
+            groupRow.text:SetText(string.format(
+                "%s %s (%d)",
+                displayRow.collapsed and "+" or "-",
+                displayRow.locationGroupLabel or "No mapped location",
+                tonumber(displayRow.itemCount) or 0
+            ))
+            groupRow.background:SetColorTexture(1.0, 0.82, 0.18, 0.10)
+            groupRow.divider:SetColorTexture(1.0, 0.82, 0.18, 0.42)
+            groupRow:ClearAllPoints()
+            groupRow:SetPoint("TOPLEFT", frame.catalogContent, "TOPLEFT", 0, -yOffset)
+            groupRow:SetPoint("TOPRIGHT", frame.catalogContent, "TOPRIGHT", 0, -yOffset)
+            groupRow:Show()
+            yOffset = yOffset + CATALOG_GROUP_ROW_HEIGHT + CATALOG_ROW_GAP
+        else
+            local farm = displayRow
+            farmRowCount = farmRowCount + 1
+            local row = GetOrCreateCatalogRow(frame, farmRowCount)
+            local snapshot = cache[farm.id]
+            row.catalogFarmID = farm.id
+            row.catalogFarm = farm
+            frame.catalogRowByFarmID[farm.id] = row
+            local isExpanded = addon.farmCatalogExpandedFarmIDs
+                and addon.farmCatalogExpandedFarmIDs[farm.id] == true
+            row.toggleText:SetText(isExpanded and "-" or "+")
+            row.nameText:SetText(farm.name or farm.id or "Unknown farm")
+            row.quantityText:SetText("")
+            row.unitValueText:SetText(GetCatalogRareBonusText(addon, snapshot))
+            row.locationText:SetText(GetCatalogFarmLocationLabel(farm))
+            row.totalValueText:SetText(GetCatalogValueText(addon, snapshot))
+            row.background:SetColorTexture(1, 1, 1, displayIndex % 2 == 0 and 0.045 or 0.022)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.catalogContent, "TOPLEFT", 0, -yOffset)
+            row:SetPoint("TOPRIGHT", frame.catalogContent, "TOPRIGHT", 0, -yOffset)
+            SetCatalogColumnLayout(frame, row, false, false)
+            row:Show()
+            yOffset = yOffset + CATALOG_ROW_HEIGHT + CATALOG_ROW_GAP
+            if isExpanded then
+                local farmItemRows = {}
+                frame.catalogItemRowsByFarmID[farm.id] = farmItemRows
+                for targetIndex, target in ipairs(farm.targets or {}) do
+                    itemRowCount = itemRowCount + 1
+                    local itemRow = GetOrCreateCatalogItemRow(frame, itemRowCount)
+                    ConfigureCatalogItemRow(
+                        addon,
+                        itemRow,
+                        target,
+                        GetSnapshotTarget(snapshot, target, targetIndex),
+                        targetIndex
+                    )
+                    itemRow:ClearAllPoints()
+                    itemRow:SetPoint("TOPLEFT", frame.catalogContent, "TOPLEFT", 0, -yOffset)
+                    itemRow:SetPoint("TOPRIGHT", frame.catalogContent, "TOPRIGHT", 0, -yOffset)
+                    SetCatalogColumnLayout(frame, itemRow, false, true)
+                    itemRow:Show()
+                    farmItemRows[#farmItemRows + 1] = itemRow
+                    yOffset = yOffset + CATALOG_ITEM_ROW_HEIGHT + CATALOG_ITEM_ROW_GAP
+                end
             end
         end
     end
-    for index = #farms + 1, #(frame.catalogRows or {}) do
+    for index = farmRowCount + 1, #(frame.catalogRows or {}) do
         frame.catalogRows[index]:Hide()
+    end
+    for index = groupRowCount + 1, #(frame.catalogGroupRows or {}) do
+        frame.catalogGroupRows[index]:Hide()
     end
     for index = itemRowCount + 1, #(frame.catalogItemRows or {}) do
         frame.catalogItemRows[index]:Hide()
@@ -1098,9 +1274,11 @@ local function RefreshFarmCatalogFrame(addon, frame, scrollToTop)
     end
 end
 
-local function RefreshAllFarmCatalogFrames(addon, scrollToTop)
+RefreshAllFarmCatalogFrames = function(addon, scrollToTop)
     local primary = addon.myFarmsFrame
-    if primary and primary.IsShown and primary:IsShown() and primary.catalogPanel and primary.catalogPanel:IsShown() then
+    if primary and primary.IsShown and primary:IsShown()
+        and primary.catalogPanel and primary.catalogPanel:IsShown()
+    then
         RefreshFarmCatalogFrame(addon, primary, scrollToTop)
     end
     local expanded = addon.farmCatalogExpandedFrame
@@ -1117,14 +1295,14 @@ function GoldTracker:ToggleWITFarmCatalogExpanded(farmID)
     local expanded = self.farmCatalogExpandedFarmIDs[farmID] ~= true
     self.farmCatalogExpandedFarmIDs[farmID] = expanded
 
-    self.farmCatalogViewSnapshots = self.farmCatalogViewSnapshots or {}
+    local cache = GetFarmCatalogSnapshotCache(self)
     local farm = GetFarmCatalogEntryByID(farmID)
     if expanded and farm and type(self.BuildFarmValuationSnapshot) == "function" then
-        self.farmCatalogViewSnapshots[farmID] = self:BuildFarmValuationSnapshot(farm, {
+        cache[farmID] = self:BuildFarmValuationSnapshot(farm, {
             includeTargets = true,
         })
     elseif not expanded then
-        local snapshot = self.farmCatalogViewSnapshots[farmID]
+        local snapshot = cache[farmID]
         if snapshot then
             snapshot.targets = nil
         end
@@ -1161,7 +1339,9 @@ end
 
 local function UpdateAllFarmCatalogFrameValues(addon, farmIDs)
     local primary = addon.myFarmsFrame
-    if primary and primary.IsShown and primary:IsShown() and primary.catalogPanel and primary.catalogPanel:IsShown() then
+    if primary and primary.IsShown and primary:IsShown()
+        and primary.catalogPanel and primary.catalogPanel:IsShown()
+    then
         UpdateFarmCatalogFrameValues(addon, primary, farmIDs)
     end
     local expanded = addon.farmCatalogExpandedFrame
@@ -1174,10 +1354,10 @@ function GoldTracker:RefreshWITFarmCatalogValues()
     self.farmCatalogValuationGeneration = (tonumber(self.farmCatalogValuationGeneration) or 0) + 1
     local generation = self.farmCatalogValuationGeneration
     local category, subcategory = EnsureFarmCatalogSelection(self)
-    local farms = self:GetWITFarmCatalogEntries(nil, category.id, subcategory.id)
-    self.farmCatalogViewSelectionKey = GetCatalogSelectionKey(self)
-    self.farmCatalogViewSourceKey = GetCatalogValueSourceKey(self)
-    self.farmCatalogViewSnapshots = {}
+    local farms = self:GetWITFarmCatalogEntries(nil, category.id, subcategory.id, self.farmCatalogExpansionFilter)
+    local cache = GetFarmCatalogSnapshotCache(self)
+    self.farmCatalogRefreshSelectionKey = GetCatalogSelectionKey(self)
+    self.farmCatalogRefreshInProgress = true
     self.farmCatalogViewCompleted = 0
     self.farmCatalogViewTotal = #farms
     RefreshAllFarmCatalogFrames(self, false)
@@ -1186,17 +1366,14 @@ function GoldTracker:RefreshWITFarmCatalogValues()
         local snapshot
         local isExpanded = self.farmCatalogExpandedFarmIDs ~= nil
             and self.farmCatalogExpandedFarmIDs[farm.id] == true
-        local currentSnapshot = self.farmCatalogViewSnapshots[farm.id]
-        if isExpanded and currentSnapshot and type(currentSnapshot.targets) == "table" then
-            snapshot = currentSnapshot
-        elseif type(self.BuildFarmValuationSnapshot) == "function" then
+        if type(self.BuildFarmValuationSnapshot) == "function" then
             snapshot = self:BuildFarmValuationSnapshot(farm, {
                 includeTargets = isExpanded,
             })
         else
             snapshot = { totalValue = 0, hourlyValue = 0, pricedTargets = 0 }
         end
-        self.farmCatalogViewSnapshots[farm.id] = snapshot
+        cache[farm.id] = snapshot
         self.farmCatalogViewCompleted = self.farmCatalogViewCompleted + 1
     end
 
@@ -1204,6 +1381,7 @@ function GoldTracker:RefreshWITFarmCatalogValues()
         for _, farm in ipairs(farms) do
             finishFarm(farm)
         end
+        self.farmCatalogRefreshInProgress = false
         RefreshAllFarmCatalogFrames(self, false)
         return
     end
@@ -1211,12 +1389,6 @@ function GoldTracker:RefreshWITFarmCatalogValues()
     local farmIndex = 1
     local function processBatch()
         if self.farmCatalogValuationGeneration ~= generation then
-            return
-        end
-        if self.farmCatalogViewSelectionKey ~= GetCatalogSelectionKey(self)
-            or self.farmCatalogViewSourceKey ~= GetCatalogValueSourceKey(self)
-        then
-            self:RefreshWITFarmCatalogValues()
             return
         end
         local startedAt = type(debugprofilestop) == "function" and debugprofilestop() or nil
@@ -1240,6 +1412,7 @@ function GoldTracker:RefreshWITFarmCatalogValues()
         if farmIndex <= #farms then
             C_Timer.After(0, processBatch)
         else
+            self.farmCatalogRefreshInProgress = false
             RefreshAllFarmCatalogFrames(self, false)
         end
     end
@@ -1248,13 +1421,19 @@ end
 
 
 function GoldTracker:IsWITFarmCatalogValuationCurrent()
-    return self.farmCatalogViewSnapshots ~= nil
-        and self.farmCatalogViewSelectionKey == GetCatalogSelectionKey(self)
-        and self.farmCatalogViewSourceKey == GetCatalogValueSourceKey(self)
+    local cache = GetFarmCatalogSnapshotCache(self)
+    local category, subcategory = EnsureFarmCatalogSelection(self)
+    local farms = self:GetWITFarmCatalogEntries(nil, category.id, subcategory.id, self.farmCatalogExpansionFilter)
+    for _, farm in ipairs(farms) do
+        if type(cache[farm.id]) ~= "table" then
+            return false
+        end
+    end
+    return #farms > 0
 end
 
 function GoldTracker:RefreshFarmCatalogWindow(scrollToTop)
-    self:RefreshWITFarmCatalogValues()
+    RefreshAllFarmCatalogFrames(self, scrollToTop == true)
     if scrollToTop and self.myFarmsFrame and self.myFarmsFrame.catalogScrollFrame
         and self.myFarmsFrame.catalogScrollFrame.SetVerticalScroll then
         self.myFarmsFrame.catalogScrollFrame:SetVerticalScroll(0)
@@ -1343,7 +1522,10 @@ local function GetOrCreateStepRow(frame, index)
     row.mapButton:SetScript("OnClick", function(self)
         local parent = self:GetParent()
         if parent.catalogFarmID and type(GoldTracker.OpenFarmDetails) == "function" then
-            GoldTracker:OpenFarmDetails(parent.catalogFarmID, { itemID = parent.firstItemID })
+            GoldTracker:OpenFarmDetails(parent.catalogFarmID, {
+                itemID = parent.firstItemID,
+                suppressFarmOptionNotice = true,
+            })
         end
     end)
     frame.stepRows[index] = row
@@ -1629,6 +1811,9 @@ function GoldTracker:RefreshMyFarmsWindow()
     if frame.buildButton.SetSelected then
         frame.buildButton:SetSelected(isActive)
     end
+    local hasRoutePlan = type(self.HasCustomFarmRoutePlan) == "function" and self:HasCustomFarmRoutePlan(farm.id)
+    frame.planButton:SetText(hasRoutePlan and "Replan Route" or "Plan Route")
+    frame.openPlanButton:SetShown(hasRoutePlan)
     local characters = self:GetKnownCustomFarmCharacters()
     UIDropDownMenu_SetText(frame.characterDropdown, farm.assignedCharacter or "Select a character")
     if #characters == 0 and type(UIDropDownMenu_DisableDropDown) == "function" then
@@ -1787,7 +1972,7 @@ local function CreateFarmCatalogPanel(addon, frame, chrome, topOffset, includeMa
                 addon.farmCatalogCategoryID = category.id
                 addon.farmCatalogSubcategoryID = category.subcategories[1].id
                 addon.farmCatalogExpandedFarmIDs = {}
-                addon:RefreshWITFarmCatalogValues()
+                RefreshAllFarmCatalogFrames(addon, true)
             end
             UIDropDownMenu_AddButton(info, level)
         end
@@ -1820,12 +2005,43 @@ local function CreateFarmCatalogPanel(addon, frame, chrome, topOffset, includeMa
             info.func = function()
                 addon.farmCatalogSubcategoryID = subcategory.id
                 addon.farmCatalogExpandedFarmIDs = {}
-                addon:RefreshWITFarmCatalogValues()
+                RefreshAllFarmCatalogFrames(addon, true)
             end
             UIDropDownMenu_AddButton(info, level)
         end
     end)
     frame.catalogSubcategoryDropdown = subcategoryDropdown
+
+    local expansionLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    expansionLabel:SetPoint("LEFT", subcategoryDropdown, "RIGHT", -2, 1)
+    expansionLabel:SetText("Expansion")
+    local expansionDropdown = CreateFrame(
+        "Frame",
+        "GoldTrackerFarmCatalogExpansionDropdown" .. dropdownSuffix,
+        panel,
+        "UIDropDownMenuTemplate"
+    )
+    expansionDropdown:SetPoint("LEFT", expansionLabel, "RIGHT", -8, -1)
+    UIDropDownMenu_SetWidth(expansionDropdown, 130)
+    UIDropDownMenu_Initialize(expansionDropdown, function(_, level)
+        if level ~= 1 then
+            return
+        end
+        for _, option in ipairs(GetFarmCatalogExpansionOptions()) do
+            local expansion = option
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = expansion.label
+            info.value = expansion.id
+            info.checked = NormalizeFarmCatalogExpansionFilter(addon.farmCatalogExpansionFilter) == expansion.id
+            info.func = function()
+                addon.farmCatalogExpansionFilter = expansion.id
+                addon.farmCatalogExpandedFarmIDs = {}
+                RefreshAllFarmCatalogFrames(addon, true)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    frame.catalogExpansionDropdown = expansionDropdown
 
     local searchInput = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
     searchInput:SetSize(230, 22)
@@ -2004,12 +2220,7 @@ function GoldTracker:CreateFarmCatalogExpandedWindow()
         end,
     })
     frame:SetScript("OnShow", function()
-        local hasCurrentValues = addon:IsWITFarmCatalogValuationCurrent()
-        if hasCurrentValues then
-            RefreshFarmCatalogFrame(addon, frame, true)
-        else
-            addon:RefreshWITFarmCatalogValues()
-        end
+        RefreshFarmCatalogFrame(addon, frame, true)
     end)
     frame:SetScript("OnHide", function()
         if GameTooltip then
@@ -2175,14 +2386,25 @@ function GoldTracker:CreateMyFarmsWindow()
     end)
     frame.deleteButton = deleteButton
 
-    local planButton = CreateButton(bodyPanel, 88, 24, "Plan Route", "primary")
+    local planButton = CreateButton(bodyPanel, 96, 24, "Plan Route", "primary")
     planButton:SetPoint("RIGHT", deleteButton, "LEFT", -8, 0)
     planButton:SetScript("OnClick", function()
+        if type(addon.BuildCustomFarmRoutePlan) == "function" then
+            addon:BuildCustomFarmRoutePlan(frame.selectedFarmID, true)
+            addon:RefreshMyFarmsWindow()
+        end
+    end)
+    frame.planButton = planButton
+
+    local openPlanButton = CreateButton(bodyPanel, 88, 24, "Open Plan", "neutral")
+    openPlanButton:SetPoint("RIGHT", planButton, "LEFT", -8, 0)
+    openPlanButton:SetScript("OnClick", function()
         if type(addon.OpenFarmRoutePlanWindow) == "function" then
             addon:OpenFarmRoutePlanWindow(frame.selectedFarmID)
         end
     end)
-    frame.planButton = planButton
+    openPlanButton:Hide()
+    frame.openPlanButton = openPlanButton
 
     local farmMetaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     farmMetaText:SetPoint("TOPLEFT", farmTitleText, "BOTTOMLEFT", 0, -5)
@@ -2262,6 +2484,7 @@ function GoldTracker:CreateMyFarmsWindow()
         renameButton,
         deleteButton,
         planButton,
+        openPlanButton,
         farmMetaText,
         characterPanel,
         entriesTitle,

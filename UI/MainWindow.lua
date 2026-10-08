@@ -2190,7 +2190,7 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.minimizeButton = minimizeButton
 
-    local expandButton = CreateModernButton(headerBar, 22, 22, "+", "neutral")
+    local expandButton = CreateModernButton(headerBar, 22, 22, "<3", "neutral")
     expandButton:SetPoint("RIGHT", closeButton, "LEFT", -6, 0)
     expandButton.tooltipText = "Restore tracker"
     expandButton:SetScript("OnClick", function()

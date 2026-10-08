@@ -164,8 +164,8 @@ local WIT_FARM_INSTANCE_ALIASES = {
     MagistersTerrece = "MagistersTerrace",
     ManaTombs = "AuchManaTombs",
     PitofSaron = "FHPitOfSaron",
-    ScarletArmoryOld = "Scarlet Monastery of Old",
-    ScarletGraveyardOLD = "Scarlet Monastery of Old",
+    ScarletArmoryOld = "ScarletMonastery",
+    ScarletGraveyardOLD = "ScarletMonastery",
     ScarletMonastaryNew = "ScarletMonastery",
     SethekkHalls = "AuchSethekkHalls",
     ShadowLab = "AuchShadowLabyrinth",
@@ -186,6 +186,12 @@ local WIT_FARM_INSTANCE_ALIASES = {
     ThroneofTides = "ThroneOfTheTides",
     UtguardPinnacle = "UtgardePinnacle",
     VortextPinnacle = "TheVortexPinnacle",
+    DireMaul = "DireMaulEast",
+    ScarletMonastary = "ScarletMonastery",
+    ScarletMonastayOLD = "ScarletMonastery",
+    Scholomace = "Scholomance",
+    Stratholme = "StratholmeGauntlet",
+    Ulduman = "Uldaman",
 }
 local instanceTransmogExpansionOptions
 local witFarmInstanceIndex
@@ -250,6 +256,22 @@ local function ResolveWITFarmInstance(item)
         end
     end
     return nil
+end
+
+local function FindInstanceBossForItem(instance, itemID)
+    local normalizedItemID = tonumber(itemID)
+    if type(instance) ~= "table" or not normalizedItemID then
+        return nil, nil
+    end
+    normalizedItemID = math.floor(normalizedItemID + 0.5)
+    for _, boss in ipairs(instance.bosses or {}) do
+        for _, loot in ipairs(boss.loot or {}) do
+            if tonumber(loot.itemID) == normalizedItemID then
+                return boss, loot
+            end
+        end
+    end
+    return nil, nil
 end
 
 local function GetInstanceTransmogExpansionOptions()
@@ -347,19 +369,32 @@ local function BuildInstanceTransmogRows(expansionFilterID)
             if normalizedFilterID == EXPANSION_ALL_ID or normalizedFilterID == expansionID then
                 local itemID = tonumber(item.itemID)
                 if itemID then
+                    itemID = math.floor(itemID + 0.5)
+                    local instance = ResolveWITFarmInstance(item)
+                    local boss, loot = FindInstanceBossForItem(instance, itemID)
                     rows[#rows + 1] = {
                         recordID = item.recordID,
                         farmID = item.farmID,
-                        itemID = math.floor(itemID + 0.5),
+                        itemID = itemID,
                         itemLink = item.itemLink,
                         itemName = item.itemName,
                         expansionID = expansionID,
                         expansionLabel = item.expansionLabel or tostring(item.expansion or expansionID),
                         contentType = "transmog",
-                        instanceName = item.farmName or item.locationLabel or "Unknown instance",
+                        instanceName = instance and instance.name
+                            or item.farmName
+                            or item.locationLabel
+                            or "Unknown instance",
                         locationLabel = item.locationLabel or item.farmName or "Unknown instance",
-                        instanceMapID = tonumber(item.locationID),
-                        bossName = category.sourceLabel,
+                        instanceEncounterJournalID = instance and instance.encounterJournalID,
+                        instanceMapID = tonumber(instance and instance.mapID) or tonumber(item.locationID),
+                        instanceEntrance = instance and (instance.entrance or instance.entranceLocation),
+                        bossName = boss and boss.name or "Trash Mobs",
+                        bossEncounterJournalID = boss and boss.encounterJournalID,
+                        bossMapID = boss and boss.mapID,
+                        bossX = boss and (boss.x or boss.coordX),
+                        bossY = boss and (boss.y or boss.coordY),
+                        difficulties = loot and loot.difficulties,
                         sourceLabel = category.sourceLabel,
                         sourceCategory = category.id,
                         quantity = tonumber(item.quantity) or 0,
@@ -1182,6 +1217,9 @@ end
 local function IsTrashInstanceDrop(row)
     local bossName = string.lower(tostring(row and row.bossName or ""))
     return bossName:find("trash", 1, true) ~= nil
+        or bossName:find("patterns/plans", 1, true) ~= nil
+        or bossName:find("patterns / plans", 1, true) ~= nil
+        or bossName == "static farm results"
 end
 
 local function AddInstanceMapOption(options, seen, option)
@@ -1481,6 +1519,7 @@ local function AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansion
                     )
                     local seenKey = instanceKey .. ":" .. tostring(normalizedItemID)
                     if not seenByInstanceAndItem[seenKey] then
+                        local boss, loot = FindInstanceBossForItem(instance, normalizedItemID)
                         seenByInstanceAndItem[seenKey] = true
                         rows[#rows + 1] = {
                             itemID = normalizedItemID,
@@ -1493,7 +1532,12 @@ local function AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansion
                             instanceEncounterJournalID = instance and instance.encounterJournalID,
                             instanceMapID = tonumber(instance and instance.mapID) or tonumber(item.locationID),
                             instanceEntrance = instance and (instance.entrance or instance.entranceLocation),
-                            bossName = "Static Farm Results",
+                            bossName = boss and boss.name or "Trash Mobs",
+                            bossEncounterJournalID = boss and boss.encounterJournalID,
+                            bossMapID = boss and boss.mapID,
+                            bossX = boss and (boss.x or boss.coordX),
+                            bossY = boss and (boss.y or boss.coordY),
+                            difficulties = loot and loot.difficulties,
                             farmingSourceType = category.farmingSourceType,
                             sourceRecordID = item.recordID,
                             recordedQuantity = tonumber(item.quantity) or 0,
@@ -1653,7 +1697,10 @@ end
 
 local function SetItemTooltip(row, target)
     GameTooltip:SetOwner(target or row, "ANCHOR_CURSOR")
-    if row.itemLink then
+    if row.petID and row.itemLink and type(BattlePetToolTip_ShowLink) == "function" then
+        BattlePetToolTip_ShowLink(row.itemLink)
+        return
+    elseif row.itemLink then
         GameTooltip:SetHyperlink(row.itemLink)
     elseif row.itemID and GameTooltip.SetItemByID then
         GameTooltip:SetItemByID(row.itemID)
@@ -1667,6 +1714,44 @@ local function SetItemTooltip(row, target)
     GameTooltip:AddLine(" ")
     GameTooltip:AddDoubleLine("Price source", sourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
     GameTooltip:Show()
+end
+
+function GoldTracker:ShowInstanceFarmingItemTooltip(row, target)
+    SetItemTooltip(row, target)
+end
+
+local function HideInstanceFarmingItemTooltip()
+    if BattlePetTooltip then
+        BattlePetTooltip:Hide()
+    end
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
+end
+
+function GoldTracker:OpenInstanceFarmingRowDetails(row, viewID)
+    if type(row) ~= "table" or row.isLocationGroupHeader then
+        return false
+    end
+
+    if type(self.OpenInventoryItemDetailsWindow) == "function" then
+        self:OpenInventoryItemDetailsWindow(row)
+        return true
+    end
+    return false
+end
+
+function GoldTracker:OpenInstanceFarmingRowMap(row, viewID)
+    if viewID == "pets" then
+        if row.recordID and type(self.OpenFarmDetailsForRecordID) == "function" then
+            return self:OpenFarmDetailsForRecordID(row.recordID) == true
+        end
+        if row.petID and type(self.OpenFarmDetailsForPet) == "function" then
+            return self:OpenFarmDetailsForPet(row.petID) == true
+        end
+        return false
+    end
+    return self:OpenInstanceFarmingMap(row)
 end
 
 local function SetColumn(frameOrText, parent, left, width)
@@ -2418,7 +2503,13 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.favoriteItemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             row.favoriteItemText:SetJustifyH("LEFT")
             row.favoriteItemText:SetWordWrap(false)
-            row.itemTooltipTarget = self:CreateItemTooltipTarget(row, row.favoriteItemText, nil, SetItemTooltip)
+            row.itemTooltipTarget = self:CreateItemTooltipTarget(
+                row,
+                row.favoriteItemText,
+                nil,
+                SetItemTooltip,
+                HideInstanceFarmingItemTooltip
+            )
             row.itemTooltipTarget:Hide()
             row.favoriteSelectedText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             row.favoriteSelectedText:SetJustifyH("RIGHT")
@@ -2501,8 +2592,7 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             local sourceWidth = 170
             local expansionX = contentWidth - expansionWidth - 12
             local addX = expansionX - ADD_WIDTH - columnGap
-            local detailsX = addX - DETAILS_WIDTH - columnGap
-            local sourceX = detailsX - sourceWidth - columnGap
+            local sourceX = addX - sourceWidth - columnGap
             local averageX = sourceX - valueWidth - columnGap
             local regionX = averageX - valueWidth - columnGap
             local marketX = regionX - valueWidth - columnGap
@@ -2596,13 +2686,15 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.favoriteAverageText:SetPoint("LEFT", row, "LEFT", averageX, 0)
             row.favoriteAverageText:SetWidth(valueWidth)
             row.favoriteAverageText:SetText(self:FormatMoney(favorite.averageValue or 0))
-            row.detailsButton:Show()
-            row.detailsButton:ClearAllPoints()
-            row.detailsButton:SetPoint("LEFT", row, "LEFT", detailsX, 0)
             row.favoriteAddButton:Show()
             row.favoriteAddButton:ClearAllPoints()
             row.favoriteAddButton:SetPoint("LEFT", row, "LEFT", addX, 0)
-            row:SetScript("OnClick", nil)
+            row:SetScript("OnClick", function(self)
+                if GoldTracker:HandleModifiedItemClickIfModified(self) then
+                    return
+                end
+                GoldTracker:OpenInstanceFarmingRowDetails(self, "favorites")
+            end)
         else
             local entry = data.entry
             local itemCount = tonumber(entry.resultCount) or #(entry.results or {})
@@ -2651,7 +2743,7 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
     frame.libraryEmptyText:SetShown(#entries == 0)
     frame.libraryEmptyText:SetText(activeTab == "favorites" and "No favorite farming items yet." or "No saved instance scans yet.")
     frame.libraryStatusText:SetText(activeTab == "favorites"
-        and string.format("%d favorite items grouped by expansion | Source | Item | Selected | Market | Region | Avg | Details", favoriteCount or 0)
+        and string.format("%d favorite items grouped by expansion | Source | Item | Selected | Market | Region | Avg", favoriteCount or 0)
         or string.format("%d saved scans", #entries))
     self:RefreshInstanceFarmingNavigationTabs()
 end
@@ -3330,7 +3422,7 @@ function GoldTracker:GetInstanceFarmingWindowRow(index)
     BindInstanceFarmingResultsMouseWheel(row, frame)
     row.background = row:CreateTexture(nil, "BACKGROUND")
     row.background:SetAllPoints(row)
-    row.trackButton = CreateButton(row, TRACKED_BUTTON_WIDTH, TRACKED_BUTTON_HEIGHT, "+", "neutral")
+    row.trackButton = CreateButton(row, TRACKED_BUTTON_WIDTH, TRACKED_BUTTON_HEIGHT, "<3", "neutral")
     BindInstanceFarmingResultsMouseWheel(row.trackButton, frame)
     row.trackButton:RegisterForClicks("LeftButtonUp")
     row.trackButton:SetScript("OnClick", function(self)
@@ -3392,7 +3484,7 @@ function GoldTracker:GetInstanceFarmingWindowRow(index)
     row.mapButton = CreateButton(row, MAP_WIDTH, 20, "Map", "neutral")
     BindInstanceFarmingResultsMouseWheel(row.mapButton, frame)
     row.mapButton:SetScript("OnClick", function(self)
-        GoldTracker:OpenInstanceFarmingMap(self:GetParent())
+        GoldTracker:OpenInstanceFarmingRowMap(self:GetParent(), frame.instanceFarmingViewID)
     end)
     row.addButton = CreateButton(row, ADD_WIDTH, 20, "Add", "neutral")
     BindInstanceFarmingResultsMouseWheel(row.addButton, frame)
@@ -3402,7 +3494,13 @@ function GoldTracker:GetInstanceFarmingWindowRow(index)
     row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
     row.divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     row.divider:SetHeight(1)
-    local itemTooltipTarget = self:CreateItemTooltipTarget(row, row.itemText, row.icon, SetItemTooltip)
+    local itemTooltipTarget = self:CreateItemTooltipTarget(
+        row,
+        row.itemText,
+        row.icon,
+        SetItemTooltip,
+        HideInstanceFarmingItemTooltip
+    )
     row.itemTooltipTarget = itemTooltipTarget
     BindInstanceFarmingResultsMouseWheel(itemTooltipTarget, frame)
     row:SetScript("OnClick", function(self)
@@ -3424,11 +3522,7 @@ function GoldTracker:GetInstanceFarmingWindowRow(index)
         if GoldTracker:HandleModifiedItemClickIfModified(self) then
             return
         end
-        if frame.instanceFarmingViewID == "transmogs"
-            and type(GoldTracker.OpenInventoryItemDetailsWindow) == "function"
-        then
-            GoldTracker:OpenInventoryItemDetailsWindow(self)
-        end
+        GoldTracker:OpenInstanceFarmingRowDetails(self, frame.instanceFarmingViewID)
     end)
     frame.rowPool[index] = row
     return row
@@ -3442,10 +3536,10 @@ ApplyTableColumnLayout = function(frame)
     local showingTransmogs = frame.instanceFarmingViewID == "transmogs"
     local contentWidth = GetInstanceFarmingTableViewportWidth(frame)
     local trackWidth = showingPets and 0 or TRACK_WIDTH
-    local mapWidth = showingPets and 0 or MAP_WIDTH
+    local mapWidth = MAP_WIDTH
     local detailsWidth = (showingPets or showingTransmogs) and 0 or DETAILS_WIDTH
     local addWidth = ADD_WIDTH
-    local gapCount = showingPets and 9 or (showingTransmogs and 11 or 12)
+    local gapCount = showingPets and 10 or (showingTransmogs and 11 or 12)
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rowPool, "itemText", ITEM_MIN_WIDTH, {
         padding = 10,
         leadingWidth = ICON_SIZE + 8,
@@ -3496,7 +3590,7 @@ ApplyTableColumnLayout = function(frame)
 
     local trackX = HEADER_LEFT_INSET
     local mapX = showingPets and trackX or (trackX + trackWidth + COLUMN_GAP)
-    local addX = showingPets and trackX or (mapX + mapWidth + COLUMN_GAP)
+    local addX = mapX + mapWidth + COLUMN_GAP
     local itemX = addX + addWidth + COLUMN_GAP
     local typeX = itemX + itemWidth + COLUMN_GAP
     local valueX = typeX + TYPE_WIDTH + COLUMN_GAP
@@ -3506,9 +3600,7 @@ ApplyTableColumnLayout = function(frame)
     local regionX = marketX + valueWidth + COLUMN_GAP
     local averageX = regionX + valueWidth + COLUMN_GAP
     local detailsX = averageX + valueWidth + COLUMN_GAP
-    local expansionX = (showingPets or showingTransmogs)
-        and detailsX
-        or (detailsX + detailsWidth + COLUMN_GAP)
+    local expansionX = detailsX
     local horizontalOffset = math.max(0, tonumber(frame.horizontalScrollOffset) or 0)
 
     SetHeaderColumn(frame.trackHeaderButton, frame.listPanel, trackX - horizontalOffset, trackWidth)
@@ -3589,10 +3681,10 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
         frame.trackHeaderButton:SetShown(not showingPets)
     end
     if frame.mapHeaderButton then
-        frame.mapHeaderButton:SetShown(not showingPets)
+        frame.mapHeaderButton:SetShown(true)
     end
     if frame.detailsHeaderButton then
-        frame.detailsHeaderButton:SetShown(not showingPets and not showingTransmogs)
+        frame.detailsHeaderButton:SetShown(false)
     end
     self:UpdateInstanceFarmingSortHeaderState()
     ApplyTableColumnLayout(frame)
@@ -3749,10 +3841,12 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
                 EnsureInstanceTransmogRowData(self, frame, data)
             end
             row.itemID = data.itemID
+            row.recordID = data.recordID
             row.itemName = data.itemName
             row.itemLink = data.itemLink
             row.itemQuality = data.itemQuality
             row.iconTexture = data.icon
+            row.petID = data.petID
             row.bindType = data.bindType
             row.expansionID = data.expansionID
             row.expansionLabel = data.expansionLabel
@@ -3779,10 +3873,10 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             row.favoriteKey = GetFavoriteKey(data)
             row.background:SetColorTexture(1, 1, 1, rowIndex % 2 == 0 and 0.045 or 0.022)
             row.trackButton:SetShown(not showingPets)
-            row.mapButton:SetShown(not showingPets)
+            row.mapButton:Show()
             row.detailsButton:SetShown(not showingPets and not showingTransmogs)
             row.addButton:Show()
-            row.trackButton:SetText(row.tracked and "-" or "+")
+            row.trackButton:SetText(row.tracked and "-" or "<3")
             if row.trackButton.SetSelected then
                 row.trackButton:SetSelected(row.tracked)
             end
@@ -4511,9 +4605,9 @@ function GoldTracker:CreateInstanceFarmingWindow()
     divider:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -28, -30)
     divider:SetHeight(1)
 
-    frame.trackHeaderButton = CreateHeaderButton(listPanel, "+", TRACK_WIDTH, "CENTER")
+    frame.trackHeaderButton = CreateHeaderButton(listPanel, "Fav", TRACK_WIDTH, "CENTER")
     frame.trackHeaderButton.sortLabel = "Track"
-    frame.trackHeaderButton.compactSortLabel = "+"
+    frame.trackHeaderButton.compactSortLabel = "Fav"
     SetInstanceFarmingFrameLevel(frame.trackHeaderButton, listPanel, 2)
     frame.expansionHeaderButton = CreateHeaderButton(listPanel, "Expansion", 102, "LEFT")
     SetInstanceFarmingFrameLevel(frame.expansionHeaderButton, listPanel, 2)

@@ -529,6 +529,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         local addon = load_window(build_addon({
             expansionID = "classic",
             professionID = "mining",
+            composedMaterialsExpanded = true,
             expandedComposedMaterials = {
                 [3005] = true,
             },
@@ -551,7 +552,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals(200, rows[6].componentCost)
     end)
 
-    it("defers composed component pricing until the recipe is expanded", function()
+    it("defers all composed pricing until the composed materials section is expanded", function()
         local data = copy_farming_data({
             {
                 itemID = 3005,
@@ -578,20 +579,20 @@ describe("UI/CraftingFarmingWindow rows", function()
         addon = load_window(addon, data)
 
         local collapsedRows = addon:BuildCraftingFarmingRows()
-        local collapsedComposed
+        local composedDivider
         for _, row in ipairs(collapsedRows) do
-            if row.itemID == 3005 then
-                collapsedComposed = row
+            if row.dividerKind == "composedMaterials" then
+                composedDivider = row
                 break
             end
         end
 
-        assert.is_table(collapsedComposed)
-        assert.is_false(collapsedComposed.componentsLoaded)
-        assert.is_nil(collapsedComposed.componentCost)
+        assert.is_table(composedDivider)
+        assert.is_false(composedDivider.expanded)
+        assert.is_nil(collapsedRows[#collapsedRows].itemID)
         assert.equals(0, componentValueLookups)
 
-        addon.craftingFarmingFrame.expandedComposedMaterials = { [3005] = true }
+        addon.craftingFarmingFrame.composedMaterialsExpanded = true
         local expandedRows = addon:BuildCraftingFarmingRows()
         local expandedComposed
         for _, row in ipairs(expandedRows) do
@@ -604,6 +605,28 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.is_true(expandedComposed.componentsLoaded)
         assert.equals(8000, expandedComposed.componentCost)
         assert.equals(1, componentValueLookups)
+    end)
+
+    it("calculates gold per hour from drop rate and unit value", function()
+        local addon = load_window(build_addon({
+            expansionID = "classic",
+            professionID = "mining",
+            dropRateByItemID = {
+                [3001] = { dropPerHour = 12.5 },
+            },
+        }))
+
+        local rows = addon:BuildCraftingFarmingRows()
+        local ore
+        for _, row in ipairs(rows) do
+            if row.itemID == 3001 then
+                ore = row
+                break
+            end
+        end
+
+        assert.is_table(ore)
+        assert.equals(12500, ore.goldPerHour)
     end)
 
     it("expands composed components recursively to their base recipe inputs", function()
@@ -636,6 +659,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         local addon = load_window(build_addon({
             expansionID = "classic",
             professionID = "mining",
+            composedMaterialsExpanded = true,
             expandedComposedMaterials = {
                 [3005] = true,
                 [3010] = true,
@@ -1045,8 +1069,82 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("materials", capturedOptions.customFarmSourceType)
         assert.equals("Nagrand", capturedOptions.mapOptions[1].mapLabel)
         assert.equals("Nagrand", capturedOptions.mapOptions[1].label)
+        assert.equals("map", capturedOptions.mapOptions[1].dropdownGroup)
+        assert.equals("Map data", capturedOptions.mapOptions[1].dropdownGroupLabel)
         assert.is_true(capturedOptions.mapOptions[1].pins[1].isRoute)
         assert.equals("old-ore-nagrand-route", capturedOptions.mapOptions[1].pins[1].routeID)
+    end)
+
+    it("groups material map options and expands a selected farm's recorded yields", function()
+        local capturedOptions
+        local refreshCount = 0
+        local buildOptions = {}
+        local smallerFarm = {
+            id = "smaller-farm",
+            name = "Smaller Farm",
+            targets = { { itemID = 3001, quantity = 3 } },
+        }
+        local largerFarm = {
+            id = "larger-farm",
+            name = "Larger Farm",
+            targets = { { itemID = 3001, quantity = 12 } },
+        }
+        local addon = build_addon()
+        addon.materialFarmingSpots = {
+            items = {
+                [3001] = {
+                    itemID = 3001,
+                    itemName = "Old Ore",
+                    spots = {
+                        { id = "addon-map", mapName = "Nagrand", coords = { { x = 0.1, y = 0.2 } } },
+                    },
+                },
+            },
+        }
+        addon.BuildUserMaterialFarmingMapOptions = function()
+            return {
+                { id = "user-map", mapID = 107, label = "Nagrand (User)", sourceType = "user",
+                    pins = { { mapID = 107, x = 0.3, y = 0.4, sourceType = "user" } } },
+            }
+        end
+        addon = load_window(addon)
+        addon.GetFarmsForItem = function() return { smallerFarm, largerFarm } end
+        addon.BuildFarmDetailsMapOptions = function()
+            return {
+                { id = "smaller-farm-map", mapID = 107, label = "farm: Smaller Farm", farm = smallerFarm, pins = {} },
+                { id = "larger-farm-map", mapID = 107, label = "farm: Larger Farm", farm = largerFarm, pins = {} },
+            }
+        end
+        addon.BuildFarmValuationSnapshot = function() return {} end
+        addon.BuildFarmMapDetailLines = function(_, _, _, _, _, options)
+            buildOptions[#buildOptions + 1] = options
+            return { { type = "detailToggle", text = "+ 74 more recorded items", onClick = options.onToggleTargets } }
+        end
+        addon.RefreshStandaloneMapWindow = function() refreshCount = refreshCount + 1 end
+        addon.OpenStandaloneMapWindow = function(_, options) capturedOptions = options end
+
+        assert.is_true(addon:OpenMaterialFarmingMap(3001))
+        assert.same({ "user", "map", "farm", "farm" }, {
+            capturedOptions.mapOptions[1].dropdownGroup,
+            capturedOptions.mapOptions[2].dropdownGroup,
+            capturedOptions.mapOptions[3].dropdownGroup,
+            capturedOptions.mapOptions[4].dropdownGroup,
+        })
+        assert.same({ "User map data", "Map data", "Farm data", "Farm data" }, {
+            capturedOptions.mapOptions[1].dropdownGroupLabel,
+            capturedOptions.mapOptions[2].dropdownGroupLabel,
+            capturedOptions.mapOptions[3].dropdownGroupLabel,
+            capturedOptions.mapOptions[4].dropdownGroupLabel,
+        })
+        assert.equals("farm: Larger Farm", capturedOptions.mapOptions[3].label)
+        assert.equals("farm: Smaller Farm", capturedOptions.mapOptions[4].label)
+
+        local collapsed = capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[3], 107, "Nagrand")
+        assert.is_false(buildOptions[1].showAllTargets)
+        collapsed[1].onClick()
+        assert.equals(1, refreshCount)
+        capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[3], 107, "Nagrand")
+        assert.is_true(buildOptions[2].showAllTargets)
     end)
 
     it("marks rows that have material farming map data", function()

@@ -83,7 +83,9 @@ local function IsSavedSessionTrashLoot(entry)
     end
 
     local sourceKind = entry.lootSourceType
-    if sourceKind == "NPC" or sourceKind == "AOE" then
+    -- LootSourceService records creature loot as Unit/Units.  NPC is kept for
+    -- older saved sessions and AOE covers merged multi-source loot.
+    if sourceKind == "NPC" or sourceKind == "Unit" or sourceKind == "Units" or sourceKind == "AOE" then
         return true
     end
 

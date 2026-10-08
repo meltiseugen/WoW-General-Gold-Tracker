@@ -154,6 +154,9 @@ local function FindInstanceRecord(catalogFarm)
     AddNameKeys(keys, catalogFarm and catalogFarm.name)
     AddNameKeys(keys, catalogFarm and catalogFarm.providerFarmID)
     AddNameKeys(keys, catalogFarm and catalogFarm.providerKey)
+    for _, alias in ipairs(catalogFarm and catalogFarm.instanceAliases or {}) do
+        AddNameKeys(keys, alias)
+    end
     for _, mapName in ipairs(catalogFarm and catalogFarm.mapNames or {}) do
         AddNameKeys(keys, mapName)
     end
@@ -245,7 +248,9 @@ end
 function GoldTracker:ResolveCatalogFarmInstanceEntrance(catalogFarm)
     local sourceCategory = NormalizeInstanceName(catalogFarm and catalogFarm.sourceCategory)
     local sourcePath = NormalizeInstanceName(catalogFarm and catalogFarm.sourcePath)
-    if sourceCategory ~= "instances" and not (sourcePath and sourcePath:find("instances", 1, true)) then
+    if sourceCategory ~= "instances" and sourceCategory ~= "openworldinstances"
+        and not (sourcePath and sourcePath:find("instances", 1, true))
+    then
         return nil
     end
 

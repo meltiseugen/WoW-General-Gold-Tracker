@@ -205,6 +205,109 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals("GGT static WIT snapshot", options[1].pins[1].sourceLabel)
     end)
 
+    it("keeps non-herb and non-ore WIT routes as unconnected map pins", function()
+        local addon = load_window()
+        local farm = {
+            id = "wit:gathering:fishing:test-fish",
+            sourceDataset = "WITGatheringData",
+            sourceCategory = "Fishing",
+            sourceRecordIDs = { "Mining:OldOre:1" },
+            activity = "fishing",
+            name = "Test Fish",
+        }
+
+        local options = addon:BuildFarmRouteMapOptions(farm)
+
+        assert.equals(1, #options)
+        assert.equals(2, #options[1].pins)
+        assert.is_false(options[1].pins[1].isRoute)
+        assert.is_nil(options[1].pins[1].routeID)
+    end)
+
+    it("uses researched material points when an imported gathering farm has no decoded route", function()
+        local addon = load_window()
+        addon.BuildMaterialFarmingMapOptions = function(_, itemID)
+            assert.equals(4001, itemID)
+            return {
+                {
+                    id = "researched-material-spot",
+                    mapID = 42,
+                    mapLabel = "Test Valley",
+                    label = "Test Valley: pond",
+                    pins = {
+                        { mapID = 42, x = 0.25, y = 0.50, label = "Pond", isRoute = false },
+                    },
+                },
+            }
+        end
+
+        local options = addon:BuildFarmRouteMapOptions({
+            id = "wit:gathering:fishing:no-route",
+            sourceDataset = "WITGatheringData",
+            sourceCategory = "Fishing",
+            sourceRecordIDs = { "Fishing:Missing:1" },
+            primaryItemID = 4001,
+            name = "Test Fish",
+        })
+
+        assert.equals(1, #options)
+        assert.equals("wit:gathering:fishing:no-route:material:researched-material-spot", options[1].id)
+        assert.equals("Related researched material location", options[1].pins[1].sourceLabel)
+    end)
+
+    it("uses the Encounter Journal entrance when an imported instance farm has no static pins", function()
+        local addon = load_window()
+        addon.ResolveCatalogFarmInstanceEntrance = function(_, farm)
+            assert.equals("wit:drops:transmogs:test-instance", farm.id)
+            return {
+                mapID = 42,
+                mapName = "Test Valley",
+                label = "Test Instance entrance",
+                x = 0.25,
+                y = 0.50,
+            }
+        end
+
+        local options = addon:BuildFarmRouteMapOptions({
+            id = "wit:drops:transmogs:test-instance",
+            sourceDataset = "WITDropsData",
+            sourceCategory = "instances",
+            mapIDs = { 42 },
+            mapNames = { "Test Valley" },
+            name = "Test Instance",
+        })
+
+        assert.equals(1, #options)
+        assert.equals(0.25, options[1].pins[1].x)
+        assert.is_false(options[1].pins[1].isRoute)
+        assert.equals("Encounter Journal entrance", options[1].pins[1].sourceLabel)
+    end)
+
+    it("keeps an imported researched pin non-route and preserves its research source", function()
+        local addon = load_window()
+        local options = addon:BuildFarmRouteMapOptions({
+            id = "wit:gathering:fishing:researched-location",
+            sourceDataset = "WITGatheringData",
+            sourceCategory = "Fishing",
+            activity = "fishing",
+            name = "Test Fish",
+            locationResearchSource = "Wowhead location research",
+            mapOptions = {
+                {
+                    mapID = 42,
+                    label = "Test pond",
+                    isRoute = false,
+                    pins = { { x = 0.25, y = 0.50, label = "Pond" } },
+                },
+            },
+        })
+
+        assert.equals(1, #options)
+        assert.is_false(options[1].pins[1].isRoute)
+        assert.equals("farm-fishing", options[1].pins[1].routeType)
+        assert.equals("Wowhead location research", options[1].pins[1].sourceLabel)
+    end)
+
     it("builds researched mount pins and guidance without fake yield estimates", function()
         local addon = load_window()
         local farm = {
@@ -253,7 +356,8 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals(1, #options)
         assert.equals(2, #options[1].pins)
         assert.equals(42, options[1].pins[1].mapID)
-        assert.equals("ggt:mount:test:loop", options[1].pins[1].routeID)
+        assert.is_false(options[1].pins[1].isRoute)
+        assert.is_nil(options[1].pins[1].routeID)
         assert.equals("farm-mount", options[1].pins[1].routeType)
         assert.equals("Dense test packs", options[1].pins[1].density)
         assert.equals("GGT researched mount guide", options[1].pins[1].sourceLabel)
@@ -452,13 +556,49 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals(2, #options)
         assert.equals("wit:gathering:mining:old-ore", options[1].farmID)
         assert.equals("Old Ore Route", options[1].windowTitle)
-        assert.equals("Old Ore Route - Old Ore Loop", options[1].label)
+        assert.equals("farm: Old Ore Route - Old Ore Loop", options[1].label)
         assert.equals(3001, options[1].selectedItemID)
         assert.equals("wit:drops:transmogs:cloth-place", options[2].farmID)
         assert.equals(77, options[2].mapID)
-        assert.equals("Cloth Place - Old Dungeon", options[2].label)
+        assert.equals("farm: Cloth Place - Old Dungeon", options[2].label)
         assert.is_true(options[2].mapOnly)
         assert.equals(0, #options[2].pins)
+    end)
+
+    it("distinguishes a pet boss map from its instance entrance", function()
+        local addon = load_window()
+        local farm = {
+            id = "ggt:pet:discarded-experiment",
+            sourceType = "curated",
+            sourceDataset = "GGTPetFarmData",
+            sourceCategory = "pets",
+            activity = "pet",
+            name = "Discarded Experiment",
+            mapOptions = {
+                {
+                    id = "ggt:pet:discarded-experiment:boss",
+                    mapID = 286,
+                    mapLabel = "Blackwing Descent - Maloriak",
+                    label = "Maloriak",
+                    mapRole = "boss",
+                    pins = { { x = 0.71, y = 0.70, label = "Maloriak - Discarded Experiment" } },
+                },
+                {
+                    id = "ggt:pet:discarded-experiment:entrance",
+                    mapID = 36,
+                    mapLabel = "Burning Steppes",
+                    label = "Blackwing Descent entrance",
+                    mapRole = "entrance",
+                    pins = { { x = 0.24, y = 0.27, label = "Blackwing Descent entrance" } },
+                },
+            },
+        }
+
+        local options = addon:BuildFarmDetailsMapOptions({ farm }, 2079)
+
+        assert.equals(2, #options)
+        assert.equals("Boss location", options[1].label)
+        assert.equals("Instance entrance", options[2].label)
     end)
 
     it("calculates recorded value per hour and builds selected-material details", function()
@@ -592,25 +732,53 @@ describe("UI/FarmDetailsWindow data flow", function()
     it("builds compact farm context for the map details panel", function()
         local addon = load_window()
         local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
-        local lines = addon:BuildFarmMapDetailLines(farm, 3002, "Test Valley")
+        local lines
+        loader.with_globals({
+            C_Item = {
+                GetItemInfo = function(itemID)
+                    return ({ [3001] = "Old Ore", [3002] = "New Herb" })[itemID], "item:" .. tostring(itemID)
+                end,
+                RequestLoadItemDataByID = function() end,
+            },
+        }, function()
+            lines = addon:BuildFarmMapDetailLines(farm, 3002, "Test Valley")
+        end)
         local rendered = {}
         local selectedYield
         local otherYield
-        for _, line in ipairs(lines) do
+        local dividerIndex
+        local farmEstimateIndex
+        local selectedEstimateLine
+        for index, line in ipairs(lines) do
             if line.type == "farmTarget" then
                 if line.selected then
                     selectedYield = line
                 else
                     otherYield = line
                 end
+            elseif line.type == "divider" then
+                dividerIndex = index
             else
                 rendered[#rendered + 1] = line.text or line.siteName
+                if line.text == "Farm estimate" then
+                    farmEstimateIndex = index
+                elseif line.text == "1000c/hour" then
+                    selectedEstimateLine = line
+                end
             end
         end
         local text = table.concat(rendered, "\n")
 
         assert.is_truthy(string.find(text, "Test Valley", 1, true))
-        assert.is_truthy(string.find(text, "Selected value: 1000c/hour", 1, true))
+        assert.is_truthy(string.find(text, "New Herb estimate", 1, true))
+        assert.is_table(selectedEstimateLine)
+        assert.equals("GameFontNormalLarge", selectedEstimateLine.fontObject)
+        assert.same({ 0.35, 0.95, 0.55 }, {
+            selectedEstimateLine.r,
+            selectedEstimateLine.g,
+            selectedEstimateLine.b,
+        })
+        assert.equals(farmEstimateIndex - 1, dividerIndex)
         assert.is_truthy(string.find(text, "4000c/hour", 1, true))
         assert.is_truthy(string.find(text, "How to farm", 1, true))
         assert.equals("New Herb", selectedYield.itemName)
@@ -732,11 +900,16 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals("farm-item:3001", captured.projectionKey)
         assert.equals(2, #captured.mapOptions)
         assert.equals(1, captured.selectedMapOptionIndex)
+        assert.is_nil(captured.farmOptionNotice)
         assert.is_function(captured.detailLinesBuilder)
 
         local lines = captured.detailLinesBuilder(captured.mapOptions[1], 42, "Test Valley")
         assert.is_table(lines)
         assert.equals("Test Valley", lines[1].text)
+
+        captured = nil
+        assert.is_true(addon:OpenFarmDetails("wit:gathering:mining:old-ore"))
+        assert.is_nil(captured.farmOptionNotice)
     end)
 
     it("exposes catalog-aware tooltip and alt-click Farm actions", function()
@@ -767,9 +940,9 @@ describe("UI/FarmDetailsWindow data flow", function()
 end)
 
 describe("UI/MyFarmsWindow WIT catalog list", function()
-    local function load_my_farms_window()
+    local function load_my_farms_window(catalogOverride)
         return loader.load_module("UI/MyFarmsWindow.lua", {}, {
-            FarmCatalog = catalog,
+            FarmCatalog = catalogOverride or catalog,
             JanisTheme = {},
         })
     end
@@ -806,7 +979,30 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
         assert.equals(0, #addon:GetWITFarmCatalogEntries(nil, "gathering", "Fishing"))
     end)
 
-    it("calculates only the currently selected category and type", function()
+    it("filters farms by expansion and replaces placeholder map labels", function()
+        local customCatalog = {
+            farms = {
+                { id = "classic", sourceType = "gathering", sourceCategory = "Mining", name = "Classic Farm",
+                    expansion = "classic", mapIDs = { 42 }, mapNames = { "Map 42" },
+                    mapOptions = { { mapID = 42, mapLabel = "Test Valley" } } },
+                { id = "outland", sourceType = "gathering", sourceCategory = "Mining", name = "Outland Farm",
+                    expansion = "burningCrusade", mapIDs = { 100 }, mapNames = { "Hellfire Peninsula" } },
+            },
+            byID = { classic = 1, outland = 2 },
+        }
+        local addon = load_my_farms_window(customCatalog)
+
+        assert.equals(2, #addon:GetWITFarmCatalogEntries(nil, "gathering", "Mining", "all"))
+        assert.equals("Classic Farm", addon:GetWITFarmCatalogEntries(nil, "gathering", "Mining", "classic")[1].name)
+        assert.equals("Test Valley", addon:GetWITFarmCatalogLocationGroupLabel(customCatalog.farms[1]))
+        assert.same({
+            { id = "all", label = "All expansions" },
+            { id = "classic", label = "Classic" },
+            { id = "burningcrusade", label = "The Burning Crusade" },
+        }, addon:GetWITFarmCatalogExpansionOptions())
+    end)
+
+    it("refreshes only the selected type while retaining other cached farm values", function()
         local addon = load_my_farms_window()
         local valuedFarmIDs = {}
         addon.BuildFarmValuationSnapshot = function(_, farm, options)
@@ -840,8 +1036,57 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
 
         assert.same({ "wit:drops:transmogs:cloth-place" }, valuedFarmIDs)
         assert.equals(1, addon.farmCatalogViewTotal)
-        assert.is_nil(addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"])
+        assert.is_table(addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"])
         assert.is_table(addon.farmCatalogViewSnapshots["wit:drops:transmogs:cloth-place"])
+    end)
+
+    it("does not recalculate cached values during a normal catalog redraw", function()
+        local addon = load_my_farms_window()
+        local valuationPasses = 0
+        addon.BuildFarmValuationSnapshot = function()
+            valuationPasses = valuationPasses + 1
+            return { totalValue = 1, hourlyValue = 1, pricedTargets = 1 }
+        end
+
+        addon:RefreshFarmCatalogWindow(true)
+
+        assert.equals(0, valuationPasses)
+    end)
+
+    it("uses the saved per-farm value cache after a reload", function()
+        local addon = load_my_farms_window()
+        local savedSnapshot = { totalValue = 12345, hourlyValue = 24690, pricedTargets = 1 }
+        addon.db = {
+            farmCatalogValueCache = {
+                ["wit:gathering:mining:old-ore"] = savedSnapshot,
+            },
+        }
+        addon.farmCatalogCategoryID = "gathering"
+        addon.farmCatalogSubcategoryID = "Mining"
+
+        assert.is_true(addon:IsWITFarmCatalogValuationCurrent())
+        assert.equals(savedSnapshot, addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"])
+    end)
+
+    it("groups catalog farms by their primary mapped location", function()
+        local addon = load_my_farms_window()
+        local farms = addon:GetWITFarmCatalogEntries(nil, "gathering")
+        table.sort(farms, function(left, right)
+            return addon:GetWITFarmCatalogLocationGroupLabel(left)
+                < addon:GetWITFarmCatalogLocationGroupLabel(right)
+        end)
+        local groups = addon:BuildLocationGroupedDisplayRows(
+            farms,
+            function(farm) return addon:GetWITFarmCatalogLocationGroupLabel(farm) end,
+            { ["other valley"] = false, ["test valley"] = false },
+            true
+        )
+
+        assert.is_true(groups[1].isLocationGroupHeader)
+        assert.equals("Other Valley", groups[1].locationGroupLabel)
+        assert.equals("Shared Route", groups[2].name)
+        assert.is_true(groups[3].isLocationGroupHeader)
+        assert.equals("Test Valley", groups[3].locationGroupLabel)
     end)
 
     it("recalculates item-row values every time a farm is expanded", function()

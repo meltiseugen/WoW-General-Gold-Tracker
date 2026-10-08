@@ -126,6 +126,7 @@ GoldTracker.DEFAULTS = {
         knownCharacters = {},
         farms = {},
     },
+    farmCatalogValueCache = {},
     explorerTab = "rares",
     inventoryCategoryOrder = {
         "crafting",

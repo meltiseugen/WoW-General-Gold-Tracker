@@ -267,6 +267,8 @@ describe("Core/FarmRoutePlanner", function()
 
             local plan = addon:BuildCustomFarmRoutePlan(farm.id, true)
 
+            assert.is_true(addon:HasCustomFarmRoutePlan(farm.id))
+
             assert.equals("exact", plan[1].confidence)
             assert.equals("unknown", plan[2].confidence)
         end)

@@ -332,9 +332,28 @@ local function ConfigureRareExplorerTabs(addon, masterTabID)
     SetFrameShown(frame.librarySavedTabButton, not showFavoritesOnly)
     SetFrameShown(frame.libraryFavoritesTabButton, false)
     SetFrameShown(frame.libraryNewScanButton, not showFavoritesOnly)
-    if not showFavoritesOnly then
+    if showFavoritesOnly then
+        if frame.libraryPanel and frame.chrome then
+            frame.libraryPanel:ClearAllPoints()
+            frame.libraryPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", 12, -46)
+            frame.libraryPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -12, 38)
+        end
+        if frame.libraryUpdateFavoritesButton and frame.chrome then
+            frame.libraryUpdateFavoritesButton:ClearAllPoints()
+            frame.libraryUpdateFavoritesButton:SetPoint("TOPRIGHT", frame.chrome, "TOPRIGHT", -12, -12)
+        end
+    else
         AnchorExplorerSubTab(frame.librarySavedTabButton)
         AnchorExplorerSubTab(frame.libraryNewScanButton, frame.librarySavedTabButton)
+        if frame.libraryPanel and frame.chrome then
+            frame.libraryPanel:ClearAllPoints()
+            frame.libraryPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", 12, -86)
+            frame.libraryPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -12, 38)
+        end
+        if frame.libraryUpdateFavoritesButton and frame.chrome then
+            frame.libraryUpdateFavoritesButton:ClearAllPoints()
+            frame.libraryUpdateFavoritesButton:SetPoint("TOPRIGHT", frame.chrome, "TOPRIGHT", -12, -54)
+        end
     end
 end
 

@@ -28,6 +28,7 @@ local MATERIALS_PROFESSION_WIDTH = 112
 local MATERIALS_EXPANSION_WIDTH = 140
 local MATERIALS_TAG_WIDTH = 76
 local MATERIALS_DROP_RATE_WIDTH = 86
+local MATERIALS_GOLD_RATE_WIDTH = 100
 local MATERIALS_DEMAND_WIDTH = 82
 local MATERIALS_SELL_RATE_WIDTH = 78
 local MATERIALS_TREND_WIDTH = 64
@@ -53,6 +54,7 @@ local MATERIALS_SORT_KEYS = {
     tag = true,
     itemName = true,
     dropRate = true,
+    goldRate = true,
     demand = true,
     sellRate = true,
     marketTrend = true,
@@ -429,6 +431,10 @@ local function GetMaterialFarmingSpotData(itemID)
     return spots and spots[tonumber(itemID)] or nil
 end
 
+local function IsRouteMaterial(item)
+    return type(item) == "table" and (item.category == "Herb" or item.category == "Ore")
+end
+
 local function BuildMaterialFarmingPin(item, spot, coord, mapID)
     local itemName = item.itemName or ("Item " .. tostring(item.itemID))
     return {
@@ -441,7 +447,10 @@ local function BuildMaterialFarmingPin(item, spot, coord, mapID)
         targetName = coord.targetName or spot.targetName,
         targetType = coord.targetType or spot.targetType,
         farmAction = spot.farmAction,
-        isRoute = spot.isRoute == true or item.isRoute == true,
+        -- A sequence of pins is a rendered route only for raw herbs and ore.
+        -- Other materials can retain every mapped point without a misleading
+        -- line joining unrelated spawn locations.
+        isRoute = IsRouteMaterial(item) and (spot.isRoute == true or item.isRoute == true),
         routeID = spot.id,
         routeType = spot.routeType,
         density = spot.density,
@@ -1111,6 +1120,9 @@ local function GetMaterialsSortValue(row, sortKey)
     if sortKey == "dropRate" then
         return tonumber(row and row.dropPerHour) or 0
     end
+    if sortKey == "goldRate" then
+        return tonumber(row and row.goldPerHour) or 0
+    end
     if sortKey == "demand" then
         return tonumber(row and row.regionSoldPerDay) or 0
     end
@@ -1405,7 +1417,7 @@ local function GetComposedMaterialLoadedStore(frame)
     return frame.loadedComposedMaterials
 end
 
-local function BuildMaterialRow(addon, frame, source, expansionLookup, item, deferMetrics)
+local function BuildMaterialRow(addon, frame, source, expansionLookup, item, deferMetrics, loadComposedComponents)
     local itemID = tonumber(item and item.itemID)
     if not itemID then
         return nil
@@ -1472,15 +1484,18 @@ local function BuildMaterialRow(addon, frame, source, expansionLookup, item, def
         farmCount = GetMaterialFarmCount(normalizedItemID),
     }
 
+    row.goldPerHour = math.max(0, tonumber(row.dropPerHour) or 0)
+        * math.max(0, tonumber(row.value) or 0)
+
     row.hasFarm = row.farmCount > 0
 
     if row.isComposedMaterial then
         row.expanded = GetComposedMaterialExpandedStore(frame)[row.itemID] == true
         local loadedStore = GetComposedMaterialLoadedStore(frame)
-        if row.expanded then
+        if row.expanded or loadComposedComponents == true then
             loadedStore[row.itemID] = true
         end
-        row.componentsLoaded = loadedStore[row.itemID] == true
+        row.componentsLoaded = loadComposedComponents == true or loadedStore[row.itemID] == true
 
         if not row.componentsLoaded then
             return row
@@ -1531,7 +1546,7 @@ local function BuildComponentRow(addon, frame, source, expansionLookup, itemLook
             normalizedItemID,
             frame.materialsDemandCache
         ) or {})
-    return {
+    local row = {
         rowType = "component",
         parentItemID = parentRow.itemID,
         rootItemID = parentRow.rootItemID or parentRow.itemID,
@@ -1582,6 +1597,9 @@ local function BuildComponentRow(addon, frame, source, expansionLookup, itemLook
         farmCount = farmCount,
         hasFarm = farmCount > 0,
     }
+    row.goldPerHour = math.max(0, tonumber(row.dropPerHour) or 0)
+        * math.max(0, tonumber(row.value) or 0)
+    return row
 end
 
 local function AppendExpandedComponentRows(addon, frame, source, expansionLookup, itemLookup, rows, parentRow, depth, ancestry, deferMetrics)
@@ -1708,6 +1726,8 @@ function GoldTracker:BuildCraftingFarmingRows(options)
     local baseRows = {}
     local instanceRows = {}
     local composedRows = {}
+    local composedMaterialCount = 0
+    local composedMaterialsExpanded = frame.composedMaterialsExpanded == true
     local seenItems = {}
     local materialItems = BuildMaterialsItemList(self)
     local itemLookup = {}
@@ -1726,9 +1746,24 @@ function GoldTracker:BuildCraftingFarmingRows(options)
             and (isSearching or ItemMatchesProfessionSelection(item, professionIDs))
             and MaterialItemMatchesSearch(self, frame, source, itemID, searchText) then
             seenItems[itemID] = true
-            local row = BuildMaterialRow(self, frame, source, expansionLookup, item, deferMetrics)
+            local isComposedMaterial = ItemHasComponents(item)
+            local row
+            if isComposedMaterial and not composedMaterialsExpanded then
+                composedMaterialCount = composedMaterialCount + 1
+            else
+                row = BuildMaterialRow(
+                    self,
+                    frame,
+                    source,
+                    expansionLookup,
+                    item,
+                    deferMetrics,
+                    isComposedMaterial and composedMaterialsExpanded
+                )
+            end
             if row then
                 if row.isComposedMaterial then
+                    composedMaterialCount = composedMaterialCount + 1
                     composedRows[#composedRows + 1] = row
                 elseif row.acquisitionType == "instance" then
                     instanceRows[#instanceRows + 1] = row
@@ -1756,26 +1791,30 @@ function GoldTracker:BuildCraftingFarmingRows(options)
             rows[#rows + 1] = row
         end
     end
-    if #composedRows > 0 then
+    if composedMaterialCount > 0 then
         rows[#rows + 1] = {
             rowType = "divider",
             label = "Composed materials",
+            dividerKind = "composedMaterials",
+            expanded = composedMaterialsExpanded,
         }
-        for _, row in ipairs(composedRows) do
-            rows[#rows + 1] = row
-            if row.expanded then
-                AppendExpandedComponentRows(
-                    self,
-                    frame,
-                    source,
-                    expansionLookup,
-                    itemLookup,
-                    rows,
-                    row,
-                    1,
-                    { [row.itemID] = true },
-                    deferMetrics
-                )
+        if composedMaterialsExpanded then
+            for _, row in ipairs(composedRows) do
+                rows[#rows + 1] = row
+                if row.expanded then
+                    AppendExpandedComponentRows(
+                        self,
+                        frame,
+                        source,
+                        expansionLookup,
+                        itemLookup,
+                        rows,
+                        row,
+                        1,
+                        { [row.itemID] = true },
+                        deferMetrics
+                    )
+                end
             end
         end
     end
@@ -1844,9 +1883,75 @@ function GoldTracker:BuildMaterialFarmingMapOptions(itemID)
     return BuildMaterialFarmingMapOptions(self, itemID)
 end
 
+local function GetFarmSelectedItemQuantity(option, selectedItemID)
+    local normalizedItemID = tonumber(selectedItemID)
+    if not normalizedItemID or type(option) ~= "table" or type(option.farm) ~= "table" then
+        return 0
+    end
+
+    local quantity = 0
+    for _, target in ipairs(option.farm.targets or {}) do
+        if tonumber(target and target.itemID) == normalizedItemID then
+            quantity = quantity + math.max(0, tonumber(target.quantity) or 0)
+        end
+    end
+    return quantity
+end
+
+local function GroupMaterialFarmingMapOptions(mapOptions, selectedItemID)
+    local grouped = {
+        user = {},
+        map = {},
+        farm = {},
+    }
+    local groupLabels = {
+        user = "User map data",
+        map = "Map data",
+        farm = "Farm data",
+    }
+
+    local farmOrder = {}
+    local farmQuantity = {}
+    for optionIndex, option in ipairs(mapOptions or {}) do
+        local groupID = option.farm and "farm" or (option.sourceType == "user" and "user" or "map")
+        option.dropdownGroup = groupID
+        option.dropdownGroupLabel = groupLabels[groupID]
+        grouped[groupID][#grouped[groupID] + 1] = option
+        if groupID == "farm" then
+            farmOrder[option] = optionIndex
+            farmQuantity[option] = GetFarmSelectedItemQuantity(option, selectedItemID)
+        end
+    end
+
+    table.sort(grouped.farm, function(left, right)
+        local leftQuantity = farmQuantity[left] or 0
+        local rightQuantity = farmQuantity[right] or 0
+        if leftQuantity ~= rightQuantity then
+            return leftQuantity > rightQuantity
+        end
+        return (farmOrder[left] or 0) < (farmOrder[right] or 0)
+    end)
+
+    local ordered = {}
+    for _, groupID in ipairs({ "user", "map", "farm" }) do
+        for _, option in ipairs(grouped[groupID]) do
+            ordered[#ordered + 1] = option
+        end
+    end
+    return ordered
+end
+
 function GoldTracker:OpenMaterialFarmingMap(itemID)
     local materialData = GetMaterialFarmingSpotData(itemID)
     local mapOptions = BuildMaterialFarmingMapOptions(self, itemID)
+    local farms = type(self.GetFarmsForItem) == "function" and self:GetFarmsForItem(itemID) or {}
+    if #farms > 0 and type(self.BuildFarmDetailsMapOptions) == "function" then
+        for _, farmOption in ipairs(self:BuildFarmDetailsMapOptions(farms, itemID) or {}) do
+            farmOption.label = "farm: " .. tostring((farmOption.farm and farmOption.farm.name) or farmOption.windowTitle or farmOption.label)
+            mapOptions[#mapOptions + 1] = farmOption
+        end
+    end
+    mapOptions = GroupMaterialFarmingMapOptions(mapOptions, itemID)
     if #mapOptions == 0 then
         local frame = self.craftingFarmingFrame
         if frame and frame.metaText then
@@ -1866,15 +1971,32 @@ function GoldTracker:OpenMaterialFarmingMap(itemID)
     local title = materialData and materialData.itemName
     if type(title) ~= "string" or title == "" then
         local firstPin = mapOptions[1] and mapOptions[1].pins and mapOptions[1].pins[1]
-        title = firstPin and firstPin.itemName
+        title = (firstPin and firstPin.itemName) or (farms[1] and farms[1].name)
     end
 
+    local valuationSnapshots = {}
+    local expandedFarmTargets = {}
     self:OpenStandaloneMapWindow({
         title = title or ("Item " .. tostring(itemID)),
         projectionKey = "material:" .. tostring(itemID),
         mapOptions = mapOptions,
         customFarmRow = { itemID = itemID, itemName = title },
         customFarmSourceType = "materials",
+        detailLinesBuilder = function(mapOption, _, mapLabel)
+            if mapOption and mapOption.farm and type(self.BuildFarmMapDetailLines) == "function" then
+                local farm = mapOption.farm
+                local key = farm.id or tostring(farm)
+                valuationSnapshots[key] = valuationSnapshots[key] or self:BuildFarmValuationSnapshot(farm)
+                return self:BuildFarmMapDetailLines(farm, itemID, mapLabel, valuationSnapshots[key], {
+                    showAllTargets = expandedFarmTargets[key] == true,
+                    onToggleTargets = function()
+                        expandedFarmTargets[key] = not expandedFarmTargets[key]
+                        self:RefreshStandaloneMapWindow()
+                    end,
+                })
+            end
+            return self:BuildStandaloneMapDetailLines((mapOption and mapOption.pins) or {}, mapOption and mapOption.mapID, mapLabel)
+        end,
     })
     return true
 end
@@ -2208,6 +2330,7 @@ function GoldTracker:UpdateCraftingFarmingSortHeaderState(targetFrame)
         tag = { button = frame.tagHeaderButton, label = "Type" },
         itemName = { button = frame.itemHeaderButton, label = "Item" },
         dropRate = { button = frame.dropRateHeaderButton, label = "Drop/h" },
+        goldRate = { button = frame.goldRateHeaderButton, label = "Gold/h" },
         demand = { button = frame.demandHeaderButton, label = "Sold/day" },
         sellRate = { button = frame.sellRateHeaderButton, label = "Sale %" },
         marketTrend = { button = frame.trendHeaderButton, label = "Trend" },
@@ -2322,8 +2445,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
 
     local availableWidth = GetMaterialsTableAvailableWidth(frame)
     local favoriteX = 8
-    local farmX = favoriteX + MATERIALS_FAVORITE_WIDTH + MATERIALS_COLUMN_GAP
-    local mapX = farmX + MATERIALS_FARM_BUTTON_WIDTH + MATERIALS_COLUMN_GAP
+    local mapX = favoriteX + MATERIALS_FAVORITE_WIDTH + MATERIALS_COLUMN_GAP
     local addX = mapX + MATERIALS_MAP_BUTTON_WIDTH + MATERIALS_COLUMN_GAP
     local toggleX = addX + MATERIALS_ADD_BUTTON_WIDTH + MATERIALS_COLUMN_GAP
     local iconX = toggleX + MATERIALS_TOGGLE_WIDTH
@@ -2350,16 +2472,16 @@ local function ApplyMaterialsTableColumnLayout(frame)
         + MATERIALS_PROFESSION_WIDTH
         + MATERIALS_TAG_WIDTH
         + MATERIALS_DROP_RATE_WIDTH
+        + MATERIALS_GOLD_RATE_WIDTH
         + MATERIALS_DEMAND_WIDTH
         + MATERIALS_SELL_RATE_WIDTH
         + MATERIALS_TREND_WIDTH
         + MATERIALS_VALUE_WIDTH
         + MATERIALS_COMPONENT_COST_WIDTH
         + MATERIALS_MARGIN_WIDTH
-        + MATERIALS_FARM_BUTTON_WIDTH
         + MATERIALS_MAP_BUTTON_WIDTH
         + MATERIALS_ADD_BUTTON_WIDTH
-        + (MATERIALS_COLUMN_GAP * 14)
+        + (MATERIALS_COLUMN_GAP * 15)
         + MATERIALS_ROW_RIGHT_PADDING
     local tableWidth = math.max(availableWidth, minimumTableWidth)
     if frame.content then
@@ -2374,18 +2496,18 @@ local function ApplyMaterialsTableColumnLayout(frame)
     local professionX = expansionX - MATERIALS_COLUMN_GAP - MATERIALS_PROFESSION_WIDTH
     local trendX = professionX - MATERIALS_COLUMN_GAP - MATERIALS_TREND_WIDTH
     local sellRateX = trendX - MATERIALS_COLUMN_GAP - MATERIALS_SELL_RATE_WIDTH
-    local demandX = sellRateX - MATERIALS_COLUMN_GAP - MATERIALS_DEMAND_WIDTH
-    local dropRateX = demandX - MATERIALS_COLUMN_GAP - MATERIALS_DROP_RATE_WIDTH
-    local profitX = dropRateX - MATERIALS_COLUMN_GAP - MATERIALS_MARGIN_WIDTH
+    local profitX = sellRateX - MATERIALS_COLUMN_GAP - MATERIALS_MARGIN_WIDTH
     local componentCostX = profitX - MATERIALS_COLUMN_GAP - MATERIALS_COMPONENT_COST_WIDTH
-    local valueX = componentCostX - MATERIALS_COLUMN_GAP - MATERIALS_VALUE_WIDTH
+    local demandX = componentCostX - MATERIALS_COLUMN_GAP - MATERIALS_DEMAND_WIDTH
+    local goldRateX = demandX - MATERIALS_COLUMN_GAP - MATERIALS_GOLD_RATE_WIDTH
+    local dropRateX = goldRateX - MATERIALS_COLUMN_GAP - MATERIALS_DROP_RATE_WIDTH
+    local valueX = dropRateX - MATERIALS_COLUMN_GAP - MATERIALS_VALUE_WIDTH
     local tagX = valueX - MATERIALS_COLUMN_GAP - MATERIALS_TAG_WIDTH
     local itemWidth = math.max(requiredItemWidth, tagX - MATERIALS_COLUMN_GAP - itemX)
 
     if frame.listPanel then
         local headerX = MATERIALS_HEADER_LEFT_INSET
         SetMaterialsHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, MATERIALS_FAVORITE_WIDTH)
-        SetMaterialsHeaderColumn(frame.farmHeaderButton, frame.listPanel, headerX + farmX - horizontalOffset, MATERIALS_FARM_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.addHeaderButton, frame.listPanel, headerX + addX - horizontalOffset, MATERIALS_ADD_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
@@ -2394,6 +2516,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         SetMaterialsHeaderColumn(frame.componentCostHeaderButton, frame.listPanel, headerX + componentCostX - horizontalOffset, MATERIALS_COMPONENT_COST_WIDTH)
         SetMaterialsHeaderColumn(frame.profitHeaderButton, frame.listPanel, headerX + profitX - horizontalOffset, MATERIALS_MARGIN_WIDTH)
         SetMaterialsHeaderColumn(frame.dropRateHeaderButton, frame.listPanel, headerX + dropRateX - horizontalOffset, MATERIALS_DROP_RATE_WIDTH)
+        SetMaterialsHeaderColumn(frame.goldRateHeaderButton, frame.listPanel, headerX + goldRateX - horizontalOffset, MATERIALS_GOLD_RATE_WIDTH)
         SetMaterialsHeaderColumn(frame.demandHeaderButton, frame.listPanel, headerX + demandX - horizontalOffset, MATERIALS_DEMAND_WIDTH)
         SetMaterialsHeaderColumn(frame.sellRateHeaderButton, frame.listPanel, headerX + sellRateX - horizontalOffset, MATERIALS_SELL_RATE_WIDTH)
         SetMaterialsHeaderColumn(frame.trendHeaderButton, frame.listPanel, headerX + trendX - horizontalOffset, MATERIALS_TREND_WIDTH)
@@ -2414,7 +2537,6 @@ local function ApplyMaterialsTableColumnLayout(frame)
             )
             row.favoriteButton:SetSize(MATERIALS_FAVORITE_BUTTON_WIDTH, MATERIALS_FAVORITE_BUTTON_HEIGHT)
         end
-        SetMaterialsRowButton(row.farmButton, row, farmX - horizontalOffset, MATERIALS_FARM_BUTTON_WIDTH)
         if row.toggleText then
             row.toggleText:ClearAllPoints()
             row.toggleText:SetPoint("LEFT", row, "LEFT", toggleX + rowIndent - horizontalOffset, 0)
@@ -2432,6 +2554,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         SetMaterialsRowColumn(row.componentCostText, row, componentCostX - horizontalOffset, MATERIALS_COMPONENT_COST_WIDTH)
         SetMaterialsRowColumn(row.profitText, row, profitX - horizontalOffset, MATERIALS_MARGIN_WIDTH)
         SetMaterialsRowColumn(row.dropRateText, row, dropRateX - horizontalOffset, MATERIALS_DROP_RATE_WIDTH)
+        SetMaterialsRowColumn(row.goldRateText, row, goldRateX - horizontalOffset, MATERIALS_GOLD_RATE_WIDTH)
         SetMaterialsRowColumn(row.demandText, row, demandX - horizontalOffset, MATERIALS_DEMAND_WIDTH)
         SetMaterialsRowColumn(row.sellRateText, row, sellRateX - horizontalOffset, MATERIALS_SELL_RATE_WIDTH)
         SetMaterialsRowColumn(row.trendText, row, trendX - horizontalOffset, MATERIALS_TREND_WIDTH)
@@ -2565,7 +2688,7 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
     hover:SetColorTexture(1, 0.82, 0.18, 0.08)
     row.hover = hover
 
-    local favoriteButton = CreateMaterialsButton(row, MATERIALS_FAVORITE_BUTTON_WIDTH, MATERIALS_FAVORITE_BUTTON_HEIGHT, "+", "neutral")
+    local favoriteButton = CreateMaterialsButton(row, MATERIALS_FAVORITE_BUTTON_WIDTH, MATERIALS_FAVORITE_BUTTON_HEIGHT, "<3", "neutral")
     BindMaterialsResultsMouseWheel(favoriteButton, frame)
     favoriteButton:RegisterForClicks("LeftButtonUp")
     favoriteButton:SetScript("OnClick", function(self)
@@ -2624,6 +2747,11 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
     dropRateText:SetWordWrap(false)
     row.dropRateText = dropRateText
 
+    local goldRateText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    goldRateText:SetJustifyH("RIGHT")
+    goldRateText:SetWordWrap(false)
+    row.goldRateText = goldRateText
+
     local demandText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     demandText:SetJustifyH("RIGHT")
     demandText:SetWordWrap(false)
@@ -2654,28 +2782,6 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
     profitText:SetWordWrap(false)
     row.profitText = profitText
 
-    local farmButton = CreateMaterialsButton(row, MATERIALS_FARM_BUTTON_WIDTH, 18, "Farm", "primary")
-    BindMaterialsResultsMouseWheel(farmButton, frame)
-    farmButton:SetScript("OnClick", function(self)
-        GoldTracker:OpenFarmDetailsForItem(self:GetParent().itemID)
-    end)
-    farmButton:SetScript("OnEnter", function(self)
-        local farmCount = math.max(0, math.floor(tonumber(self:GetParent().farmCount) or 0))
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:AddLine("Open farm map", 1, 1, 1)
-        GameTooltip:AddLine(
-            string.format("%d matching farm%s. View routes, recorded yields, tips, and sources.", farmCount, farmCount == 1 and "" or "s"),
-            0.72,
-            0.86,
-            1.0
-        )
-        GameTooltip:Show()
-    end)
-    farmButton:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    row.farmButton = farmButton
-
     local mapButton = CreateMaterialsButton(row, MATERIALS_MAP_BUTTON_WIDTH, 18, "Map", "neutral")
     BindMaterialsResultsMouseWheel(mapButton, frame)
     mapButton:SetScript("OnClick", function(self)
@@ -2683,9 +2789,9 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
     end)
     mapButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        if self:GetParent().hasFarmingMap then
+        if self:GetParent().hasFarmingMap or self:GetParent().hasFarm then
             GameTooltip:AddLine("Open farming map", 1, 1, 1)
-            GameTooltip:AddLine("Shows researched coordinate pins for this material.", 0.72, 0.86, 1.0)
+            GameTooltip:AddLine("Shows map locations and any available farm routes.", 0.72, 0.86, 1.0)
         else
             GameTooltip:AddLine("No map data yet", 1, 1, 1)
             GameTooltip:AddLine("This material does not have researched coordinate-backed spots yet.", 0.72, 0.86, 1.0)
@@ -2779,6 +2885,12 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
         )
         if (tonumber(self.dropPerHour) or 0) > 0 then
             GameTooltip:AddDoubleLine("Drop/hour", FormatMaterialsDropRate(self.dropPerHour), 0.72, 0.86, 1.0, 1, 1, 1)
+            GameTooltip:AddDoubleLine(
+                "Gold/hour",
+                GoldTracker:FormatMoney(self.goldPerHour or 0),
+                0.72, 0.86, 1.0,
+                1, 1, 1
+            )
             GameTooltip:AddDoubleLine("Observed quantity", tostring(math.floor((tonumber(self.dropQuantity) or 0) + 0.5)), 0.72, 0.86, 1.0, 1, 1, 1)
             GameTooltip:AddDoubleLine("Observed sessions", tostring(math.floor((tonumber(self.dropSessionCount) or 0) + 0.5)), 0.72, 0.86, 1.0, 1, 1, 1)
         end
@@ -2813,6 +2925,11 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
     BindMaterialsResultsMouseWheel(itemTooltipTarget, frame)
     row:SetScript("OnClick", function(self, button)
         if self.rowType == "divider" then
+            if self.dividerKind == "composedMaterials" then
+                local primaryFrame = GoldTracker.craftingFarmingFrame
+                primaryFrame.composedMaterialsExpanded = not primaryFrame.composedMaterialsExpanded
+                GoldTracker:RefreshCraftingFarmingWindow(false)
+            end
             return
         end
         if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
@@ -2881,13 +2998,21 @@ end
 local function GetMaterialsRealtimeWorkQueue(rows)
     local queue = {}
     local seen = {}
-    for _, row in ipairs(rows or {}) do
-        local itemID = tonumber(row and row.itemID)
+    local function addItem(itemID)
+        itemID = tonumber(itemID)
         if itemID then
             itemID = math.floor(itemID + 0.5)
             if not seen[itemID] then
                 seen[itemID] = true
                 queue[#queue + 1] = itemID
+            end
+        end
+    end
+    for _, row in ipairs(rows or {}) do
+        addItem(row and row.itemID)
+        if row and row.componentsLoaded then
+            for _, component in ipairs(row.components or {}) do
+                addItem(component and component.itemID)
             end
         end
     end
@@ -3098,6 +3223,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
         local row = self:GetCraftingFarmingWindowRow(poolIndex, frame)
         if row then
             row.rowType = result.rowType
+            row.dividerKind = result.dividerKind
             row.itemID = result.itemID
             row.itemName = result.itemName
             row.itemLink = result.itemLink
@@ -3133,6 +3259,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
             row.valueSourceID = result.valueSourceID
             row.valueSourceLabel = result.valueSourceLabel
             row.dropPerHour = result.dropPerHour
+            row.goldPerHour = result.goldPerHour
             row.dropQuantity = result.dropQuantity
             row.dropDurationSeconds = result.dropDurationSeconds
             row.dropSessionCount = result.dropSessionCount
@@ -3155,12 +3282,17 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                 if row.favoriteButton then
                     row.favoriteButton:Hide()
                 end
-                row.toggleText:SetText("")
+                local dividerToggle = result.dividerKind == "composedMaterials"
+                    and (result.expanded and "-" or "+")
+                    or ""
+                row.toggleText:SetText(dividerToggle)
+                row.toggleText:SetTextColor(1.0, 0.82, 0.18)
                 row.itemText:SetText(result.label or "Composed materials")
                 row.expansionText:SetText("")
                 row.professionText:SetText("")
                 row.tagText:SetText("")
                 row.dropRateText:SetText("")
+                row.goldRateText:SetText("")
                 row.demandText:SetText("")
                 row.sellRateText:SetText("")
                 row.trendText:SetText("")
@@ -3169,9 +3301,6 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                 row.profitText:SetText("")
                 if row.mapButton then
                     row.mapButton:Hide()
-                end
-                if row.farmButton then
-                    row.farmButton:Hide()
                 end
                 if row.addButton then
                     row.addButton:Hide()
@@ -3184,7 +3313,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                 end
             else
                 if row.favoriteButton then
-                    row.favoriteButton:SetText(row.favorite and "-" or "+")
+                    row.favoriteButton:SetText(row.favorite and "-" or "<3")
                     if row.favoriteButton.SetSelected then
                         row.favoriteButton:SetSelected(row.favorite)
                     end
@@ -3202,6 +3331,9 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                 row.professionText:SetText(result.professionLabel or "Unknown")
                 row.tagText:SetText(result.tag or "Material")
                 row.dropRateText:SetText(FormatMaterialsDropRate(result.dropPerHour))
+                row.goldRateText:SetText(
+                    result.goldPerHour and result.goldPerHour > 0 and self:FormatMoney(result.goldPerHour) or "--"
+                )
                 row.demandText:SetText(FormatMaterialsSoldPerDay(result.regionSoldPerDay))
                 local sellRateLabel, sellRateR, sellRateG, sellRateB = GetMaterialsSellRateTier(result.regionSaleRate)
                 row.sellRateText:SetText(FormatMaterialsSaleRate(result.regionSaleRate))
@@ -3235,6 +3367,11 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                     hasDropRate and 0.86 or 0.66,
                     hasDropRate and 1.0 or 0.74
                 )
+                row.goldRateText:SetTextColor(
+                    (tonumber(result.goldPerHour) or 0) > 0 and 1.0 or 0.62,
+                    (tonumber(result.goldPerHour) or 0) > 0 and 0.82 or 0.66,
+                    (tonumber(result.goldPerHour) or 0) > 0 and 0.18 or 0.74
+                )
                 row.demandText:SetTextColor(
                     result.demandColorR or 0.62,
                     result.demandColorG or 0.66,
@@ -3246,15 +3383,12 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                 if row.mapButton then
                     row.mapButton:SetText("Map")
                     if row.mapButton.SetEnabled then
-                        row.mapButton:SetEnabled(true)
+                        row.mapButton:SetEnabled(result.hasFarmingMap == true or result.hasFarm == true)
                     end
                     if row.mapButton.SetAlpha then
-                        row.mapButton:SetAlpha(result.hasFarmingMap == true and 1 or 0.42)
+                    row.mapButton:SetAlpha((result.hasFarmingMap == true or result.hasFarm == true) and 1 or 0.42)
                     end
                     row.mapButton:Show()
-                end
-                if row.farmButton then
-                    row.farmButton:SetShown(row.hasFarm)
                 end
                 if row.addButton then
                     row.addButton:Show()
@@ -3589,14 +3723,9 @@ function GoldTracker:CreateCraftingFarmingWindow()
     end
     frame.listPanel = listPanel
 
-    local farmHeaderButton = CreateMaterialsHeaderButton(listPanel, "Farm", MATERIALS_FARM_BUTTON_WIDTH, "CENTER")
-    SetMaterialsFrameLevel(farmHeaderButton, listPanel, 2)
-    farmHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 86, -12)
-    frame.farmHeaderButton = farmHeaderButton
-
     local mapHeaderButton = CreateMaterialsHeaderButton(listPanel, "Map", MATERIALS_MAP_BUTTON_WIDTH, "CENTER")
     SetMaterialsFrameLevel(mapHeaderButton, listPanel, 2)
-    mapHeaderButton:SetPoint("LEFT", farmHeaderButton, "RIGHT", MATERIALS_COLUMN_GAP, 0)
+    mapHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 86, -12)
     frame.mapHeaderButton = mapHeaderButton
 
     local addHeaderButton = CreateMaterialsHeaderButton(listPanel, "Add", MATERIALS_ADD_BUTTON_WIDTH, "CENTER")
@@ -3660,6 +3789,14 @@ function GoldTracker:CreateCraftingFarmingWindow()
     end)
     frame.dropRateHeaderButton = dropRateHeaderButton
 
+    local goldRateHeaderButton = CreateMaterialsHeaderButton(listPanel, "Gold/h", MATERIALS_GOLD_RATE_WIDTH, "RIGHT")
+    SetMaterialsFrameLevel(goldRateHeaderButton, listPanel, 2)
+    goldRateHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
+    goldRateHeaderButton:SetScript("OnClick", function()
+        addon:ToggleCraftingFarmingSort("goldRate")
+    end)
+    frame.goldRateHeaderButton = goldRateHeaderButton
+
     local tagHeaderButton = CreateMaterialsHeaderButton(listPanel, "Type", MATERIALS_TAG_WIDTH, "LEFT")
     SetMaterialsFrameLevel(tagHeaderButton, listPanel, 2)
     tagHeaderButton:SetPoint("RIGHT", dropRateHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
@@ -3693,7 +3830,7 @@ function GoldTracker:CreateCraftingFarmingWindow()
     end)
     frame.itemHeaderButton = itemHeaderButton
 
-    local favoriteHeaderButton = CreateMaterialsHeaderButton(listPanel, "+", MATERIALS_FAVORITE_WIDTH, "CENTER")
+    local favoriteHeaderButton = CreateMaterialsHeaderButton(listPanel, "Fav", MATERIALS_FAVORITE_WIDTH, "CENTER")
     SetMaterialsFrameLevel(favoriteHeaderButton, listPanel, 2)
     favoriteHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 20, -12)
     frame.favoriteHeaderButton = favoriteHeaderButton
@@ -3907,17 +4044,17 @@ function GoldTracker:CreateCraftingFarmingExpandedWindow()
         return button
     end
 
-    addHeader("favoriteHeaderButton", "+", MATERIALS_FAVORITE_WIDTH, "CENTER")
-    addHeader("farmHeaderButton", "Farm", MATERIALS_FARM_BUTTON_WIDTH, "CENTER")
+    addHeader("favoriteHeaderButton", "Fav", MATERIALS_FAVORITE_WIDTH, "CENTER")
     addHeader("mapHeaderButton", "Map", MATERIALS_MAP_BUTTON_WIDTH, "CENTER")
     addHeader("addHeaderButton", "Add", MATERIALS_ADD_BUTTON_WIDTH, "CENTER")
     addHeader("itemHeaderButton", "Item", MATERIALS_ITEM_MIN_WIDTH, "LEFT", "itemName")
     addHeader("tagHeaderButton", "Type", MATERIALS_TAG_WIDTH, "LEFT", "tag")
     addHeader("valueHeaderButton", "Value", MATERIALS_VALUE_WIDTH, "RIGHT", "value")
+    addHeader("dropRateHeaderButton", "Drop/h", MATERIALS_DROP_RATE_WIDTH, "RIGHT", "dropRate")
+    addHeader("goldRateHeaderButton", "Gold/h", MATERIALS_GOLD_RATE_WIDTH, "RIGHT", "goldRate")
+    addHeader("demandHeaderButton", "Sold/day", MATERIALS_DEMAND_WIDTH, "RIGHT", "demand")
     addHeader("componentCostHeaderButton", "Mat cost", MATERIALS_COMPONENT_COST_WIDTH, "RIGHT", "componentCost")
     addHeader("profitHeaderButton", "Margin", MATERIALS_MARGIN_WIDTH, "RIGHT", "profit")
-    addHeader("dropRateHeaderButton", "Drop/h", MATERIALS_DROP_RATE_WIDTH, "RIGHT", "dropRate")
-    addHeader("demandHeaderButton", "Sold/day", MATERIALS_DEMAND_WIDTH, "RIGHT", "demand")
     addHeader("sellRateHeaderButton", "Sale %", MATERIALS_SELL_RATE_WIDTH, "RIGHT", "sellRate")
     addHeader("trendHeaderButton", "Trend", MATERIALS_TREND_WIDTH, "RIGHT", "marketTrend")
     addHeader("professionHeaderButton", "Profession", MATERIALS_PROFESSION_WIDTH, "LEFT", "profession")

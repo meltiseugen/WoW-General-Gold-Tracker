@@ -198,6 +198,48 @@ describe("UI farming windows shared state", function()
         assert.is_false(addon:IsRareFarmingFavorite(rare_row))
     end)
 
+    it("routes favorite map buttons to the map data associated with each item", function()
+        local addon = load_rare_and_instance(build_addon())
+        local opened
+        addon.BuildRareFarmingMapOptions = function()
+            return { { mapID = 1 } }
+        end
+        addon.BuildInstanceFarmingMapOptions = function()
+            return { { mapID = 2 } }
+        end
+        addon.BuildMaterialFarmingMapOptions = function(_, item_id)
+            return item_id == 40003 and { { mapID = 3 } } or {}
+        end
+        addon.OpenRareFarmingMap = function()
+            opened = "rare"
+            return true
+        end
+        addon.OpenInstanceFarmingMap = function()
+            opened = "instance"
+            return true
+        end
+        addon.OpenMaterialFarmingMap = function()
+            opened = "material"
+            return true
+        end
+
+        assert.is_true(addon:OpenFavoriteFarmingMap({
+            itemID = 40001,
+            farmingSourceType = "rare",
+            rareName = "Rare One",
+        }))
+        assert.equals("rare", opened)
+        assert.is_true(addon:OpenFavoriteFarmingMap({
+            itemID = 40002,
+            farmingSourceType = "instance",
+            instanceName = "Raid One",
+        }))
+        assert.equals("instance", opened)
+        assert.is_true(addon:OpenFavoriteFarmingMap({ itemID = 40003, farmingSourceType = "material" }))
+        assert.equals("material", opened)
+        assert.is_nil(addon:GetFavoriteFarmingMapKind({ itemID = 40004, farmingSourceType = "inventory" }))
+    end)
+
     it("groups duplicate rare farming items and keeps each rare source", function()
         local addon = load_rare_and_instance(build_addon())
         local rows = addon:BuildRareFarmingGroupedRows({
@@ -397,9 +439,15 @@ describe("UI farming windows shared state", function()
         assert.equals(3, #rows)
         assert.equals(2, #classicRows)
         assert.equals("All expansions", options[1].label)
-        assert.equals("Instances > Transmog", classicRows[1].sourceLabel)
-        assert.equals("Open World > Transmog", classicRows[2].sourceLabel)
-        assert.equals(291, classicRows[1].instanceMapID)
+        local sourceLabels = {}
+        local mapByItemID = {}
+        for _, row in ipairs(classicRows) do
+            sourceLabels[row.sourceLabel] = true
+            mapByItemID[row.itemID] = row.instanceMapID
+        end
+        assert.is_true(sourceLabels["Instances > Noteworthy Items"])
+        assert.is_true(sourceLabels["Open World > Transmog"])
+        assert.equals(291, mapByItemID[1001])
 
         local expanded = {}
         local display = addon:BuildInstanceTransmogDisplayRows(rows, expanded, false)
@@ -439,6 +487,37 @@ describe("UI farming windows shared state", function()
         local flatRows = addon:BuildInstanceTransmogDisplayRows(rows, expanded, true)
         assert.equals(3, #flatRows)
         assert.is_nil(flatRows[1].isLocationGroupHeader)
+    end)
+
+    it("enriches noteworthy items with canonical instance and boss map data", function()
+        local addon = load_instance_with_data(build_addon(), {
+            expansions = { currentID = 1, options = {} },
+            instances = {
+                {
+                    name = "Deadmines",
+                    expansionID = 1,
+                    encounterJournalID = 63,
+                    mapID = 291,
+                    bosses = {
+                        { name = "Test Boss", encounterJournalID = 99, loot = { { itemID = 1001 } } },
+                    },
+                },
+            },
+        }, nil, nil, {
+            categories = {
+                transmogs = {
+                    { recordID = "noteworthy:1", farmID = "Deadmines", farmName = "The Deadmines",
+                        itemID = 1001, contentID = 1, expansionLabel = "Classic", locationID = 9999 },
+                },
+            },
+        })
+
+        local row = addon:BuildInstanceTransmogRows("all")[1]
+        assert.equals("Deadmines", row.instanceName)
+        assert.equals(291, row.instanceMapID)
+        assert.equals(63, row.instanceEncounterJournalID)
+        assert.equals("Test Boss", row.bossName)
+        assert.equals(99, row.bossEncounterJournalID)
     end)
 
     it("loads WIT transmog prices when value is a secondary sort", function()
@@ -731,6 +810,66 @@ describe("UI farming windows shared state", function()
         assert.is_true(addon.instanceFarmingFrame.listPanel.shown)
         assert.is_true(addon.instanceFarmingFrame.metaText.shown)
         assert.is_true(addon.instanceFarmingFrame.petsTabButton.selected)
+    end)
+
+    it("opens instance and pet row details from the row itself", function()
+        local addon = load_rare_and_instance(build_addon())
+        local opened
+        addon.OpenInventoryItemDetailsWindow = function(_, row)
+            opened = "item:" .. tostring(row.itemID)
+        end
+
+        assert.is_true(addon:OpenInstanceFarmingRowDetails({ itemID = 100 }, "scan"))
+        assert.equals("item:100", opened)
+        assert.is_true(addon:OpenInstanceFarmingRowDetails({
+            itemID = 82800,
+            itemLink = "|cff0070dd|Hbattlepet:59:1:3:161:10:11:0|h[Emerald Whelpling]|h|r",
+            petID = 59,
+        }, "pets"))
+        assert.equals("item:82800", opened)
+        assert.is_false(addon:OpenInstanceFarmingRowDetails({ isLocationGroupHeader = true }, "scan"))
+    end)
+
+    it("routes pet map buttons to their researched farm map", function()
+        local addon = load_rare_and_instance(build_addon())
+        local opened
+        addon.OpenFarmDetailsForRecordID = function(_, record_id)
+            opened = "record:" .. record_id
+            return true
+        end
+        addon.OpenInstanceFarmingMap = function(_, row)
+            opened = "instance:" .. tostring(row.itemID)
+            return true
+        end
+
+        assert.is_true(addon:OpenInstanceFarmingRowMap({ recordID = "pets:test:1" }, "pets"))
+        assert.equals("record:pets:test:1", opened)
+        assert.is_true(addon:OpenInstanceFarmingRowMap({ itemID = 101 }, "scan"))
+        assert.equals("instance:101", opened)
+    end)
+
+    it("uses Blizzard's battle-pet tooltip for pet links", function()
+        local addon = load_rare_and_instance(build_addon())
+        local owner
+        local shown_link
+        loader.with_globals({
+            GameTooltip = {
+                SetOwner = function(_, target, anchor)
+                    owner = { target, anchor }
+                end,
+            },
+            BattlePetToolTip_ShowLink = function(link)
+                shown_link = link
+            end,
+        }, function()
+            addon:ShowInstanceFarmingItemTooltip({
+                petID = 59,
+                itemLink = "|cff0070dd|Hbattlepet:59:1:3:161:10:11:0|h[Emerald Whelpling]|h|r",
+            }, "tooltip-target")
+        end)
+
+        assert.same({ "tooltip-target", "ANCHOR_CURSOR" }, owner)
+        assert.is_truthy(string.find(shown_link, "battlepet:59", 1, true))
     end)
 
     it("opens static transmogs as a dedicated instance sub-tab", function()

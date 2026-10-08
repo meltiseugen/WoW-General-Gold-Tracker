@@ -119,6 +119,9 @@ end
 describe("UI/ExplorerWindow", function()
     it("selects rare favorites through the shared rare farming library view", function()
         local rare_frame = frame()
+        rare_frame.chrome = frame()
+        rare_frame.libraryPanel = frame()
+        rare_frame.libraryUpdateFavoritesButton = button()
         rare_frame.librarySavedTabButton = button()
         rare_frame.libraryFavoritesTabButton = button()
         rare_frame.libraryNewScanButton = button()
@@ -158,6 +161,11 @@ describe("UI/ExplorerWindow", function()
         assert.is_false(rare_frame.librarySavedTabButton.shown)
         assert.is_false(rare_frame.libraryFavoritesTabButton.shown)
         assert.is_false(rare_frame.libraryNewScanButton.shown)
+        assert.same({ "TOPLEFT", rare_frame.chrome, "TOPLEFT", 12, -46 }, rare_frame.libraryPanel.points[1])
+        assert.same(
+            { "TOPRIGHT", rare_frame.chrome, "TOPRIGHT", -12, -12 },
+            rare_frame.libraryUpdateFavoritesButton.points[1]
+        )
         assert.is_true(instance_frame.hidden)
         assert.is_true(material_frame.hidden)
     end)

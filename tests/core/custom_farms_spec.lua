@@ -36,6 +36,17 @@ describe("Core/CustomFarms", function()
         }
     end
 
+    it("assigns a new farm to the current character by default", function()
+        local addon = load_custom_farms({})
+        loader.with_globals({
+            UnitFullName = function() return "Goldie", "Silvermoon" end,
+            GetRealmName = function() return "Silvermoon" end,
+        }, function()
+            local farm = addon:CreateCustomFarm("Current character farm", false)
+            assert.equals("Goldie-Silvermoon", farm.assignedCharacter)
+        end)
+    end)
+
     it("offers both static maps and user discoveries even without a catalog farm", function()
         local addon = load_custom_farms({})
         local options = { map_option("throne", 100), map_option("fel-pits", 104), map_option(nil, 100, "user") }

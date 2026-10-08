@@ -1,7 +1,7 @@
 local _, NS = ...
 
 -- Curated Retail acquisition research for every visible Drops > Pets row.
--- Coordinates are normalized UI-map coordinates. Research reviewed 2026-10-03.
+-- Coordinates are normalized UI-map coordinates. Research reviewed 2026-10-08.
 
 local outdoorByPetID = {
     [42] = { mapID = 25, sourceName = "Syndicate Spy", x = 0.488, y = 0.092 }, -- Black Tabby Cat
@@ -84,34 +84,150 @@ local raidByFarmID = {
     MoltenCoreRaid = { instance = "Molten Core", mapID = 36, mapLabel = "Burning Steppes", x = 0.208, y = 0.385, guide = "https://warcraft.wiki.gg/wiki/Molten_Core" },
 }
 
-local bossByPetID = {
-    [1143] = "Maexxna", [1144] = "Loatheb", [1146] = "Gluth",
-    [1177] = "Sand Elemental trash", [1183] = "Dark Animus", [1200] = "Horridon", [1202] = "Ji-Kun",
-    [1226] = "Opera Hall", [1227] = "The Curator", [1228] = "Prince Malchezaar", [1229] = "Terestian Illhoof",
-    [1230] = "Morogrim Tidewalker", [1231] = "Hydross the Unstable / The Lurker Below", [1232] = "Lady Vashj",
-    [1233] = "Void Reaver", [1234] = "High Astromancer Solarian", [1235] = "Al'ar",
-    [1243] = "Primordius", [1244] = "Primordius", [1322] = "Siegecrafter Blackfuse",
-    [1331] = "Sha of Pride", [1332] = "Sha of Pride", [1334] = "Paragons of the Klaxxi",
-    [1622] = "Azgalor", [1623] = "High Warlord Naj'entus", [1624] = "Supremus",
-    [1625] = "Reliquary of Souls", [1626] = "Reliquary of Souls", [1627] = "Reliquary of Souls", [1628] = "Mother Shahraz",
-    [1629] = "Anetheron", [1631] = "Archimonde", [1632] = "Brutallus", [1633] = "M'uru / Entropius",
-    [1634] = "Eredar Twins", [1672] = "Shadow-Lord Iskar", [1723] = "Dragons of Nightmare",
-    [1952] = "Northrend Beasts", [1953] = "Northrend Beasts", [1954] = "Anub'arak",
-    [1955] = "Ignis the Furnace Master", [1956] = "Razorscale", [1957] = "Assembly of Iron", [1958] = "Auriaya",
-    [1959] = "Hodir", [1960] = "Freya", [1961] = "Mimiron", [1962] = "Yogg-Saron",
-    [1963] = "Lord Marrowgar", [1964] = "Deathbringer Saurfang", [1965] = "Professor Putricide",
-    [1966] = "Sindragosa", [1967] = "The Lich King", [1968] = "The Lich King",
-    [2078] = "Omnotron Defense System", [2079] = "Maloriak", [2080] = "Nefarian",
-    [2081] = "Valiona and Theralion", [2082] = "Ascendant Council", [2083] = "Cho'gall",
-    [2084] = "Al'Akir", [2085] = "Conclave of Wind", [2086] = "Shannox", [2087] = "Beth'tilac", [2088] = "Baleroc",
-    [2090] = "Yor'sahj the Unsleeping", [2091] = "Spine of Deathwing", [2092] = "Madness of Deathwing",
-    [2527] = "Pa'ku's Aspect", [2528] = "Pa'ku's Aspect", [2529] = "Pa'ku's Aspect",
-    [2579] = "Stone Guard", [2580] = "Gara'jal the Spiritbinder", [2581] = "Elegon", [2582] = "Will of the Emperor",
-    [2583] = "Tsulong", [2584] = "Tsulong", [2585] = "Imperial Vizier Zor'lok", [2586] = "Blade Lord Ta'yak",
-    [2587] = "Garalon", [2589] = "Amber-Shaper Un'sok", [2590] = "Grand Empress Shek'zeer",
-    [2680] = "Queen Azshara", [2692] = "Lady Ashvane", [2694] = "Blackwater Behemoth", [2696] = "Za'qul",
-    [2832] = "Maut", [2833] = "Ra-den", [2834] = "Tek'ris", [2835] = "Tek'ris", [2836] = "N'Zoth the Corruptor",
+local function BossResearch(name, encounterID, mapID, x, y)
+    return { name = name, encounterID = encounterID, mapID = mapID, x = x, y = y }
+end
+
+-- Boss sources are verified against Warcraft Wiki's Raiding with Leashes
+-- tables and individual post-Pandaria pet pages. Interior coordinates are
+-- from Blizzard's JournalEncounterXMapLoc DB2 table (Retail snapshot).
+local bossResearchByPetID = {
+    [1143] = BossResearch("Maexxna", 1603, 163, 0.686466, 0.152964),
+    [1144] = BossResearch("Loatheb", 1606, 165, 0.760165, 0.283523),
+    [1146] = BossResearch("Gluth", 1612, 162, 0.462924, 0.438272),
+    [1177] = BossResearch("Sand Elemental trash"),
+    [1183] = BossResearch("Dark Animus", 824, 512, 0.426558, 0.576073),
+    [1200] = BossResearch("Horridon", 819, 509, 0.268397, 0.787498),
+    [1202] = BossResearch("Ji-Kun", 828, 511, 0.493506, 0.415584),
+    [1226] = BossResearch("Big Bad Wolf", 1556, 353, 0.181023, 0.350770),
+    [1227] = BossResearch("The Curator", 1557, 358, 0.494869, 0.366155),
+    [1228] = BossResearch("Prince Malchezaar", 1563, 366, 0.514356, 0.309231),
+    [1229] = BossResearch("Terestian Illhoof", 1560, 360, 0.525638, 0.696924),
+    [1230] = BossResearch("Morogrim Tidewalker", 1571, 332, 0.596410, 0.260001),
+    [1231] = BossResearch("Hydross the Unstable", 1567, 332, 0.363590, 0.847692),
+    [1232] = BossResearch("Lady Vashj", 1572, 332, 0.722563, 0.589231),
+    [1233] = BossResearch("Void Reaver", 1574, 334, 0.264075, 0.490686),
+    [1234] = BossResearch("High Astromancer Solarian", 1575, 334, 0.740000, 0.489230),
+    [1235] = BossResearch("Al'ar", 1573, 334, 0.501026, 0.587692),
+    [1243] = BossResearch("Primordius", 820, 512, 0.572632, 0.782899),
+    [1244] = BossResearch("Primordius", 820, 512, 0.572632, 0.782899),
+    [1322] = BossResearch("Siegecrafter Blackfuse", 865, 565, 0.587888, 0.465288),
+    [1331] = BossResearch("Sha of Pride", 867, 558, 0.293451, 0.669129),
+    [1332] = BossResearch("Sha of Pride", 867, 558, 0.293451, 0.669129),
+    [1334] = BossResearch("Paragons of the Klaxxi", 853, 566, 0.683407, 0.353028),
+    [1622] = BossResearch("Azgalor", 1580, 329, 0.357436, 0.378461),
+    [1623] = BossResearch("High Warlord Naj'entus", 1582, 340, 0.439487, 0.187651),
+    [1624] = BossResearch("Supremus", 1583, 339, 0.663076, 0.473846),
+    [1625] = BossResearch("Reliquary of Souls", 1587, 342, 0.613844, 0.850768),
+    [1626] = BossResearch("Reliquary of Souls", 1587, 342, 0.613844, 0.850768),
+    [1627] = BossResearch("Reliquary of Souls", 1587, 342, 0.613844, 0.850768),
+    [1628] = BossResearch("Mother Shahraz", 1588, 344, 0.675383, 0.367691),
+    [1629] = BossResearch("Anetheron", 1578, 329, 0.085641, 0.681538),
+    [1631] = BossResearch("Archimonde", 1581, 329, 0.772820, 0.283076),
+    [1632] = BossResearch("Brutallus", 1592, 335, 0.658973, 0.864615),
+    [1633] = BossResearch("M'uru", 1595, 336, 0.467180, 0.238462),
+    [1634] = BossResearch("Eredar Twins", 1594, 335, 0.641566, 0.321000),
+    [1672] = BossResearch("Shadow-Lord Iskar", 1433, 666, 0.401112, 0.761434),
+    [1723] = BossResearch("Dragons of Nightmare", 1704, 781, 0.369455, 0.479087),
+    [1952] = BossResearch("Icehowl", 1618, 172, 0.511514, 0.527373),
+    [1953] = BossResearch("Icehowl", 1618, 172, 0.511514, 0.527373),
+    [1954] = BossResearch("Anub'arak", 1623, 173, 0.532546, 0.355289),
+    [1955] = BossResearch("Ignis the Furnace Master", 1638, 147, 0.383365, 0.266253),
+    [1956] = BossResearch("Razorscale", 1639, 147, 0.545846, 0.264819),
+    [1957] = BossResearch("Assembly of Iron", 1641, 148, 0.156955, 0.564406),
+    [1958] = BossResearch("Auriaya", 1643, 149, 0.512595, 0.571575),
+    [1959] = BossResearch("Hodir", 1644, 149, 0.670380, 0.638974),
+    [1960] = BossResearch("Freya", 1646, 149, 0.533669, 0.228841),
+    [1961] = BossResearch("Mimiron", 1647, 151, 0.436196, 0.412397),
+    [1962] = BossResearch("Yogg-Saron", 1649, 150, 0.683763, 0.399364),
+    [1963] = BossResearch("Lord Marrowgar", 1624, 186, 0.391055, 0.593338),
+    [1964] = BossResearch("Deathbringer Saurfang", 1628, 188, 0.515422, 0.216060),
+    [1965] = BossResearch("Professor Putricide", 1631, 190, 0.131101, 0.532982),
+    [1966] = BossResearch("Sindragosa", 1635, 189, 0.366325, 0.231898),
+    [1967] = BossResearch("The Lich King", 1636, 192, 0.499296, 0.528743),
+    [1968] = BossResearch("The Lich King", 1636, 192, 0.499296, 0.528743),
+    [2078] = BossResearch("Omnotron Defense System", 169, 285, 0.654691, 0.574850),
+    [2079] = BossResearch("Maloriak", 173, 286, 0.714572, 0.702096),
+    [2080] = BossResearch("Nefarian", 174, 286, 0.480040, 0.702096),
+    [2081] = BossResearch("Valiona and Theralion", 157, 294, 0.539920, 0.784431),
+    [2082] = BossResearch("Ascendant Council", 158, 295, 0.425150, 0.455090),
+    [2083] = BossResearch("Cho'gall", 167, 295, 0.734532, 0.754491),
+    [2084] = BossResearch("Al'Akir", 155, 328, 0.475050, 0.500000),
+    [2085] = BossResearch("Conclave of Wind", 154, 328, 0.475050, 0.260479),
+    [2086] = BossResearch("Shannox", 195, 367, 0.493013, 0.443113),
+    [2087] = BossResearch("Beth'tilac", 192, 367, 0.210579, 0.327844),
+    [2088] = BossResearch("Baleroc", 196, 367, 0.495010, 0.309880),
+    [2090] = BossResearch("Yor'sahj the Unsleeping", 325, 411, 0.468265, 0.499295),
+    [2091] = BossResearch("Spine of Deathwing", 318, 414, 0.332117, 0.852587),
+    [2092] = BossResearch("Madness of Deathwing", 333, 415, 0.478702, 0.538485),
+    [2527] = BossResearch("Conclave of the Chosen", 2330, 1354, 0.475405, 0.675430),
+    [2528] = BossResearch("Conclave of the Chosen", 2330, 1354, 0.475405, 0.675430),
+    [2529] = BossResearch("Conclave of the Chosen", 2330, 1354, 0.475405, 0.675430),
+    [2579] = BossResearch("Stone Guard", 679, 471, 0.459311, 0.641202),
+    [2580] = BossResearch("Gara'jal the Spiritbinder", 682, 472, 0.778662, 0.344856),
+    [2581] = BossResearch("Elegon", 726, 473, 0.207037, 0.511502),
+    [2582] = BossResearch("Will of the Emperor", 677, 473, 0.688421, 0.819389),
+    [2583] = BossResearch("Tsulong", 742, 456, 0.690121, 0.493234),
+    [2584] = BossResearch("Lei Shi", 729, 456, 0.538566, 0.493234),
+    [2585] = BossResearch("Imperial Vizier Zor'lok", 745, 474, 0.690122, 0.744926),
+    [2586] = BossResearch("Blade Lord Ta'yak", 744, 474, 0.600812, 0.196888),
+    [2587] = BossResearch("Garalon", 713, 475, 0.665428, 0.167832),
+    [2589] = BossResearch("Amber-Shaper Un'sok", 737, 475, 0.441137, 0.736806),
+    [2590] = BossResearch("Grand Empress Shek'zeer", 743, 475, 0.267930, 0.736807),
+    [2680] = BossResearch("Queen Azshara", 2361, 1520, 0.481735, 0.518265),
+    [2692] = BossResearch("Lady Ashvane", 2354, 1513, 0.477169, 0.682648),
+    [2694] = BossResearch("Blackwater Behemoth", 2347, 1514, 0.356926, 0.198630),
+    [2696] = BossResearch("Za'qul", 2349, 1519, 0.177321, 0.511416),
+    [2832] = BossResearch("Maut", 2365, 1581, 0.192402, 0.608455),
+    [2833] = BossResearch("Ra-den the Despoiled", 2364, 1591, 0.642297, 0.681357),
+    [2834] = BossResearch("The Hivemind", 2372, 1590, 0.503677, 0.538603),
+    [2835] = BossResearch("The Hivemind", 2372, 1590, 0.503677, 0.538603),
+    [2836] = BossResearch("N'Zoth the Corruptor", 2375, 1597, 0.481618, 0.261029),
 }
+
+-- The imported WIT snapshot accidentally stored ordinary raid loot under three
+-- Classic pet farms. Replace those collateral rows with the actual
+-- Raiding-with-Leashes pets so every visible Pets row has pet identity.
+local classicRaidPetRows = {
+    { farmID = "MoltenCoreRaid", farmName = "Molten Core", locationID = 232, locationLabel = "Molten Core", petID = 1149, petName = "Corefire Imp", bossName = "Magmadar" },
+    { farmID = "MoltenCoreRaid", farmName = "Molten Core", locationID = 232, locationLabel = "Molten Core", petID = 1147, petName = "Harbinger of Flame", bossName = "Sulfuron Harbinger" },
+    { farmID = "MoltenCoreRaid", farmName = "Molten Core", locationID = 232, locationLabel = "Molten Core", petID = 1150, petName = "Ashstone Core", bossName = "Golemagg the Incinerator" },
+    { farmID = "BlackwingLairRaid", farmName = "Blackwing Lair", locationID = 287, locationLabel = "Blackwing Lair", petID = 1151, petName = "Untamed Hatchling", bossName = "Razorgore the Untamed" },
+    { farmID = "BlackwingLairRaid", farmName = "Blackwing Lair", locationID = 287, locationLabel = "Blackwing Lair", petID = 1153, petName = "Death Talon Whelpguard", bossName = "Broodlord Lashlayer" },
+    { farmID = "BlackwingLairRaid", farmName = "Blackwing Lair", locationID = 287, locationLabel = "Blackwing Lair", petID = 1152, petName = "Chrominius", bossName = "Chromaggus" },
+    { farmID = "AhnQiraj", farmName = "Temple of Ahn'Qiraj", locationID = 320, locationLabel = "Temple of Ahn'Qiraj", petID = 1156, petName = "Mini Mindslayer", bossName = "The Prophet Skeram" },
+    { farmID = "AhnQiraj", farmName = "Temple of Ahn'Qiraj", locationID = 320, locationLabel = "Temple of Ahn'Qiraj", petID = 1154, petName = "Viscidus Globule", bossName = "Viscidus" },
+    { farmID = "AhnQiraj", farmName = "Temple of Ahn'Qiraj", locationID = 320, locationLabel = "Temple of Ahn'Qiraj", petID = 1155, petName = "Anubisath Idol", bossName = "Emperor Vek'lor" },
+}
+
+local function BuildCuratedPetRows(rawRows)
+    local rows = {}
+    for _, row in ipairs(rawRows or {}) do
+        if tonumber(row.petID) then
+            rows[#rows + 1] = row
+        end
+    end
+    for index, data in ipairs(classicRaidPetRows) do
+        rows[#rows + 1] = {
+            recordID = "pets:" .. data.farmID .. ":pet:" .. tostring(data.petID),
+            farmID = data.farmID,
+            farmName = data.farmName,
+            itemID = 82800,
+            itemLink = string.format("|cff0070dd|Hbattlepet:%d:1:3:155:12:12:0000000000000000:6291|h[%s]|h|r", data.petID, data.petName),
+            petID = data.petID,
+            quantity = 1,
+            contentID = 1,
+            expansion = "classic",
+            expansionLabel = "Classic",
+            locationID = data.locationID,
+            locationLabel = data.locationLabel,
+            bossName = data.bossName,
+            curatedReplacement = true,
+            curatedOrder = index,
+        }
+    end
+    return rows
+end
 
 local function GetPetName(row)
     if type(row.itemLink) == "string" then
@@ -148,6 +264,7 @@ local function BuildMapOption(row, name, location, sourceName, mapID, x, y, suff
         mapID = mapID,
         mapLabel = location,
         label = sourceName,
+        mapRole = suffix,
         location = location,
         isRoute = false,
         density = "Verified acquisition location",
@@ -159,12 +276,20 @@ local function BuildMapOption(row, name, location, sourceName, mapID, x, y, suff
 end
 
 local farms = {}
-local petRows = NS.WITDropsData and NS.WITDropsData.categories and NS.WITDropsData.categories.pets or {}
+local dropCategories = NS.WITDropsData and NS.WITDropsData.categories or {}
+local rawPetRows = {}
+for _, categoryRows in ipairs({ dropCategories.pets or {}, dropCategories.raidPets or {} }) do
+    for _, row in ipairs(categoryRows) do
+        rawPetRows[#rawPetRows + 1] = row
+    end
+end
+local petRows = BuildCuratedPetRows(rawPetRows)
 for _, row in ipairs(petRows) do
     local petID = tonumber(row.petID)
     local name = GetPetName(row)
     local outdoor = petID and outdoorByPetID[petID]
     local raid = raidByFarmID[row.farmID]
+    local bossResearch = petID and bossResearchByPetID[petID]
     local sourceName
     local mapOptions = {}
     local summary
@@ -192,13 +317,27 @@ for _, row in ipairs(petRows) do
         }
         details[#details + 1] = "Acquisition source: " .. sourceName .. "."
     elseif raid then
-        sourceName = petID and (bossByPetID[petID] or "raid drop") or (raid.instance .. " drop table")
-        mapOptions[1] = BuildMapOption(row, name, raid.mapLabel, raid.instance .. " entrance", raid.mapID, raid.x, raid.y)
+        sourceName = petID and (row.bossName or (bossResearch and bossResearch.name) or "raid drop") or (raid.instance .. " drop table")
+        if bossResearch and bossResearch.mapID and bossResearch.x and bossResearch.y then
+            mapOptions[#mapOptions + 1] = BuildMapOption(
+                row,
+                name,
+                raid.instance .. " - " .. sourceName,
+                sourceName,
+                bossResearch.mapID,
+                bossResearch.x,
+                bossResearch.y,
+                "boss"
+            )
+        end
+        mapOptions[#mapOptions + 1] = BuildMapOption(row, name, raid.mapLabel, raid.instance .. " entrance", raid.mapID, raid.x, raid.y, "entrance")
         if raid.alternate then
-            mapOptions[2] = BuildMapOption(row, name, raid.alternate.mapLabel, raid.instance .. " alternate entrance", raid.alternate.mapID, raid.alternate.x, raid.alternate.y, "alternate")
+            mapOptions[#mapOptions + 1] = BuildMapOption(row, name, raid.alternate.mapLabel, raid.instance .. " alternate entrance", raid.alternate.mapID, raid.alternate.x, raid.alternate.y, "alternate")
         end
         if petID then
-            summary = string.format("%s drops from %s in %s. The map opens on the raid entrance.", name, sourceName, raid.instance)
+            summary = bossResearch and bossResearch.mapID
+                and string.format("%s drops from %s in %s. The first map marks the boss inside the raid; entrance maps remain available in the selector.", name, sourceName, raid.instance)
+                or string.format("%s drops from %s in %s. No boss encounter pin exists for this source, so the map opens on the raid entrance.", name, sourceName, raid.instance)
         else
             summary = string.format("This non-pet WIT row is filed under Pets but is farmed inside %s. The map opens on the raid entrance.", raid.instance)
         end
@@ -209,7 +348,9 @@ for _, row in ipairs(petRows) do
             tips = {
                 "Most raid-boss pet chances are limited by the character's raid lockout; additional eligible characters add attempts.",
                 "Legacy raid mechanics can still block a solo clear even when the enemies are numerically easy.",
-                "The pin is the exterior entrance; the named boss or source is inside the instance.",
+                bossResearch and bossResearch.mapID
+                    and "The first map pin marks the boss inside the instance; use the map selector for the exterior entrance."
+                    or "This source has no boss encounter pin; the available pin marks the exterior entrance.",
             },
         }
         details[#details + 1] = "Instance: " .. raid.instance .. "."
@@ -230,6 +371,11 @@ for _, row in ipairs(petRows) do
             primaryItemID = not petID and tonumber(row.itemID) or nil,
             sourceRecordID = row.recordID,
             providerFarmID = row.farmID,
+            bossName = bossResearch and bossResearch.name or row.bossName,
+            bossEncounterJournalID = bossResearch and bossResearch.encounterID,
+            bossMapID = bossResearch and bossResearch.mapID,
+            bossX = bossResearch and bossResearch.x,
+            bossY = bossResearch and bossResearch.y,
             routeCount = #mapOptions,
             mapIDs = (function()
                 local result = {}
@@ -297,8 +443,19 @@ catalog.uniqueItemCount = (tonumber(catalog.uniqueItemCount) or 0) + uniqueItems
 catalog.sourceCounts.curatedPets = #farms
 
 NS.PetFarmData = {
-    dataVersion = 1,
-    researchedAt = "2026-10-03",
-    sourceRowCount = #petRows,
+    dataVersion = 2,
+    researchedAt = "2026-10-08",
+    sourceRowCount = #rawPetRows,
+    curatedRowCount = #petRows,
+    rows = petRows,
     farms = farms,
+    researchSources = {
+        "https://warcraft.wiki.gg/wiki/Raiding_with_Leashes",
+        "https://warcraft.wiki.gg/wiki/Raiding_with_Leashes_II:_Attunement_Edition",
+        "https://warcraft.wiki.gg/wiki/Raiding_with_Leashes_III:_Drinkin%27_From_the_Sunwell",
+        "https://warcraft.wiki.gg/wiki/Raiding_with_Leashes_IV:_Wrath_of_the_Lick_King",
+        "https://warcraft.wiki.gg/wiki/Raiding_with_Leashes_V:_Cuteaclysm",
+        "https://warcraft.wiki.gg/wiki/Raiding_with_Leashes_VI:_Pets_of_Pandaria",
+        "https://wago.tools/db2/JournalEncounterXMapLoc/csv",
+    },
 }

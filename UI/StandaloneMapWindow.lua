@@ -19,6 +19,7 @@ local SOURCE_BUTTON_WIDTH = 54
 local SOURCE_ROW_HEIGHT = 24
 local DETAIL_TABLE_ROW_HEIGHT = 20
 local DETAIL_TOGGLE_ROW_HEIGHT = 20
+local DETAIL_DIVIDER_ROW_HEIGHT = 14
 local DETAIL_TABLE_QUANTITY_WIDTH = 58
 local DETAIL_TABLE_VALUE_WIDTH = 116
 local DETAIL_TABLE_COLUMN_GAP = 8
@@ -28,7 +29,7 @@ local ROUTE_LINE_THICKNESS = 3
 local MAP_DISPLAY_MODE_OVERLAY = "overlay"
 local MAP_DISPLAY_MODE_ICONS = "icons"
 local MAP_DISPLAY_MODE_BUTTON_WIDTH = 72
-local WAYPOINT_BUTTON_WIDTH = 82
+local WAYPOINT_BUTTON_WIDTH = 104
 local ADD_TO_FARM_BUTTON_WIDTH = 104
 local MAP_PIN_SIZE = 18
 local MAP_PIN_ICON_SIZE = 14
@@ -976,6 +977,11 @@ local function HideDetailLines(frame, usedLines)
             row.onClick = nil
         end
     end
+    for index, divider in pairs(frame.detailDividerLines or {}) do
+        if index > normalizedUsedLines and divider then
+            divider:Hide()
+        end
+    end
 end
 
 local function GetDetailLine(frame, index)
@@ -995,6 +1001,18 @@ local function GetDetailLine(frame, index)
         text:SetMaxLines(0)
     end
     return text
+end
+
+local function GetDetailDivider(frame, index)
+    frame.detailDividerLines = frame.detailDividerLines or {}
+    local divider = frame.detailDividerLines[index]
+    if not divider then
+        divider = frame.detailsContent:CreateLine(nil, "ARTWORK", nil, 2)
+        divider:SetThickness(2)
+        divider:SetColorTexture(1.0, 0.82, 0.18, 0.85)
+        frame.detailDividerLines[index] = divider
+    end
+    return divider
 end
 
 local function ShowSourceLinkWindow(url, siteName)
@@ -1226,6 +1244,10 @@ local function RefreshStandaloneMapDetails(frame)
 
     for index, line in ipairs(lines) do
         local lineHeight = 18
+        local existingDivider = frame.detailDividerLines and frame.detailDividerLines[index]
+        if existingDivider and line.type ~= "divider" then
+            existingDivider:Hide()
+        end
         if line.type == "source" then
             local text = frame.detailTextLines and frame.detailTextLines[index]
             if text then
@@ -1253,6 +1275,34 @@ local function RefreshStandaloneMapDetails(frame)
             row.button.tooltipText = line.url
             row:Show()
             lineHeight = SOURCE_ROW_HEIGHT
+        elseif line.type == "divider" then
+            local text = frame.detailTextLines and frame.detailTextLines[index]
+            if text then
+                text:Hide()
+            end
+            local sourceRow = frame.detailSourceRows and frame.detailSourceRows[index]
+            if sourceRow then
+                sourceRow:Hide()
+            end
+            local tableRow = frame.detailTableRows and frame.detailTableRows[index]
+            if tableRow then
+                tableRow:Hide()
+                tableRow.itemID = nil
+                tableRow.itemLink = nil
+            end
+            local toggleRow = frame.detailToggleRows and frame.detailToggleRows[index]
+            if toggleRow then
+                toggleRow:Hide()
+                toggleRow.onClick = nil
+            end
+
+            local divider = GetDetailDivider(frame, index)
+            divider:ClearAllPoints()
+            local dividerOffset = -(yOffset + math.floor(DETAIL_DIVIDER_ROW_HEIGHT / 2))
+            divider:SetStartPoint("TOPLEFT", frame.detailsContent, 0, dividerOffset)
+            divider:SetEndPoint("TOPRIGHT", frame.detailsContent, 0, dividerOffset)
+            divider:Show()
+            lineHeight = DETAIL_DIVIDER_ROW_HEIGHT
         elseif line.type == "farmTarget" then
             local text = frame.detailTextLines and frame.detailTextLines[index]
             if text then
@@ -1750,7 +1800,7 @@ local function RefreshStandaloneWaypointButton(frame)
             .. tostring(destination.label) .. "."
     elseif reason == "select-area" then
         frame.waypointButton.tooltipText = string.format(
-            "This map has %d separate farming areas. Click the requested overlay first, then click Waypoint.",
+            "This map has %d separate farming areas. Click the requested overlay first, then click Set Waypoint.",
             groupCount or 0
         )
     else
@@ -1804,7 +1854,7 @@ function GoldTracker:SetStandaloneMapWaypoint()
     if not destination then
         if reason == "select-area" then
             SetStatus(frame, string.format(
-                "Select one of the %d farming overlays, then click Waypoint again.",
+                "Select one of the %d farming overlays, then click Set Waypoint again.",
                 groupCount or 0
             ))
         else
@@ -1979,13 +2029,24 @@ end
 function GoldTracker:ResetStandaloneMapView()
     local frame = self.standaloneMapFrame
     if not frame then
-        return
+        return false
     end
 
-    frame.mapZoom = 1
-    frame.mapPanX = 0
-    frame.mapPanY = 0
+    local selectedOptionIndex = tonumber(frame.selectedMapOptionIndex) or 1
+    if not ApplyStandaloneMapOption(frame, selectedOptionIndex) then
+        frame.mapID = tonumber(frame.originalMapID) or frame.mapID or DEFAULT_MAP_ID
+        frame.mapPins = type(frame.originalMapPins) == "table" and frame.originalMapPins or frame.mapPins or {}
+        frame.selectedMapAreaKey = nil
+        frame.mapZoom = 1
+        frame.mapPanX = 0
+        frame.mapPanY = 0
+        if frame.detailsScrollFrame then
+            frame.detailsScrollFrame:SetVerticalScroll(0)
+        end
+    end
+    frame.mapDragging = false
     self:RefreshStandaloneMapWindow()
+    return true
 end
 
 function GoldTracker:NavigateStandaloneMapToParent()
@@ -2122,32 +2183,39 @@ function GoldTracker:CreateStandaloneMapWindow()
     mapTitle:SetJustifyH("LEFT")
     mapTitle:SetWordWrap(false)
 
-    local zoomOutButton = CreateButton(toolbar, 28, 24, "-", "neutral")
-    zoomOutButton:SetPoint("RIGHT", toolbar, "RIGHT", -132, 0)
-
     local resetButton = CreateButton(toolbar, 72, 24, "Reset", "neutral")
-    resetButton:SetPoint("LEFT", zoomOutButton, "RIGHT", 6, 0)
-
-    local zoomInButton = CreateButton(toolbar, 28, 24, "+", "neutral")
-    zoomInButton:SetPoint("LEFT", resetButton, "RIGHT", 6, 0)
+    resetButton:SetPoint("RIGHT", toolbar, "RIGHT", -12, 0)
 
     local projectButton = CreateButton(toolbar, 72, 24, "Project", "neutral")
-    projectButton:SetPoint("RIGHT", zoomOutButton, "LEFT", -6, 0)
-
-    local waypointButton = CreateButton(toolbar, WAYPOINT_BUTTON_WIDTH, 24, "Waypoint", "neutral")
-    waypointButton:SetPoint("RIGHT", projectButton, "LEFT", -6, 0)
-
-    local displayModeButton = CreateButton(toolbar, MAP_DISPLAY_MODE_BUTTON_WIDTH, 24, "Icons", "neutral")
-    displayModeButton:SetPoint("RIGHT", waypointButton, "LEFT", -6, 0)
+    projectButton:SetPoint("RIGHT", resetButton, "LEFT", -6, 0)
 
     local clearProjectionButton = CreateButton(toolbar, 92, 24, "Clear Pins", "neutral")
-    clearProjectionButton:SetPoint("RIGHT", displayModeButton, "LEFT", -6, 0)
+    clearProjectionButton:SetPoint("RIGHT", projectButton, "LEFT", -6, 0)
 
     local mapDropdown = CreateFrame("Frame", "GoldTrackerStandaloneMapSelectorDropdown", toolbar, "UIDropDownMenuTemplate")
     mapDropdown:SetPoint("RIGHT", clearProjectionButton, "LEFT", -8, 0)
     UIDropDownMenu_SetWidth(mapDropdown, MAP_DROPDOWN_WIDTH)
     UIDropDownMenu_Initialize(mapDropdown, function(_, level)
+        local groupCount = 0
+        local seenGroups = {}
+        for _, option in ipairs(frame.mapOptions or {}) do
+            if HasText(option.dropdownGroup) and not seenGroups[option.dropdownGroup] then
+                seenGroups[option.dropdownGroup] = true
+                groupCount = groupCount + 1
+            end
+        end
+        local showGroupHeaders = groupCount > 1
+        local previousGroup
         for index, option in ipairs(frame.mapOptions or {}) do
+            if showGroupHeaders and option.dropdownGroup ~= previousGroup then
+                local header = UIDropDownMenu_CreateInfo()
+                header.text = option.dropdownGroupLabel or option.dropdownGroup
+                header.isTitle = true
+                header.notCheckable = true
+                header.disabled = true
+                UIDropDownMenu_AddButton(header, level)
+                previousGroup = option.dropdownGroup
+            end
             local info = UIDropDownMenu_CreateInfo()
             info.text = option.label or GetMapName(option.mapID)
             info.value = index
@@ -2193,6 +2261,17 @@ function GoldTracker:CreateStandaloneMapWindow()
     mapContent:SetPoint("CENTER", mapViewport, "CENTER")
     mapContent:SetSize(1, 1)
 
+    local waypointButton = CreateButton(mapViewport, WAYPOINT_BUTTON_WIDTH, 24, "Set Waypoint", "neutral")
+    waypointButton:SetPoint("TOPRIGHT", mapViewport, "TOPRIGHT", -10, -10)
+
+    local displayModeButton = CreateButton(mapViewport, MAP_DISPLAY_MODE_BUTTON_WIDTH, 24, "Icons", "neutral")
+    displayModeButton:SetPoint("RIGHT", waypointButton, "LEFT", -6, 0)
+    if mapContent.GetFrameLevel and waypointButton.SetFrameLevel and displayModeButton.SetFrameLevel then
+        local controlsFrameLevel = (tonumber(mapContent:GetFrameLevel()) or 0) + 10
+        waypointButton:SetFrameLevel(controlsFrameLevel)
+        displayModeButton:SetFrameLevel(controlsFrameLevel)
+    end
+
     local statusText = body:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     statusText:SetPoint("BOTTOMLEFT", body, "BOTTOMLEFT", 18, 18)
     statusText:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", -(ADD_TO_FARM_BUTTON_WIDTH + 30), 18)
@@ -2235,6 +2314,7 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame.mapDisplayMode = MAP_DISPLAY_MODE_OVERLAY
     frame.body = body
     frame.mapTitle = mapTitle
+    frame.resetButton = resetButton
     frame.mapViewport = mapViewport
     frame.mapContent = mapContent
     frame.detailsPanel = detailsPanel
@@ -2304,14 +2384,6 @@ function GoldTracker:CreateStandaloneMapWindow()
 
     mapViewport:SetScript("OnSizeChanged", function()
         GoldTracker:RefreshStandaloneMapWindow()
-    end)
-
-    zoomOutButton:SetScript("OnClick", function()
-        GoldTracker:AdjustStandaloneMapZoom(-ZOOM_STEP)
-    end)
-
-    zoomInButton:SetScript("OnClick", function()
-        GoldTracker:AdjustStandaloneMapZoom(ZOOM_STEP)
     end)
 
     resetButton:SetScript("OnClick", function()
@@ -2390,6 +2462,8 @@ function GoldTracker:OpenStandaloneMapWindow(options)
             frame.detailsScrollFrame:SetVerticalScroll(0)
         end
     end
+    frame.originalMapID = frame.mapID
+    frame.originalMapPins = frame.mapPins
     frame:Show()
     frame:Raise()
     self:RefreshStandaloneMapWindow()

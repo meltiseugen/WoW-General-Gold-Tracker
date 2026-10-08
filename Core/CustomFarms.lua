@@ -356,13 +356,17 @@ function GoldTracker:CreateCustomFarm(name, activateBuild)
     local farmID = store.nextID
     store.nextID = farmID + 1
     local timestamp = Now()
+    local currentCharacter = GetCurrentCharacterLabel()
+    if currentCharacter then
+        store.knownCharacters[currentCharacter] = true
+    end
     local farm = {
         id = farmID,
         name = TrimText(name) or ("New Farm " .. tostring(farmID)),
         createdAt = timestamp,
         updatedAt = timestamp,
         nextEntryID = 1,
-        assignedCharacter = nil,
+        assignedCharacter = currentCharacter,
         entries = {},
     }
     store.farms[#store.farms + 1] = farm
@@ -820,7 +824,7 @@ end
 
 function GoldTracker:GetCustomFarmAddButtonTooltip(itemID)
     local activeFarm = self:GetActiveCustomFarm()
-    local methodText = " Choose from available farm data or map data before adding."
+    local methodText = " Choose from the available map sources before adding."
     if activeFarm then
         return "Add to custom farm", "You will be asked to confirm adding this entry to " .. activeFarm.name .. "." .. methodText
     end

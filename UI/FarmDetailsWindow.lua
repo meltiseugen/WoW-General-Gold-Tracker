@@ -431,6 +431,74 @@ function GoldTracker:GetFarmByID(farmID)
     return position and catalog.farms and catalog.farms[position] or nil
 end
 
+local function IsRouteMaterialFarm(farm)
+    if type(farm) ~= "table" then
+        return false
+    end
+
+    return farm.sourceCategory == "Herb" or farm.sourceCategory == "Mining"
+end
+
+local function BuildMaterialFallbackMapOptions(addon, farm)
+    local itemID = NormalizeItemID(farm and farm.primaryItemID)
+    if not itemID or type(addon.BuildMaterialFarmingMapOptions) ~= "function" then
+        return {}
+    end
+
+    local options = addon:BuildMaterialFarmingMapOptions(itemID) or {}
+    for optionIndex, option in ipairs(options) do
+        if type(option) == "table" then
+            option.id = tostring(farm.id) .. ":material:" .. tostring(option.id or optionIndex)
+            option.sourceLabel = "Related researched material location"
+            option.mapOnly = #(option.pins or {}) == 0
+            for _, pin in ipairs(option.pins or {}) do
+                pin.sourceLabel = "Related researched material location"
+                pin.farmAction = pin.farmAction or "Farm the related material at this location."
+            end
+        end
+    end
+    return options
+end
+
+local function BuildInstanceEntranceMapOption(addon, farm)
+    if type(addon.ResolveCatalogFarmInstanceEntrance) ~= "function" then
+        return nil
+    end
+
+    local entrance = addon:ResolveCatalogFarmInstanceEntrance(farm)
+    if type(entrance) ~= "table" or not tonumber(entrance.mapID)
+        or not tonumber(entrance.x) or not tonumber(entrance.y)
+    then
+        return nil
+    end
+
+    return {
+        id = tostring(farm.id) .. ":entrance:" .. tostring(entrance.mapID),
+        mapID = entrance.mapID,
+        mapLabel = entrance.mapName or farm.name or ("Map " .. tostring(entrance.mapID)),
+        label = entrance.label or ((farm.name or "Instance") .. " entrance"),
+        location = entrance.label or farm.name,
+        sourceType = "static",
+        sourceLabel = "Encounter Journal entrance",
+        pins = {
+            {
+                mapID = entrance.mapID,
+                x = entrance.x,
+                y = entrance.y,
+                label = entrance.label or ((farm.name or "Instance") .. " entrance"),
+                itemName = farm.name,
+                spotLocation = entrance.label or farm.name,
+                isRoute = false,
+                routeType = "instance-entrance",
+                density = "Instance entrance",
+                dropDifficulty = "Enter the instance to begin this farm.",
+                sourceType = "static",
+                sourceLabel = "Encounter Journal entrance",
+            },
+        },
+    }
+end
+
 function GoldTracker:BuildFarmRouteMapOptions(farm)
     if type(farm) ~= "table" then
         return {}
@@ -439,6 +507,10 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
     if type(farm.mapOptions) == "table" then
         local guide = GetFarmGuide(farm)
         local sourceUrls = GetFarmSourceURLs(farm)
+        local isCurated = IsCuratedResearchFarm(farm)
+        local sourceType = isCurated and "curated" or "static"
+        local sourceLabel = isCurated and GetCuratedResearchLabel(farm)
+            or farm.locationResearchSource or "GGT researched map location"
         local options = {}
         for optionIndex, sourceOption in ipairs(farm.mapOptions) do
             local mapID = tonumber(sourceOption and sourceOption.mapID)
@@ -448,16 +520,17 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                     mapID = mapID,
                     mapLabel = sourceOption.mapLabel or sourceOption.label or farm.name,
                     label = sourceOption.label or sourceOption.mapLabel or farm.name,
+                    mapRole = sourceOption.mapRole,
                     location = sourceOption.location or sourceOption.label or farm.name,
-                    sourceType = "curated",
-                    sourceLabel = GetCuratedResearchLabel(farm),
+                    sourceType = sourceType,
+                    sourceLabel = sourceLabel,
                     pins = {},
                 }
                 for pointIndex, sourcePin in ipairs(type(sourceOption.pins) == "table" and sourceOption.pins or {}) do
                     local x = tonumber(sourcePin and sourcePin.x)
                     local y = tonumber(sourcePin and sourcePin.y)
                     if x and y and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
-                        local isRoute = sourceOption.isRoute == true
+                        local isRoute = IsRouteMaterialFarm(farm) and sourceOption.isRoute == true
                         option.pins[#option.pins + 1] = {
                             mapID = mapID,
                             x = x,
@@ -468,15 +541,15 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                             farmAction = guide.action,
                             isRoute = isRoute,
                             routeID = isRoute and option.id or nil,
-                            routeType = farm.activity == "pet" and "farm-pet"
+                            routeType = sourceOption.routeType or (farm.activity == "pet" and "farm-pet"
                                 or farm.activity == "toy" and "farm-toy"
-                                or "farm-mount",
+                                or "farm-" .. tostring(farm.activity or "location")),
                             density = sourceOption.density,
                             dropDifficulty = sourceOption.dropDifficulty,
                             tips = guide.tips,
                             sourceUrls = sourceUrls,
-                            sourceType = "curated",
-                            sourceLabel = GetCuratedResearchLabel(farm),
+                            sourceType = sourceType,
+                            sourceLabel = sourceLabel,
                         }
                     end
                 end
@@ -488,6 +561,11 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
     end
 
     if farm.sourceDataset ~= "WITGatheringData" then
+        local entranceOption = BuildInstanceEntranceMapOption(self, farm)
+        if entranceOption then
+            return { entranceOption }
+        end
+
         local options = {}
         local seenMapIDs = {}
         for index, rawMapID in ipairs(farm.mapIDs or {}) do
@@ -521,6 +599,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
     local catalog = GetFarmCatalog()
     local options = {}
     local seenRoutes = {}
+    local isRoute = IsRouteMaterialFarm(farm)
     for _, recordID in ipairs(farm.sourceRecordIDs or {}) do
         local record = records[recordID]
         for routeIndex, route in ipairs(type(record) == "table" and record.routes or {}) do
@@ -561,8 +640,8 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                             itemName = farm.name,
                             spotLocation = route.name or farm.name,
                             farmAction = guide.action,
-                            isRoute = true,
-                            routeID = option.id,
+                            isRoute = isRoute,
+                            routeID = isRoute and option.id or nil,
                             routeType = "farm-" .. tostring(farm.activity or "route"),
                             density = "Imported recorded farm route",
                             dropDifficulty = "Yield varies with competition, profession skill, and character setup.",
@@ -579,6 +658,10 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
             end
         end
     end
+    if #options == 0 then
+        return BuildMaterialFallbackMapOptions(self, farm)
+    end
+
     return options
 end
 
@@ -722,7 +805,7 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
     if selected then
         local itemName, _, isLoaded = GetItemInfoSafe(selected.itemID)
         RequestItemData(selected.itemID, isLoaded)
-        AppendMapDetailLine(lines, itemName, 0.45, 0.92, 1.0, 4, "GameFontNormalLarge")
+        AppendMapDetailLine(lines, itemName .. " estimate", 0.45, 0.92, 1.0, 4, "GameFontNormalLarge")
         AppendMapDetailLine(
             lines,
             string.format(
@@ -739,13 +822,13 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
         )
         AppendMapDetailLine(
             lines,
-            selected.valuePerHour > 0 and ("Selected value: " .. self:FormatMoney(selected.valuePerHour) .. "/hour")
-                or "Selected value: price unavailable",
-            0.82,
-            0.90,
-            1.0,
+            selected.valuePerHour > 0 and (self:FormatMoney(selected.valuePerHour) .. "/hour")
+                or "Price unavailable",
+            selected.valuePerHour > 0 and 0.35 or 0.68,
+            selected.valuePerHour > 0 and 0.95 or 0.72,
+            selected.valuePerHour > 0 and 0.55 or 0.80,
             3,
-            "GameFontHighlight"
+            "GameFontNormalLarge"
         )
         if selected.valueSharePercent then
             AppendMapDetailLine(
@@ -758,6 +841,10 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
                 "GameFontHighlightSmall"
             )
         end
+        lines[#lines + 1] = {
+            type = "divider",
+            gap = 6,
+        }
     end
 
     AppendMapDetailLine(lines, "Farm estimate", 1.0, 0.82, 0.18, 4, "GameFontNormal")
@@ -890,13 +977,25 @@ function GoldTracker:BuildFarmDetailsMapOptions(farms, selectedItemID)
     local showFarmName = #farms > 1
     for _, farm in ipairs(farms) do
         local routeOptions = self:BuildFarmRouteMapOptions(farm)
+        local showRouteLabel = showFarmName or #routeOptions > 1
         for _, option in ipairs(routeOptions) do
             local routeLabel = option.label or option.mapLabel or farm.name or farm.id
             option.farm = farm
             option.farmID = farm.id
             option.windowTitle = farm.name or farm.id
             option.selectedItemID = NormalizeItemID(selectedItemID)
-            option.label = showFarmName and string.format("%s - %s", farm.name or farm.id, routeLabel) or routeLabel
+            if option.mapRole == "boss" then
+                option.label = "Boss location"
+            elseif option.mapRole == "entrance" then
+                option.label = "Instance entrance"
+            elseif option.mapRole == "alternate" then
+                option.label = "Alternate instance entrance"
+            else
+                option.label = "farm: " .. tostring(farm.name or farm.id)
+                if showRouteLabel and routeLabel ~= (farm.name or farm.id) then
+                    option.label = option.label .. " - " .. tostring(routeLabel)
+                end
+            end
             options[#options + 1] = option
         end
     end

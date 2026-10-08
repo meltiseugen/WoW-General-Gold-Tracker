@@ -414,6 +414,14 @@ function GoldTracker:BuildCustomFarmRoutePlan(farmID, recalculate)
     return ordered
 end
 
+function GoldTracker:HasCustomFarmRoutePlan(farmID)
+    local farm = self:GetCustomFarmByID(farmID)
+    return farm ~= nil
+        and type(farm.routePlan) == "table"
+        and type(farm.routePlan.order) == "table"
+        and #farm.routePlan.order > 0
+end
+
 function GoldTracker:NotifyFarmRoutePlanChanged()
     if self.farmRoutePlanFrame and type(self.RefreshFarmRoutePlanWindow) == "function" then
         self:RefreshFarmRoutePlanWindow()

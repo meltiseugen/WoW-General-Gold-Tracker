@@ -323,8 +323,60 @@ local function GetWITDropRows(sourceID)
         return nil, nil
     end
     local data = GetWITDropsData()
-    local rows = data.categories and data.categories[option.witCategory]
+    local rows
+    if option.witCategory == "pets" and type(NS.PetFarmData) == "table" then
+        rows = NS.PetFarmData.rows
+    end
+    rows = rows or (data.categories and data.categories[option.witCategory])
     return type(rows) == "table" and rows or {}, option.witCategory
+end
+
+function GoldTracker:ShowObservedDropItemTooltip(row, target)
+    if type(row) ~= "table" or not GameTooltip then
+        return false
+    end
+    if (type(row.itemLink) ~= "string" or row.itemLink == "") and not row.itemID then
+        return false
+    end
+
+    GameTooltip:SetOwner(target or row, "ANCHOR_CURSOR")
+    if row.petID and type(row.itemLink) == "string" and type(BattlePetToolTip_ShowLink) == "function" then
+        BattlePetToolTip_ShowLink(row.itemLink)
+        return true
+    end
+    if type(row.itemLink) == "string" and row.itemLink ~= "" then
+        GameTooltip:SetHyperlink(row.itemLink)
+    elseif type(GameTooltip.SetItemByID) == "function" then
+        GameTooltip:SetItemByID(row.itemID)
+    else
+        GameTooltip:SetHyperlink("item:" .. tostring(row.itemID))
+    end
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddDoubleLine("Expansion", row.expansionLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Location", row.locationLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Source", row.sourceTextValue or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Seen / Qty", string.format("%d / %d", tonumber(row.seenCount) or 0, tonumber(row.quantity) or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+    local priceSourceLabel = row.valueSourceLabel or row.valueSourceID or "Unknown"
+    if row.valueSourceWasFallback then
+        priceSourceLabel = priceSourceLabel .. " (fallback)"
+    end
+    GameTooltip:AddDoubleLine("Price source", priceSourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine("Click the row for price history.", 0.72, 0.86, 1.0)
+    if type(self.AddFarmActionTooltip) == "function" then
+        self:AddFarmActionTooltip(GameTooltip, row)
+    end
+    GameTooltip:Show()
+    return true
+end
+
+local function HideObservedDropItemTooltip()
+    if BattlePetTooltip then
+        BattlePetTooltip:Hide()
+    end
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
 end
 
 local function IsAlwaysVisibleWITSource(sourceID)
@@ -3014,7 +3066,7 @@ function GoldTracker:GetObservedDropsWindowRow(index)
     hover:SetColorTexture(1, 0.82, 0.18, 0.08)
     row.hover = hover
 
-    local trackedButton = CreateObservedButton(row, 24, 20, "+", "neutral")
+    local trackedButton = CreateObservedButton(row, 24, 20, "<3", "neutral")
     BindObservedResultsMouseWheel(trackedButton, frame)
     trackedButton:SetScript("OnClick", function(self)
         GoldTracker:ToggleObservedDropFavorite(self:GetParent())
@@ -3063,35 +3115,15 @@ function GoldTracker:GetObservedDropsWindowRow(index)
     divider:SetHeight(1)
     row.divider = divider
 
-    local itemTooltipTarget = self:CreateItemTooltipTarget(row, row.itemText, icon, function(self, target)
-        if (type(self.itemLink) ~= "string" or self.itemLink == "") and not self.itemID then
-            return
-        end
-        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
-        if type(self.itemLink) == "string" and self.itemLink ~= "" then
-            GameTooltip:SetHyperlink(self.itemLink)
-        elseif type(GameTooltip.SetItemByID) == "function" then
-            GameTooltip:SetItemByID(self.itemID)
-        else
-            GameTooltip:SetHyperlink("item:" .. tostring(self.itemID))
-        end
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddDoubleLine("Expansion", self.expansionLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Location", self.locationLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Source", self.sourceTextValue or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Seen / Qty", string.format("%d / %d", tonumber(self.seenCount) or 0, tonumber(self.quantity) or 0), 0.72, 0.86, 1.0, 1, 1, 1)
-        local priceSourceLabel = self.valueSourceLabel or self.valueSourceID or "Unknown"
-        if self.valueSourceWasFallback then
-            priceSourceLabel = priceSourceLabel .. " (fallback)"
-        end
-        GameTooltip:AddDoubleLine("Price source", priceSourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Click the row for price history.", 0.72, 0.86, 1.0)
-        if type(GoldTracker.AddFarmActionTooltip) == "function" then
-            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
-        end
-        GameTooltip:Show()
-    end)
+    local itemTooltipTarget = self:CreateItemTooltipTarget(
+        row,
+        row.itemText,
+        icon,
+        function(tooltipRow, target)
+            GoldTracker:ShowObservedDropItemTooltip(tooltipRow, target)
+        end,
+        HideObservedDropItemTooltip
+    )
     row.itemTooltipTarget = itemTooltipTarget
     BindObservedResultsMouseWheel(itemTooltipTarget, frame)
     row:SetScript("OnClick", function(self, button)
@@ -3154,10 +3186,12 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         showLocationHeaders
     )
 
-    local totalPages = self:GetObservedDropsPageCount(#displayRows)
+    local showAllRows = IsWITPetsSource(frame.dropSourceID)
+    local pageSize = showAllRows and math.max(1, #displayRows) or ROWS_PER_PAGE
+    local totalPages = showAllRows and 1 or self:GetObservedDropsPageCount(#displayRows)
     frame.currentPage = math.max(1, math.min(frame.currentPage or 1, totalPages))
-    local startIndex = ((frame.currentPage - 1) * ROWS_PER_PAGE) + 1
-    local endIndex = math.min(#displayRows, startIndex + ROWS_PER_PAGE - 1)
+    local startIndex = ((frame.currentPage - 1) * pageSize) + 1
+    local endIndex = math.min(#displayRows, startIndex + pageSize - 1)
     local visibleRowCount = math.max(0, endIndex - startIndex + 1)
     local yOffset = 0
     local totalValue = 0
@@ -3246,7 +3280,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
 
             self:ConfigureObservedDropRowActionButton(row.addButton, row, frame.dropSourceID)
 
-            row.trackedButton:SetText(result.tracked and "-" or "+")
+            row.trackedButton:SetText(result.tracked and "-" or "<3")
             if row.trackedButton.SetSelected then
                 row.trackedButton:SetSelected(result.tracked)
             end
@@ -3355,7 +3389,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             self:FormatMoney(totalValue)
         ))
     end
-    local showPagination = frame.observedDropsViewID == "scan" and #displayRows > ROWS_PER_PAGE
+    local showPagination = not showAllRows and frame.observedDropsViewID == "scan" and #displayRows > ROWS_PER_PAGE
     if frame.prevPageButton then
         frame.prevPageButton:SetShown(showPagination)
         frame.prevPageButton:SetEnabled(frame.currentPage > 1)
@@ -3776,9 +3810,9 @@ function GoldTracker:CreateObservedDropsWindow()
         return button
     end
 
-    frame.trackedHeaderButton = AddHeader("+", TRACKED_WIDTH, "CENTER", "tracked")
+    frame.trackedHeaderButton = AddHeader("Fav", TRACKED_WIDTH, "CENTER", "tracked")
     frame.trackedHeaderButton.sortLabel = "Track"
-    frame.trackedHeaderButton.compactSortLabel = "+"
+    frame.trackedHeaderButton.compactSortLabel = "Fav"
     frame.addHeaderButton = AddHeader("Add", ADD_WIDTH, "CENTER")
     frame.expansionHeaderButton = AddHeader("Expansion", EXPANSION_WIDTH, "LEFT", "expansion")
     frame.locationHeaderButton = AddHeader("Location", LOCATION_WIDTH, "LEFT", "location")

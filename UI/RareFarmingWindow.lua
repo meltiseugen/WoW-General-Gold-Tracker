@@ -21,7 +21,6 @@ local RARE_FARMING_ITEM_MIN_WIDTH = 150
 local RARE_FARMING_HEADER_LEFT_INSET = 12
 local RARE_FARMING_ROW_RIGHT_PADDING = 6
 local RARE_FARMING_SORT_ICON_SIZE = 10
-local RARE_FARMING_WOWHEAD_BUTTON_WIDTH = 64
 local RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH = 52
 local RARE_FARMING_MAP_BUTTON_WIDTH = 48
 local RARE_FARMING_ADD_BUTTON_WIDTH = 48
@@ -1928,8 +1927,12 @@ local function CloneRareFarmingResultForCache(row)
         instanceName = row.instanceName,
         instanceEncounterJournalID = row.instanceEncounterJournalID,
         instanceMapID = row.instanceMapID,
+        instanceEntrance = row.instanceEntrance,
         bossName = row.bossName,
         bossEncounterJournalID = row.bossEncounterJournalID,
+        bossMapID = row.bossMapID,
+        bossX = row.bossX,
+        bossY = row.bossY,
         difficulties = row.difficulties,
         locations = row.locations,
         rareSources = CloneRareFarmingSources(row.rareSources),
@@ -2476,24 +2479,21 @@ local function GetRareFarmingFavoriteColumnLayout(contentWidth, requiredItemWidt
     local columnGap = 10
     local expansionWidth = 116
     local sourceWidth = 150
-    local itemX = removeWidth + columnGap
+    local farmX = removeWidth + columnGap
+    local addX = farmX + RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH + columnGap
+    local itemX = addX + RARE_FARMING_ADD_BUTTON_WIDTH + columnGap
     local minimumItemWidth = math.max(120, tonumber(requiredItemWidth) or 0)
     local fixedWidth = itemX
         + minimumItemWidth
         + (valueWidth * 4)
         + sourceWidth
-        + RARE_FARMING_WOWHEAD_BUTTON_WIDTH
         + RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH
-        + RARE_FARMING_ADD_BUTTON_WIDTH
         + expansionWidth
-        + (columnGap * 9)
+        + (columnGap * 7)
         + 12
     contentWidth = math.max(contentWidth, fixedWidth)
     local expansionX = contentWidth - expansionWidth - 12
-    local detailsX = expansionX - RARE_FARMING_WOWHEAD_BUTTON_WIDTH - columnGap
-    local farmX = detailsX - RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH - columnGap
-    local addX = farmX - RARE_FARMING_ADD_BUTTON_WIDTH - columnGap
-    local sourceX = addX - sourceWidth - columnGap
+    local sourceX = expansionX - sourceWidth - columnGap
     local averageX = sourceX - valueWidth - columnGap
     local regionX = averageX - valueWidth - columnGap
     local marketX = regionX - valueWidth - columnGap
@@ -2514,14 +2514,14 @@ local function GetRareFarmingFavoriteColumnLayout(contentWidth, requiredItemWidt
         marketX = marketX,
         regionX = regionX,
         averageX = averageX,
-        detailsX = detailsX,
-        detailsWidth = RARE_FARMING_WOWHEAD_BUTTON_WIDTH,
         farmX = farmX,
         farmWidth = RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH,
         addX = addX,
         addWidth = RARE_FARMING_ADD_BUTTON_WIDTH,
     }
 end
+
+local ApplyRareFarmingFavoriteRowLayout
 
 local function ApplyRareFarmingFavoriteHeaderLayout(frame, contentWidth, requiredItemWidth)
     local headerFrame = frame and frame.libraryFavoritesHeaderFrame
@@ -2538,7 +2538,6 @@ local function ApplyRareFarmingFavoriteHeaderLayout(frame, contentWidth, require
         { key = "region", x = layout.regionX, width = layout.valueWidth, justify = "RIGHT" },
         { key = "average", x = layout.averageX, width = layout.valueWidth, justify = "RIGHT" },
         { key = "source", x = layout.sourceX, width = layout.sourceWidth, justify = "LEFT" },
-        { key = "details", x = layout.detailsX, width = layout.detailsWidth, justify = "CENTER" },
         { key = "farm", x = layout.farmX, width = layout.farmWidth, justify = "CENTER" },
         { key = "add", x = layout.addX, width = layout.addWidth, justify = "CENTER" },
         { key = "expansion", x = layout.expansionX, width = layout.expansionWidth, justify = "LEFT" },
@@ -2783,6 +2782,47 @@ function GoldTracker:OpenRareFarmingMap(row)
     return true
 end
 
+function GoldTracker:GetFavoriteFarmingMapKind(row)
+    if type(row) ~= "table" then
+        return nil
+    end
+
+    local sourceType = tostring(row.farmingSourceType or "")
+    local prefersInstance = row.instanceName ~= nil
+        or sourceType == "instance"
+        or sourceType:find("instance", 1, true) ~= nil
+        or sourceType:find("raid", 1, true) ~= nil
+    local prefersRare = row.rareName ~= nil or row.npcID ~= nil or sourceType == "rare"
+
+    if prefersInstance and type(self.BuildInstanceFarmingMapOptions) == "function"
+        and #(self:BuildInstanceFarmingMapOptions(row) or {}) > 0 then
+        return "instance"
+    end
+    if prefersRare and type(self.BuildRareFarmingMapOptions) == "function"
+        and #(self:BuildRareFarmingMapOptions(row) or {}) > 0 then
+        return "rare"
+    end
+    if type(self.BuildMaterialFarmingMapOptions) == "function"
+        and #(self:BuildMaterialFarmingMapOptions(row.itemID) or {}) > 0 then
+        return "material"
+    end
+    return nil
+end
+
+function GoldTracker:OpenFavoriteFarmingMap(row)
+    local mapKind = self:GetFavoriteFarmingMapKind(row)
+    if mapKind == "instance" and type(self.OpenInstanceFarmingMap) == "function" then
+        return self:OpenInstanceFarmingMap(row)
+    end
+    if mapKind == "rare" and type(self.OpenRareFarmingMap) == "function" then
+        return self:OpenRareFarmingMap(row)
+    end
+    if mapKind == "material" and type(self.OpenMaterialFarmingMap) == "function" then
+        return self:OpenMaterialFarmingMap(row.itemID)
+    end
+    return false
+end
+
 function GoldTracker:RefreshRareFarmingLibraryWindow()
     local frame = self.rareFarmingFrame
     if not frame or not frame.libraryPanel then
@@ -2897,28 +2937,14 @@ function GoldTracker:RefreshRareFarmingLibraryWindow()
                 GameTooltip:Hide()
             end)
 
-            row.favoriteWowheadButton = CreateRareFarmingButton(row, RARE_FARMING_WOWHEAD_BUTTON_WIDTH, 20, "Details", "neutral")
-            row.favoriteWowheadButton:RegisterForClicks("LeftButtonUp")
-            row.favoriteWowheadButton:SetScript("OnClick", function(self)
-                GoldTracker:OpenInventoryItemDetailsWindow(self:GetParent())
-            end)
-            row.favoriteWowheadButton:SetScript("OnEnter", function(self)
-                GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-                GameTooltip:AddLine("Open price history", 1, 1, 1)
-                GameTooltip:Show()
-            end)
-            row.favoriteWowheadButton:SetScript("OnLeave", function()
-                GameTooltip:Hide()
-            end)
-
-            row.favoriteFarmButton = CreateRareFarmingButton(row, RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH, 20, "Farm", "primary")
+            row.favoriteFarmButton = CreateRareFarmingButton(row, RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH, 20, "Map", "primary")
             row.favoriteFarmButton:RegisterForClicks("LeftButtonUp")
             row.favoriteFarmButton:SetScript("OnClick", function(self)
-                GoldTracker:OpenFarmDetailsForItem(self:GetParent().itemID)
+                GoldTracker:OpenFavoriteFarmingMap(self:GetParent())
             end)
             row.favoriteFarmButton:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-                GameTooltip:AddLine("Open farm map", 1, 1, 1)
+                GameTooltip:AddLine("Open farming map", 1, 1, 1)
                 GameTooltip:Show()
             end)
             row.favoriteFarmButton:SetScript("OnLeave", function()
@@ -2987,7 +3013,6 @@ function GoldTracker:RefreshRareFarmingLibraryWindow()
         row.favoriteMarketText:SetShown(activeTab == "favorites" and not isExpansionHeader)
         row.favoriteRegionText:SetShown(activeTab == "favorites" and not isExpansionHeader)
         row.favoriteAverageText:SetShown(activeTab == "favorites" and not isExpansionHeader)
-        row.favoriteWowheadButton:SetShown(activeTab == "favorites" and not isExpansionHeader)
         row.favoriteFarmButton:SetShown(false)
         row.favoriteAddButton:SetShown(false)
         if isExpansionHeader then
@@ -3032,9 +3057,17 @@ function GoldTracker:RefreshRareFarmingLibraryWindow()
             row.rareSources = favorite.rareSources
             row.rareSourceCount = favorite.rareSourceCount
             row.instanceName = favorite.instanceName
+            row.instanceEncounterJournalID = favorite.instanceEncounterJournalID
+            row.instanceMapID = favorite.instanceMapID
+            row.instanceEntrance = favorite.instanceEntrance
             row.bossName = favorite.bossName
+            row.bossEncounterJournalID = favorite.bossEncounterJournalID
+            row.bossMapID = favorite.bossMapID
+            row.bossX = favorite.bossX
+            row.bossY = favorite.bossY
             row.farmingSourceType = favorite.farmingSourceType
             row.hasFarm = type(self.HasFarmForItem) == "function" and self:HasFarmForItem(favorite.itemID) or false
+            row.favoriteMapKind = self:GetFavoriteFarmingMapKind(row)
 
             row.favoriteRemoveButton:ClearAllPoints()
             row.favoriteRemoveButton:SetPoint("LEFT", row, "LEFT", 0, 0)
@@ -3079,20 +3112,21 @@ function GoldTracker:RefreshRareFarmingLibraryWindow()
             row.favoriteAverageText:SetPoint("LEFT", row, "LEFT", layout.averageX, 0)
             row.favoriteAverageText:SetWidth(layout.valueWidth)
             row.favoriteAverageText:SetText(self:FormatMoney(favorite.averageValue or 0))
-            row.favoriteWowheadButton:ClearAllPoints()
-            row.favoriteWowheadButton:SetPoint("LEFT", row, "LEFT", layout.detailsX, 0)
-            row.favoriteWowheadButton:SetWidth(layout.detailsWidth)
             row.favoriteFarmButton:ClearAllPoints()
             row.favoriteFarmButton:SetPoint("LEFT", row, "LEFT", layout.farmX, 0)
             row.favoriteFarmButton:SetWidth(layout.farmWidth)
-            row.favoriteFarmButton:SetShown(row.hasFarm)
+            row.favoriteFarmButton:SetShown(row.favoriteMapKind ~= nil)
             row.favoriteAddButton:ClearAllPoints()
             row.favoriteAddButton:SetPoint("LEFT", row, "LEFT", layout.addX, 0)
             row.favoriteAddButton:SetWidth(layout.addWidth)
             row.favoriteAddButton:Show()
             row:SetScript("OnClick", function(self, button)
-                if type(GoldTracker.HandleFarmActionClick) == "function" then
-                    GoldTracker:HandleFarmActionClick(self, button)
+                if type(GoldTracker.HandleFarmActionClick) == "function"
+                    and GoldTracker:HandleFarmActionClick(self, button) then
+                    return
+                end
+                if not button or button == "LeftButton" then
+                    GoldTracker:OpenInventoryItemDetailsWindow(self)
                 end
             end)
         else
@@ -3259,7 +3293,7 @@ function GoldTracker:RefreshRareFarmingWindowControls()
     end
 end
 
-local function ApplyRareFarmingFavoriteRowLayout(row, layout)
+ApplyRareFarmingFavoriteRowLayout = function(row, layout)
     if not row or not layout then
         return
     end
@@ -3272,7 +3306,6 @@ local function ApplyRareFarmingFavoriteRowLayout(row, layout)
         { control = row.favoriteMarketText, x = layout.marketX, width = layout.valueWidth },
         { control = row.favoriteRegionText, x = layout.regionX, width = layout.valueWidth },
         { control = row.favoriteAverageText, x = layout.averageX, width = layout.valueWidth },
-        { control = row.favoriteWowheadButton, x = layout.detailsX, width = layout.detailsWidth },
         { control = row.favoriteFarmButton, x = layout.farmX, width = layout.farmWidth },
         { control = row.favoriteAddButton, x = layout.addX, width = layout.addWidth },
     }
@@ -3294,7 +3327,7 @@ function GoldTracker:UpdateRareFarmingSortHeaderState()
     local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", RARE_FARMING_SORT_KEYS)
     local showPriority = #criteria > 1
     local headers = {
-        favorite = { button = frame.favoriteHeaderButton, label = "+", tooltipLabel = "Track" },
+        favorite = { button = frame.favoriteHeaderButton, label = "Fav", tooltipLabel = "Track" },
         location = { button = frame.locationHeaderButton, label = "Location" },
         rareName = { button = frame.rareHeaderButton, label = "Rare" },
         itemName = { button = frame.itemHeaderButton, label = "Item" },
@@ -3483,10 +3516,9 @@ local function ApplyRareFarmingTableColumnLayout(frame)
         + RARE_FARMING_LOCATION_WIDTH
         + RARE_FARMING_RARE_WIDTH
         + (RARE_FARMING_VALUE_WIDTH * 4)
-        + RARE_FARMING_WOWHEAD_BUTTON_WIDTH
         + RARE_FARMING_MAP_BUTTON_WIDTH
         + RARE_FARMING_ADD_BUTTON_WIDTH
-        + (RARE_FARMING_COLUMN_GAP * 9)
+        + (RARE_FARMING_COLUMN_GAP * 8)
         + RARE_FARMING_ROW_RIGHT_PADDING
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rows, "itemText", RARE_FARMING_ITEM_MIN_WIDTH, {
         padding = 10,
@@ -3500,8 +3532,7 @@ local function ApplyRareFarmingTableColumnLayout(frame)
     UpdateRareFarmingHorizontalScroll(frame)
 
     local horizontalOffset = GetRareFarmingHorizontalOffset(frame)
-    local wowheadX = tableWidth - RARE_FARMING_WOWHEAD_BUTTON_WIDTH - RARE_FARMING_ROW_RIGHT_PADDING
-    local averageX = wowheadX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
+    local averageX = tableWidth - RARE_FARMING_VALUE_WIDTH - RARE_FARMING_ROW_RIGHT_PADDING
     local regionMarketX = averageX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
     local marketX = regionMarketX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
     local rareX = marketX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_RARE_WIDTH
@@ -3521,7 +3552,6 @@ local function ApplyRareFarmingTableColumnLayout(frame)
     SetRareFarmingHeaderColumn(frame.marketHeaderButton, frame.listPanel, headerX + marketX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
     SetRareFarmingHeaderColumn(frame.regionMarketHeaderButton, frame.listPanel, headerX + regionMarketX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
     SetRareFarmingHeaderColumn(frame.averageHeaderButton, frame.listPanel, headerX + averageX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
-    SetRareFarmingHeaderColumn(frame.wowheadHeaderButton, frame.listPanel, headerX + wowheadX - horizontalOffset, RARE_FARMING_WOWHEAD_BUTTON_WIDTH)
 
     for _, row in ipairs(frame.rows or {}) do
         if row.favoriteButton then
@@ -3545,7 +3575,6 @@ local function ApplyRareFarmingTableColumnLayout(frame)
         SetRareFarmingColumn(row.marketText, row, marketX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
         SetRareFarmingColumn(row.regionMarketText, row, regionMarketX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
         SetRareFarmingColumn(row.averageText, row, averageX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
-        SetRareFarmingColumn(row.wowheadButton, row, wowheadX - horizontalOffset, RARE_FARMING_WOWHEAD_BUTTON_WIDTH)
         if row.icon then
             row.icon:ClearAllPoints()
             row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
@@ -3646,7 +3675,7 @@ function GoldTracker:GetRareFarmingWindowRow(index)
     background:SetAllPoints(row)
     row.background = background
 
-    local favoriteButton = CreateRareFarmingButton(row, RARE_FARMING_TRACKED_BUTTON_WIDTH, RARE_FARMING_TRACKED_BUTTON_HEIGHT, "+", "neutral")
+    local favoriteButton = CreateRareFarmingButton(row, RARE_FARMING_TRACKED_BUTTON_WIDTH, RARE_FARMING_TRACKED_BUTTON_HEIGHT, "<3", "neutral")
     BindRareFarmingResultsMouseWheel(favoriteButton, frame)
     favoriteButton:RegisterForClicks("LeftButtonUp")
     favoriteButton:SetScript("OnClick", function(self)
@@ -3743,22 +3772,6 @@ function GoldTracker:GetRareFarmingWindowRow(index)
     locationGroupText:Hide()
     row.locationGroupText = locationGroupText
 
-    local wowheadButton = CreateRareFarmingButton(row, RARE_FARMING_WOWHEAD_BUTTON_WIDTH, 20, "Details", "neutral")
-    BindRareFarmingResultsMouseWheel(wowheadButton, frame)
-    wowheadButton:RegisterForClicks("LeftButtonUp")
-    wowheadButton:SetScript("OnClick", function(self)
-        GoldTracker:OpenInventoryItemDetailsWindow(self:GetParent())
-    end)
-    wowheadButton:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:AddLine("Open price history", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    wowheadButton:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    row.wowheadButton = wowheadButton
-
     local mapButton = CreateRareFarmingButton(row, RARE_FARMING_MAP_BUTTON_WIDTH, 20, "Map", "neutral")
     BindRareFarmingResultsMouseWheel(mapButton, frame)
     mapButton:RegisterForClicks("LeftButtonUp")
@@ -3807,7 +3820,10 @@ function GoldTracker:GetRareFarmingWindowRow(index)
             GoldTracker:RefreshRareFarmingWindow(false)
             return
         end
-        GoldTracker:HandleModifiedItemClickIfModified(self)
+        if GoldTracker:HandleModifiedItemClickIfModified(self) then
+            return
+        end
+        GoldTracker:OpenInventoryItemDetailsWindow(self)
     end)
 
     frame.rows[index] = row
@@ -4187,7 +4203,6 @@ function GoldTracker:RefreshRareFarmingWindow(scrollToTop)
                 row.marketText,
                 row.regionMarketText,
                 row.averageText,
-                row.wowheadButton,
                 row.mapButton,
             }) do
                 control:SetShown(not row.isLocationGroupHeader)
@@ -4232,7 +4247,7 @@ function GoldTracker:RefreshRareFarmingWindow(scrollToTop)
             row.valueSourceWasFallback = result.valueSourceWasFallback == true
             row.favorite = self:IsRareFarmingFavorite(result)
 
-            row.favoriteButton:SetText(row.favorite and "-" or "+")
+            row.favoriteButton:SetText(row.favorite and "-" or "<3")
             if row.favoriteButton.SetSelected then
                 row.favoriteButton:SetSelected(row.favorite)
             end
@@ -4464,8 +4479,7 @@ function GoldTracker:CreateRareFarmingWindow()
         { key = "region", label = "Region" },
         { key = "average", label = "Avg" },
         { key = "source", label = "Source" },
-        { key = "details", label = "Details" },
-        { key = "farm", label = "Farm" },
+        { key = "farm", label = "Map" },
         { key = "add", label = "Add" },
         { key = "expansion", label = "Expansion" },
     }
@@ -4701,7 +4715,7 @@ function GoldTracker:CreateRareFarmingWindow()
     end
     frame.listPanel = listPanel
 
-    local favoriteHeaderButton = CreateRareFarmingHeaderButton(listPanel, "+", RARE_FARMING_FAVORITE_WIDTH, "CENTER")
+    local favoriteHeaderButton = CreateRareFarmingHeaderButton(listPanel, "Fav", RARE_FARMING_FAVORITE_WIDTH, "CENTER")
     SetRareFarmingFrameLevel(favoriteHeaderButton, listPanel, 2)
     favoriteHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 20, -12)
     favoriteHeaderButton:SetScript("OnClick", function()
@@ -4733,14 +4747,9 @@ function GoldTracker:CreateRareFarmingWindow()
     end)
     frame.averageHeaderButton = averageHeaderButton
 
-    local wowheadHeaderButton = CreateRareFarmingHeaderButton(listPanel, "Details", RARE_FARMING_WOWHEAD_BUTTON_WIDTH, "CENTER")
-    SetRareFarmingFrameLevel(wowheadHeaderButton, listPanel, 2)
-    wowheadHeaderButton:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -34, -12)
-    frame.wowheadHeaderButton = wowheadHeaderButton
-
     local mapHeaderButton = CreateRareFarmingHeaderButton(listPanel, "Map", RARE_FARMING_MAP_BUTTON_WIDTH, "CENTER")
     SetRareFarmingFrameLevel(mapHeaderButton, listPanel, 2)
-    mapHeaderButton:SetPoint("LEFT", wowheadHeaderButton, "RIGHT", RARE_FARMING_COLUMN_GAP, 0)
+    mapHeaderButton:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -94, -12)
     frame.mapHeaderButton = mapHeaderButton
 
     local addHeaderButton = CreateRareFarmingHeaderButton(listPanel, "Add", RARE_FARMING_ADD_BUTTON_WIDTH, "CENTER")

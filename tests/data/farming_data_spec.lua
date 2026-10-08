@@ -3039,6 +3039,9 @@ describe("Data/MaterialFarmingSpots", function()
     it("loads every defined WIT Gathering row with decoded routes and hidden yields", function()
         local spots, ns = load_material_farming_spots(true)
         local wit = ns.WITGatheringData
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
 
         assert.is_table(wit)
         assert.equals("v4.3.1", wit.sourceVersion)
@@ -3092,6 +3095,30 @@ describe("Data/MaterialFarmingSpots", function()
             end
         end
         assert.is_true(copper_wit_spots > 1)
+
+        -- Audit every imported route rather than relying on the source's
+        -- category labels alone: only WIT Herb and Mining rows may produce
+        -- rendered route lines in the material map.
+        for _, item in pairs(spots.items) do
+            for _, spot in ipairs(item.spots or {}) do
+                if spot.witFarmRecordID then
+                    local sourceFarm = records[spot.witFarmRecordID]
+                    local shouldRenderRoute = sourceFarm.category == "Herb" or sourceFarm.category == "Mining"
+                    assert.equals(shouldRenderRoute, spot.isRoute == true, spot.witFarmRecordID)
+                end
+            end
+
+            for _, option in ipairs(ns.GoldTracker:BuildMaterialFarmingMapOptions(item.itemID)) do
+                for _, pin in ipairs(option.pins or {}) do
+                    if pin.isRoute then
+                        assert.is_true(
+                            item.category == "Herb" or item.category == "Ore",
+                            "only herb and ore material maps may render routes: " .. tostring(item.itemID)
+                        )
+                    end
+                end
+            end
+        end
     end)
 end)
 
@@ -3357,5 +3384,52 @@ describe("Data/Farms", function()
         assert.equals(213, data.farms[ragefire_position].mapIDs[1])
         assert.equals(20, #data.indexes.bySourceCategory.openWorldInstances)
         assert.equals(70, #data.indexes.bySourceCategory.instances)
+    end)
+end)
+
+describe("Data/FarmLocationOverrides", function()
+    it("gives every WIT gathering farm without a decoded or material route a researched map pin", function()
+        local _, ns = load_modules({
+            "Data/Farms.lua",
+            "Data/FarmLocationOverrides.lua",
+        })
+        local catalog = ns.FarmCatalog
+        local expectedCount = 38
+        local actualCount = 0
+
+        for _, farm in ipairs(catalog.farms) do
+            if type(farm.mapOptions) == "table" and farm.mapOptions[1]
+                and tostring(farm.mapOptions[1].id):find(":researched%-location$")
+            then
+                actualCount = actualCount + 1
+                local option = farm.mapOptions[1]
+                assert.is_number(option.mapID)
+                assert.is_false(option.isRoute)
+                assert.equals(1, #option.pins)
+                assert.is_number(option.pins[1].x)
+                assert.is_number(option.pins[1].y)
+                assert.is_true(option.pins[1].x >= 0 and option.pins[1].x <= 1)
+                assert.is_true(option.pins[1].y >= 0 and option.pins[1].y <= 1)
+                assert.equals("Wowhead location research", farm.sourceUrls[#farm.sourceUrls].siteName)
+            end
+        end
+
+        assert.equals(expectedCount, actualCount)
+    end)
+
+    it("normalizes every legacy WIT instance label that needs an Encounter Journal match", function()
+        local _, ns = load_modules({
+            "Data/Farms.lua",
+            "Data/FarmLocationOverrides.lua",
+        })
+        local aliases = 0
+        for _, farm in ipairs(ns.FarmCatalog.farms) do
+            if type(farm.instanceAliases) == "table" then
+                aliases = aliases + 1
+                assert.equals(1, #farm.instanceAliases)
+                assert_non_empty_string(farm.instanceAliases[1])
+            end
+        end
+        assert.equals(37, aliases)
     end)
 end)

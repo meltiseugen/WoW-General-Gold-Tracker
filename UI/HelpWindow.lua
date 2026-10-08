@@ -148,7 +148,7 @@ local function BuildSessionText()
     AddSection(lines, "Header buttons", {
         "- minimizes the window into the compact session view.",
         "_ reduces the window to the tiny total-only view.",
-        "+ restores the normal session window from compact or tiny mode.",
+        "<3 restores the normal session window from compact or tiny mode.",
         "X hides the window.",
     })
 

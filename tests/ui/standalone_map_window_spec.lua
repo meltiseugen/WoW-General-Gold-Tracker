@@ -613,6 +613,7 @@ describe("UI/StandaloneMapWindow", function()
                             toggleClicked = true
                         end,
                     },
+                    { type = "divider", gap = 6 },
                 }
             end,
             mapTileTextures = {},
@@ -661,6 +662,11 @@ describe("UI/StandaloneMapWindow", function()
         assert.equals("item:3002", addon.standaloneMapFrame.detailTableRows[3].itemLink)
         assert.same({ 0.45, 0.92, 1.0, 1 }, addon.standaloneMapFrame.detailTableRows[3].itemText.textColor)
         assert.equals("+ 7 more recorded items", addon.standaloneMapFrame.detailToggleRows[4].label.text)
+        assert.is_true(addon.standaloneMapFrame.detailDividerLines[5].shown)
+        assert.equals(2, addon.standaloneMapFrame.detailDividerLines[5].thickness)
+        assert.same({ 1.0, 0.82, 0.18, 0.85 }, addon.standaloneMapFrame.detailDividerLines[5].color)
+        assert.equals("TOPLEFT", addon.standaloneMapFrame.detailDividerLines[5].startPoint[1])
+        assert.equals("TOPRIGHT", addon.standaloneMapFrame.detailDividerLines[5].endPoint[1])
         assert.is_true(toggleClicked)
         assert.equals(
             "Instance map shown; no route coordinates are available. Zoom 1.00x",
@@ -994,6 +1000,57 @@ describe("UI/StandaloneMapWindow", function()
         end)
     end)
 
+    it("renders grouped map options with non-selectable dropdown section headers", function()
+        local dropdownInitializer
+        local dropdownEntries = {}
+        local addon = load_window()
+        local function create_frame()
+            local frame = make_frame()
+            for _, method in ipairs({
+                "SetBackdrop", "SetBackdropColor", "SetBackdropBorderColor", "SetFrameStrata",
+                "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse", "RegisterForDrag",
+                "RegisterEvent", "EnableMouseWheel", "SetClipsChildren", "SetScrollChild",
+                "SetVerticalScroll", "Raise", "SetAlpha",
+            }) do
+                frame[method] = function() end
+            end
+            return frame
+        end
+        loader.with_globals({
+            CreateFrame = create_frame,
+            UIDropDownMenu_SetWidth = function() end,
+            UIDropDownMenu_Initialize = function(_, initializer) dropdownInitializer = initializer end,
+            UIDropDownMenu_CreateInfo = function() return {} end,
+            UIDropDownMenu_AddButton = function(info) dropdownEntries[#dropdownEntries + 1] = info end,
+            UIDropDownMenu_SetSelectedValue = function() end,
+            UIDropDownMenu_SetText = function() end,
+            C_Map = false,
+        }, function()
+            addon:OpenStandaloneMapWindow({
+                mapOptions = {
+                    { mapID = 100, label = "User option", dropdownGroup = "user", dropdownGroupLabel = "User map data", pins = {} },
+                    { mapID = 100, label = "Addon option", dropdownGroup = "map", dropdownGroupLabel = "Map data", pins = {} },
+                    { mapID = 100, label = "Farm option", dropdownGroup = "farm", dropdownGroupLabel = "Farm data", pins = {} },
+                },
+            })
+            dropdownInitializer(nil, 1)
+        end)
+
+        assert.equals(6, #dropdownEntries)
+        assert.same({ "User map data", "User option", "Map data", "Addon option", "Farm data", "Farm option" }, {
+            dropdownEntries[1].text,
+            dropdownEntries[2].text,
+            dropdownEntries[3].text,
+            dropdownEntries[4].text,
+            dropdownEntries[5].text,
+            dropdownEntries[6].text,
+        })
+        assert.is_true(dropdownEntries[1].isTitle)
+        assert.is_true(dropdownEntries[1].disabled)
+        assert.is_nil(dropdownEntries[1].func)
+        assert.is_function(dropdownEntries[2].func)
+    end)
+
     it("adds an ordered route while preserving its route pins", function()
         local addon = load_window()
         addon.standaloneMapFrame = {
@@ -1135,21 +1192,25 @@ describe("UI/StandaloneMapWindow", function()
         end)
 
         assert.equals(
-            "This map has 2 separate farming areas. Click the requested overlay first, then click Waypoint.",
+            "This map has 2 separate farming areas. Click the requested overlay first, then click Set Waypoint.",
             waypoint_button.tooltipText
         )
     end)
 
     it("navigates to the current map's parent and resets the view", function()
         local addon = load_window()
-        local refreshed = false
+        local refreshCount = 0
         local details_scroll_frame = make_frame()
         details_scroll_frame.verticalScroll = 80
         details_scroll_frame.SetVerticalScroll = function(self, value)
             self.verticalScroll = value
         end
+        local originalPins = { { mapID = 107, x = 0.2, y = 0.3 } }
         addon.standaloneMapFrame = {
             mapID = 107,
+            mapPins = originalPins,
+            mapOptions = { { mapID = 107, label = "Original map", pins = originalPins } },
+            selectedMapOptionIndex = 1,
             mapZoom = 2,
             mapPanX = 120,
             mapPanY = -45,
@@ -1158,7 +1219,7 @@ describe("UI/StandaloneMapWindow", function()
             statusText = make_frame(),
         }
         addon.RefreshStandaloneMapWindow = function()
-            refreshed = true
+            refreshCount = refreshCount + 1
         end
 
         loader.with_globals({
@@ -1178,7 +1239,45 @@ describe("UI/StandaloneMapWindow", function()
         assert.equals(0, addon.standaloneMapFrame.mapPanY)
         assert.is_false(addon.standaloneMapFrame.mapDragging)
         assert.equals(0, details_scroll_frame.verticalScroll)
-        assert.is_true(refreshed)
+        assert.equals(1, refreshCount)
+
+        addon.standaloneMapFrame.mapZoom = 2
+        addon.standaloneMapFrame.mapPanX = 50
+        addon.standaloneMapFrame.mapPanY = 25
+        addon.standaloneMapFrame.mapDragging = true
+        assert.is_true(addon:ResetStandaloneMapView())
+        assert.equals(107, addon.standaloneMapFrame.mapID)
+        assert.equals(originalPins, addon.standaloneMapFrame.mapPins)
+        assert.equals(1, addon.standaloneMapFrame.mapZoom)
+        assert.equals(0, addon.standaloneMapFrame.mapPanX)
+        assert.equals(0, addon.standaloneMapFrame.mapPanY)
+        assert.is_false(addon.standaloneMapFrame.mapDragging)
+        assert.equals(0, details_scroll_frame.verticalScroll)
+        assert.equals(2, refreshCount)
+    end)
+
+    it("resets a standalone map without dropdown options to its opening map", function()
+        local addon = load_window()
+        local originalPins = { { mapID = 100, x = 0.4, y = 0.5 } }
+        addon.standaloneMapFrame = {
+            mapID = 101,
+            mapPins = originalPins,
+            originalMapID = 100,
+            originalMapPins = originalPins,
+            mapZoom = 2,
+            mapPanX = 30,
+            mapPanY = -20,
+            detailsScrollFrame = { SetVerticalScroll = function(self, value) self.verticalScroll = value end },
+        }
+        addon.RefreshStandaloneMapWindow = function() end
+
+        assert.is_true(addon:ResetStandaloneMapView())
+        assert.equals(100, addon.standaloneMapFrame.mapID)
+        assert.equals(originalPins, addon.standaloneMapFrame.mapPins)
+        assert.equals(1, addon.standaloneMapFrame.mapZoom)
+        assert.equals(0, addon.standaloneMapFrame.mapPanX)
+        assert.equals(0, addon.standaloneMapFrame.mapPanY)
+        assert.equals(0, addon.standaloneMapFrame.detailsScrollFrame.verticalScroll)
     end)
 
     it("keeps the current standalone map when it has no parent", function()

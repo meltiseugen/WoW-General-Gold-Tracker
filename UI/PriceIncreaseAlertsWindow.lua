@@ -21,7 +21,7 @@ local ALERTS_TSM_WIDTH = 60
 local ALERTS_QTY_WIDTH = 42
 local ALERTS_UNIT_WIDTH = 104
 local ALERTS_TOTAL_WIDTH = 110
-local ALERTS_ACTIONS_WIDTH = 160
+local ALERTS_ACTIONS_WIDTH = 102
 local ALERTS_FARM_BUTTON_WIDTH = 48
 local ALERTS_MAP_BUTTON_WIDTH = 48
 local ALERTS_ADD_BUTTON_WIDTH = 48
@@ -66,6 +66,141 @@ local function FormatAlertTimestamp(timestamp)
         return "Unknown"
     end
     return date("%m-%d %H:%M", normalizedTimestamp)
+end
+
+function GoldTracker:ShowPriceIncreaseAlertItemTooltip(row, target)
+    if not GameTooltip or type(row) ~= "table" then
+        return false
+    end
+
+    local itemID = tonumber(row.itemID)
+    itemID = itemID and math.floor(itemID + 0.5) or nil
+    local itemLink = type(row.itemLink) == "string" and row.itemLink ~= "" and row.itemLink or nil
+    if not itemID and not itemLink then
+        return false
+    end
+
+    GameTooltip:SetOwner(target or row, "ANCHOR_CURSOR")
+    if type(GameTooltip.ClearLines) == "function" then
+        GameTooltip:ClearLines()
+    end
+    if itemID and type(GameTooltip.SetItemByID) == "function" then
+        GameTooltip:SetItemByID(itemID)
+    else
+        GameTooltip:SetHyperlink(itemLink)
+    end
+    GameTooltip:AddLine(" ")
+    local isDecrease = row.alertDirection == "decrease"
+    GameTooltip:AddLine(isDecrease and "Price decrease alert" or "Price increase alert", 1.0, 0.82, 0.18)
+    GameTooltip:AddDoubleLine(
+        "Expansion",
+        tostring(row.materialExpansionLabel or row.materialExpansionID or "Unknown"),
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddDoubleLine(
+        "Profession",
+        tostring(row.materialProfessionLabel or "Unknown"),
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddDoubleLine("Triggered by", tostring(row.alertBasis or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine(
+        "DBMarket change",
+        FormatAlertPercent(row.dbMarketChangePercent),
+        0.72,
+        0.86,
+        1.0,
+        0.52,
+        1.0,
+        0.56
+    )
+    GameTooltip:AddDoubleLine(
+        "Min Buyout change",
+        FormatAlertPercent(row.dbMinBuyoutChangePercent),
+        0.72,
+        0.86,
+        1.0,
+        0.52,
+        1.0,
+        0.56
+    )
+    GameTooltip:AddDoubleLine(
+        "Baseline",
+        row.baselinePrice and self:FormatMoney(row.baselinePrice) or "Unknown",
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddDoubleLine(
+        "Current",
+        row.latestPrice and self:FormatMoney(row.latestPrice) or "Unknown",
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddDoubleLine("Quantity", tostring(row.quantity or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Stack value", self:FormatMoney(row.totalValue or 0), 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine(
+        "Previous sample",
+        FormatAlertTimestamp(row.baselineTimestamp),
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddDoubleLine(
+        "Latest sample",
+        FormatAlertTimestamp(row.latestTimestamp),
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddDoubleLine(
+        "Region sold/day",
+        FormatAlertDecimal(row.regionSoldPerDay, 2),
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    GameTooltip:AddDoubleLine(
+        "Region sale rate",
+        FormatAlertDecimal(row.regionSaleRate, 3),
+        0.72,
+        0.86,
+        1.0,
+        1,
+        1,
+        1
+    )
+    if type(self.AddFarmActionTooltip) == "function" then
+        self:AddFarmActionTooltip(GameTooltip, row)
+    end
+    GameTooltip:Show()
+    return true
 end
 
 local function ReadAlertsMinimumValueCopper(addon, editBox)
@@ -277,17 +412,13 @@ local function ApplyAlertsTableColumnLayout(frame)
             SetAlertsRowColumn(row.quantityText, row, qtyX, ALERTS_QTY_WIDTH)
             SetAlertsRowColumn(row.totalValueText, row, totalX, ALERTS_TOTAL_WIDTH)
         end
-        if row.farmButton then
-            row.farmButton:ClearAllPoints()
-            row.farmButton:SetPoint("LEFT", row, "LEFT", actionsX, 0)
-        end
         if row.mapButton then
             row.mapButton:ClearAllPoints()
-            row.mapButton:SetPoint("LEFT", row.farmButton or row, row.farmButton and "RIGHT" or "LEFT", row.farmButton and 6 or actionsX, 0)
+            row.mapButton:SetPoint("LEFT", row, "LEFT", actionsX, 0)
         end
         if row.addButton then
             row.addButton:ClearAllPoints()
-            row.addButton:SetPoint("LEFT", row.mapButton or row.farmButton or row, (row.mapButton or row.farmButton) and "RIGHT" or "LEFT", (row.mapButton or row.farmButton) and 6 or actionsX, 0)
+            row.addButton:SetPoint("LEFT", row.mapButton or row, row.mapButton and "RIGHT" or "LEFT", row.mapButton and 6 or actionsX, 0)
         end
         SetAlertsRowColumn(row.professionText, row, professionX, ALERTS_PROFESSION_WIDTH)
         SetAlertsRowColumn(row.expansionText, row, expansionX, ALERTS_EXPANSION_WIDTH)
@@ -379,27 +510,6 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     totalValueText:SetWordWrap(false)
     row.totalValueText = totalValueText
 
-    local farmButton = CreateAlertsButton(row, ALERTS_FARM_BUTTON_WIDTH, 20, "Farm", "primary")
-    farmButton:SetScript("OnClick", function(self)
-        local parentRow = self:GetParent()
-        if type(GoldTracker.OpenFarmDetailsForItem) == "function" then
-            GoldTracker:OpenFarmDetailsForItem(parentRow.itemID)
-        end
-    end)
-    farmButton:SetScript("OnEnter", function(self)
-        if GameTooltip then
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText("Open farm map")
-            GameTooltip:Show()
-        end
-    end)
-    farmButton:SetScript("OnLeave", function()
-        if GameTooltip then
-            GameTooltip:Hide()
-        end
-    end)
-    row.farmButton = farmButton
-
     local mapButton = CreateAlertsButton(row, ALERTS_MAP_BUTTON_WIDTH, 20, "Map", "neutral")
     mapButton:SetScript("OnClick", function(self)
         local parentRow = self:GetParent()
@@ -413,7 +523,7 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
         end
         local parentRow = self:GetParent()
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        if parentRow and parentRow.hasFarmingMap then
+        if parentRow and (parentRow.hasFarmingMap or parentRow.hasFarm) then
             GameTooltip:SetText("Open farming map")
         else
             GameTooltip:SetText("No farming map data yet")
@@ -438,46 +548,8 @@ function GoldTracker:GetPriceIncreaseAlertsWindowRow(index)
     divider:SetHeight(1)
     row.divider = divider
 
-    self:CreateItemTooltipTarget(row, itemText, icon, function(self, target)
-        if not GameTooltip then
-            return
-        end
-        local hasItemLink = type(self.itemLink) == "string" and self.itemLink ~= ""
-        local itemID = tonumber(self.itemID)
-        itemID = itemID and math.floor(itemID + 0.5) or nil
-        if not hasItemLink and not itemID then
-            return
-        end
-
-        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
-        if hasItemLink then
-            GameTooltip:SetHyperlink(self.itemLink)
-        elseif type(GameTooltip.SetItemByID) == "function" then
-            GameTooltip:SetItemByID(itemID)
-        else
-            GameTooltip:SetHyperlink("item:" .. tostring(math.floor(itemID + 0.5)))
-        end
-        GameTooltip:AddLine(" ")
-        local isDecrease = self.alertDirection == "decrease"
-        GameTooltip:AddLine(isDecrease and "Price decrease alert" or "Price increase alert", 1.0, 0.82, 0.18)
-        GameTooltip:AddDoubleLine("Expansion", tostring(self.materialExpansionLabel or self.materialExpansionID or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Profession", tostring(self.materialProfessionLabel or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Triggered by", tostring(self.alertBasis or "Unknown"), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("DBMarket change", FormatAlertPercent(self.dbMarketChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
-        GameTooltip:AddDoubleLine("Min Buyout change", FormatAlertPercent(self.dbMinBuyoutChangePercent), 0.72, 0.86, 1.0, 0.52, 1.0, 0.56)
-        GameTooltip:AddDoubleLine("Baseline", self.baselinePrice and GoldTracker:FormatMoney(self.baselinePrice) or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Current", self.latestPrice and GoldTracker:FormatMoney(self.latestPrice) or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Quantity", tostring(self.quantity or 0), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Stack value", GoldTracker:FormatMoney(self.totalValue or 0), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Previous sample", FormatAlertTimestamp(self.baselineTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Latest sample", FormatAlertTimestamp(self.latestTimestamp), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddDoubleLine("Region sold/day", FormatAlertDecimal(self.regionSoldPerDay, 2), 0.72, 0.86, 1.0, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Region sale rate", FormatAlertDecimal(self.regionSaleRate, 3), 0.72, 0.86, 1.0, 1, 1, 1)
-        if type(GoldTracker.AddFarmActionTooltip) == "function" then
-            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
-        end
-        GameTooltip:Show()
+    self:CreateItemTooltipTarget(row, itemText, icon, function(tooltipRow, target)
+        GoldTracker:ShowPriceIncreaseAlertItemTooltip(tooltipRow, target)
     end)
     row:SetScript("OnMouseUp", function(self, button)
         if button ~= "LeftButton" or type(self.itemLink) ~= "string" or self.itemLink == "" then
@@ -672,16 +744,13 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
             if row.divider then
                 row.divider:SetShown(index < #rows)
             end
-            if row.farmButton then
-                row.farmButton:SetShown(row.hasFarm)
-            end
             if row.mapButton then
                 if result.isIndexedMaterial == true then
                     if row.mapButton.SetEnabled then
-                        row.mapButton:SetEnabled(result.hasFarmingMap == true)
+                        row.mapButton:SetEnabled(result.hasFarmingMap == true or row.hasFarm == true)
                     end
                     if row.mapButton.SetAlpha then
-                        row.mapButton:SetAlpha(result.hasFarmingMap == true and 1 or 0.42)
+                        row.mapButton:SetAlpha((result.hasFarmingMap == true or row.hasFarm == true) and 1 or 0.42)
                     end
                     row.mapButton:Show()
                 else

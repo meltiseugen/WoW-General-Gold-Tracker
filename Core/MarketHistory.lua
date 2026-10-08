@@ -469,24 +469,6 @@ local function IsPriceIncreaseAlertQualityAllowed(item)
     return quality == nil or quality > 0
 end
 
-local function IsPriceIncreaseAlertMaterialItem(addon, item)
-    if type(item) ~= "table" then
-        return false
-    end
-    if item.isIndexedMaterial == true or item.isCraftingReagent == true or item.categoryID == "crafting" then
-        return true
-    end
-
-    local itemID = tonumber(item.itemID)
-    if not itemID then
-        return false
-    end
-    itemID = math.floor(itemID + 0.5)
-    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialFarmingSpots
-    local materialItems = type(farmingSpots) == "table" and farmingSpots.items or nil
-    return type(materialItems) == "table" and materialItems[itemID] ~= nil
-end
-
 local function GetPriceIncreaseAlertMaterialData(addon)
     local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialFarmingSpots
     local materialItems = type(farmingSpots) == "table" and farmingSpots.items or nil
@@ -521,6 +503,24 @@ local function GetPriceIncreaseFarmingItem(addon, itemID)
     end
 
     return farmingItemLookup[math.floor(normalizedItemID + 0.5)]
+end
+
+-- Price alerts are a materials view.  Item class and category flags are too broad
+-- here because they also cover non-material crafting items.
+local function IsPriceIncreaseAlertMaterialItem(addon, item)
+    if type(item) ~= "table" then
+        return false
+    end
+
+    local itemID = tonumber(item.itemID)
+    if not itemID then
+        return false
+    end
+    itemID = math.floor(itemID + 0.5)
+
+    local indexedMaterials = GetPriceIncreaseAlertMaterialData(addon)
+    return (type(indexedMaterials) == "table" and indexedMaterials[itemID] ~= nil)
+        or GetPriceIncreaseFarmingItem(addon, itemID) ~= nil
 end
 
 local function GetPriceIncreaseMaterialOptionLabel(addon, optionKey, optionID)
@@ -1627,7 +1627,10 @@ function GoldTracker:BuildPriceAlertRows(options)
     local rows = {}
     local knownItemCount = 0
     for itemKey, entry in pairs(store.items) do
-        if type(entry) == "table" and IsPriceIncreaseAlertQualityAllowed(entry) then
+        if type(entry) == "table"
+            and IsPriceIncreaseAlertQualityAllowed(entry)
+            and IsPriceIncreaseAlertMaterialItem(self, entry)
+        then
             knownItemCount = knownItemCount + 1
             local comparisons = {}
             local qualifyingComparison

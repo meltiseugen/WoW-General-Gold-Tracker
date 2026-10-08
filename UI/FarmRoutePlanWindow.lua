@@ -331,7 +331,11 @@ function GoldTracker:OpenFarmRoutePlanWindow(farmID)
     local frame = self:CreateFarmRoutePlanWindow()
     frame.selectedFarmID = farm.id
     frame:Show()
-    frame:Raise()
+    if Theme and type(Theme.BringManagedWindowToFront) == "function" then
+        Theme:BringManagedWindowToFront(frame)
+    else
+        frame:Raise()
+    end
     self:RefreshFarmRoutePlanWindow(false)
     return true
 end
