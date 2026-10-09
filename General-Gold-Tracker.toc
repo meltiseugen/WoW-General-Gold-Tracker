@@ -26,7 +26,7 @@ Data/RareDrops.lua
 Data/InstanceDrops.lua
 Data/InstanceLocationOverrides.lua
 Data/ATTBoEDrops.lua
-Data/WITDrops.lua
+Data/CatalogDrops.lua
 Data/FarmingItems.lua
 Data/CraftingFarmingLearned.lua
 Data/MaterialFarmingSpots.lua
@@ -158,7 +158,7 @@ Data/MaterialFarmingSpots/Midnight/Fishing.lua
 Data/MaterialFarmingSpots/Midnight/Cooking.lua
 Data/MaterialFarmingSpots/Midnight/Jewelcrafting.lua
 Data/MaterialFarmingSpots/Midnight/Engineering.lua
-Data/MaterialFarmingSpots/WITGathering.lua
+Data/MaterialFarmingSpots/CatalogGathering.lua
 Data/Farms.lua
 Data/FarmLocationOverrides.lua
 Data/MountFarms.lua

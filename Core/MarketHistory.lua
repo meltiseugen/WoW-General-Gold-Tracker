@@ -28,7 +28,7 @@ local KNOWN_PRICE_STATIC_ROOT_KEYS = {
     "CraftingFarmingLearnedData",
     "InstanceDropsData",
     "ATTBoEDropsData",
-    "WITDropsData",
+    "CatalogDropsData",
     "RareDropsData",
     "MountFarmData",
     "PetFarmData",

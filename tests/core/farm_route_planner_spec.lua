@@ -48,7 +48,7 @@ local function with_planner(catalog, gathering, callback, options)
         local ns = {
             GoldTracker = addon,
             FarmCatalog = catalog,
-            WITGatheringData = gathering,
+            CatalogGatheringData = gathering,
             InstanceDropsData = options.instanceDropsData,
             ATTBoEDropsData = options.attBoEDropsData,
         }
@@ -62,7 +62,7 @@ end
 local function build_catalog()
     local farms = {
         {
-            id = "wit:drops:transmogs:deadmines",
+            id = "catalog:drops:transmogs:deadmines",
             name = "The Deadmines",
             sourceType = "drops",
             sourcePath = "Instances",
@@ -71,7 +71,7 @@ local function build_catalog()
             targets = { { itemID = 100, quantity = 1 } },
         },
         {
-            id = "wit:gathering:mining:copperore",
+            id = "catalog:gathering:mining:copperore",
             name = "Copper Ore",
             sourceType = "gathering",
             sourcePath = "Gathering > Mining",
@@ -143,7 +143,7 @@ describe("Core/FarmRoutePlanner", function()
         end)
     end)
 
-    it("uses the Instances tab entrance as the exact destination for a WIT instance farm", function()
+    it("uses the Instances tab entrance as the exact destination for a Catalog instance farm", function()
         local catalog, gathering = build_catalog()
         with_planner(catalog, gathering, function(addon)
             local farm = addon:CreateCustomFarm("Deadmines", true)
@@ -217,7 +217,7 @@ describe("Core/FarmRoutePlanner", function()
         local catalog = {
             farms = {
                 {
-                    id = "wit:gathering:mining:alternate",
+                    id = "catalog:gathering:mining:alternate",
                     name = "Alternate Mining",
                     sourceType = "gathering",
                     mapIDs = { 1, 37 },
@@ -225,7 +225,7 @@ describe("Core/FarmRoutePlanner", function()
                     targets = { { itemID = 300, quantity = 10 } },
                 },
             },
-            byID = { ["wit:gathering:mining:alternate"] = 1 },
+            byID = { ["catalog:gathering:mining:alternate"] = 1 },
         }
         with_planner(catalog, { farmsByRecordID = {} }, function(addon)
             local farm = addon:CreateCustomFarm("Alternate", true)

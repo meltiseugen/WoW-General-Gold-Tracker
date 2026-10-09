@@ -135,7 +135,7 @@ local function BuildCatalogCandidates(addon, catalogFarm, playerLocation)
             seen[instanceEntrance.id] = true
         end
     end
-    local records = type(NS.WITGatheringData) == "table" and NS.WITGatheringData.farmsByRecordID or nil
+    local records = type(NS.CatalogGatheringData) == "table" and NS.CatalogGatheringData.farmsByRecordID or nil
     for _, recordID in ipairs(catalogFarm and catalogFarm.sourceRecordIDs or {}) do
         local record = records and records[recordID] or nil
         for routeIndex, route in ipairs(type(record) == "table" and record.routes or {}) do

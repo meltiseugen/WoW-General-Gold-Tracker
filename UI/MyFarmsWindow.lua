@@ -160,9 +160,9 @@ end
 
 local function GetCatalogFarmSourceLabel(farm)
     if type(farm) ~= "table" then
-        return "WIT farm"
+        return "Catalog farm"
     end
-    return farm.sourcePath or farm.sourceCategory or farm.activity or farm.sourceType or "WIT farm"
+    return farm.sourcePath or farm.sourceCategory or farm.activity or farm.sourceType or "Catalog farm"
 end
 
 local function GetCatalogMapName(farm, index)
@@ -248,11 +248,11 @@ local function EnsureFarmCatalogSelection(addon)
     return category, subcategory
 end
 
-function GoldTracker:GetWITFarmCatalogCategoryDefinitions()
+function GoldTracker:GetFarmCatalogCategoryDefinitions()
     return FARM_CATALOG_CATEGORIES
 end
 
-function GoldTracker:GetWITFarmCatalogSubcategoryDefinitions(categoryID)
+function GoldTracker:GetFarmCatalogSubcategoryDefinitions(categoryID)
     local category = FARM_CATALOG_CATEGORY_BY_ID[tostring(categoryID or "")]
         or FARM_CATALOG_CATEGORIES[1]
     return category.subcategories
@@ -339,11 +339,11 @@ local function NormalizeFarmCatalogExpansionFilter(expansionID)
     return "all"
 end
 
-function GoldTracker:GetWITFarmCatalogExpansionOptions()
+function GoldTracker:GetFarmCatalogExpansionOptions()
     return GetFarmCatalogExpansionOptions()
 end
 
-function GoldTracker:GetWITFarmCatalogEntries(searchText, categoryID, subcategoryID, expansionID)
+function GoldTracker:GetFarmCatalogEntries(searchText, categoryID, subcategoryID, expansionID)
     local entries = {}
     local normalizedExpansionID = NormalizeFarmCatalogExpansionFilter(expansionID)
     for _, farm in ipairs(GetFarmCatalog().farms or {}) do
@@ -888,7 +888,7 @@ local function GetOrCreateCatalogRow(frame, index)
     end)
     row:SetScript("OnClick", function(self)
         if self.catalogFarmID then
-            GoldTracker:ToggleWITFarmCatalogExpanded(self.catalogFarmID)
+            GoldTracker:ToggleFarmCatalogExpanded(self.catalogFarmID)
         end
     end)
     SetCatalogColumnLayout(frame, row, false, false)
@@ -896,7 +896,7 @@ local function GetOrCreateCatalogRow(frame, index)
     return row
 end
 
-function GoldTracker:GetWITFarmCatalogLocationGroupLabel(farm)
+function GoldTracker:GetFarmCatalogLocationGroupLabel(farm)
     return GetCatalogFarmLocationGroupLabel(farm)
 end
 
@@ -1151,11 +1151,11 @@ local function SyncFarmCatalogControls(addon, frame)
         UIDropDownMenu_SetText(frame.catalogExpansionDropdown, label)
     end
     if frame.catalogTitle then
-        frame.catalogTitle:SetText("WIT " .. category.label .. " farms")
+        frame.catalogTitle:SetText(category.label .. " farms")
     end
     if frame.catalogEmptyText then
         frame.catalogEmptyText:SetText(string.format(
-            "No WIT %s - %s farms match this search.",
+            "No %s - %s farms match this search.",
             category.label,
             subcategory.label
         ))
@@ -1169,7 +1169,7 @@ local function RefreshFarmCatalogFrame(addon, frame, scrollToTop)
     SyncScrollContentWidth(frame.catalogScrollFrame, frame.catalogContent)
     local category, subcategory = EnsureFarmCatalogSelection(addon)
     SyncFarmCatalogControls(addon, frame)
-    local farms = addon:GetWITFarmCatalogEntries(
+    local farms = addon:GetFarmCatalogEntries(
         addon.farmCatalogSearchText,
         category.id,
         subcategory.id,
@@ -1287,7 +1287,7 @@ RefreshAllFarmCatalogFrames = function(addon, scrollToTop)
     end
 end
 
-function GoldTracker:ToggleWITFarmCatalogExpanded(farmID)
+function GoldTracker:ToggleFarmCatalogExpanded(farmID)
     if not farmID then
         return
     end
@@ -1350,11 +1350,11 @@ local function UpdateAllFarmCatalogFrameValues(addon, farmIDs)
     end
 end
 
-function GoldTracker:RefreshWITFarmCatalogValues()
+function GoldTracker:RefreshFarmCatalogValues()
     self.farmCatalogValuationGeneration = (tonumber(self.farmCatalogValuationGeneration) or 0) + 1
     local generation = self.farmCatalogValuationGeneration
     local category, subcategory = EnsureFarmCatalogSelection(self)
-    local farms = self:GetWITFarmCatalogEntries(nil, category.id, subcategory.id, self.farmCatalogExpansionFilter)
+    local farms = self:GetFarmCatalogEntries(nil, category.id, subcategory.id, self.farmCatalogExpansionFilter)
     local cache = GetFarmCatalogSnapshotCache(self)
     self.farmCatalogRefreshSelectionKey = GetCatalogSelectionKey(self)
     self.farmCatalogRefreshInProgress = true
@@ -1420,10 +1420,10 @@ function GoldTracker:RefreshWITFarmCatalogValues()
 end
 
 
-function GoldTracker:IsWITFarmCatalogValuationCurrent()
+function GoldTracker:IsFarmCatalogValuationCurrent()
     local cache = GetFarmCatalogSnapshotCache(self)
     local category, subcategory = EnsureFarmCatalogSelection(self)
-    local farms = self:GetWITFarmCatalogEntries(nil, category.id, subcategory.id, self.farmCatalogExpansionFilter)
+    local farms = self:GetFarmCatalogEntries(nil, category.id, subcategory.id, self.farmCatalogExpansionFilter)
     for _, farm in ipairs(farms) do
         if type(cache[farm.id]) ~= "table" then
             return false
@@ -1472,7 +1472,7 @@ local function SetSuggestionTooltip(row, target)
         GameTooltip:SetItemByID(row.itemID)
     end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddDoubleLine("WIT dungeon", row.farmName or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+    GameTooltip:AddDoubleLine("Farm catalog", row.farmName or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
     GameTooltip:AddDoubleLine(
         "Current unit value",
         GoldTracker:FormatMoney(row.unitValue or 0),
@@ -1484,7 +1484,7 @@ local function SetSuggestionTooltip(row, target)
         1
     )
     GameTooltip:AddDoubleLine(
-        "WIT recorded",
+        "Recorded",
         string.format("%s per %s", FormatQuantity(row.quantity), FormatDuration(row.recordedSeconds)),
         0.72,
         0.86,
@@ -1670,7 +1670,7 @@ local function ConfigureSuggestionRow(frame, row, suggestion, farm, yOffset, str
     row.valueSourceLabel = suggestion.valueSourceLabel
     row.itemText:SetText(itemLink or itemName)
     row.detailText:SetText(string.format(
-        "Suggested drop | WIT recorded %s per %s",
+        "Suggested drop | Recorded %s per %s",
         FormatQuantity(suggestion.quantity),
         FormatDuration(farm.recordedSeconds)
     ))
@@ -1839,7 +1839,7 @@ function GoldTracker:RefreshMyFarmsWindow()
             stepRow.catalogFarmID = step.catalogFarmID
             stepRow.firstItemID = step.entries[1] and step.entries[1].itemID or nil
             stepRow.nameText:SetText(step.name or step.catalogFarmID)
-            local meta = step.sourcePath or step.activity or "WIT farm"
+            local meta = step.sourcePath or step.activity or "Catalog farm"
             if #(step.mapNames or {}) > 0 then
                 meta = meta .. " | " .. Join(step.mapNames, "")
             end
@@ -1875,7 +1875,7 @@ function GoldTracker:RefreshMyFarmsWindow()
                 suggestionHeaderCount = suggestionHeaderCount + 1
                 local header = GetOrCreateSuggestionHeader(frame, suggestionHeaderCount)
                 header.text:SetText(string.format(
-                    "Other valuable WIT drops from this dungeon (%s)",
+                    "Other valuable drops from this dungeon (%s)",
                     valueSourceLabel or "current value source"
                 ))
                 header.background:SetColorTexture(0.22, 0.55, 0.72, 0.06)
@@ -1924,13 +1924,13 @@ local function CreateFarmCatalogPanel(addon, frame, chrome, topOffset, includeMa
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -13)
-    title:SetText("WIT Gathering farms")
+    title:SetText("Gathering farms")
     frame.catalogTitle = title
 
     local refreshButton = CreateButton(panel, 112, 22, "Refresh values", "neutral")
     refreshButton:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -14, -11)
     refreshButton:SetScript("OnClick", function()
-        addon:RefreshWITFarmCatalogValues()
+        addon:RefreshFarmCatalogValues()
     end)
     refreshButton.tooltipText = "Recalculate the selected category and type using the current item-value source."
     frame.catalogRefreshButton = refreshButton
@@ -1942,7 +1942,7 @@ local function CreateFarmCatalogPanel(addon, frame, chrome, topOffset, includeMa
         maximizeButton:SetScript("OnClick", function()
             addon:OpenFarmCatalogExpandedWindow()
         end)
-        maximizeButton.tooltipText = "Open a larger window that mirrors the current WIT Farms results."
+        maximizeButton.tooltipText = "Open a larger window that mirrors the current farm catalog results."
         frame.catalogMaximizeButton = maximizeButton
     end
 
@@ -2127,7 +2127,7 @@ local function CreateFarmCatalogPanel(addon, frame, chrome, topOffset, includeMa
 
     local emptyText = content:CreateFontString(nil, "OVERLAY", "GameFontDisable")
     emptyText:SetPoint("TOPLEFT", content, "TOPLEFT", 12, -12)
-    emptyText:SetText("No WIT farms match this category and search.")
+    emptyText:SetText("No farms match this category and search.")
     emptyText:SetJustifyH("LEFT")
     emptyText:Hide()
     frame.catalogEmptyText = emptyText
@@ -2205,7 +2205,7 @@ function GoldTracker:CreateFarmCatalogExpandedWindow()
     end)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
-    local chrome = Theme:ApplyWindowChrome(frame, "WIT Gathering Farms")
+    local chrome = Theme:ApplyWindowChrome(frame, "Gathering Farms")
     frame.chrome = chrome
     Theme:RegisterSpecialFrame("GoldTrackerFarmCatalogExpandedFrame")
     CreateFarmCatalogPanel(addon, frame, chrome, -54, false)

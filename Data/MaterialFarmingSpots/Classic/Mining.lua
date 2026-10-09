@@ -24,7 +24,7 @@ end
 
 local IMPORTED_ROUTES_SOURCE = "Supplied Retail Routes exports decoded into ordered static route pins and cross-checked against public farming guides"
 
-local function ImportedRouteCoords(labelPrefix, pins)
+local function CatalogRouteCoords(labelPrefix, pins)
     local coords = {}
     for index, pin in ipairs(pins) do
         coords[index] = C(pin[1], pin[2], labelPrefix .. " pin " .. tostring(index))
@@ -276,19 +276,19 @@ local ROUTES = {
     },
 }
 
-local function AddImportedMiningRoute(routeKey, route)
+local function AddCatalogMiningRoute(routeKey, route)
     route.urls = route.urls or { ORE_GUIDE, MINING_GUIDE }
     route.source = route.source or IMPORTED_ROUTES_SOURCE
     route.confidence = route.confidence or "high"
     ROUTES[routeKey] = route
 end
 
-AddImportedMiningRoute("copperDurotarRoutesMain", {
+AddCatalogMiningRoute("copperDurotarRoutesMain", {
     urls = { COPPER_GUIDE, ARTISANS_COPPER, "https://www.wowhead.com/object=1731/copper-vein" },
     mapID = 1,
     mapName = "Durotar",
     location = "Main - straightforward Durotar Copper loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Straightforward low-terrain Copper loop; best when hugging ridges, hills, cliffs, and zone edges.",
     tips = {
@@ -297,7 +297,7 @@ AddImportedMiningRoute("copperDurotarRoutesMain", {
         "If the route feels empty, complete the full circuit before changing zones because node respawns are distributed across the zone.",
         "Works well with fast ground movement or flying in Retail.",
     },
-    coords = ImportedRouteCoords("Routes Durotar Copper", {
+    coords = CatalogRouteCoords("Routes Durotar Copper", {
         { 0.4391, 0.1401 },
         { 0.4885, 0.1430 },
         { 0.5171, 0.1313 },
@@ -321,12 +321,12 @@ AddImportedMiningRoute("copperDurotarRoutesMain", {
     }),
 })
 
-AddImportedMiningRoute("copperDurotarWitAlt", {
+AddCatalogMiningRoute("copperDurotarWitAlt", {
     urls = { COPPER_GUIDE, ARTISANS_COPPER, "https://www.wowhead.com/object=1731/copper-vein" },
     mapID = 1,
     mapName = "Durotar",
     location = "Alternative - Durotar Copper loop for crowded main-route conditions",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "Medium-High",
     difficulty = "Alternative Durotar Copper geometry for crowded main-route conditions.",
     tips = {
@@ -334,7 +334,7 @@ AddImportedMiningRoute("copperDurotarWitAlt", {
         "Because both routes use Durotar, compare them over 2-3 complete laps rather than judging after only a few minutes.",
         "Favor outer mountain walls over cutting directly through the middle of the zone.",
     },
-    coords = ImportedRouteCoords("WIT Durotar Copper", {
+    coords = CatalogRouteCoords("Catalog Durotar Copper", {
         { 0.5401, 0.1143 },
         { 0.5665, 0.2113 },
         { 0.5573, 0.4073 },
@@ -355,12 +355,12 @@ AddImportedMiningRoute("copperDurotarWitAlt", {
     }),
 })
 
-AddImportedMiningRoute("tinHillsbradRoutesMain", {
+AddCatalogMiningRoute("tinHillsbradRoutesMain", {
     urls = { TIN_GUIDE, ARTISANS_TIN, "https://www.wowhead.com/object=1732/tin-vein" },
     mapID = 25,
     mapName = "Hillsbrad Foothills",
     location = "Main - Hillsbrad Foothills Tin and Silver turnover loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Compact Tin route that also supports rare Silver replacement chances.",
     tips = {
@@ -369,7 +369,7 @@ AddImportedMiningRoute("tinHillsbradRoutesMain", {
         "Do not skip Copper or other eligible nodes along the route; clearing nodes helps cycle the spawn pool.",
         "Hillsbrad is compact enough that repeated loops are efficient.",
     },
-    coords = ImportedRouteCoords("Routes Hillsbrad Tin", {
+    coords = CatalogRouteCoords("Routes Hillsbrad Tin", {
         { 0.4687, 0.1045 },
         { 0.5116, 0.1292 },
         { 0.5278, 0.1738 },
@@ -392,12 +392,12 @@ AddImportedMiningRoute("tinHillsbradRoutesMain", {
     }),
 })
 
-AddImportedMiningRoute("tinAshenvaleWitAlt", {
+AddCatalogMiningRoute("tinAshenvaleWitAlt", {
     urls = { TIN_GUIDE, ARTISANS_TIN, "https://www.wowhead.com/object=1732/tin-vein" },
     mapID = 63,
     mapName = "Ashenvale",
     location = "Alternative - longer Ashenvale Tin and Silver loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "Medium",
     difficulty = "Longer, less compact Tin route with irregular terrain and tree cover.",
     tips = {
@@ -405,7 +405,7 @@ AddImportedMiningRoute("tinAshenvaleWitAlt", {
         "Do not fly too high because tree cover can make node spotting annoying even with minimap tracking.",
         "This route is more suitable for longer farming sessions than short 10-minute runs.",
     },
-    coords = ImportedRouteCoords("WIT Ashenvale Tin", {
+    coords = CatalogRouteCoords("Catalog Ashenvale Tin", {
         { 0.9355, 0.3717 },
         { 0.8985, 0.6053 },
         { 0.8583, 0.6973 },
@@ -428,12 +428,12 @@ AddImportedMiningRoute("tinAshenvaleWitAlt", {
     }),
 })
 
-AddImportedMiningRoute("tinNorthernStranglethornAlt", {
+AddCatalogMiningRoute("tinNorthernStranglethornAlt", {
     urls = { TIN_GUIDE, ARTISANS_TIN, "https://www.wowhead.com/object=1732/tin-vein" },
     mapID = 50,
     mapName = "Northern Stranglethorn",
     location = "Alternative - Northern Stranglethorn Tin and Silver wall loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "Medium",
     difficulty = "Alternative Tin and Silver route with different competition from Hillsbrad or Ashenvale.",
     tips = {
@@ -441,7 +441,7 @@ AddImportedMiningRoute("tinNorthernStranglethornAlt", {
         "Avoid unnecessary passes through the lower-density center.",
         "Use this if you are already farming other Vanilla materials in Stranglethorn.",
     },
-    coords = ImportedRouteCoords("Routes Northern Stranglethorn Tin", {
+    coords = CatalogRouteCoords("Routes Northern Stranglethorn Tin", {
         { 0.3436, 0.2125 },
         { 0.3701, 0.2298 },
         { 0.3796, 0.2833 },
@@ -473,12 +473,12 @@ AddImportedMiningRoute("tinNorthernStranglethornAlt", {
     }),
 })
 
-AddImportedMiningRoute("ironFeralasRoutesMain", {
+AddCatalogMiningRoute("ironFeralasRoutesMain", {
     urls = { IRON_GUIDE, "https://www.wowhead.com/object=1735/iron-deposit" },
     mapID = 69,
     mapName = "Feralas",
     location = "Main - broad Feralas Iron and Gold outer-mountain loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Broad Iron farming route with Gold bonus potential; flying makes a significant difference.",
     tips = {
@@ -487,7 +487,7 @@ AddImportedMiningRoute("ironFeralasRoutesMain", {
         "Mine Mithril and Gold-compatible nodes you encounter instead of selectively skipping them.",
         "This is a good route if you want a mixture of mid-tier Vanilla mining materials.",
     },
-    coords = ImportedRouteCoords("Routes Feralas Iron", {
+    coords = CatalogRouteCoords("Routes Feralas Iron", {
         { 0.4376, 0.0890 },
         { 0.5149, 0.1077 },
         { 0.5292, 0.1803 },
@@ -525,12 +525,12 @@ AddImportedMiningRoute("ironFeralasRoutesMain", {
     }),
 })
 
-AddImportedMiningRoute("ironWesternPlaguelandsWitAlt", {
+AddCatalogMiningRoute("ironWesternPlaguelandsWitAlt", {
     urls = { IRON_GUIDE, "https://www.wowhead.com/object=1735/iron-deposit" },
     mapID = 22,
     mapName = "Western Plaguelands",
     location = "Alternative - compact Western Plaguelands Iron and Gold loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "Medium-High",
     difficulty = "Shorter, more compact Iron route for repeated spawn cycling.",
     tips = {
@@ -538,7 +538,7 @@ AddImportedMiningRoute("ironWesternPlaguelandsWitAlt", {
         "The zone is good for repeatedly clearing the same spawn areas.",
         "Check terrain edges and hills rather than staying exactly on roads.",
     },
-    coords = ImportedRouteCoords("WIT Western Plaguelands Iron", {
+    coords = CatalogRouteCoords("Catalog Western Plaguelands Iron", {
         { 0.5533, 0.4767 },
         { 0.5982, 0.5207 },
         { 0.6735, 0.4261 },
@@ -558,12 +558,12 @@ AddImportedMiningRoute("ironWesternPlaguelandsWitAlt", {
     }),
 })
 
-AddImportedMiningRoute("mithrilBurningSteppesCompact", {
+AddCatalogMiningRoute("mithrilBurningSteppesCompact", {
     urls = { MITHRIL_GUIDE, ARTISANS_MITHRIL, "https://www.wowhead.com/object=2040/mithril-deposit" },
     mapID = 36,
     mapName = "Burning Steppes",
     location = "Main - compact Burning Steppes Mithril and Truesilver mountain loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Compact Mithril farm with Truesilver potential and little wasted open space.",
     tips = {
@@ -572,7 +572,7 @@ AddImportedMiningRoute("mithrilBurningSteppesCompact", {
         "Burning Steppes has relatively little wasted open space, making it efficient for repeated loops.",
         "Mine Truesilver and Thorium-compatible nodes you see rather than skipping them.",
     },
-    coords = ImportedRouteCoords("Routes Burning Steppes Mithril compact", {
+    coords = CatalogRouteCoords("Routes Burning Steppes Mithril compact", {
         { 0.3896, 0.3440 },
         { 0.4575, 0.3323 },
         { 0.5210, 0.3050 },
@@ -594,12 +594,12 @@ AddImportedMiningRoute("mithrilBurningSteppesCompact", {
     }),
 })
 
-AddImportedMiningRoute("mithrilBurningSteppesCoverage", {
+AddCatalogMiningRoute("mithrilBurningSteppesCoverage", {
     urls = { MITHRIL_GUIDE, ARTISANS_MITHRIL, "https://www.wowhead.com/object=2040/mithril-deposit" },
     mapID = 36,
     mapName = "Burning Steppes",
     location = "Alternative - denser Burning Steppes Mithril coverage sweep",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "More exhaustive Mithril sweep with extra turns for broader node coverage.",
     tips = {
@@ -607,7 +607,7 @@ AddImportedMiningRoute("mithrilBurningSteppesCoverage", {
         "Prefer this if you want maximum node coverage rather than the shortest lap time.",
         "This route is useful when nodes are sparse because it checks more of the viable terrain.",
     },
-    coords = ImportedRouteCoords("Routes Burning Steppes Mithril coverage", {
+    coords = CatalogRouteCoords("Routes Burning Steppes Mithril coverage", {
         { 0.5726, 0.2841 },
         { 0.6486, 0.2715 },
         { 0.7161, 0.2508 },
@@ -641,12 +641,12 @@ AddImportedMiningRoute("mithrilBurningSteppesCoverage", {
     }),
 })
 
-AddImportedMiningRoute("thoriumWinterspringRoutesMain", {
+AddCatalogMiningRoute("thoriumWinterspringRoutesMain", {
     urls = { THORIUM_GUIDE, ARTISANS_THORIUM, "https://www.wowhead.com/object=324/small-thorium-vein", "https://www.wowhead.com/object=175404/rich-thorium-vein" },
     mapID = 83,
     mapName = "Winterspring",
     location = "Main - Winterspring Thorium and Truesilver mountain loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Reliable Thorium route that benefits from flying speed due to Winterspring size.",
     tips = {
@@ -655,7 +655,7 @@ AddImportedMiningRoute("thoriumWinterspringRoutesMain", {
         "Do not skip standard Thorium nodes because cycling all nodes improves overall throughput.",
         "Winterspring's large size means flying is strongly recommended.",
     },
-    coords = ImportedRouteCoords("Routes Winterspring Thorium", {
+    coords = CatalogRouteCoords("Routes Winterspring Thorium", {
         { 0.5093, 0.2243 },
         { 0.5795, 0.2096 },
         { 0.6777, 0.3034 },
@@ -695,12 +695,12 @@ AddImportedMiningRoute("thoriumWinterspringRoutesMain", {
     }),
 })
 
-AddImportedMiningRoute("thoriumSilithusWitAlt", {
+AddCatalogMiningRoute("thoriumSilithusWitAlt", {
     urls = { THORIUM_GUIDE, ARTISANS_THORIUM, "https://www.wowhead.com/object=324/small-thorium-vein", "https://www.wowhead.com/object=175404/rich-thorium-vein" },
     mapID = 81,
     mapName = "Silithus",
     location = "Alternative - Silithus Thorium outer-zone loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Excellent Thorium alternative for dense outer-zone mining when Winterspring has competition.",
     tips = {
@@ -709,7 +709,7 @@ AddImportedMiningRoute("thoriumSilithusWitAlt", {
         "Use this route if Winterspring has competition.",
         "Check hive and mountain areas when they do not require a large detour.",
     },
-    coords = ImportedRouteCoords("WIT Silithus Thorium", {
+    coords = CatalogRouteCoords("Catalog Silithus Thorium", {
         { 0.3038, 0.1430 },
         { 0.3925, 0.1467 },
         { 0.4811, 0.1503 },
@@ -732,12 +732,12 @@ AddImportedMiningRoute("thoriumSilithusWitAlt", {
     }),
 })
 
-AddImportedMiningRoute("thoriumWinterspringCoverage", {
+AddCatalogMiningRoute("thoriumWinterspringCoverage", {
     urls = { THORIUM_GUIDE, ARTISANS_THORIUM, "https://www.wowhead.com/object=324/small-thorium-vein", "https://www.wowhead.com/object=175404/rich-thorium-vein" },
     mapID = 83,
     mapName = "Winterspring",
     location = "Alternative - exhaustive 56-point Winterspring Thorium loop",
-    routeType = "imported-mining-loop",
+    routeType = "catalog-mining-loop",
     density = "High",
     difficulty = "Denser Winterspring coverage route with more direction changes than the main loop.",
     tips = {
@@ -746,7 +746,7 @@ AddImportedMiningRoute("thoriumWinterspringCoverage", {
         "Expect more direction changes.",
         "Test this route if the shorter Winterspring circuit consistently misses nodes.",
     },
-    coords = ImportedRouteCoords("Routes Winterspring Thorium coverage", {
+    coords = CatalogRouteCoords("Routes Winterspring Thorium coverage", {
         { 0.2310, 0.4701 },
         { 0.2740, 0.4853 },
         { 0.3423, 0.4800 },

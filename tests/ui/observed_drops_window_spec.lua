@@ -193,7 +193,7 @@ describe("UI/ObservedDropsWindow row snapshots", function()
             GetParent = function() return row end,
         }
 
-        assert.equals("map", addon:ConfigureObservedDropRowActionButton(button, row, "wit-mounts"))
+        assert.equals("map", addon:ConfigureObservedDropRowActionButton(button, row, "catalog-mounts"))
         assert.equals("Map", button.text)
         assert.equals("primary", button.palette)
         scripts.OnClick(button)
@@ -236,7 +236,7 @@ describe("UI/ObservedDropsWindow row snapshots", function()
             SetScript = function(_, event, callback) petScripts[event] = callback end,
             GetParent = function() return petRow end,
         }
-        assert.equals("map", addon:ConfigureObservedDropRowActionButton(petButton, petRow, "wit-pets"))
+        assert.equals("map", addon:ConfigureObservedDropRowActionButton(petButton, petRow, "catalog-pets"))
         petScripts.OnClick(petButton)
         assert.equals(59, openedPetID)
         assert.is_nil(openedItemID)
@@ -249,7 +249,7 @@ describe("UI/ObservedDropsWindow row snapshots", function()
             SetScript = function(_, event, callback) itemScripts[event] = callback end,
             GetParent = function() return itemRow end,
         }
-        assert.equals("map", addon:ConfigureObservedDropRowActionButton(itemButton, itemRow, "wit-pets"))
+        assert.equals("map", addon:ConfigureObservedDropRowActionButton(itemButton, itemRow, "catalog-pets"))
         itemScripts.OnClick(itemButton)
         assert.equals("pets:MoltenCoreRaid:1", openedRecordID)
         assert.is_nil(openedItemID)
@@ -276,7 +276,7 @@ describe("UI/ObservedDropsWindow row snapshots", function()
             GetParent = function() return row end,
         }
 
-        assert.equals("map", addon:ConfigureObservedDropRowActionButton(button, row, "wit-toys"))
+        assert.equals("map", addon:ConfigureObservedDropRowActionButton(button, row, "catalog-toys"))
         assert.equals("Map", button.text)
         assert.equals("primary", button.palette)
         scripts.OnClick(button)
@@ -668,11 +668,11 @@ describe("UI/ObservedDropsWindow row snapshots", function()
 
     it("does not expose the retired Drops Transmogs source", function()
         local addon, item_links, item_names = build_addon()
-        addon.observedDropsFrame.dropSourceID = "wit-transmogs"
+        addon.observedDropsFrame.dropSourceID = "catalog-transmogs"
         addon.observedDropsFrame.minimumValueCopper = 0
 
         addon = load_window(addon, item_links, item_names, {
-            WITDropsData = {
+            CatalogDropsData = {
                 categories = {
                     transmogs = {
                         {
@@ -689,28 +689,28 @@ describe("UI/ObservedDropsWindow row snapshots", function()
         })
 
         local rows = addon:BuildObservedDropsRows()
-        local witRow
+        local catalogRow
         for _, row in ipairs(rows) do
-            if row.farmingSourceType == "wit-transmogs" then
-                witRow = row
+            if row.farmingSourceType == "catalog-transmogs" then
+                catalogRow = row
             end
         end
 
-        assert.is_nil(witRow)
+        assert.is_nil(catalogRow)
     end)
 
-    it("always loads every WIT mount and toy without applying scan filters", function()
+    it("always loads every Catalog mount and toy without applying scan filters", function()
         for _, source in ipairs({
-            { id = "wit-mounts", category = "mounts", itemID = 2001 },
-            { id = "wit-toys", category = "toys", itemID = 30001 },
+            { id = "catalog-mounts", category = "mounts", itemID = 2001 },
+            { id = "catalog-toys", category = "toys", itemID = 30001 },
         }) do
             local addon, item_links, item_names = build_addon()
-            item_links[source.itemID] = "|cff0070dd|Hitem:" .. source.itemID .. "::::::::|h[WIT Collectible]|h|r"
-            item_names[source.itemID] = "WIT Collectible"
+            item_links[source.itemID] = "|cff0070dd|Hitem:" .. source.itemID .. "::::::::|h[Catalog Collectible]|h|r"
+            item_names[source.itemID] = "Catalog Collectible"
             addon.observedDropsFrame.expansionFilterID = "12"
             addon.observedDropsFrame.minimumValueCopper = 99999999
             addon = load_window(addon, item_links, item_names, {
-                WITDropsData = {
+                CatalogDropsData = {
                     categories = {
                         [source.category] = {
                             {
@@ -736,10 +736,10 @@ describe("UI/ObservedDropsWindow row snapshots", function()
         end
     end)
 
-    it("exposes WIT pets as an always-visible Drops source with pet identity retained", function()
+    it("exposes Catalog pets as an always-visible Drops source with pet identity retained", function()
         local addon, item_links, item_names = build_addon()
         addon = load_window(addon, item_links, item_names, {
-            WITDropsData = {
+            CatalogDropsData = {
                 categories = {
                     pets = {
                         {
@@ -760,9 +760,9 @@ describe("UI/ObservedDropsWindow row snapshots", function()
         addon.RefreshObservedDropsWindow = function() end
         addon.SetObservedDropsWindowView = function() end
 
-        addon:SetObservedDropsSourceTab("wit-pets")
+        addon:SetObservedDropsSourceTab("catalog-pets")
 
-        assert.equals("wit-pets", addon.observedDropsFrame.dropSourceID)
+        assert.equals("catalog-pets", addon.observedDropsFrame.dropSourceID)
         assert.is_true(addon.observedDropsFrame.hasObservedDropsScanRun)
         assert.equals(1, #addon.observedDropsFrame.scannedObservedDropsRows)
         assert.equals(1624, addon.observedDropsFrame.scannedObservedDropsRows[1].petID)

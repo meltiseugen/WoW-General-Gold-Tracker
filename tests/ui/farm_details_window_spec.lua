@@ -5,12 +5,12 @@ local catalog = {
     sourceURL = "https://example.test/farms",
     farms = {
         {
-            id = "wit:gathering:mining:old-ore",
-            provider = "wit",
+            id = "catalog:gathering:mining:old-ore",
+            provider = "catalog",
             providerKey = "OldOre",
             providerFarmID = "OldOre",
             sourceType = "gathering",
-            sourceDataset = "WITGatheringData",
+            sourceDataset = "CatalogGatheringData",
             sourceCategory = "Mining",
             sourceRecordIDs = { "Mining:OldOre:1", "Mining:OldOre:2" },
             activity = "mining",
@@ -28,12 +28,12 @@ local catalog = {
             },
         },
         {
-            id = "wit:gathering:multi:shared-route",
-            provider = "wit",
+            id = "catalog:gathering:multi:shared-route",
+            provider = "catalog",
             providerKey = "SharedRoute",
             providerFarmID = "SharedRoute",
             sourceType = "gathering",
-            sourceDataset = "WITGatheringData",
+            sourceDataset = "CatalogGatheringData",
             sourceCategory = "MultiFarms",
             sourceRecordIDs = {},
             activity = "multi-farm",
@@ -50,12 +50,12 @@ local catalog = {
             },
         },
         {
-            id = "wit:drops:transmogs:cloth-place",
-            provider = "wit",
+            id = "catalog:drops:transmogs:cloth-place",
+            provider = "catalog",
             providerKey = "ClothPlace",
             providerFarmID = "ClothPlace",
             sourceType = "drops",
-            sourceDataset = "WITDropsData",
+            sourceDataset = "CatalogDropsData",
             sourceCategory = "instances",
             sourcePath = "Instances",
             sourceRecordIDs = {},
@@ -77,12 +77,12 @@ local catalog = {
             },
         },
         {
-            id = "wit:drops:openworldinstances:noteworthy-place",
-            provider = "wit",
+            id = "catalog:drops:openworldinstances:noteworthy-place",
+            provider = "catalog",
             providerKey = "NoteworthyPlace",
             providerFarmID = "NoteworthyPlace",
             sourceType = "drops",
-            sourceDataset = "WITDropsData",
+            sourceDataset = "CatalogDropsData",
             sourceCategory = "openWorldInstances",
             sourcePath = "Open World > Transmog",
             sourceRecordIDs = {},
@@ -102,10 +102,10 @@ local catalog = {
         },
     },
     byID = {
-        ["wit:gathering:mining:old-ore"] = 1,
-        ["wit:gathering:multi:shared-route"] = 2,
-        ["wit:drops:transmogs:cloth-place"] = 3,
-        ["wit:drops:openworldinstances:noteworthy-place"] = 4,
+        ["catalog:gathering:mining:old-ore"] = 1,
+        ["catalog:gathering:multi:shared-route"] = 2,
+        ["catalog:drops:transmogs:cloth-place"] = 3,
+        ["catalog:drops:openworldinstances:noteworthy-place"] = 4,
     },
     indexes = {
         byItemID = {
@@ -130,7 +130,7 @@ local gathering = {
                 },
             },
         },
-        -- Duplicate source record from WIT's repeated module entry. The map
+        -- Duplicate source record from the catalog's repeated module entry. The map
         -- builder must not display the same route twice.
         ["Mining:OldOre:2"] = {
             routes = {
@@ -171,7 +171,7 @@ local function load_window(catalogOverride)
     }, function()
         return loader.load_module("UI/FarmDetailsWindow.lua", addon, {
             FarmCatalog = catalogOverride or catalog,
-            WITGatheringData = gathering,
+            CatalogGatheringData = gathering,
             JanisTheme = {},
         })
     end)
@@ -183,15 +183,15 @@ describe("UI/FarmDetailsWindow data flow", function()
         local farms = addon:GetFarmsForItem(3001)
 
         assert.equals(3, #farms)
-        assert.equals("wit:gathering:mining:old-ore", farms[1].id)
-        assert.equals("wit:gathering:multi:shared-route", farms[2].id)
-        assert.equals("wit:drops:transmogs:cloth-place", farms[3].id)
+        assert.equals("catalog:gathering:mining:old-ore", farms[1].id)
+        assert.equals("catalog:gathering:multi:shared-route", farms[2].id)
+        assert.equals("catalog:drops:transmogs:cloth-place", farms[3].id)
         assert.equals(0, #addon:GetFarmsForItem(9999))
     end)
 
     it("builds only the selected farm's decoded route and deduplicates repeated records", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local options = addon:BuildFarmRouteMapOptions(farm)
 
         assert.equals(1, #options)
@@ -202,14 +202,14 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals(0.40, options[1].pins[2].y)
         assert.is_true(options[1].pins[1].isRoute)
         assert.equals(options[1].id, options[1].pins[1].routeID)
-        assert.equals("GGT static WIT snapshot", options[1].pins[1].sourceLabel)
+        assert.equals("GGT bundled farm snapshot", options[1].pins[1].sourceLabel)
     end)
 
-    it("keeps non-herb and non-ore WIT routes as unconnected map pins", function()
+    it("keeps non-herb and non-ore Catalog routes as unconnected map pins", function()
         local addon = load_window()
         local farm = {
-            id = "wit:gathering:fishing:test-fish",
-            sourceDataset = "WITGatheringData",
+            id = "catalog:gathering:fishing:test-fish",
+            sourceDataset = "CatalogGatheringData",
             sourceCategory = "Fishing",
             sourceRecordIDs = { "Mining:OldOre:1" },
             activity = "fishing",
@@ -242,8 +242,8 @@ describe("UI/FarmDetailsWindow data flow", function()
         end
 
         local options = addon:BuildFarmRouteMapOptions({
-            id = "wit:gathering:fishing:no-route",
-            sourceDataset = "WITGatheringData",
+            id = "catalog:gathering:fishing:no-route",
+            sourceDataset = "CatalogGatheringData",
             sourceCategory = "Fishing",
             sourceRecordIDs = { "Fishing:Missing:1" },
             primaryItemID = 4001,
@@ -251,14 +251,14 @@ describe("UI/FarmDetailsWindow data flow", function()
         })
 
         assert.equals(1, #options)
-        assert.equals("wit:gathering:fishing:no-route:material:researched-material-spot", options[1].id)
+        assert.equals("catalog:gathering:fishing:no-route:material:researched-material-spot", options[1].id)
         assert.equals("Related researched material location", options[1].pins[1].sourceLabel)
     end)
 
     it("uses the Encounter Journal entrance when an imported instance farm has no static pins", function()
         local addon = load_window()
         addon.ResolveCatalogFarmInstanceEntrance = function(_, farm)
-            assert.equals("wit:drops:transmogs:test-instance", farm.id)
+            assert.equals("catalog:drops:transmogs:test-instance", farm.id)
             return {
                 mapID = 42,
                 mapName = "Test Valley",
@@ -269,8 +269,8 @@ describe("UI/FarmDetailsWindow data flow", function()
         end
 
         local options = addon:BuildFarmRouteMapOptions({
-            id = "wit:drops:transmogs:test-instance",
-            sourceDataset = "WITDropsData",
+            id = "catalog:drops:transmogs:test-instance",
+            sourceDataset = "CatalogDropsData",
             sourceCategory = "instances",
             mapIDs = { 42 },
             mapNames = { "Test Valley" },
@@ -286,8 +286,8 @@ describe("UI/FarmDetailsWindow data flow", function()
     it("keeps an imported researched pin non-route and preserves its research source", function()
         local addon = load_window()
         local options = addon:BuildFarmRouteMapOptions({
-            id = "wit:gathering:fishing:researched-location",
-            sourceDataset = "WITGatheringData",
+            id = "catalog:gathering:fishing:researched-location",
+            sourceDataset = "CatalogGatheringData",
             sourceCategory = "Fishing",
             activity = "fishing",
             name = "Test Fish",
@@ -554,11 +554,11 @@ describe("UI/FarmDetailsWindow data flow", function()
         local options = addon:BuildFarmDetailsMapOptions(farms, 3001)
 
         assert.equals(2, #options)
-        assert.equals("wit:gathering:mining:old-ore", options[1].farmID)
+        assert.equals("catalog:gathering:mining:old-ore", options[1].farmID)
         assert.equals("Old Ore Route", options[1].windowTitle)
         assert.equals("farm: Old Ore Route - Old Ore Loop", options[1].label)
         assert.equals(3001, options[1].selectedItemID)
-        assert.equals("wit:drops:transmogs:cloth-place", options[2].farmID)
+        assert.equals("catalog:drops:transmogs:cloth-place", options[2].farmID)
         assert.equals(77, options[2].mapID)
         assert.equals("farm: Cloth Place - Old Dungeon", options[2].label)
         assert.is_true(options[2].mapOnly)
@@ -603,7 +603,7 @@ describe("UI/FarmDetailsWindow data flow", function()
 
     it("calculates recorded value per hour and builds selected-material details", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local snapshot = addon:BuildFarmValuationSnapshot(farm)
         local total, hourly, priced, source = addon:GetFarmEstimatedValue(farm)
         local text = addon:BuildFarmDetailsText(farm, 3002)
@@ -622,12 +622,12 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.is_truthy(string.find(text, "> New Herb x2 | Total value: 500c", 1, true))
         assert.is_truthy(string.find(text, "- Old Ore x10 | Total value: 1000c", 1, true))
         assert.is_truthy(string.find(text, "Mine ore nodes while following the route loop.", 1, true))
-        assert.is_truthy(string.find(text, "static WIT test snapshot bundled with GGT", 1, true))
+        assert.is_truthy(string.find(text, "bundled GGT farm catalog (test)", 1, true))
     end)
 
     it("can calculate only a farm summary without retaining item-row values", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local snapshot = addon:BuildFarmValuationSnapshot(farm, { includeTargets = false })
 
         assert.equals(2000, snapshot.totalValue)
@@ -694,9 +694,9 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals(instanceSnapshot.hourlyValue, instanceSnapshot.estimatedHourlyValue)
     end)
 
-    it("ranks other priced WIT instance drops by current unit value", function()
+    it("ranks other priced Catalog instance drops by current unit value", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:drops:transmogs:cloth-place")
+        local farm = addon:GetFarmByID("catalog:drops:transmogs:cloth-place")
         local suggestions, source = addon:GetFarmHighValueDropSuggestions(farm, { [3001] = true }, 2)
 
         assert.equals("Test Value", source)
@@ -711,7 +711,7 @@ describe("UI/FarmDetailsWindow data flow", function()
 
     it("summarizes the selected material's role, hourly value, share, and byproducts", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local summary = addon:GetFarmSelectedMaterialSummary(farm, 3002)
         local text = addon:BuildFarmSelectedMaterialSummaryText(farm, 3002)
 
@@ -731,7 +731,7 @@ describe("UI/FarmDetailsWindow data flow", function()
 
     it("builds compact farm context for the map details panel", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local lines
         loader.with_globals({
             C_Item = {
@@ -848,7 +848,7 @@ describe("UI/FarmDetailsWindow data flow", function()
 
     it("reuses one valuation pass while building farm map details", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local resolve_count = 0
         local original_resolver = addon.ResolveItemUnitValue
         addon.ResolveItemUnitValue = function(...)
@@ -863,7 +863,7 @@ describe("UI/FarmDetailsWindow data flow", function()
 
     it("requests missing farm item data once until its load event completes", function()
         local addon = load_window()
-        local farm = addon:GetFarmByID("wit:gathering:mining:old-ore")
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local valuation = addon:BuildFarmValuationSnapshot(farm)
         local requested = {}
 
@@ -908,7 +908,7 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals("Test Valley", lines[1].text)
 
         captured = nil
-        assert.is_true(addon:OpenFarmDetails("wit:gathering:mining:old-ore"))
+        assert.is_true(addon:OpenFarmDetails("catalog:gathering:mining:old-ore"))
         assert.is_nil(captured.farmOptionNotice)
     end)
 
@@ -939,7 +939,7 @@ describe("UI/FarmDetailsWindow data flow", function()
     end)
 end)
 
-describe("UI/MyFarmsWindow WIT catalog list", function()
+describe("UI/MyFarmsWindow farm catalog list", function()
     local function load_my_farms_window(catalogOverride)
         return loader.load_module("UI/MyFarmsWindow.lua", {}, {
             FarmCatalog = catalogOverride or catalog,
@@ -947,9 +947,9 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
         })
     end
 
-    it("uses Gathering as the default WIT Farms category", function()
+    it("uses Gathering as the default Catalog Farms category", function()
         local addon = load_my_farms_window()
-        local farms = addon:GetWITFarmCatalogEntries()
+        local farms = addon:GetFarmCatalogEntries()
 
         assert.equals(2, #farms)
         assert.equals("Old Ore Route", farms[1].name)
@@ -959,24 +959,24 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
     it("filters Instances into Transmog and Noteworthy Items", function()
         local addon = load_my_farms_window()
 
-        local transmogs = addon:GetWITFarmCatalogEntries(nil, "instances", "transmog")
-        local noteworthy = addon:GetWITFarmCatalogEntries(nil, "instances", "noteworthyItems")
+        local transmogs = addon:GetFarmCatalogEntries(nil, "instances", "transmog")
+        local noteworthy = addon:GetFarmCatalogEntries(nil, "instances", "noteworthyItems")
 
         assert.equals(1, #transmogs)
         assert.equals("Cloth Place", transmogs[1].name)
         assert.equals(1, #noteworthy)
         assert.equals("Noteworthy Place", noteworthy[1].name)
-        assert.equals(2, #addon:GetWITFarmCatalogEntries(nil, "instances"))
+        assert.equals(2, #addon:GetFarmCatalogEntries(nil, "instances"))
     end)
 
-    it("filters Gathering farms by the selected WIT type", function()
+    it("filters Gathering farms by the selected Catalog type", function()
         local addon = load_my_farms_window()
 
-        assert.equals(1, #addon:GetWITFarmCatalogEntries(nil, "gathering", "Mining"))
-        assert.equals("Old Ore Route", addon:GetWITFarmCatalogEntries(nil, "gathering", "Mining")[1].name)
-        assert.equals(1, #addon:GetWITFarmCatalogEntries(nil, "gathering", "MultiFarms"))
-        assert.equals("Shared Route", addon:GetWITFarmCatalogEntries(nil, "gathering", "MultiFarms")[1].name)
-        assert.equals(0, #addon:GetWITFarmCatalogEntries(nil, "gathering", "Fishing"))
+        assert.equals(1, #addon:GetFarmCatalogEntries(nil, "gathering", "Mining"))
+        assert.equals("Old Ore Route", addon:GetFarmCatalogEntries(nil, "gathering", "Mining")[1].name)
+        assert.equals(1, #addon:GetFarmCatalogEntries(nil, "gathering", "MultiFarms"))
+        assert.equals("Shared Route", addon:GetFarmCatalogEntries(nil, "gathering", "MultiFarms")[1].name)
+        assert.equals(0, #addon:GetFarmCatalogEntries(nil, "gathering", "Fishing"))
     end)
 
     it("filters farms by expansion and replaces placeholder map labels", function()
@@ -992,14 +992,14 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
         }
         local addon = load_my_farms_window(customCatalog)
 
-        assert.equals(2, #addon:GetWITFarmCatalogEntries(nil, "gathering", "Mining", "all"))
-        assert.equals("Classic Farm", addon:GetWITFarmCatalogEntries(nil, "gathering", "Mining", "classic")[1].name)
-        assert.equals("Test Valley", addon:GetWITFarmCatalogLocationGroupLabel(customCatalog.farms[1]))
+        assert.equals(2, #addon:GetFarmCatalogEntries(nil, "gathering", "Mining", "all"))
+        assert.equals("Classic Farm", addon:GetFarmCatalogEntries(nil, "gathering", "Mining", "classic")[1].name)
+        assert.equals("Test Valley", addon:GetFarmCatalogLocationGroupLabel(customCatalog.farms[1]))
         assert.same({
             { id = "all", label = "All expansions" },
             { id = "classic", label = "Classic" },
             { id = "burningcrusade", label = "The Burning Crusade" },
-        }, addon:GetWITFarmCatalogExpansionOptions())
+        }, addon:GetFarmCatalogExpansionOptions())
     end)
 
     it("refreshes only the selected type while retaining other cached farm values", function()
@@ -1018,26 +1018,26 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
         addon.farmCatalogSubcategoryID = "Mining"
 
         loader.with_globals({ C_Timer = false }, function()
-            addon:RefreshWITFarmCatalogValues()
+            addon:RefreshFarmCatalogValues()
         end)
 
-        assert.same({ "wit:gathering:mining:old-ore" }, valuedFarmIDs)
+        assert.same({ "catalog:gathering:mining:old-ore" }, valuedFarmIDs)
         assert.equals(1, addon.farmCatalogViewTotal)
-        assert.is_table(addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"])
-        assert.is_nil(addon.farmCatalogViewSnapshots["wit:gathering:multi:shared-route"])
-        assert.is_nil(addon.farmCatalogViewSnapshots["wit:drops:transmogs:cloth-place"])
+        assert.is_table(addon.farmCatalogViewSnapshots["catalog:gathering:mining:old-ore"])
+        assert.is_nil(addon.farmCatalogViewSnapshots["catalog:gathering:multi:shared-route"])
+        assert.is_nil(addon.farmCatalogViewSnapshots["catalog:drops:transmogs:cloth-place"])
 
         valuedFarmIDs = {}
         addon.farmCatalogCategoryID = "instances"
         addon.farmCatalogSubcategoryID = "transmog"
         loader.with_globals({ C_Timer = false }, function()
-            addon:RefreshWITFarmCatalogValues()
+            addon:RefreshFarmCatalogValues()
         end)
 
-        assert.same({ "wit:drops:transmogs:cloth-place" }, valuedFarmIDs)
+        assert.same({ "catalog:drops:transmogs:cloth-place" }, valuedFarmIDs)
         assert.equals(1, addon.farmCatalogViewTotal)
-        assert.is_table(addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"])
-        assert.is_table(addon.farmCatalogViewSnapshots["wit:drops:transmogs:cloth-place"])
+        assert.is_table(addon.farmCatalogViewSnapshots["catalog:gathering:mining:old-ore"])
+        assert.is_table(addon.farmCatalogViewSnapshots["catalog:drops:transmogs:cloth-place"])
     end)
 
     it("does not recalculate cached values during a normal catalog redraw", function()
@@ -1058,26 +1058,26 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
         local savedSnapshot = { totalValue = 12345, hourlyValue = 24690, pricedTargets = 1 }
         addon.db = {
             farmCatalogValueCache = {
-                ["wit:gathering:mining:old-ore"] = savedSnapshot,
+                ["catalog:gathering:mining:old-ore"] = savedSnapshot,
             },
         }
         addon.farmCatalogCategoryID = "gathering"
         addon.farmCatalogSubcategoryID = "Mining"
 
-        assert.is_true(addon:IsWITFarmCatalogValuationCurrent())
-        assert.equals(savedSnapshot, addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"])
+        assert.is_true(addon:IsFarmCatalogValuationCurrent())
+        assert.equals(savedSnapshot, addon.farmCatalogViewSnapshots["catalog:gathering:mining:old-ore"])
     end)
 
     it("groups catalog farms by their primary mapped location", function()
         local addon = load_my_farms_window()
-        local farms = addon:GetWITFarmCatalogEntries(nil, "gathering")
+        local farms = addon:GetFarmCatalogEntries(nil, "gathering")
         table.sort(farms, function(left, right)
-            return addon:GetWITFarmCatalogLocationGroupLabel(left)
-                < addon:GetWITFarmCatalogLocationGroupLabel(right)
+            return addon:GetFarmCatalogLocationGroupLabel(left)
+                < addon:GetFarmCatalogLocationGroupLabel(right)
         end)
         local groups = addon:BuildLocationGroupedDisplayRows(
             farms,
-            function(farm) return addon:GetWITFarmCatalogLocationGroupLabel(farm) end,
+            function(farm) return addon:GetFarmCatalogLocationGroupLabel(farm) end,
             { ["other valley"] = false, ["test valley"] = false },
             true
         )
@@ -1108,36 +1108,36 @@ describe("UI/MyFarmsWindow WIT catalog list", function()
         addon.farmCatalogSubcategoryID = "Mining"
 
         loader.with_globals({ C_Timer = false }, function()
-            addon:RefreshWITFarmCatalogValues()
+            addon:RefreshFarmCatalogValues()
         end)
         assert.is_false(passes[1].includeTargets)
 
-        addon:ToggleWITFarmCatalogExpanded("wit:gathering:mining:old-ore")
+        addon:ToggleFarmCatalogExpanded("catalog:gathering:mining:old-ore")
         assert.is_true(passes[2].includeTargets)
-        assert.equals(1, #addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"].targets)
+        assert.equals(1, #addon.farmCatalogViewSnapshots["catalog:gathering:mining:old-ore"].targets)
 
-        addon:ToggleWITFarmCatalogExpanded("wit:gathering:mining:old-ore")
-        assert.is_nil(addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"].targets)
+        addon:ToggleFarmCatalogExpanded("catalog:gathering:mining:old-ore")
+        assert.is_nil(addon.farmCatalogViewSnapshots["catalog:gathering:mining:old-ore"].targets)
 
-        addon:ToggleWITFarmCatalogExpanded("wit:gathering:mining:old-ore")
+        addon:ToggleFarmCatalogExpanded("catalog:gathering:mining:old-ore")
         assert.is_true(passes[3].includeTargets)
-        assert.equals(1, #addon.farmCatalogViewSnapshots["wit:gathering:mining:old-ore"].targets)
+        assert.equals(1, #addon.farmCatalogViewSnapshots["catalog:gathering:mining:old-ore"].targets)
     end)
 
     it("searches Gathering farm names, source paths, activities, expansions, and locations", function()
         local addon = load_my_farms_window()
 
-        assert.equals(0, #addon:GetWITFarmCatalogEntries("old dungeon"))
-        assert.equals("Shared Route", addon:GetWITFarmCatalogEntries("multi-farm")[1].name)
-        assert.equals(2, #addon:GetWITFarmCatalogEntries("classic"))
-        assert.equals(0, #addon:GetWITFarmCatalogEntries("not a real farm"))
+        assert.equals(0, #addon:GetFarmCatalogEntries("old dungeon"))
+        assert.equals("Shared Route", addon:GetFarmCatalogEntries("multi-farm")[1].name)
+        assert.equals(2, #addon:GetFarmCatalogEntries("classic"))
+        assert.equals(0, #addon:GetFarmCatalogEntries("not a real farm"))
     end)
 
-    it("offers the requested WIT Gathering and Instances navigation order", function()
+    it("offers the requested Catalog Gathering and Instances navigation order", function()
         local addon = load_my_farms_window()
-        local categories = addon:GetWITFarmCatalogCategoryDefinitions()
-        local subcategories = addon:GetWITFarmCatalogSubcategoryDefinitions("gathering")
-        local instanceSubcategories = addon:GetWITFarmCatalogSubcategoryDefinitions("instances")
+        local categories = addon:GetFarmCatalogCategoryDefinitions()
+        local subcategories = addon:GetFarmCatalogSubcategoryDefinitions("gathering")
+        local instanceSubcategories = addon:GetFarmCatalogSubcategoryDefinitions("instances")
 
         assert.equals(2, #categories)
         assert.equals("Gathering", categories[1].label)

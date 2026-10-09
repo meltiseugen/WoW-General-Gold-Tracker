@@ -1,7 +1,7 @@
 local _, NS = ...
 
 -- Static entrance and boss-map coordinates for instances represented by the
--- imported WIT noteworthy-item farms. Entrance coordinates come from
+-- bundled noteworthy-item catalog farms. Entrance coordinates come from
 -- JournalInstanceEntrance + AreaTable + UiMapAssignment; boss coordinates
 -- come from JournalEncounterXMapLoc. Snapshot: Retail 12.1.5.70077,
 -- researched 2026-10-08 from the Blizzard DB2 mirror at wago.tools.

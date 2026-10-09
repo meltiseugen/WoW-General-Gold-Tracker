@@ -136,22 +136,22 @@ local function GetATTBoEData()
     return data
 end
 
-local function GetWITRaidPetData()
-    local data = NS.WITDropsData
+local function GetCatalogRaidPetData()
+    local data = NS.CatalogDropsData
     local categories = type(data) == "table" and data.categories or nil
     local rows = type(categories) == "table" and categories.raidPets or nil
     return type(rows) == "table" and rows or {}
 end
 
-local WIT_TRANSMOG_CATEGORIES = {
-    { id = "transmogs", sourceLabel = "Instances > Noteworthy Items", farmingSourceType = "wit-transmogs" },
-    { id = "openWorldInstances", sourceLabel = "Open World > Transmog", farmingSourceType = "wit-open-world-transmogs" },
+local CATALOG_TRANSMOG_CATEGORIES = {
+    { id = "transmogs", sourceLabel = "Instances > Noteworthy Items", farmingSourceType = "catalog-transmogs" },
+    { id = "openWorldInstances", sourceLabel = "Open World > Transmog", farmingSourceType = "catalog-open-world-transmogs" },
 }
-local WIT_RAID_FARM_IDS = {
+local CATALOG_RAID_FARM_IDS = {
     Karazhan = true,
     Sunwell = true,
 }
-local WIT_FARM_INSTANCE_ALIASES = {
+local CATALOG_FARM_INSTANCE_ALIASES = {
     AhnKahetTheOldKingdom = "AhnKahet",
     AuchenaiCrypts = "AuchAuchenaiCrypts",
     BloodFurnace = "HCBloodFurnace",
@@ -194,10 +194,10 @@ local WIT_FARM_INSTANCE_ALIASES = {
     Ulduman = "Uldaman",
 }
 local instanceTransmogExpansionOptions
-local witFarmInstanceIndex
+local catalogFarmInstanceIndex
 
-local function GetWITTransmogCategories()
-    local data = NS.WITDropsData
+local function GetCatalogTransmogCategories()
+    local data = NS.CatalogDropsData
     return type(data) == "table" and type(data.categories) == "table" and data.categories or {}
 end
 
@@ -207,9 +207,9 @@ local function NormalizeInstanceLookupName(value)
     return normalized:gsub("[^a-z0-9]", "")
 end
 
-local function GetWITFarmInstanceIndex()
-    if witFarmInstanceIndex then
-        return witFarmInstanceIndex
+local function GetCatalogFarmInstanceIndex()
+    if catalogFarmInstanceIndex then
+        return catalogFarmInstanceIndex
     end
 
     local index = {
@@ -224,16 +224,16 @@ local function GetWITFarmInstanceIndex()
             index.byName[normalizedName] = index.byName[normalizedName] or instance
         end
     end
-    witFarmInstanceIndex = index
+    catalogFarmInstanceIndex = index
     return index
 end
 
-local function ResolveWITFarmInstance(item)
-    local index = GetWITFarmInstanceIndex()
+local function ResolveCatalogFarmInstance(item)
+    local index = GetCatalogFarmInstanceIndex()
     local expansionID = tostring(item and (item.contentID or item.expansion) or "unknown")
     local farmID = tostring(item and item.farmID or "")
     local candidates = {
-        WIT_FARM_INSTANCE_ALIASES[farmID] or farmID,
+        CATALOG_FARM_INSTANCE_ALIASES[farmID] or farmID,
         farmID,
         item and item.farmName,
         item and item.locationLabel,
@@ -284,8 +284,8 @@ local function GetInstanceTransmogExpansionOptions()
     local seen = {
         [EXPANSION_ALL_ID] = true,
     }
-    for _, category in ipairs(WIT_TRANSMOG_CATEGORIES) do
-        for _, item in ipairs(GetWITTransmogCategories()[category.id] or {}) do
+    for _, category in ipairs(CATALOG_TRANSMOG_CATEGORIES) do
+        for _, item in ipairs(GetCatalogTransmogCategories()[category.id] or {}) do
             local expansionID = tostring(item.contentID or item.expansion or "unknown")
             if not seen[expansionID] then
                 seen[expansionID] = true
@@ -363,14 +363,14 @@ end
 local function BuildInstanceTransmogRows(expansionFilterID)
     local normalizedFilterID = NormalizeInstanceTransmogExpansionFilter(expansionFilterID)
     local rows = {}
-    for _, category in ipairs(WIT_TRANSMOG_CATEGORIES) do
-        for _, item in ipairs(GetWITTransmogCategories()[category.id] or {}) do
+    for _, category in ipairs(CATALOG_TRANSMOG_CATEGORIES) do
+        for _, item in ipairs(GetCatalogTransmogCategories()[category.id] or {}) do
             local expansionID = tostring(item.contentID or item.expansion or "unknown")
             if normalizedFilterID == EXPANSION_ALL_ID or normalizedFilterID == expansionID then
                 local itemID = tonumber(item.itemID)
                 if itemID then
                     itemID = math.floor(itemID + 0.5)
-                    local instance = ResolveWITFarmInstance(item)
+                    local instance = ResolveCatalogFarmInstance(item)
                     local boss, loot = FindInstanceBossForItem(instance, itemID)
                     rows[#rows + 1] = {
                         recordID = item.recordID,
@@ -1093,7 +1093,7 @@ local function BuildInstanceRaidPetRows(addon)
     local rows = {}
     local valueSource = addon.VALUE_SOURCE_BY_ID and addon.VALUE_SOURCE_BY_ID[addon.instanceFarmingFrame and addon.instanceFarmingFrame.valueSourceID]
         or (type(addon.GetInstanceFarmingValueSource) == "function" and addon:GetInstanceFarmingValueSource())
-    for _, item in ipairs(GetWITRaidPetData()) do
+    for _, item in ipairs(GetCatalogRaidPetData()) do
         local itemName, itemLink, itemQuality, icon, speciesID = GetRaidPetDisplay(item)
         local prices = GetRaidPetPriceSnapshot(addon, item, valueSource, itemLink)
         rows[#rows + 1] = {
@@ -1122,7 +1122,7 @@ local function BuildInstanceRaidPetRows(addon)
             marketHistoryItemKey = type(addon.GetMarketHistoryItemKey) == "function"
                 and addon:GetMarketHistoryItemKey(itemLink, item.itemID)
                 or nil,
-            farmingSourceType = "wit-raid-pet",
+            farmingSourceType = "catalog-raid-pet",
         }
     end
     return rows
@@ -1491,16 +1491,16 @@ local function AddResult(state, sourceRow, itemCache)
     return row
 end
 
-local function AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansionFilterID, contentTypeFilterID)
-    for _, category in ipairs(WIT_TRANSMOG_CATEGORIES) do
-        for _, item in ipairs(GetWITTransmogCategories()[category.id] or {}) do
+local function AddCatalogStaticFarmSourceRows(rows, seenByInstanceAndItem, expansionFilterID, contentTypeFilterID)
+    for _, category in ipairs(CATALOG_TRANSMOG_CATEGORIES) do
+        for _, item in ipairs(GetCatalogTransmogCategories()[category.id] or {}) do
             local itemID = tonumber(item and item.itemID)
             if itemID then
                 local normalizedItemID = math.floor(itemID + 0.5)
-                local instance = ResolveWITFarmInstance(item)
+                local instance = ResolveCatalogFarmInstance(item)
                 local expansionID = tonumber(item.contentID) or tonumber(instance and instance.expansionID)
                 local contentType = instance and instance.contentType
-                    or (WIT_RAID_FARM_IDS[tostring(item.farmID or "")] and "raid" or "dungeon")
+                    or (CATALOG_RAID_FARM_IDS[tostring(item.farmID or "")] and "raid" or "dungeon")
                 local fallbackInstance = {
                     expansionID = expansionID,
                     contentType = contentType,
@@ -1515,7 +1515,7 @@ local function AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansion
                         or "Unknown instance"
                     local instanceKey = tostring(
                         instance and (instance.encounterJournalID or instance.mapID or instance.name)
-                        or ("wit:" .. tostring(category.id) .. ":" .. tostring(item.farmID or instanceName))
+                        or ("catalog:" .. tostring(category.id) .. ":" .. tostring(item.farmID or instanceName))
                     )
                     local seenKey = instanceKey .. ":" .. tostring(normalizedItemID)
                     if not seenByInstanceAndItem[seenKey] then
@@ -1608,7 +1608,7 @@ local function BuildSourceRows(expansionFilterID, contentTypeFilterID)
             end
         end
     end
-    AddWITStaticFarmSourceRows(rows, seenByInstanceAndItem, expansionFilterID, contentTypeFilterID)
+    AddCatalogStaticFarmSourceRows(rows, seenByInstanceAndItem, expansionFilterID, contentTypeFilterID)
     return rows
 end
 
@@ -3923,12 +3923,12 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             if state then
                 frame.emptyText:SetText("Scanning...")
             elseif showingPets then
-                frame.emptyText:SetText("No WIT raid pets are available in the static snapshot.")
+                frame.emptyText:SetText("No raid pets are available in the bundled snapshot.")
             elseif showingTransmogs then
                 if frame.transmogPriceLoadState then
                     frame.emptyText:SetText("Loading noteworthy item values for the selected filter...")
                 else
-                    frame.emptyText:SetText("No WIT noteworthy items match the selected expansion and value filter.")
+                    frame.emptyText:SetText("No noteworthy items match the selected expansion and value filter.")
                 end
             elseif frame.hasInstanceFarmingScanRun then
                 frame.emptyText:SetText("No matching auctionable instance drops found.")
@@ -3942,16 +3942,16 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
     end
     if frame.metaText then
         if showingPets then
-            local witData = NS.WITDropsData or {}
+            local catalogData = NS.CatalogDropsData or {}
             local valueSource = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()
             frame.metaText:SetText(string.format(
-                "%d raid pets | WIT %s | Grouped by location | %s",
+                "%d raid pets | Snapshot %s | Grouped by location | %s",
                 #itemRows,
-                tostring(witData.sourceVersion or "unknown"),
+                tostring(catalogData.sourceVersion or "unknown"),
                 valueSource and valueSource.label or "Unknown value source"
             ))
         elseif showingTransmogs then
-            local witData = NS.WITDropsData or {}
+            local catalogData = NS.CatalogDropsData or {}
             local groupingLabel = frame.transmogFlatList and "Flat list" or "Grouped by expansion and instance"
             local valueSource = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()
             local priceState = frame.transmogPriceLoadState
@@ -3961,13 +3961,13 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
                 tonumber(priceState.total) or 0
             ) or ""
             frame.metaText:SetText(string.format(
-                "%d of %d noteworthy item sources | Threshold %s | %s | %s | WIT %s%s",
+                "%d of %d noteworthy item sources | Threshold %s | %s | %s | Snapshot %s%s",
                 #itemRows,
                 #(frame.transmogRows or {}),
                 self:FormatMoney(frame.transmogMinimumValueCopper or 0),
                 valueSource and valueSource.label or "Unknown value source",
                 groupingLabel,
-                tostring(witData.sourceVersion or "unknown"),
+                tostring(catalogData.sourceVersion or "unknown"),
                 pricingLabel
             ))
         else
@@ -4079,7 +4079,7 @@ function GoldTracker:CreateInstanceTransmogExpandedWindow()
     frame:SetClampedToScreen(true)
     frame:Hide()
 
-    local chrome = Theme:ApplyWindowChrome(frame, "WIT Noteworthy Items")
+    local chrome = Theme:ApplyWindowChrome(frame, "Noteworthy Items")
     frame.chrome = chrome
     Theme:RegisterSpecialFrame("GoldTrackerInstanceTransmogExpandedFrame")
 
@@ -4568,7 +4568,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
             self:OpenInstanceTransmogExpandedWindow()
         end
     end)
-    maximizeTransmogListButton.tooltipText = "Open the static WIT noteworthy-items list in a larger window."
+    maximizeTransmogListButton.tooltipText = "Open the bundled noteworthy-items list in a larger window."
     frame.maximizeTransmogListButton = maximizeTransmogListButton
 
     Theme:LayoutExplorerFilterFields(transmogControlsPanel, {

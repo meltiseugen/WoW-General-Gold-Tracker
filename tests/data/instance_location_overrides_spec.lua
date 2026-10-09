@@ -1,12 +1,12 @@
-local function load_location_data(includeWIT)
+local function load_location_data(includeCatalog)
     local ns = {
         GoldTracker = {},
         JanisTheme = {},
     }
     assert(loadfile("Data/InstanceDrops.lua"))("General-Gold-Tracker", ns)
     assert(loadfile("Data/InstanceLocationOverrides.lua"))("General-Gold-Tracker", ns)
-    if includeWIT then
-        assert(loadfile("Data/WITDrops.lua"))("General-Gold-Tracker", ns)
+    if includeCatalog then
+        assert(loadfile("Data/CatalogDrops.lua"))("General-Gold-Tracker", ns)
         assert(loadfile("UI/InstanceFarmingWindow.lua"))("General-Gold-Tracker", ns)
     end
     return ns
@@ -61,7 +61,7 @@ describe("Data/InstanceLocationOverrides", function()
         assert.equals(0.948770, loregrain.y)
     end)
 
-    it("gives every WIT noteworthy row a static entrance and all researched sources a boss pin", function()
+    it("gives every Catalog noteworthy row a static entrance and all researched sources a boss pin", function()
         local ns = load_location_data(true)
         local rows = ns.GoldTracker:BuildInstanceTransmogRows("all")
         local resolvedCount = 0

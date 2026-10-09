@@ -922,7 +922,7 @@ describe("UI/CraftingFarmingWindow rows", function()
                             id = "nagrand-alt",
                             mapName = "Nagrand",
                             location = "Warmaul Hill",
-                            dropdownLabel = "WIT: Warmaul route",
+                            dropdownLabel = "Catalog: Warmaul route",
                             isRoute = true,
                             coords = {
                                 { x = 0.30, y = 0.40, label = "Hill camp" },
@@ -968,7 +968,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("Addon seed data", options[1].pins[1].sourceLabel)
         assert.is_false(options[1].pins[1].isRoute)
         assert.equals("nagrand-main", options[1].pins[1].routeID)
-        assert.equals("WIT: Warmaul route", options[2].label)
+        assert.equals("Catalog: Warmaul route", options[2].label)
         assert.equals(107, options[2].mapID)
         assert.equals(1, #options[2].pins)
         assert.is_true(options[2].pins[1].isRoute)

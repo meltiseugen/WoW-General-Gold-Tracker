@@ -477,7 +477,7 @@ local function RegisterHerb(itemID, itemName, sourceUrls, summary, spot)
     })
 end
 
-local function ImportedHerbSpot(id, sourceUrls, mapName, location, density, difficulty, tips, coords, routeType, confidence)
+local function CatalogHerbSpot(id, sourceUrls, mapName, location, density, difficulty, tips, coords, routeType, confidence)
     return {
         id = id,
         source = "Routes import string, farming route notes, and retail-safe herb source cross-checks",
@@ -493,7 +493,7 @@ local function ImportedHerbSpot(id, sourceUrls, mapName, location, density, diff
     }
 end
 
-local function AppendImportedHerbSpot(itemID, spot)
+local function AppendCatalogHerbSpot(itemID, spot)
     local item = NS.MaterialFarmingSpots.items[itemID]
     if item then
         item.spots[#item.spots + 1] = spot
@@ -1063,7 +1063,7 @@ Register({
     },
 })
 
-AppendImportedHerbSpot(22787, ImportedHerbSpot(
+AppendCatalogHerbSpot(22787, CatalogHerbSpot(
     "ragveil-zangarmarsh-golden-routes-main",
     {
         "https://www.wowhead.com/object=181275/ragveil",
@@ -1081,7 +1081,7 @@ AppendImportedHerbSpot(22787, ImportedHerbSpot(
     RAGVEIL_ZANGARMARSH_MAIN_COORDS
 ))
 
-AppendImportedHerbSpot(22787, ImportedHerbSpot(
+AppendCatalogHerbSpot(22787, CatalogHerbSpot(
     "ragveil-zangarmarsh-golden-routes-alt",
     {
         "https://www.wowhead.com/object=181275/ragveil",
@@ -1099,15 +1099,15 @@ AppendImportedHerbSpot(22787, ImportedHerbSpot(
     RAGVEIL_ZANGARMARSH_ALT_COORDS
 ))
 
-AppendImportedHerbSpot(22787, ImportedHerbSpot(
-    "ragveil-zangarmarsh-wit-mixed-herb-route",
+AppendCatalogHerbSpot(22787, CatalogHerbSpot(
+    "ragveil-zangarmarsh-catalog-mixed-herb-route",
     {
         "https://www.wowhead.com/object=181275/ragveil",
         "https://www.wow-professions.com/farming/ragveil-farming",
         "https://www.wowhead.com/object=181276/flame-cap",
     },
     "Zangarmarsh",
-    "Hidden WIT mixed-herb Zangarmarsh route for Ragveil and Flame Cap checks",
+    "Hidden Catalog mixed-herb Zangarmarsh route for Ragveil and Flame Cap checks",
     "High for mixed Zangarmarsh herbs",
     "Good broad route. It is longer than the compact Golden Routes loops.",
     {
@@ -1117,7 +1117,7 @@ AppendImportedHerbSpot(22787, ImportedHerbSpot(
     ZANGARMARSH_MIXED_HERB_COORDS
 ))
 
-AppendImportedHerbSpot(22788, ImportedHerbSpot(
+AppendCatalogHerbSpot(22788, CatalogHerbSpot(
     "flame-cap-zangarmarsh-ragveil-main-route",
     {
         "https://www.wowhead.com/object=181276/flame-cap",
@@ -1136,7 +1136,7 @@ AppendImportedHerbSpot(22788, ImportedHerbSpot(
     "rare-herb-side-spawn"
 ))
 
-AppendImportedHerbSpot(22788, ImportedHerbSpot(
+AppendCatalogHerbSpot(22788, CatalogHerbSpot(
     "flame-cap-zangarmarsh-ragveil-alt-route",
     {
         "https://www.wowhead.com/object=181276/flame-cap",
@@ -1155,34 +1155,34 @@ AppendImportedHerbSpot(22788, ImportedHerbSpot(
     "rare-herb-side-spawn"
 ))
 
-AppendImportedHerbSpot(22788, ImportedHerbSpot(
-    "flame-cap-zangarmarsh-wit-mixed-herb-route",
+AppendCatalogHerbSpot(22788, CatalogHerbSpot(
+    "flame-cap-zangarmarsh-catalog-mixed-herb-route",
     {
         "https://www.wowhead.com/object=181276/flame-cap",
         "https://www.wowhead.com/item=22788/flame-cap",
         "https://www.wowhead.com/object=181275/ragveil",
     },
     "Zangarmarsh",
-    "Hidden WIT mixed-herb Zangarmarsh route used for Flame Cap side checks",
+    "Hidden Catalog mixed-herb Zangarmarsh route used for Flame Cap side checks",
     "Low for Flame Cap, high for Ragveil",
     "Rare. Best evaluated as part of a high-volume Ragveil route.",
     {
         "The supplied route note reported Flame Cap results alongside Ragveil.",
-        "Use the wider WIT route when the compact Golden Routes alternatives are crowded.",
+        "Use the wider Catalog route when the compact Golden Routes alternatives are crowded.",
     },
     ZANGARMARSH_MIXED_HERB_COORDS,
     "rare-herb-side-spawn"
 ))
 
-AppendImportedHerbSpot(22790, ImportedHerbSpot(
-    "ancient-lichen-zangarmarsh-wit-bog-lord-proxy",
+AppendCatalogHerbSpot(22790, CatalogHerbSpot(
+    "ancient-lichen-zangarmarsh-catalog-bog-lord-proxy",
     {
         "https://www.wowhead.com/object=181278/ancient-lichen",
         "https://www.wowhead.com/npc=18124/withered-giant",
         "https://www.wow-professions.com/farming/mote-of-life-farming",
     },
     "Zangarmarsh",
-    "WIT Zangarmarsh mixed-herb route used as an outdoor Ancient Lichen proxy through herbable bog lords",
+    "Catalog Zangarmarsh mixed-herb route used as an outdoor Ancient Lichen proxy through herbable bog lords",
     "Situational",
     "Ancient Lichen is not a normal outdoor node route; use this as a proxy while farming herbable plant creatures.",
     {
@@ -1194,7 +1194,7 @@ AppendImportedHerbSpot(22790, ImportedHerbSpot(
     "medium"
 ))
 
-AppendImportedHerbSpot(22789, ImportedHerbSpot(
+AppendCatalogHerbSpot(22789, CatalogHerbSpot(
     "terocone-terokkar-golden-routes-compact-alt",
     {
         "https://www.wowhead.com/object=181277/terocone",
@@ -1212,7 +1212,7 @@ AppendImportedHerbSpot(22789, ImportedHerbSpot(
     TEROCONE_TEROKKAR_COMPACT_COORDS
 ))
 
-AppendImportedHerbSpot(22789, ImportedHerbSpot(
+AppendCatalogHerbSpot(22789, CatalogHerbSpot(
     "terocone-terokkar-searchforloot-main",
     {
         "https://www.wowhead.com/object=181277/terocone",
@@ -1230,7 +1230,7 @@ AppendImportedHerbSpot(22789, ImportedHerbSpot(
     TEROKKAR_HERBS_MAIN_COORDS
 ))
 
-AppendImportedHerbSpot(22793, ImportedHerbSpot(
+AppendCatalogHerbSpot(22793, CatalogHerbSpot(
     "mana-thistle-terokkar-searchforloot-main",
     {
         "https://www.wowhead.com/object=181281/mana-thistle",
@@ -1249,7 +1249,7 @@ AppendImportedHerbSpot(22793, ImportedHerbSpot(
     "rare-herb-highland-loop"
 ))
 
-AppendImportedHerbSpot(22794, ImportedHerbSpot(
+AppendCatalogHerbSpot(22794, CatalogHerbSpot(
     "fel-lotus-terokkar-searchforloot-main",
     {
         "https://www.wowhead.com/item=22794/fel-lotus",
@@ -1269,7 +1269,7 @@ AppendImportedHerbSpot(22794, ImportedHerbSpot(
     "high"
 ))
 
-AppendImportedHerbSpot(22791, ImportedHerbSpot(
+AppendCatalogHerbSpot(22791, CatalogHerbSpot(
     "netherbloom-netherstorm-xscarlife-main",
     {
         "https://www.wowhead.com/object=181279/netherbloom",
@@ -1287,15 +1287,15 @@ AppendImportedHerbSpot(22791, ImportedHerbSpot(
     NETHERBLOOM_NETHERSTORM_MAIN_COORDS
 ))
 
-AppendImportedHerbSpot(22791, ImportedHerbSpot(
-    "netherbloom-netherstorm-wit-mixed-alt",
+AppendCatalogHerbSpot(22791, CatalogHerbSpot(
+    "netherbloom-netherstorm-catalog-mixed-alt",
     {
         "https://www.wowhead.com/object=181279/netherbloom",
         "https://www.wow-professions.com/farming/netherbloom-farming",
         "https://www.wowhead.com/object=181281/mana-thistle",
     },
     "Netherstorm",
-    "Hidden WIT Netherstorm mixed-herb route",
+    "Hidden Catalog Netherstorm mixed-herb route",
     "Medium to high",
     "Alternative loop. Supplied notes reported Netherbloom and Mana Thistle together.",
     {
@@ -1305,15 +1305,15 @@ AppendImportedHerbSpot(22791, ImportedHerbSpot(
     NETHERSTORM_MIXED_HERB_COORDS
 ))
 
-AppendImportedHerbSpot(22793, ImportedHerbSpot(
-    "mana-thistle-netherstorm-wit-mixed-alt",
+AppendCatalogHerbSpot(22793, CatalogHerbSpot(
+    "mana-thistle-netherstorm-catalog-mixed-alt",
     {
         "https://www.wowhead.com/object=181281/mana-thistle",
         "https://www.wowhead.com/item=22793/mana-thistle",
         "https://www.wowhead.com/object=181279/netherbloom",
     },
     "Netherstorm",
-    "Hidden WIT Netherstorm mixed-herb route with Mana Thistle results",
+    "Hidden Catalog Netherstorm mixed-herb route with Mana Thistle results",
     "Low for Mana Thistle, medium to high for Netherbloom",
     "Rare side herb. Supplied notes reported 22 Mana Thistle in the route results.",
     {
@@ -1325,15 +1325,15 @@ AppendImportedHerbSpot(22793, ImportedHerbSpot(
     "medium"
 ))
 
-AppendImportedHerbSpot(22794, ImportedHerbSpot(
-    "fel-lotus-netherstorm-wit-mixed-alt",
+AppendCatalogHerbSpot(22794, CatalogHerbSpot(
+    "fel-lotus-netherstorm-catalog-mixed-alt",
     {
         "https://www.wowhead.com/item=22794/fel-lotus",
         "https://www.wowhead.com/object=181279/netherbloom",
         "https://www.wowhead.com/object=181281/mana-thistle",
     },
     "Netherstorm",
-    "Hidden WIT Netherstorm mixed-herb route for Fel Lotus-eligible herb volume",
+    "Hidden Catalog Netherstorm mixed-herb route for Fel Lotus-eligible herb volume",
     "Low for Fel Lotus, medium to high for eligible herbs",
     "Rare side gather. Best used when Netherbloom and Mana Thistle also sell well.",
     {
@@ -1345,7 +1345,7 @@ AppendImportedHerbSpot(22794, ImportedHerbSpot(
     "medium"
 ))
 
-AppendImportedHerbSpot(22792, ImportedHerbSpot(
+AppendCatalogHerbSpot(22792, CatalogHerbSpot(
     "nightmare-vine-shadowmoon-golden-routes-main",
     {
         "https://www.wowhead.com/object=181280/nightmare-vine",
@@ -1363,7 +1363,7 @@ AppendImportedHerbSpot(22792, ImportedHerbSpot(
     NIGHTMARE_VINE_SHADOWMOON_COORDS
 ))
 
-AppendImportedHerbSpot(22794, ImportedHerbSpot(
+AppendCatalogHerbSpot(22794, CatalogHerbSpot(
     "fel-lotus-shadowmoon-nightmare-vine-import",
     {
         "https://www.wowhead.com/item=22794/fel-lotus",
@@ -1383,7 +1383,7 @@ AppendImportedHerbSpot(22794, ImportedHerbSpot(
     "medium"
 ))
 
-AppendImportedHerbSpot(22785, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22785, SuppliedHerbRoute(
     "felweed-blades-edge-supplied-main",
     105,
     "Blade's Edge Mountains",
@@ -1400,7 +1400,7 @@ AppendImportedHerbSpot(22785, SuppliedHerbRoute(
     "Moderate because of vertical terrain"
 ))
 
-AppendImportedHerbSpot(22785, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22785, SuppliedHerbRoute(
     "felweed-nagrand-supplied-alternative",
     107,
     "Nagrand",
@@ -1417,7 +1417,7 @@ AppendImportedHerbSpot(22785, SuppliedHerbRoute(
     "Easy flying circuit"
 ))
 
-AppendImportedHerbSpot(22786, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22786, SuppliedHerbRoute(
     "dreaming-glory-blades-edge-supplied-main",
     105,
     "Blade's Edge Mountains",
@@ -1434,7 +1434,7 @@ AppendImportedHerbSpot(22786, SuppliedHerbRoute(
     "Moderate because elevation can hide nodes"
 ))
 
-AppendImportedHerbSpot(22786, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22786, SuppliedHerbRoute(
     "dreaming-glory-nagrand-supplied-alternative",
     107,
     "Nagrand",
@@ -1450,7 +1450,7 @@ AppendImportedHerbSpot(22786, SuppliedHerbRoute(
     "Easy flying circuit"
 ))
 
-AppendImportedHerbSpot(22787, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22787, SuppliedHerbRoute(
     "ragveil-zangarmarsh-supplied-main",
     102,
     "Zangarmarsh",
@@ -1467,7 +1467,7 @@ AppendImportedHerbSpot(22787, SuppliedHerbRoute(
     "Easy but intentionally long"
 ))
 
-AppendImportedHerbSpot(22787, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22787, SuppliedHerbRoute(
     "ragveil-terokkar-supplied-alternative",
     108,
     "Terokkar Forest",
@@ -1484,7 +1484,7 @@ AppendImportedHerbSpot(22787, SuppliedHerbRoute(
     "Easy fallback route"
 ))
 
-AppendImportedHerbSpot(22788, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22788, SuppliedHerbRoute(
     "flame-cap-zangarmarsh-supplied-main",
     102,
     "Zangarmarsh",
@@ -1502,7 +1502,7 @@ AppendImportedHerbSpot(22788, SuppliedHerbRoute(
     "rare-herb-side-spawn"
 ))
 
-AppendImportedHerbSpot(22788, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22788, SuppliedHerbRoute(
     "flame-cap-zangarmarsh-supplied-alternative",
     102,
     "Zangarmarsh",
@@ -1519,7 +1519,7 @@ AppendImportedHerbSpot(22788, SuppliedHerbRoute(
     "rare-herb-side-spawn"
 ))
 
-AppendImportedHerbSpot(22789, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22789, SuppliedHerbRoute(
     "terocone-terokkar-supplied-main",
     108,
     "Terokkar Forest",
@@ -1536,7 +1536,7 @@ AppendImportedHerbSpot(22789, SuppliedHerbRoute(
     "Easy general-purpose route"
 ))
 
-AppendImportedHerbSpot(22789, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22789, SuppliedHerbRoute(
     "terocone-shadowmoon-supplied-alternative",
     104,
     "Shadowmoon Valley",
@@ -1552,7 +1552,7 @@ AppendImportedHerbSpot(22789, SuppliedHerbRoute(
     "Moderate alternative route"
 ))
 
-AppendImportedHerbSpot(22790, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22790, SuppliedHerbRoute(
     "ancient-lichen-slave-pens-supplied-main",
     260,
     "The Slave Pens",
@@ -1570,7 +1570,7 @@ AppendImportedHerbSpot(22790, SuppliedHerbRoute(
     "dungeon-herbalism-loop"
 ))
 
-AppendImportedHerbSpot(22790, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22790, SuppliedHerbRoute(
     "ancient-lichen-underbog-supplied-alternative",
     262,
     "The Underbog",
@@ -1588,7 +1588,7 @@ AppendImportedHerbSpot(22790, SuppliedHerbRoute(
     "dungeon-herbalism-loop"
 ))
 
-AppendImportedHerbSpot(22791, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22791, SuppliedHerbRoute(
     "netherbloom-netherstorm-supplied-main",
     109,
     "Netherstorm",
@@ -1605,7 +1605,7 @@ AppendImportedHerbSpot(22791, SuppliedHerbRoute(
     "Easy with flying"
 ))
 
-AppendImportedHerbSpot(22791, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22791, SuppliedHerbRoute(
     "netherbloom-netherstorm-supplied-alternative",
     109,
     "Netherstorm",
@@ -1621,7 +1621,7 @@ AppendImportedHerbSpot(22791, SuppliedHerbRoute(
     "Easy compact route"
 ))
 
-AppendImportedHerbSpot(22792, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22792, SuppliedHerbRoute(
     "nightmare-vine-shadowmoon-supplied-main",
     104,
     "Shadowmoon Valley",
@@ -1638,7 +1638,7 @@ AppendImportedHerbSpot(22792, SuppliedHerbRoute(
     "Moderate because elevation can hide nodes"
 ))
 
-AppendImportedHerbSpot(22792, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22792, SuppliedHerbRoute(
     "nightmare-vine-blades-edge-supplied-alternative",
     105,
     "Blade's Edge Mountains",
@@ -1654,7 +1654,7 @@ AppendImportedHerbSpot(22792, SuppliedHerbRoute(
     "Moderate alternative route"
 ))
 
-AppendImportedHerbSpot(22793, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22793, SuppliedHerbRoute(
     "mana-thistle-blades-edge-supplied-main",
     105,
     "Blade's Edge Mountains",
@@ -1672,7 +1672,7 @@ AppendImportedHerbSpot(22793, SuppliedHerbRoute(
     "rare-herb-highland-loop"
 ))
 
-AppendImportedHerbSpot(22793, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22793, SuppliedHerbRoute(
     "mana-thistle-skettis-supplied-alternative",
     108,
     "Terokkar Forest",
@@ -1690,7 +1690,7 @@ AppendImportedHerbSpot(22793, SuppliedHerbRoute(
     "rare-herb-highland-loop"
 ))
 
-AppendImportedHerbSpot(22794, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22794, SuppliedHerbRoute(
     "fel-lotus-netherstorm-supplied-main",
     109,
     "Netherstorm",
@@ -1708,7 +1708,7 @@ AppendImportedHerbSpot(22794, SuppliedHerbRoute(
     "rare-herb-side-gather"
 ))
 
-AppendImportedHerbSpot(22794, SuppliedHerbRoute(
+AppendCatalogHerbSpot(22794, SuppliedHerbRoute(
     "fel-lotus-shadowmoon-supplied-alternative",
     104,
     "Shadowmoon Valley",
@@ -1726,14 +1726,14 @@ AppendImportedHerbSpot(22794, SuppliedHerbRoute(
     "rare-herb-side-gather"
 ))
 
-AppendImportedHerbSpot(22792, ImportedHerbSpot(
-    "nightmare-vine-blades-edge-wit-alt",
+AppendCatalogHerbSpot(22792, CatalogHerbSpot(
+    "nightmare-vine-blades-edge-catalog-alt",
     {
         "https://www.wowhead.com/object=181280/nightmare-vine",
         "https://www.wow-professions.com/farming/nightmare-vine-farming",
     },
     "Blade's Edge Mountains",
-    "Hidden WIT Blade's Edge Mountains circuit used as a Nightmare Vine alternative",
+    "Hidden Catalog Blade's Edge Mountains circuit used as a Nightmare Vine alternative",
     "Medium",
     "Alternative route. Supplied notes reported Nightmare Vine despite the original route name being Dreaming Glory.",
     {

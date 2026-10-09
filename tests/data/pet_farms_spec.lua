@@ -9,7 +9,7 @@ local function load_pet_farms(catalog)
         },
     }
 
-    local dropsChunk, dropsError = loadfile("Data/WITDrops.lua")
+    local dropsChunk, dropsError = loadfile("Data/CatalogDrops.lua")
     assert(dropsChunk, dropsError)
     dropsChunk("General-Gold-Tracker", ns)
 
@@ -22,8 +22,8 @@ end
 describe("Data/PetFarms", function()
     it("maps outdoor and raid pet rows to exact research with at least one valid pin", function()
         local ns = load_pet_farms()
-        local outdoorRows = ns.WITDropsData.categories.pets
-        local raidRows = ns.WITDropsData.categories.raidPets
+        local outdoorRows = ns.CatalogDropsData.categories.pets
+        local raidRows = ns.CatalogDropsData.categories.raidPets
         local rows = ns.PetFarmData.rows
 
         assert.equals(179, #outdoorRows)
@@ -130,7 +130,7 @@ describe("Data/PetFarms", function()
         assert.equals("The Hivemind", RaidFarm(2834).bossName)
     end)
 
-    it("keeps pet identity exact when WIT farm IDs or cage item IDs collide", function()
+    it("keeps pet identity exact when Catalog farm IDs or cage item IDs collide", function()
         local ns = load_pet_farms()
         local oozeling = ns.FarmCatalog.farms[ns.FarmCatalog.indexes.byPetID[114][1]]
         local razormaw = ns.FarmCatalog.farms[ns.FarmCatalog.indexes.byPetID[238][1]]
@@ -148,7 +148,7 @@ describe("Data/PetFarms", function()
     it("does not duplicate farms or indexes if the module is loaded twice", function()
         local first = load_pet_farms()
         local second = load_pet_farms(first.FarmCatalog)
-        local firstRecordID = second.WITDropsData.categories.pets[1].recordID
+        local firstRecordID = second.CatalogDropsData.categories.pets[1].recordID
 
         assert.equals(238, #second.FarmCatalog.farms)
         assert.equals(1, #second.FarmCatalog.indexes.byPetID[59])

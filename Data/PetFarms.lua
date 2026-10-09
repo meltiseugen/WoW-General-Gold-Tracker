@@ -185,7 +185,7 @@ local bossResearchByPetID = {
     [2836] = BossResearch("N'Zoth the Corruptor", 2375, 1597, 0.481618, 0.261029),
 }
 
--- The imported WIT snapshot accidentally stored ordinary raid loot under three
+-- The bundled catalog snapshot accidentally stored ordinary raid loot under three
 -- Classic pet farms. Replace those collateral rows with the actual
 -- Raiding-with-Leashes pets so every visible Pets row has pet identity.
 local classicRaidPetRows = {
@@ -276,7 +276,7 @@ local function BuildMapOption(row, name, location, sourceName, mapID, x, y, suff
 end
 
 local farms = {}
-local dropCategories = NS.WITDropsData and NS.WITDropsData.categories or {}
+local dropCategories = NS.CatalogDropsData and NS.CatalogDropsData.categories or {}
 local rawPetRows = {}
 for _, categoryRows in ipairs({ dropCategories.pets or {}, dropCategories.raidPets or {} }) do
     for _, row in ipairs(categoryRows) do
@@ -339,7 +339,7 @@ for _, row in ipairs(petRows) do
                 and string.format("%s drops from %s in %s. The first map marks the boss inside the raid; entrance maps remain available in the selector.", name, sourceName, raid.instance)
                 or string.format("%s drops from %s in %s. No boss encounter pin exists for this source, so the map opens on the raid entrance.", name, sourceName, raid.instance)
         else
-            summary = string.format("This non-pet WIT row is filed under Pets but is farmed inside %s. The map opens on the raid entrance.", raid.instance)
+            summary = string.format("This non-pet Catalog row is filed under Pets but is farmed inside %s. The map opens on the raid entrance.", raid.instance)
         end
         guide = {
             label = petID and "Raid boss pet drop" or "Raid collateral item row",

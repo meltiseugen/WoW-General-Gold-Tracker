@@ -208,7 +208,7 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots/Midnight/Cooking.lua",
     "Data/MaterialFarmingSpots/Midnight/Jewelcrafting.lua",
     "Data/MaterialFarmingSpots/Midnight/Engineering.lua",
-    "Data/MaterialFarmingSpots/WITGathering.lua",
+    "Data/MaterialFarmingSpots/CatalogGathering.lua",
     "Data/MaterialFarmingSpots/Finalize.lua",
 }
 
@@ -2527,22 +2527,22 @@ describe("Data/MaterialFarmingSpots", function()
         local expected_routes = {
             { 22787, "ragveil-zangarmarsh-golden-routes-main", 0.8646, 0.3365 },
             { 22787, "ragveil-zangarmarsh-golden-routes-alt", 0.8696, 0.2712 },
-            { 22787, "ragveil-zangarmarsh-wit-mixed-herb-route", 0.1843, 0.1767 },
+            { 22787, "ragveil-zangarmarsh-catalog-mixed-herb-route", 0.1843, 0.1767 },
             { 22788, "flame-cap-zangarmarsh-ragveil-main-route", 0.8646, 0.3365 },
             { 22788, "flame-cap-zangarmarsh-ragveil-alt-route", 0.8696, 0.2712 },
-            { 22788, "flame-cap-zangarmarsh-wit-mixed-herb-route", 0.1843, 0.1767 },
-            { 22790, "ancient-lichen-zangarmarsh-wit-bog-lord-proxy", 0.1843, 0.1767 },
+            { 22788, "flame-cap-zangarmarsh-catalog-mixed-herb-route", 0.1843, 0.1767 },
+            { 22790, "ancient-lichen-zangarmarsh-catalog-bog-lord-proxy", 0.1843, 0.1767 },
             { 22789, "terocone-terokkar-golden-routes-compact-alt", 0.6012, 0.2340 },
             { 22789, "terocone-terokkar-searchforloot-main", 0.3208, 0.3763 },
             { 22793, "mana-thistle-terokkar-searchforloot-main", 0.3208, 0.3763 },
             { 22794, "fel-lotus-terokkar-searchforloot-main", 0.3208, 0.3763 },
             { 22791, "netherbloom-netherstorm-xscarlife-main", 0.3628, 0.1901 },
-            { 22791, "netherbloom-netherstorm-wit-mixed-alt", 0.4609, 0.1430 },
-            { 22793, "mana-thistle-netherstorm-wit-mixed-alt", 0.4609, 0.1430 },
-            { 22794, "fel-lotus-netherstorm-wit-mixed-alt", 0.4609, 0.1430 },
+            { 22791, "netherbloom-netherstorm-catalog-mixed-alt", 0.4609, 0.1430 },
+            { 22793, "mana-thistle-netherstorm-catalog-mixed-alt", 0.4609, 0.1430 },
+            { 22794, "fel-lotus-netherstorm-catalog-mixed-alt", 0.4609, 0.1430 },
             { 22792, "nightmare-vine-shadowmoon-golden-routes-main", 0.2491, 0.2984 },
             { 22794, "fel-lotus-shadowmoon-nightmare-vine-import", 0.2491, 0.2984 },
-            { 22792, "nightmare-vine-blades-edge-wit-alt", 0.6510, 0.2064 },
+            { 22792, "nightmare-vine-blades-edge-catalog-alt", 0.6510, 0.2064 },
         }
 
         for _, expected in ipairs(expected_routes) do
@@ -3036,24 +3036,24 @@ describe("Data/MaterialFarmingSpots", function()
         assert.is_true(coelacanth_water_pin_found)
     end)
 
-    it("loads every defined WIT Gathering row with decoded routes and hidden yields", function()
+    it("loads every defined Catalog Gathering row with decoded routes and hidden yields", function()
         local spots, ns = load_material_farming_spots(true)
-        local wit = ns.WITGatheringData
+        local imported = ns.CatalogGatheringData
         local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
         assert(chunk, err)
         chunk("General-Gold-Tracker", ns)
 
-        assert.is_table(wit)
-        assert.equals("v4.3.1", wit.sourceVersion)
-        assert.equals(415, wit.farmCount)
-        assert.equals(317, wit.routeCount)
-        assert.equals(10872, wit.pointCount)
-        assert.equals(wit.farmCount, #wit.farms)
+        assert.is_table(imported)
+        assert.equals("v4.3.1", imported.sourceVersion)
+        assert.equals(415, imported.farmCount)
+        assert.equals(317, imported.routeCount)
+        assert.equals(10872, imported.pointCount)
+        assert.equals(imported.farmCount, #imported.farms)
 
         local route_count = 0
         local point_count = 0
         local records = {}
-        for _, farm in ipairs(wit.farms) do
+        for _, farm in ipairs(imported.farms) do
             assert_non_empty_string(farm.recordID)
             assert.is_nil(records[farm.recordID])
             records[farm.recordID] = farm
@@ -3077,8 +3077,8 @@ describe("Data/MaterialFarmingSpots", function()
                 assert.is_true(#route.coords > 0)
             end
         end
-        assert.equals(wit.routeCount, route_count)
-        assert.equals(wit.pointCount, point_count)
+        assert.equals(imported.routeCount, route_count)
+        assert.equals(imported.pointCount, point_count)
 
         local copper = records["Mining:CopperOre:1"]
         assert.is_table(copper)
@@ -3087,24 +3087,24 @@ describe("Data/MaterialFarmingSpots", function()
         assert.equals(0.5080, copper.routes[1].coords[1].x)
         assert.equals(0.5080, copper.routes[1].coords[1].y)
 
-        local copper_wit_spots = 0
+        local copper_catalog_spots = 0
         for _, spot in ipairs(spots.items[2770].spots) do
-            if type(spot.dropdownLabel) == "string" and spot.dropdownLabel:find("^WIT: ") then
-                copper_wit_spots = copper_wit_spots + 1
-                assert.is_table(records[spot.witFarmRecordID])
+            if type(spot.dropdownLabel) == "string" and spot.dropdownLabel:find("^Catalog: ") then
+                copper_catalog_spots = copper_catalog_spots + 1
+                assert.is_table(records[spot.catalogFarmRecordID])
             end
         end
-        assert.is_true(copper_wit_spots > 1)
+        assert.is_true(copper_catalog_spots > 1)
 
         -- Audit every imported route rather than relying on the source's
-        -- category labels alone: only WIT Herb and Mining rows may produce
+        -- category labels alone: only Catalog Herb and Mining rows may produce
         -- rendered route lines in the material map.
         for _, item in pairs(spots.items) do
             for _, spot in ipairs(item.spots or {}) do
-                if spot.witFarmRecordID then
-                    local sourceFarm = records[spot.witFarmRecordID]
+                if spot.catalogFarmRecordID then
+                    local sourceFarm = records[spot.catalogFarmRecordID]
                     local shouldRenderRoute = sourceFarm.category == "Herb" or sourceFarm.category == "Mining"
-                    assert.equals(shouldRenderRoute, spot.isRoute == true, spot.witFarmRecordID)
+                    assert.equals(shouldRenderRoute, spot.isRoute == true, spot.catalogFarmRecordID)
                 end
             end
 
@@ -3270,12 +3270,12 @@ describe("Data/ATTBoEDrops", function()
     end)
 end)
 
-describe("Data/WITDrops", function()
-    it("matches the generated WIT category counters", function()
-        local data = load_data("Data/WITDrops.lua", "WITDropsData")
+describe("Data/CatalogDrops", function()
+    it("matches the generated Catalog category counters", function()
+        local data = load_data("Data/CatalogDrops.lua", "CatalogDropsData")
 
         assert_non_empty_string(data.sourceVersion)
-        assert_non_empty_string(data.sourceURL)
+        assert.is_nil(data.sourceURL)
         assert.is_table(data.categories)
         assert.is_table(data.categoryCounts)
 
@@ -3315,7 +3315,7 @@ describe("Data/WITDrops", function()
 end)
 
 describe("Data/Farms", function()
-    it("contains the generated, runtime-independent WIT farm index", function()
+    it("contains the generated, runtime-independent Catalog farm index", function()
         local data = load_data("Data/Farms.lua", "FarmCatalog")
 
         assert.equals(2, data.dataVersion)
@@ -3337,7 +3337,7 @@ describe("Data/Farms", function()
             assert.is_nil(seen[farm.id])
             seen[farm.id] = true
             assert.equals(position, data.byID[farm.id])
-            assert.equals("wit", farm.provider)
+            assert.equals("catalog", farm.provider)
             assert_non_empty_string(farm.providerKey)
             assert_non_empty_string(farm.providerFarmID)
             assert_non_empty_string(farm.activity)
@@ -3358,26 +3358,26 @@ describe("Data/Farms", function()
         end
         assert.equals(data.targetCount, target_count)
 
-        local copper_position = data.byID["wit:gathering:mining:copperore"]
+        local copper_position = data.byID["catalog:gathering:mining:copperore"]
         assert.is_number(copper_position)
         assert.equals(2770, data.farms[copper_position].primaryItemID)
         assert.is_true(#data.indexes.byItemID[2770] > 0)
 
-        local dark_iron_position = data.byID["wit:gathering:mining:darkironore"]
+        local dark_iron_position = data.byID["catalog:gathering:mining:darkironore"]
         assert.is_number(dark_iron_position)
         assert.same({
             { itemID = 11370, quantity = 303 },
             { itemID = 11382, quantity = 3 },
         }, data.farms[dark_iron_position].targets)
 
-        local scarlet_position = data.byID["wit:drops:transmogs:scarletmonastayold"]
+        local scarlet_position = data.byID["catalog:drops:transmogs:scarletmonastayold"]
         assert.is_number(scarlet_position)
         assert.equals("transmog", data.farms[scarlet_position].activity)
-        assert.equals("WITDropsData", data.farms[scarlet_position].sourceDataset)
+        assert.equals("CatalogDropsData", data.farms[scarlet_position].sourceDataset)
         assert.equals("instances", data.farms[scarlet_position].sourceCategory)
         assert.equals("Instances", data.farms[scarlet_position].sourcePath)
 
-        local ragefire_position = data.byID["wit:drops:openworldinstances:ragefire"]
+        local ragefire_position = data.byID["catalog:drops:openworldinstances:ragefire"]
         assert.is_number(ragefire_position)
         assert.equals("openWorldInstances", data.farms[ragefire_position].sourceCategory)
         assert.equals("Open World > Instances", data.farms[ragefire_position].sourcePath)
@@ -3388,7 +3388,7 @@ describe("Data/Farms", function()
 end)
 
 describe("Data/FarmLocationOverrides", function()
-    it("gives every WIT gathering farm without a decoded or material route a researched map pin", function()
+    it("gives every Catalog gathering farm without a decoded or material route a researched map pin", function()
         local _, ns = load_modules({
             "Data/Farms.lua",
             "Data/FarmLocationOverrides.lua",
@@ -3417,7 +3417,7 @@ describe("Data/FarmLocationOverrides", function()
         assert.equals(expectedCount, actualCount)
     end)
 
-    it("normalizes every legacy WIT instance label that needs an Encounter Journal match", function()
+    it("normalizes every legacy Catalog instance label that needs an Encounter Journal match", function()
         local _, ns = load_modules({
             "Data/Farms.lua",
             "Data/FarmLocationOverrides.lua",

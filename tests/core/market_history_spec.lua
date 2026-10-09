@@ -301,7 +301,7 @@ describe("Core/MarketHistory", function()
             FarmingItems = { items = { { itemID = 101 } } },
             MaterialFarmingSpots = { items = { [102] = { itemID = 102 } } },
             InstanceDropsData = { instances = { { loot = { { itemID = 103 } } } } },
-            WITDropsData = { transmogs = { { itemID = 104 } } },
+            CatalogDropsData = { transmogs = { { itemID = 104 } } },
             RareDropsData = { rows = { { itemID = 105 } } },
             FarmCatalog = { farms = { { primaryItemID = 999, targets = { { itemID = 999 } } } } },
         })

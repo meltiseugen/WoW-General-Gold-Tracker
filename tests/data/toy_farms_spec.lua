@@ -9,7 +9,7 @@ local function load_toy_farms(catalog)
         },
     }
 
-    local dropsChunk, dropsError = loadfile("Data/WITDrops.lua")
+    local dropsChunk, dropsError = loadfile("Data/CatalogDrops.lua")
     assert(dropsChunk, dropsError)
     dropsChunk("General-Gold-Tracker", ns)
 
@@ -29,7 +29,7 @@ end
 describe("Data/ToyFarms", function()
     it("maps every Drops Toys row to exact research with at least one valid pin", function()
         local ns = load_toy_farms()
-        local rows = ns.WITDropsData.categories.toys
+        local rows = ns.CatalogDropsData.categories.toys
 
         assert.equals(7, #rows)
         assert.equals(#rows, ns.ToyFarmData.sourceRowCount)
@@ -121,7 +121,7 @@ describe("Data/ToyFarms", function()
         assert.equals(initialFarmCount, #ns.FarmCatalog.farms)
         assert.equals(initialItemCount, ns.FarmCatalog.uniqueItemCount)
         assert.equals(7, ns.FarmCatalog.sourceCounts.curatedToys)
-        for _, row in ipairs(ns.WITDropsData.categories.toys) do
+        for _, row in ipairs(ns.CatalogDropsData.categories.toys) do
             assert.equals(1, #ns.FarmCatalog.indexes.byRecordID[row.recordID])
             assert.equals(1, #ns.FarmCatalog.indexes.byItemID[row.itemID])
         end

@@ -38,7 +38,7 @@ local researchByFarmID = {
         },
         details = {
             "The pins trace the four Skorn towers at approximately 44,30; 46,32; 46,36; and 43,36.",
-            "The WIT row names Howling Fjord; this route refines that broad zone label to the specific Skorn farm.",
+            "The Catalog row names Howling Fjord; this route refines that broad zone label to the specific Skorn farm.",
         },
         sourceUrls = {
             { siteName = "Wowhead item comments", url = "https://www.wowhead.com/item=36862/worn-troll-dice" },
@@ -66,7 +66,7 @@ local researchByFarmID = {
                 },
             },
         },
-        summary = "Decahedral Dwarven Dice are rare Pick Pocket loot from Northrend humanoids. New Hearthglen's dense Scarlet Onslaught route is a better actionable farm than the WIT row's broad Icecrown label.",
+        summary = "Decahedral Dwarven Dice are rare Pick Pocket loot from Northrend humanoids. New Hearthglen's dense Scarlet Onslaught route is a better actionable farm than the Catalog row's broad Icecrown label.",
         guide = {
             label = "Rogue pickpocket circuit",
             requirement = "Use a Rogue with Pick Pocket and travel to New Hearthglen in southeastern Dragonblight.",
@@ -271,7 +271,7 @@ local researchByFarmID = {
 }
 
 local farms = {}
-local toyRows = NS.WITDropsData and NS.WITDropsData.categories and NS.WITDropsData.categories.toys or {}
+local toyRows = NS.CatalogDropsData and NS.CatalogDropsData.categories and NS.CatalogDropsData.categories.toys or {}
 for _, row in ipairs(toyRows) do
     local research = researchByFarmID[row.farmID]
     if research then

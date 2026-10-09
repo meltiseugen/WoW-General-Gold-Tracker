@@ -36,17 +36,17 @@ local EXPANSION_ALL_ID = "all"
 local DROP_SOURCE_OBSERVED_ID = "observed"
 local DROP_SOURCE_ATT_ZONES_ID = "att-zones"
 local DROP_SOURCE_ATT_WORLD_ID = "att-world"
-local DROP_SOURCE_WIT_MOUNTS_ID = "wit-mounts"
-local DROP_SOURCE_WIT_TOYS_ID = "wit-toys"
-local DROP_SOURCE_WIT_PETS_ID = "wit-pets"
+local DROP_SOURCE_CATALOG_MOUNTS_ID = "catalog-mounts"
+local DROP_SOURCE_CATALOG_TOYS_ID = "catalog-toys"
+local DROP_SOURCE_CATALOG_PETS_ID = "catalog-pets"
 local ZONE_ALL_ID = "all"
 
 local DROP_SOURCE_OPTIONS = {
     { id = DROP_SOURCE_OBSERVED_ID, label = "Session Observed", tabWidth = 132 },
     { id = DROP_SOURCE_ATT_ZONES_ID, label = "Zones" },
-    { id = DROP_SOURCE_WIT_MOUNTS_ID, label = "Mounts", witCategory = "mounts", tabWidth = 76, alwaysVisible = true },
-    { id = DROP_SOURCE_WIT_PETS_ID, label = "Pets", witCategory = "pets", tabWidth = 68, alwaysVisible = true },
-    { id = DROP_SOURCE_WIT_TOYS_ID, label = "Toys", witCategory = "toys", alwaysVisible = true },
+    { id = DROP_SOURCE_CATALOG_MOUNTS_ID, label = "Mounts", catalogCategory = "mounts", tabWidth = 76, alwaysVisible = true },
+    { id = DROP_SOURCE_CATALOG_PETS_ID, label = "Pets", catalogCategory = "pets", tabWidth = 68, alwaysVisible = true },
+    { id = DROP_SOURCE_CATALOG_TOYS_ID, label = "Toys", catalogCategory = "toys", alwaysVisible = true },
     { id = DROP_SOURCE_ATT_WORLD_ID, label = "World", hidden = true },
 }
 
@@ -300,8 +300,8 @@ local function GetATTBoEDropsData()
     return data
 end
 
-local function GetWITDropsData()
-    local data = NS.WITDropsData
+local function GetCatalogDropsData()
+    local data = NS.CatalogDropsData
     if type(data) ~= "table" then
         return { categories = {}, categoryCounts = {} }
     end
@@ -317,18 +317,18 @@ local function GetDropSourceOption(sourceID)
     return nil
 end
 
-local function GetWITDropRows(sourceID)
+local function GetCatalogDropRows(sourceID)
     local option = GetDropSourceOption(sourceID)
-    if not option or not option.witCategory then
+    if not option or not option.catalogCategory then
         return nil, nil
     end
-    local data = GetWITDropsData()
+    local data = GetCatalogDropsData()
     local rows
-    if option.witCategory == "pets" and type(NS.PetFarmData) == "table" then
+    if option.catalogCategory == "pets" and type(NS.PetFarmData) == "table" then
         rows = NS.PetFarmData.rows
     end
-    rows = rows or (data.categories and data.categories[option.witCategory])
-    return type(rows) == "table" and rows or {}, option.witCategory
+    rows = rows or (data.categories and data.categories[option.catalogCategory])
+    return type(rows) == "table" and rows or {}, option.catalogCategory
 end
 
 function GoldTracker:ShowObservedDropItemTooltip(row, target)
@@ -379,13 +379,13 @@ local function HideObservedDropItemTooltip()
     end
 end
 
-local function IsAlwaysVisibleWITSource(sourceID)
+local function IsAlwaysVisibleCatalogSource(sourceID)
     local option = GetDropSourceOption(sourceID)
-    return option and option.witCategory and option.alwaysVisible == true or false
+    return option and option.catalogCategory and option.alwaysVisible == true or false
 end
 
-local function IsWITPetsSource(sourceID)
-    return sourceID == DROP_SOURCE_WIT_PETS_ID
+local function IsCatalogPetsSource(sourceID)
+    return sourceID == DROP_SOURCE_CATALOG_PETS_ID
 end
 
 local function ApplyObservedDropsDefaultSort(frame, sourceID)
@@ -393,7 +393,7 @@ local function ApplyObservedDropsDefaultSort(frame, sourceID)
         return
     end
 
-    if IsWITPetsSource(sourceID) then
+    if IsCatalogPetsSource(sourceID) then
         frame.sortKey = "location"
         frame.sortAscending = true
     else
@@ -406,7 +406,7 @@ local function ApplyObservedDropsDefaultSort(frame, sourceID)
 end
 
 local function EnsureObservedDropsLocationGroupingSort(addon, frame)
-    if frame and IsWITPetsSource(frame.dropSourceID) then
+    if frame and IsCatalogPetsSource(frame.dropSourceID) then
         addon:EnsureTableSortLeadingCriterion(frame, "location", true, {
             validKeys = SORT_KEYS,
         })
@@ -1403,9 +1403,9 @@ local function AddKnownWorldRows(addon, rows, expansionFilterID, minimumValue)
     end
 end
 
-local function AddWITDropRows(addon, rows, dropSourceID, expansionFilterID, minimumValue)
-    local witRows = GetWITDropRows(dropSourceID)
-    for _, item in ipairs(witRows or {}) do
+local function AddCatalogDropRows(addon, rows, dropSourceID, expansionFilterID, minimumValue)
+    local catalogRows = GetCatalogDropRows(dropSourceID)
+    for _, item in ipairs(catalogRows or {}) do
         local expansionID = tostring(item.contentID or "unknown")
         if expansionFilterID == EXPANSION_ALL_ID or expansionFilterID == expansionID then
             AddKnownDropRow(addon, rows, item, {
@@ -1414,7 +1414,7 @@ local function AddWITDropRows(addon, rows, dropSourceID, expansionFilterID, mini
                 expansionID = expansionID,
                 expansionLabel = item.expansionLabel or GetATTExpansionLabel(expansionID),
                 locationLabel = item.locationLabel or item.farmName or "Unknown",
-                sourceText = "WIT: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
+                sourceText = "Farm: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
                 farmingSourceType = dropSourceID,
                 minimumValue = minimumValue,
             })
@@ -1474,7 +1474,7 @@ function GoldTracker:BuildObservedDropsRows()
     local frame = self.observedDropsFrame
     local observedDrops = GetObservedSavedSessionDrops(self)
     local dropSourceID = NormalizeDropSourceID(frame and frame.dropSourceID)
-    local alwaysVisible = IsAlwaysVisibleWITSource(dropSourceID)
+    local alwaysVisible = IsAlwaysVisibleCatalogSource(dropSourceID)
     local expansionFilterID = alwaysVisible
         and EXPANSION_ALL_ID
         or NormalizeExpansionFilter(self, frame and frame.expansionFilterID)
@@ -1492,8 +1492,8 @@ function GoldTracker:BuildObservedDropsRows()
         AddKnownZoneRows(self, rows, expansionFilterID, zoneFilterID, minimumValue)
     elseif dropSourceID == DROP_SOURCE_ATT_WORLD_ID then
         AddKnownWorldRows(self, rows, expansionFilterID, minimumValue)
-    elseif GetWITDropRows(dropSourceID) then
-        AddWITDropRows(self, rows, dropSourceID, expansionFilterID, minimumValue)
+    elseif GetCatalogDropRows(dropSourceID) then
+        AddCatalogDropRows(self, rows, dropSourceID, expansionFilterID, minimumValue)
     end
 
     for _, row in ipairs(rows) do
@@ -1508,9 +1508,9 @@ function GoldTracker:BuildObservedDropsRows()
     return rows
 end
 
-local function LoadAlwaysVisibleWITRows(addon)
+local function LoadAlwaysVisibleCatalogRows(addon)
     local frame = addon and addon.observedDropsFrame
-    if not frame or not IsAlwaysVisibleWITSource(frame.dropSourceID) then
+    if not frame or not IsAlwaysVisibleCatalogSource(frame.dropSourceID) then
         return false
     end
 
@@ -1649,9 +1649,9 @@ local function AddKnownWorldScanCandidates(candidates, expansionFilterID, minimu
     end
 end
 
-local function AddWITDropScanCandidates(candidates, dropSourceID, expansionFilterID, minimumValue)
-    local witRows = GetWITDropRows(dropSourceID)
-    for _, item in ipairs(witRows or {}) do
+local function AddCatalogDropScanCandidates(candidates, dropSourceID, expansionFilterID, minimumValue)
+    local catalogRows = GetCatalogDropRows(dropSourceID)
+    for _, item in ipairs(catalogRows or {}) do
         local expansionID = tostring(item.contentID or "unknown")
         if expansionFilterID == EXPANSION_ALL_ID or expansionFilterID == expansionID then
             candidates[#candidates + 1] = {
@@ -1663,7 +1663,7 @@ local function AddWITDropScanCandidates(candidates, dropSourceID, expansionFilte
                     expansionID = expansionID,
                     expansionLabel = item.expansionLabel or GetATTExpansionLabel(expansionID),
                     locationLabel = item.locationLabel or item.farmName or "Unknown",
-                    sourceText = "WIT: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
+                    sourceText = "Farm: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
                     farmingSourceType = dropSourceID,
                     minimumValue = minimumValue,
                 },
@@ -1695,8 +1695,8 @@ local function BuildObservedDropScanCandidates(addon)
         AddKnownZoneScanCandidates(candidates, expansionFilterID, zoneFilterID, minimumValue)
     elseif dropSourceID == DROP_SOURCE_ATT_WORLD_ID then
         AddKnownWorldScanCandidates(candidates, expansionFilterID, minimumValue)
-    elseif GetWITDropRows(dropSourceID) then
-        AddWITDropScanCandidates(candidates, dropSourceID, expansionFilterID, minimumValue)
+    elseif GetCatalogDropRows(dropSourceID) then
+        AddCatalogDropScanCandidates(candidates, dropSourceID, expansionFilterID, minimumValue)
     end
 
     return candidates, expansionFilterID, dropSourceID, zoneFilterID, minimumValue
@@ -1833,8 +1833,8 @@ function GoldTracker:ClearObservedDropsScanResults()
     frame.priceCache = {}
     if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
         LoadObservedSavedSessionRows(self, true)
-    elseif IsAlwaysVisibleWITSource(frame.dropSourceID) then
-        LoadAlwaysVisibleWITRows(self)
+    elseif IsAlwaysVisibleCatalogSource(frame.dropSourceID) then
+        LoadAlwaysVisibleCatalogRows(self)
     end
     if type(self.RefreshObservedDropsWindow) == "function" then
         self:RefreshObservedDropsWindow(true)
@@ -2007,10 +2007,10 @@ function GoldTracker:StartObservedDropsScan()
     if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
         LoadObservedSavedSessionRows(self, false)
         return
-    elseif IsAlwaysVisibleWITSource(frame.dropSourceID) then
+    elseif IsAlwaysVisibleCatalogSource(frame.dropSourceID) then
         frame.itemCache = {}
         frame.priceCache = {}
-        LoadAlwaysVisibleWITRows(self)
+        LoadAlwaysVisibleCatalogRows(self)
         self:RefreshObservedDropsWindow(true)
         return
     end
@@ -2240,7 +2240,7 @@ function GoldTracker:SaveCurrentObservedDropsScan()
     local frame = self.observedDropsFrame
     if not frame
         or NormalizeDropSourceID(frame.dropSourceID) == DROP_SOURCE_OBSERVED_ID
-        or IsAlwaysVisibleWITSource(frame.dropSourceID)
+        or IsAlwaysVisibleCatalogSource(frame.dropSourceID)
         or IsObservedDropsScanStateActive(frame.scanState)
     then
         return
@@ -2491,7 +2491,7 @@ function GoldTracker:SetObservedDropsWindowView(viewID)
         frame.metaText:SetShown(showScan)
     end
     if frame.locationGroupsControl then
-        frame.locationGroupsControl:SetShown(showScan and IsWITPetsSource(frame.dropSourceID))
+        frame.locationGroupsControl:SetShown(showScan and IsCatalogPetsSource(frame.dropSourceID))
     end
     if not showScan then
         SetObservedControlShown(frame.prevPageButton, false)
@@ -2503,8 +2503,8 @@ function GoldTracker:SetObservedDropsWindowView(viewID)
     if showScan then
         if NormalizeDropSourceID(frame.dropSourceID) == DROP_SOURCE_OBSERVED_ID then
             LoadObservedSavedSessionRows(self, true)
-        elseif IsAlwaysVisibleWITSource(frame.dropSourceID) then
-            LoadAlwaysVisibleWITRows(self)
+        elseif IsAlwaysVisibleCatalogSource(frame.dropSourceID) then
+            LoadAlwaysVisibleCatalogRows(self)
         end
         self:RefreshObservedDropsWindowControls()
         self:RefreshObservedDropsWindow(true)
@@ -2676,19 +2676,19 @@ function GoldTracker:RefreshObservedDropsWindowControls()
         button:SetPalette(frame.observedDropsViewID == "scan" and sourceID == frame.dropSourceID and "primary" or "neutral")
     end
 
-    local isAlwaysVisible = IsAlwaysVisibleWITSource(frame.dropSourceID)
+    local isAlwaysVisible = IsAlwaysVisibleCatalogSource(frame.dropSourceID)
     if frame.addHeaderButton and frame.addHeaderButton.text then
         frame.addHeaderButton.text:SetText(
-            (frame.dropSourceID == DROP_SOURCE_WIT_MOUNTS_ID
-                or frame.dropSourceID == DROP_SOURCE_WIT_PETS_ID
-                or frame.dropSourceID == DROP_SOURCE_WIT_TOYS_ID)
+            (frame.dropSourceID == DROP_SOURCE_CATALOG_MOUNTS_ID
+                or frame.dropSourceID == DROP_SOURCE_CATALOG_PETS_ID
+                or frame.dropSourceID == DROP_SOURCE_CATALOG_TOYS_ID)
                 and "Map"
                 or "Add"
         )
     end
     local showFilters = not isAlwaysVisible
     local showProgress = not isAlwaysVisible and frame.progressComplete ~= true
-    local showLocationGroups = frame.observedDropsViewID == "scan" and IsWITPetsSource(frame.dropSourceID)
+    local showLocationGroups = frame.observedDropsViewID == "scan" and IsCatalogPetsSource(frame.dropSourceID)
     if frame.locationGroupsControl then
         frame.locationGroupsControl:SetShown(showLocationGroups)
     end
@@ -2833,9 +2833,9 @@ function GoldTracker:RefreshObservedDropsWindowControls()
     if frame.hasObservedDropsScanRun and type(frame.scannedObservedDropsRows) == "table" then
         if frame.statusText then
             if isAlwaysVisible then
-                local _, category = GetWITDropRows(frame.dropSourceID)
+                local _, category = GetCatalogDropRows(frame.dropSourceID)
                 frame.statusText:SetText(string.format(
-                    "Showing all %d WIT %s entries.",
+                    "Showing all %d %s catalog entries.",
                     #frame.scannedObservedDropsRows,
                     category or "drop"
                 ))
@@ -2871,11 +2871,11 @@ function GoldTracker:RefreshObservedDropsWindowControls()
                 "Showing world-drop candidates: %d item sources. Choose All expansions to browse the world pool.",
                 tonumber(data.worldItemCount) or 0
             ))
-        elseif GetWITDropRows(frame.dropSourceID) then
-            local rows, category = GetWITDropRows(frame.dropSourceID)
+        elseif GetCatalogDropRows(frame.dropSourceID) then
+            local rows, category = GetCatalogDropRows(frame.dropSourceID)
             frame.statusText:SetText(string.format(
-                "WIT %s snapshot: %d %s item sources. Choose filters, then press Scan.",
-                tostring(GetWITDropsData().sourceVersion or "unknown"),
+                "Snapshot %s: %d %s item sources. Choose filters, then press Scan.",
+                tostring(GetCatalogDropsData().sourceVersion or "unknown"),
                 #rows,
                 category or "drop"
             ))
@@ -2963,9 +2963,9 @@ function GoldTracker:ConfigureObservedDropRowActionButton(button, row, dropSourc
     local petID = row and tonumber(row.petID)
     local recordID = row and row.observedDropKey
     local normalizedSourceID = NormalizeDropSourceID(dropSourceID)
-    local isMountSource = normalizedSourceID == DROP_SOURCE_WIT_MOUNTS_ID
-    local isPetSource = normalizedSourceID == DROP_SOURCE_WIT_PETS_ID
-    local isToySource = normalizedSourceID == DROP_SOURCE_WIT_TOYS_ID
+    local isMountSource = normalizedSourceID == DROP_SOURCE_CATALOG_MOUNTS_ID
+    local isPetSource = normalizedSourceID == DROP_SOURCE_CATALOG_PETS_ID
+    local isToySource = normalizedSourceID == DROP_SOURCE_CATALOG_TOYS_ID
     local isResearchedSource = isMountSource or isPetSource or isToySource
     local hasFarm = false
     if isPetSource and petID and type(self.HasFarmForPet) == "function" then
@@ -3178,7 +3178,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
     EnsureObservedDropsLocationGroupingSort(self, frame)
     SortRows(rows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
 
-    local showLocationHeaders = IsWITPetsSource(frame.dropSourceID) and self:IsCollapsedLocationHeadersEnabled()
+    local showLocationHeaders = IsCatalogPetsSource(frame.dropSourceID) and self:IsCollapsedLocationHeadersEnabled()
     local displayRows = self:BuildLocationGroupedDisplayRows(
         rows,
         GetObservedDropLocationGroupLabel,
@@ -3186,7 +3186,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         showLocationHeaders
     )
 
-    local showAllRows = IsWITPetsSource(frame.dropSourceID)
+    local showAllRows = IsCatalogPetsSource(frame.dropSourceID)
     local pageSize = showAllRows and math.max(1, #displayRows) or ROWS_PER_PAGE
     local totalPages = showAllRows and 1 or self:GetObservedDropsPageCount(#displayRows)
     frame.currentPage = math.max(1, math.min(frame.currentPage or 1, totalPages))
@@ -3305,7 +3305,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             end
             if row.divider then
                 local nextResult = displayRows[resultIndex + 1]
-                local endsLocationGroup = IsWITPetsSource(frame.dropSourceID)
+                local endsLocationGroup = IsCatalogPetsSource(frame.dropSourceID)
                     and NormalizeSortKey(frame.sortKey) == "location"
                     and nextResult
                     and not nextResult.isLocationGroupHeader
@@ -3342,8 +3342,8 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
     frame.content:SetHeight(math.max(1, yOffset))
     if frame.emptyText then
         if #rows == 0 then
-            if IsAlwaysVisibleWITSource(frame.dropSourceID) then
-                frame.emptyText:SetText("No WIT entries are available for this category.")
+            if IsAlwaysVisibleCatalogSource(frame.dropSourceID) then
+                frame.emptyText:SetText("No entries are available for this category.")
             else
                 frame.emptyText:SetText(frame.hasObservedDropsScanRun
                     and "No drops match the selected filters."
@@ -3366,8 +3366,8 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         local sourceSummary
         if frame.dropSourceID == DROP_SOURCE_OBSERVED_ID then
             sourceSummary = string.format("%d captured", storedCount)
-        elseif GetWITDropRows(frame.dropSourceID) then
-            sourceSummary = string.format("WIT %s", tostring(GetWITDropsData().sourceVersion or "unknown"))
+        elseif GetCatalogDropRows(frame.dropSourceID) then
+            sourceSummary = string.format("Snapshot %s", tostring(GetCatalogDropsData().sourceVersion or "unknown"))
         else
             sourceSummary = GetDropSourceLabel(frame.dropSourceID)
         end

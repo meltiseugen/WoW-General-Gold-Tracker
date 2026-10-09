@@ -560,7 +560,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
         return options
     end
 
-    if farm.sourceDataset ~= "WITGatheringData" then
+    if farm.sourceDataset ~= "CatalogGatheringData" then
         local entranceOption = BuildInstanceEntranceMapOption(self, farm)
         if entranceOption then
             return { entranceOption }
@@ -580,7 +580,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                     label = mapLabel or farm.name or ("Map " .. tostring(mapID)),
                     location = mapLabel or farm.name,
                     sourceType = "static",
-                    sourceLabel = "GGT static WIT snapshot",
+                    sourceLabel = "GGT bundled farm snapshot",
                     mapOnly = true,
                     pins = {},
                 }
@@ -589,7 +589,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
         return options
     end
 
-    local gathering = NS.WITGatheringData
+    local gathering = NS.CatalogGatheringData
     local records = type(gathering) == "table" and gathering.farmsByRecordID or nil
     if type(records) ~= "table" then
         return {}
@@ -625,7 +625,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                     label = route.name or farm.name,
                     location = route.name or farm.name,
                     sourceType = "static",
-                    sourceLabel = "GGT static WIT snapshot",
+                    sourceLabel = "GGT bundled farm snapshot",
                     pins = {},
                 }
                 for pointIndex, coord in ipairs(coords) do
@@ -643,12 +643,12 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                             isRoute = isRoute,
                             routeID = isRoute and option.id or nil,
                             routeType = "farm-" .. tostring(farm.activity or "route"),
-                            density = "Imported recorded farm route",
+                            density = "Recorded farm route",
                             dropDifficulty = "Yield varies with competition, profession skill, and character setup.",
                             tips = guide.tips,
                             sourceUrls = HasText(catalog.sourceURL) and { catalog.sourceURL } or nil,
                             sourceType = "static",
-                            sourceLabel = "GGT static WIT snapshot",
+                            sourceLabel = "GGT bundled farm snapshot",
                         }
                     end
                 end
@@ -788,12 +788,12 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
         "GameFontHighlight"
     )
     if HasText(farm.sourcePath) then
-        AppendMapDetailLine(lines, "WIT category: " .. farm.sourcePath, 0.72, 0.86, 1.0, 8, "GameFontHighlightSmall")
+        AppendMapDetailLine(lines, "Farm category: " .. farm.sourcePath, 0.72, 0.86, 1.0, 8, "GameFontHighlightSmall")
     end
     if farm.sourceType == "drops" and (tonumber(farm.routeCount) or 0) == 0 then
         AppendMapDetailLine(
             lines,
-            "Instance map available; WIT does not provide route coordinates for this farm.",
+            "Instance map available; this farm entry does not include route coordinates.",
             0.72,
             0.76,
             0.84,
@@ -1104,7 +1104,7 @@ end
 
 function GoldTracker:GetFarmHighValueDropSuggestions(farm, excludedItemIDs, limit)
     if type(farm) ~= "table"
-        or farm.sourceDataset ~= "WITDropsData"
+        or farm.sourceDataset ~= "CatalogDropsData"
         or (farm.sourceCategory ~= "instances" and farm.sourceCategory ~= "openWorldInstances") then
         return {}, "Unknown"
     end
@@ -1338,7 +1338,7 @@ function GoldTracker:BuildFarmDetailsText(farm, selectedItemID, valuationSnapsho
     }
 
     if farm.durationInferred == true then
-        lines[#lines + 1] = "Duration note: WIT did not provide a duration; yields are normalized to one hour."
+        lines[#lines + 1] = "Duration note: no duration is recorded; yields are normalized to one hour."
     end
     lines[#lines + 1] = "Requirement: " .. guide.requirement
     lines[#lines + 1] = ""
@@ -1412,7 +1412,7 @@ function GoldTracker:BuildFarmDetailsText(farm, selectedItemID, valuationSnapsho
     end
     lines[#lines + 1] = ""
     lines[#lines + 1] = string.format(
-        "Source: static WIT %s snapshot bundled with GGT.",
+        "Source: bundled GGT farm catalog (%s).",
         tostring(catalog.sourceVersion or "unknown")
     )
     return table.concat(lines, "\n")

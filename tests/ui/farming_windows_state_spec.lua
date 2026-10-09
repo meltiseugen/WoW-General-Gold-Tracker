@@ -61,7 +61,7 @@ local function load_rare_and_instance(addon)
     end)
 end
 
-local function load_instance_with_data(addon, instance_data, globals, att_data, wit_data)
+local function load_instance_with_data(addon, instance_data, globals, att_data, catalog_data)
     local values = {
         LE_ITEM_BIND_ON_ACQUIRE = 1,
         LE_ITEM_BIND_ON_EQUIP = 2,
@@ -75,7 +75,7 @@ local function load_instance_with_data(addon, instance_data, globals, att_data, 
         return loader.load_module("UI/InstanceFarmingWindow.lua", addon, {
             InstanceDropsData = instance_data,
             ATTBoEDropsData = att_data,
-            WITDropsData = wit_data,
+            CatalogDropsData = catalog_data,
         })
     end)
 end
@@ -319,7 +319,7 @@ describe("UI farming windows shared state", function()
         assert.is_false(addon:IsInstanceFarmingGroupBoundary(rows, 2, "value"))
     end)
 
-    it("builds WIT raid-pet rows and groups them by location", function()
+    it("builds Catalog raid-pet rows and groups them by location", function()
         local addon = build_addon()
         addon.ResolveItemUnitValue = function(_, _, item_link)
             local species_id = tonumber(item_link:match("battlepet:(%d+)"))
@@ -391,7 +391,7 @@ describe("UI farming windows shared state", function()
         assert.equals("Icecrown", rows[3].locationLabel)
     end)
 
-    it("builds the static WIT transmog catalog from both branches", function()
+    it("builds the static transmog catalog from both branches", function()
         local addon = load_instance_with_data(build_addon(), {
             expansions = { currentID = 1, options = {} },
             instances = {},
@@ -520,7 +520,7 @@ describe("UI farming windows shared state", function()
         assert.equals(99, row.bossEncounterJournalID)
     end)
 
-    it("loads WIT transmog prices when value is a secondary sort", function()
+    it("loads Catalog transmog prices when value is a secondary sort", function()
         local worker
         local addon = build_addon()
         addon.ResolveItemUnitValue = function(_, _, _, item_id)
@@ -582,7 +582,7 @@ describe("UI farming windows shared state", function()
         assert.is_nil(addon.instanceFarmingFrame.transmogPriceLoadState)
     end)
 
-    it("filters WIT transmogs by the selected value source after progressive pricing", function()
+    it("filters Catalog transmogs by the selected value source after progressive pricing", function()
         local worker
         local addon = build_addon()
         addon.ResolveItemUnitValue = function(_, _, _, item_id)
@@ -1069,7 +1069,7 @@ describe("UI farming windows shared state", function()
         end)
     end)
 
-    it("combines ATT and WIT static auctionable rows in instance farming scans", function()
+    it("combines ATT and Catalog static auctionable rows in instance farming scans", function()
         local worker
         local status_text = {}
         local addon = build_addon()
@@ -1249,7 +1249,7 @@ describe("UI farming windows shared state", function()
             assert.equals(80002, addon.instanceFarmingFrame.lastResults[2].itemID)
             assert.equals(80003, addon.instanceFarmingFrame.lastResults[3].itemID)
             assert.equals("att-instance", addon.instanceFarmingFrame.lastResults[2].farmingSourceType)
-            assert.equals("wit-transmogs", addon.instanceFarmingFrame.lastResults[3].farmingSourceType)
+            assert.equals("catalog-transmogs", addon.instanceFarmingFrame.lastResults[3].farmingSourceType)
             assert.matches("3 auctionable instance drops matched", status_text[#status_text])
         end)
     end)

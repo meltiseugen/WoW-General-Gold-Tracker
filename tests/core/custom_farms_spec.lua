@@ -229,7 +229,7 @@ describe("Core/CustomFarms", function()
 
     it("groups several selected targets under one catalog farm step", function()
         local catalogFarm = {
-            id = "wit:gathering:mining:copperore",
+            id = "catalog:gathering:mining:copperore",
             name = "Copper Ore",
             sourcePath = "Gathering > Mining",
             activity = "mining",
@@ -269,7 +269,7 @@ describe("Core/CustomFarms", function()
 
     it("keeps catalog farms and standalone targets as separate ordered steps", function()
         local catalogFarm = {
-            id = "wit:drops:instances:deadmines",
+            id = "catalog:drops:instances:deadmines",
             name = "The Deadmines",
             sourcePath = "Instances",
             mapIDs = { 291 },
@@ -302,13 +302,13 @@ describe("Core/CustomFarms", function()
     it("can change and unlink a target farming method without removing the target", function()
         local farms = {
             {
-                id = "wit:gathering:mining:copper-a",
+                id = "catalog:gathering:mining:copper-a",
                 name = "Copper A",
                 mapNames = { "Durotar" },
                 targets = { { itemID = 2770, quantity = 100 } },
             },
             {
-                id = "wit:gathering:mining:copper-b",
+                id = "catalog:gathering:mining:copper-b",
                 name = "Copper B",
                 mapNames = { "Elwynn Forest" },
                 targets = { { itemID = 2770, quantity = 90 } },
@@ -338,7 +338,7 @@ describe("Core/CustomFarms", function()
 
     it("removes one selected target and drops an empty grouped step", function()
         local catalogFarm = {
-            id = "wit:gathering:mining:copperore",
+            id = "catalog:gathering:mining:copperore",
             name = "Copper Ore",
             mapNames = { "Durotar" },
             targets = {
@@ -400,7 +400,7 @@ describe("Core/CustomFarms", function()
         local farm = addon:CreateCustomFarm("Mining", true)
         local shownPayload
         addon.GetFarmsForItem = function()
-            return { { id = "wit:gathering:mining:copperore", name = "Copper Ore" } }
+            return { { id = "catalog:gathering:mining:copperore", name = "Copper Ore" } }
         end
         addon.ShowCustomFarmMethodDialog = function(_, payload)
             shownPayload = payload
@@ -410,7 +410,7 @@ describe("Core/CustomFarms", function()
         assert.is_true(addon:RequestAddToCustomFarm({ itemID = 2770, itemName = "Copper Ore" }, "materials"))
         assert.equals(farm.id, shownPayload.farmID)
         assert.equals(2770, shownPayload.entry.itemID)
-        assert.equals("wit:gathering:mining:copperore", shownPayload.farms[1].id)
+        assert.equals("catalog:gathering:mining:copperore", shownPayload.farms[1].id)
         assert.equals(0, #farm.entries)
     end)
 

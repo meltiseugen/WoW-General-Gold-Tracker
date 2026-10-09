@@ -68,7 +68,7 @@ describe("UI/CustomFarmMethodDialog", function()
     it("switches sources, previews only the selected overlay and commits the user map", function()
         with_dialog(function(addon, farm, entry, options, _, menu)
             assert.is_true(addon:ShowCustomFarmMethodDialog({ farmID = farm.id, entry = entry,
-                farms = { { id = "wit:fire", name = "Fire", mapNames = { "Hellfire" }, targets = {},
+                farms = { { id = "catalog:fire", name = "Fire", mapNames = { "Hellfire" }, targets = {},
                     mapOptions = { options[1] } } } }))
             local frame = addon.customFarmMethodDialog
             assert.equals("map", frame.selectedDataType)
