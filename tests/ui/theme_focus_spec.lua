@@ -164,6 +164,95 @@ describe("UI/Theme focus management", function()
         assert.equals("HIGH", world_map.strata)
         assert.equals(10, world_map.level)
     end)
+
+    it("never registers or raises the Trading Post through any focus entry point", function()
+        local trading_post = frame("PerksProgramFrame", "HIGH", 10)
+
+        loader.with_globals({
+            PerksProgramFrame = trading_post,
+            UIPanelWindows = { PerksProgramFrame = { area = "full" } },
+            CreateFrame = function()
+                return { SetScript = function() end }
+            end,
+        }, function()
+            local theme = load_theme()
+
+            assert.is_false(theme:IsKnownExternalWindow(trading_post))
+            assert.is_nil(theme:RegisterExternalWindowForFocus(trading_post))
+            assert.is_nil(theme:RegisterWindowForFocus(trading_post, "external"))
+            theme:RegisterExternalFocusFrames({ "PerksProgramFrame" })
+            assert.is_nil(theme:BringManagedWindowToFront(trading_post))
+
+            assert.is_nil(theme.externalFocusWindowNames.PerksProgramFrame)
+            assert.is_nil(theme.windowFocusFrames[trading_post])
+            assert.is_nil(trading_post.goldTrackerWindowFocusRegistered)
+            assert.is_nil(trading_post.goldTrackerManagedWindow)
+            assert.same({}, trading_post.scripts)
+            assert.is_nil(trading_post.toplevel)
+            assert.is_nil(trading_post.raised)
+            assert.equals("HIGH", trading_post.strata)
+            assert.equals(10, trading_post.level)
+        end)
+    end)
+
+    it("leaves Trading Post and confirmation layers unchanged during repeated mouse clicks", function()
+        local trading_post = frame("PerksProgramFrame", "HIGH", 10)
+        local product = frame(nil, "HIGH", 1001)
+        product:SetParent(trading_post)
+        local popup = frame("StaticPopup1", "DIALOG", 11)
+        popup:SetParent(trading_post)
+        local purchase = frame(nil, "DIALOG", 12)
+        purchase:SetParent(popup)
+        local cancel = frame(nil, "DIALOG", 12)
+        cancel:SetParent(popup)
+        local mouse_focus, mouse_down
+        local watcher = { SetScript = function(self, event, callback) self[event] = callback end }
+
+        loader.with_globals({
+            PerksProgramFrame = trading_post,
+            UIPanelWindows = { PerksProgramFrame = { area = "full" } },
+            CreateFrame = function() return watcher end,
+            GetMouseFoci = function() return { mouse_focus } end,
+            IsMouseButtonDown = function() return mouse_down end,
+        }, function()
+            local theme = load_theme()
+            theme:EnsureWindowFocusWatcher()
+
+            for _ = 1, 3 do
+                for _, target in ipairs({ product, purchase, cancel }) do
+                    mouse_focus = target
+                    assert.is_nil(theme:FindFocusableWindow(target))
+                    mouse_down = true
+                    watcher.OnUpdate(watcher)
+                    mouse_down = false
+                    watcher.OnUpdate(watcher)
+                end
+            end
+
+            -- Leaving the Trading Post reparents the still-open static popup.
+            trading_post.shown = false
+            popup:SetParent(frame("UIParent", "MEDIUM", 0))
+            for _, target in ipairs({ purchase, cancel }) do
+                mouse_focus = target
+                assert.is_nil(theme:FindFocusableWindow(target))
+                mouse_down = true
+                watcher.OnUpdate(watcher)
+                mouse_down = false
+                watcher.OnUpdate(watcher)
+            end
+
+            assert.same({}, trading_post.scripts)
+            assert.is_nil(trading_post.goldTrackerManagedWindow)
+            assert.is_nil(trading_post.raised)
+            assert.equals("HIGH", trading_post.strata)
+            assert.equals(10, trading_post.level)
+            assert.equals("DIALOG", popup.strata)
+            assert.equals(11, popup.level)
+            assert.is_nil(popup.raised)
+            assert.is_nil(purchase.raised)
+            assert.is_nil(cancel.raised)
+        end)
+    end)
 end)
 
 describe("UI/Theme text column measurement", function()

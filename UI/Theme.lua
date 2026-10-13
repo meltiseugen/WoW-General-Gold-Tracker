@@ -47,11 +47,12 @@ local COMMON_EXTERNAL_WINDOW_NAMES = {
     "TradeSkillFrame",
 }
 
--- Blizzard's world map is a composite UI panel whose children and third-party
--- overlays manage their own frame levels. Raising the root frame independently
--- can put it above its own controls, so it must never enter our focus system.
+-- These composite Blizzard panels manage their own child and popup layers.
+-- Raising their roots can put content above controls or confirmation dialogs.
+-- In particular, Trading Post static popups are parented to PerksProgramFrame.
 local EXCLUDED_EXTERNAL_WINDOW_NAMES = {
     WorldMapFrame = true,
+    PerksProgramFrame = true,
 }
 
 local BaseApplyWindowChrome = Theme.ApplyWindowChrome
@@ -137,6 +138,10 @@ end
 
 function Theme:RegisterWindowForFocus(frame, role, options)
     if not frame then
+        return nil
+    end
+    local frameName = GetFrameName(frame)
+    if frameName and EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
         return nil
     end
 
@@ -262,6 +267,10 @@ function Theme:BringManagedWindowToFront(frame)
     local managedFrame = frame.goldTrackerManagedWindow
     if managedFrame and managedFrame ~= frame then
         frame = managedFrame
+    end
+    local frameName = GetFrameName(frame)
+    if frameName and EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
+        return nil
     end
 
     if not frame.goldTrackerWindowFocusRole and self:IsKnownExternalWindow(frame) then
