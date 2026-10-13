@@ -2,11 +2,13 @@ local loader = require("tests.helpers.addon_loader")
 
 local function make_frame(parent)
     local frame = { parent = parent, scripts = {}, shown = true }
-    for _, method in ipairs({ "SetPoint", "SetFrameStrata", "SetClampedToScreen", "EnableMouse", "RegisterEvent",
-        "SetJustifyH", "SetJustifyV", "SetWordWrap", "Raise" }) do
+    for _, method in ipairs({ "SetPoint", "ClearAllPoints", "SetFrameStrata", "SetClampedToScreen", "EnableMouse", "RegisterEvent",
+        "SetJustifyH", "SetJustifyV", "SetWordWrap", "SetScrollChild", "Raise" }) do
         frame[method] = function() end
     end
     function frame:SetSize(width, height) self.width, self.height = width, height end
+    function frame:SetWidth(width) self.width = width end
+    function frame:SetHeight(height) self.height = height end
     function frame:SetText(text) self.text = text end
     function frame:SetScript(event, callback) self.scripts[event] = callback end
     function frame:SetShown(shown) self.shown = shown end
@@ -43,6 +45,7 @@ local function with_dialog(callback)
         UIDropDownMenu_CreateInfo = function() return {} end,
         UIDropDownMenu_AddButton = function(info) menu[#menu + 1] = info end,
     }, function()
+        loader.load_module("UI/MapAreaOverlay.lua", addon, {})
         loader.load_module("UI/MyFarmsWindow.lua", addon, { JanisTheme = theme })
         addon.CreateFarmingMapPreview = function(_, parent) return make_frame(parent) end
         addon.RefreshFarmingMapPreview = function(_, frame, option)
@@ -75,10 +78,16 @@ describe("UI/CustomFarmMethodDialog", function()
             assert.equals("catalog", frame.selectedMethodKind)
             assert.is_true(frame.mapPreview.shown)
             assert.equals(options[1], frame.mapPreview.option)
+            assert.equals("Available map data (4)", frame.methodLabel.text)
+            assert.equals(4, #frame.methodSourceRows)
+            assert.matches("^Catalog: Fire", frame.methodSourceRows[1].text)
+            assert.equals("Static: Throne", frame.methodSourceRows[2].text)
+            assert.equals("Static: Fel Pits", frame.methodSourceRows[3].text)
+            assert.equals("User discoveries: Hellfire (User)", frame.methodSourceRows[4].text)
+            frame.methodSourceRows[3].scripts.OnClick(frame.methodSourceRows[3])
+            assert.equals(options[2], frame.mapPreview.option)
             frame.methodDropdown.initialize(nil, 1)
             assert.equals(4, #menu)
-            menu[3].func()
-            assert.equals(options[2], frame.mapPreview.option)
             menu[4].func()
             assert.equals(options[3], frame.mapPreview.option)
             local renders = frame.mapPreview.refreshes
@@ -103,6 +112,83 @@ describe("UI/CustomFarmMethodDialog", function()
             buttons.Cancel.scripts.OnClick()
             assert.equals(before, #addon:GetCustomFarms())
             assert.is_false(frame.shown)
+        end)
+    end)
+
+    it("shows every catalog farm and direct map source in the visible source list", function()
+        with_dialog(function(addon, _, entry, options)
+            local farms = {}
+            for index = 1, 7 do
+                farms[index] = {
+                    id = "catalog:fire:" .. tostring(index),
+                    name = "Fire Farm " .. tostring(index),
+                    mapNames = { "Zone " .. tostring(index) },
+                    targets = {},
+                    mapOptions = { options[((index - 1) % 2) + 1] },
+                }
+            end
+            assert.is_true(addon:ShowCustomFarmMethodDialog({
+                entry = entry,
+                farms = farms,
+                mapOptions = { options[1], options[2] },
+            }))
+            local frame = addon.customFarmMethodDialog
+            assert.equals("Available map data (9)", frame.methodLabel.text)
+            assert.equals(9, #frame.methodSourceRows)
+            for index = 1, 9 do
+                assert.is_true(frame.methodSourceRows[index].shown)
+            end
+        end)
+    end)
+
+    it("requires and preserves one selected overlay when a map source has separate farming areas", function()
+        with_dialog(function(addon, farm, entry)
+            local splitOption = {
+                id = "shadowmoon-air",
+                mapID = 104,
+                label = "Shadowmoon Air Spirits",
+                sourceType = "static",
+                pins = {
+                    { mapID = 104, x = 0.20, y = 0.20, routeID = "air", spotLocation = "Air Spirits" },
+                    { mapID = 104, x = 0.23, y = 0.22, routeID = "air", spotLocation = "Air Spirits" },
+                    { mapID = 104, x = 0.78, y = 0.79, routeID = "air", spotLocation = "Air Spirits" },
+                    { mapID = 104, x = 0.82, y = 0.81, routeID = "air", spotLocation = "Air Spirits" },
+                },
+            }
+            assert.is_true(addon:ShowCustomFarmMethodDialog({
+                farmID = farm.id,
+                entry = entry,
+                farms = {},
+                mapOptions = { splitOption },
+            }))
+            local frame = addon.customFarmMethodDialog
+            assert.equals(3, #frame.methodSourceRows)
+            assert.matches("choose one of 2 overlays", frame.methodLabel.text, 1, true)
+            assert.is_false(frame.acceptButton.enabled)
+            assert.equals(4, #frame.mapPreview.option.pins)
+
+            frame.methodSourceRows[2].scripts.OnClick(frame.methodSourceRows[2])
+            assert.is_true(frame.acceptButton.enabled)
+            assert.equals(2, #frame.mapPreview.option.pins)
+            assert.equals("shadowmoon-air", frame.mapPreview.option.parentOptionID)
+            assert.is_string(frame.mapPreview.option.areaKey)
+            frame.acceptButton.scripts.OnClick()
+
+            local saved = farm.entries[1]
+            assert.equals(2, #saved.mapSource.pins)
+            assert.equals("shadowmoon-air", saved.mapSource.parentOptionID)
+            assert.is_string(saved.mapSource.areaKey)
+
+            assert.is_true(addon:ShowCustomFarmMethodDialog({
+                farmID = farm.id,
+                entryID = saved.id,
+                entry = saved,
+                farms = {},
+                mapOptions = { splitOption },
+            }))
+            assert.equals(saved.mapSource.areaKey, frame.selectedMapAreaKey)
+            assert.equals(2, #frame.mapPreview.option.pins)
+            assert.is_true(frame.acceptButton.enabled)
         end)
     end)
 

@@ -9,6 +9,7 @@ local WINDOW_MIN_HEIGHT = 480
 local WINDOW_MAX_WIDTH = 1440
 local WINDOW_MAX_HEIGHT = 920
 local FARM_LIST_WIDTH = 300
+local METHOD_DROPDOWN_WIDTH = 280
 local FARM_ROW_HEIGHT = 54
 local FARM_ROW_GAP = 4
 local STEP_ROW_HEIGHT = 52
@@ -416,41 +417,164 @@ local function BuildMapSourceLabel(option)
         .. (option.label or option.mapLabel or ("Map " .. tostring(option.mapID)))
 end
 
-local function RefreshMethodDialog(frame)
+local function GetMethodMapLabel(option)
+    return option.label or option.mapLabel or ("Map " .. tostring(option.mapID))
+end
+
+local function GetMethodFarmLabel(farm)
+    return "farm: " .. tostring(farm.name or farm.id)
+end
+
+local RefreshMethodDialog
+
+local function GetMapOptionAreaGroups(option)
+    local overlay = GoldTracker.MapAreaOverlay
+    if type(option) ~= "table" or type(overlay) ~= "table" or type(overlay.BuildGroups) ~= "function" then
+        return {}
+    end
+    return overlay:BuildGroups(option.pins, option.mapID) or {}
+end
+
+local function GetMapAreaChoiceLabel(group, index)
+    local label = type(group) == "table" and group.label or nil
+    if type(label) == "string" and label ~= "" then
+        return string.format("Overlay %d: %s", index, label)
+    end
+    return "Overlay " .. tostring(index)
+end
+
+local function BuildMapAreaChoice(option, areaKey)
+    local groups = GetMapOptionAreaGroups(option)
+    if #groups <= 1 then
+        return option, #groups
+    end
+    for index, group in ipairs(groups) do
+        if group.key == areaKey then
+            local selected = {}
+            for key, value in pairs(option) do
+                if key ~= "pins" then
+                    selected[key] = value
+                end
+            end
+            selected.parentOptionID = option.parentOptionID or option.id
+            selected.areaKey = group.key
+            selected.areaLabel = GetMapAreaChoiceLabel(group, index)
+            selected.label = tostring(option.label or option.mapLabel or ("Map " .. tostring(option.mapID)))
+                .. " - " .. selected.areaLabel
+            selected.pins = group.pins
+            return selected, #groups
+        end
+    end
+    return option, #groups
+end
+
+local function GetCatalogFarmMapOption(farm, itemID)
+    if type(farm) ~= "table" or type(GoldTracker.BuildFarmDetailsMapOptions) ~= "function" then
+        return nil
+    end
+    return GoldTracker:BuildFarmDetailsMapOptions({ farm }, itemID)[1]
+end
+
+local function RefreshMethodDetails(frame, option, areaSelectionRequired)
+    local lines
+    if frame.selectedDataType == "item" then
+        lines = {
+            { text = "This target will stay as an individual item without attached farm or map data." },
+        }
+    elseif option and type(GoldTracker.BuildStandaloneMapDetailLines) == "function" then
+        lines = GoldTracker:BuildStandaloneMapDetailLines(option.pins or {}, option.mapID,
+            option.mapLabel or option.label)
+        table.insert(lines, 1, { text = frame.selectedSourceLabel, fontObject = "GameFontNormal" })
+        if areaSelectionRequired then
+            table.insert(lines, 1, {
+                text = "Choose a farming area above before adding this item.",
+                r = 1, g = 0.65, b = 0.25,
+            })
+        end
+    else
+        lines = { { text = "Choose a map source to preview its farming locations." } }
+    end
+    local width = math.max(180, frame.detailPanel:GetWidth() - 40)
+    frame.methodDetailsContent:SetWidth(width)
+    local used, offset = 0, 0
+    for _, line in ipairs(lines) do
+        local text = line.text
+        if line.type == "source" then
+            text = tostring(line.siteName or "Source") .. "\n" .. tostring(line.url or "")
+        end
+        if type(text) == "string" and text ~= "" then
+            used = used + 1
+            local label = frame.methodDetailLines[used]
+            if not label then
+                label = frame.methodDetailsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                label:SetJustifyH("LEFT")
+                label:SetJustifyV("TOP")
+                label:SetWordWrap(true)
+                frame.methodDetailLines[used] = label
+            end
+            label:SetFontObject(_G[line.fontObject or "GameFontHighlightSmall"] or GameFontHighlightSmall)
+            label:ClearAllPoints()
+            label:SetPoint("TOPLEFT", frame.methodDetailsContent, "TOPLEFT", 0, -offset)
+            label:SetWidth(width)
+            label:SetTextColor(line.r or 0.82, line.g or 0.86, line.b or 0.92)
+            label:SetText(text)
+            label:Show()
+            offset = offset + math.max(12, label:GetStringHeight() or 12) + (line.gap or 8)
+        end
+    end
+    for index = used + 1, #frame.methodDetailLines do
+        frame.methodDetailLines[index]:Hide()
+    end
+    frame.methodDetailsContent:SetHeight(math.max(1, offset))
+end
+
+RefreshMethodDialog = function(frame)
     local payload = frame.payload
     if type(payload) ~= "table" then
         return
     end
     local entry = payload.entry or {}
+    local itemName = entry.itemName or GetItemNameSafe(entry.itemID)
+    if frame.headerTitleText then
+        frame.headerTitleText:SetText(itemName)
+    end
     local activeFarm = payload.farmID and GoldTracker:GetCustomFarmByID(payload.farmID) or nil
     if payload.entryID then
         frame.promptText:SetText(string.format(
             "Choose how to farm %s in |cffffd24a%s|r.",
-            entry.itemName or ("Item " .. tostring(entry.itemID)),
+            itemName,
             activeFarm and activeFarm.name or "custom farm"
         ))
         frame.acceptButton:SetText("Save")
     else
         frame.promptText:SetText(activeFarm
-            and string.format("Add %s to |cffffd24a%s|r?", entry.itemName or ("Item " .. tostring(entry.itemID)), activeFarm.name)
-            or string.format("Create a new farm and add %s?", entry.itemName or ("Item " .. tostring(entry.itemID))))
+            and string.format("Add %s to |cffffd24a%s|r?", itemName, activeFarm.name)
+            or string.format("Create a new farm and add %s?", itemName))
         frame.acceptButton:SetText(activeFarm and "Add" or "Create & Add")
     end
 
     local isMap = frame.selectedDataType == "map"
-    frame:SetSize(isMap and 760 or 640, isMap and 660 or 420)
+    frame:SetSize(isMap and 980 or 640, isMap and 660 or 300)
     for dataType, button in pairs(frame.dataTypeButtons) do
         if button.SetSelected then
             button:SetSelected(frame.selectedDataType == dataType)
         end
     end
-    frame.methodLabel:SetText("Map source")
-    frame.methodDropdown:SetShown(frame.selectedDataType ~= "item")
-    frame.methodLabel:SetShown(frame.selectedDataType ~= "item")
-    frame.detailPanel:SetShown(not isMap)
+    frame.methodDropdown:SetShown(isMap)
+    frame.areaLabel:Hide()
+    frame.areaDropdown:Hide()
+    frame.detailPanel:Show()
     frame.mapPreview:SetShown(isMap)
+    frame.detailPanel:ClearAllPoints()
+    if isMap then
+        frame.detailPanel:SetWidth(300)
+        frame.detailPanel:SetPoint("TOPRIGHT", frame.chrome, "TOPRIGHT", -20, -172)
+    else
+        frame.detailPanel:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", 20, -140)
+    end
+    frame.detailPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -20, 48)
     frame.acceptButton:SetEnabled(true)
-    UIDropDownMenu_SetWidth(frame.methodDropdown, isMap and 684 or 564)
+    UIDropDownMenu_SetWidth(frame.methodDropdown, METHOD_DROPDOWN_WIDTH)
     if isMap then
         local selectedFarm
         if frame.selectedMethodKind == "catalog" then
@@ -464,29 +588,129 @@ local function RefreshMethodDialog(frame)
         local option = frame.selectedMethodKind == "map"
             and (payload.mapOptions or {})[frame.selectedMapOptionIndex or 1]
             or nil
-        if selectedFarm and type(GoldTracker.BuildFarmDetailsMapOptions) == "function" then
-            option = GoldTracker:BuildFarmDetailsMapOptions({ selectedFarm }, entry.itemID)[1]
+        if selectedFarm then
+            option = GetCatalogFarmMapOption(selectedFarm, entry.itemID)
         end
+        local selectedOption, areaCount = BuildMapAreaChoice(option, frame.selectedMapAreaKey)
+        local areaSelectionRequired = areaCount > 1 and selectedOption == option
+        frame.selectedResolvedMapOption = not areaSelectionRequired and selectedOption or nil
+        frame.methodAreaGroups = GetMapOptionAreaGroups(option)
+        frame.selectedSourceLabel = selectedFarm and ("Catalog: " .. BuildMethodLabel(selectedFarm))
+            or (option and BuildMapSourceLabel(option) or "No map sources available")
         local selectedValue = selectedFarm and ("catalog:" .. tostring(selectedFarm.id))
             or (option and ("map:" .. tostring(frame.selectedMapOptionIndex or 1)))
         UIDropDownMenu_SetSelectedValue(frame.methodDropdown, selectedValue)
         UIDropDownMenu_SetText(
             frame.methodDropdown,
-            selectedFarm and ("Catalog: " .. BuildMethodLabel(selectedFarm))
-                or (option and BuildMapSourceLabel(option) or "No map sources available")
+            selectedFarm and GetMethodFarmLabel(selectedFarm)
+                or (option and GetMethodMapLabel(option) or "No map sources available")
         )
-        frame.acceptButton:SetEnabled(selectedFarm ~= nil or option ~= nil)
-        if option and frame.previewOption ~= option then
-            frame.previewOption = option
-            GoldTracker:RefreshFarmingMapPreview(frame.mapPreview, option)
+        frame.acceptButton:SetEnabled(option ~= nil and not areaSelectionRequired)
+        if areaCount > 1 then
+            frame.areaLabel:Show()
+            frame.areaDropdown:Show()
+            UIDropDownMenu_SetSelectedValue(frame.areaDropdown, frame.selectedMapAreaKey)
+            local areaLabel = "Choose one of " .. tostring(areaCount) .. " farming areas"
+            for index, group in ipairs(frame.methodAreaGroups) do
+                if group.key == frame.selectedMapAreaKey then
+                    areaLabel = GetMapAreaChoiceLabel(group, index)
+                    break
+                end
+            end
+            UIDropDownMenu_SetText(frame.areaDropdown, areaLabel)
         end
+        local mapTop = areaCount > 1 and -212 or -172
+        frame.detailPanel:ClearAllPoints()
+        frame.detailPanel:SetPoint("TOPRIGHT", frame.chrome, "TOPRIGHT", -20, mapTop)
+        frame.detailPanel:SetPoint("BOTTOMRIGHT", frame.chrome, "BOTTOMRIGHT", -20, 48)
+        frame.mapPreview:ClearAllPoints()
+        frame.mapPreview:SetPoint("TOPLEFT", frame.chrome, "TOPLEFT", 20, mapTop)
+        frame.mapPreview:SetPoint("BOTTOMRIGHT", frame.detailPanel, "BOTTOMLEFT", -12, 0)
+        if selectedOption and frame.previewOption ~= selectedOption then
+            frame.previewOption = selectedOption
+            GoldTracker:RefreshFarmingMapPreview(frame.mapPreview, selectedOption)
+        elseif not selectedOption then
+            frame.mapPreview.mapContent:Hide()
+            frame.mapPreview.statusText:SetText("No map source selected.")
+            frame.mapPreview.statusText:Show()
+        end
+        RefreshMethodDetails(frame, selectedOption, areaSelectionRequired)
         return
     end
     if frame.selectedDataType == "item" then
-        frame.detailText:SetText("This target will stay as an individual item without attached farm or map data.")
+        RefreshMethodDetails(frame)
         return
     end
 
+end
+
+local function EnableMethodDropdownClicks(dropdown)
+    dropdown:EnableMouse(true)
+    dropdown:SetScript("OnMouseDown", function(self, button)
+        if button == "LeftButton" then
+            ToggleDropDownMenu(1, nil, self)
+        end
+    end)
+end
+
+local function PopulateMethodSourceDropdown(frame, level)
+    local grouped = { user = {}, map = {}, farm = {} }
+    local groupLabels = { user = "User map data", map = "Map data", farm = "Farm data" }
+    for index, option in ipairs(frame.payload.mapOptions or {}) do
+        local groupID = option.farm and "farm" or (option.sourceType == "user" and "user" or "map")
+        grouped[groupID][#grouped[groupID] + 1] = {
+            methodKind = "map",
+            mapOptionIndex = index,
+            label = GetMethodMapLabel(option),
+        }
+    end
+    for _, farm in ipairs(frame.payload.farms or {}) do
+        grouped.farm[#grouped.farm + 1] = {
+            methodKind = "catalog",
+            catalogFarmID = farm.id,
+            label = GetMethodFarmLabel(farm),
+        }
+    end
+    local groupCount = 0
+    for _, entries in pairs(grouped) do
+        if #entries > 0 then
+            groupCount = groupCount + 1
+        end
+    end
+    for _, groupID in ipairs({ "user", "map", "farm" }) do
+        local entries = grouped[groupID]
+        if #entries > 0 and groupCount > 1 then
+            local header = UIDropDownMenu_CreateInfo()
+            header.text = groupLabels[groupID]
+            header.isTitle = true
+            header.notCheckable = true
+            header.disabled = true
+            UIDropDownMenu_AddButton(header, level)
+        end
+        for _, entry in ipairs(entries) do
+            local source = entry
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = source.label
+            info.value = source.methodKind == "catalog" and ("catalog:" .. tostring(source.catalogFarmID))
+                or ("map:" .. tostring(source.mapOptionIndex))
+            info.checked = frame.selectedMethodKind == source.methodKind
+                and (source.methodKind == "catalog" and frame.selectedCatalogFarmID == source.catalogFarmID
+                    or source.methodKind == "map" and frame.selectedMapOptionIndex == source.mapOptionIndex)
+            info.func = function()
+                frame.selectedMethodKind = source.methodKind
+                if source.methodKind == "catalog" then
+                    frame.selectedCatalogFarmID = source.catalogFarmID
+                else
+                    frame.selectedMapOptionIndex = source.mapOptionIndex
+                end
+                frame.selectedMapAreaKey = nil
+                frame.previewOption = nil
+                frame.methodDetailsScroll:SetVerticalScroll(0)
+                RefreshMethodDialog(frame)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
 end
 
 local function CreateMethodDialog()
@@ -496,36 +720,40 @@ local function CreateMethodDialog()
     local frame = CreateFrame("Frame", "GoldTrackerCustomFarmMethodDialog", UIParent, "BasicFrameTemplateWithInset")
     frame:SetSize(640, 420)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-    frame:SetFrameStrata("FULLSCREEN_DIALOG")
+    -- Blizzard dropdown lists use FULLSCREEN_DIALOG. Keep the picker below that
+    -- layer even when managed focus raises it above the other addon windows.
+    frame:SetFrameStrata("DIALOG")
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-    frame:SetScript("OnEvent", function(self)
-        if self:IsShown() and self.selectedDataType == "map" then
+    frame:SetScript("OnEvent", function(self, _, itemID)
+        if self:IsShown() and self.payload and self.payload.entry
+            and tonumber(itemID) == tonumber(self.payload.entry.itemID) then
             RefreshMethodDialog(self)
         end
     end)
     frame:Hide()
-    local chrome = Theme:ApplyWindowChrome(frame, "Choose map data")
+    local chrome = Theme:ApplyWindowChrome(frame, "")
     frame.chrome = chrome
     Theme:RegisterSpecialFrame("GoldTrackerCustomFarmMethodDialog")
 
-    local promptText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local promptText = chrome:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     promptText:SetPoint("TOPLEFT", chrome, "TOPLEFT", 20, -58)
     promptText:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -20, -58)
     promptText:SetJustifyH("LEFT")
     promptText:SetWordWrap(true)
+    promptText:SetHeight(28)
     frame.promptText = promptText
 
     frame.dataTypeButtons = {}
     local previousButton
     for _, dataType in ipairs({ { "map", "Map data" }, { "item", "Item only" } }) do
         local key = dataType[1]
-        local button = CreateButton(frame, 140, 26, dataType[2], "neutral")
+        local button = CreateButton(chrome, 140, 26, dataType[2], "neutral")
         if previousButton then
             button:SetPoint("LEFT", previousButton, "RIGHT", 8, 0)
         else
-            button:SetPoint("TOPLEFT", frame, "TOPLEFT", 20, -112)
+            button:SetPoint("TOPLEFT", chrome, "TOPLEFT", 20, -96)
         end
         button:SetScript("OnClick", function()
             frame.selectedDataType = key
@@ -535,81 +763,83 @@ local function CreateMethodDialog()
         previousButton = button
     end
 
-    local methodLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    methodLabel:SetPoint("TOPLEFT", frame.dataTypeButtons.map, "BOTTOMLEFT", 0, -14)
-    methodLabel:SetText("Map source")
-    frame.methodLabel = methodLabel
-    local methodDropdown = CreateFrame("Frame", "GoldTrackerCustomFarmMethodDropdown", frame, "UIDropDownMenuTemplate")
-    methodDropdown:SetPoint("TOPLEFT", methodLabel, "BOTTOMLEFT", -16, -3)
-    UIDropDownMenu_SetWidth(methodDropdown, 480)
+    local methodDropdown = CreateFrame("Frame", "GoldTrackerCustomFarmMethodDropdown", chrome, "UIDropDownMenuTemplate")
+    methodDropdown:SetPoint("TOPLEFT", chrome, "TOPLEFT", 4, -128)
+    UIDropDownMenu_SetWidth(methodDropdown, METHOD_DROPDOWN_WIDTH)
+    EnableMethodDropdownClicks(methodDropdown)
     UIDropDownMenu_Initialize(methodDropdown, function(_, level)
         if level ~= 1 or type(frame.payload) ~= "table" then
             return
         end
         if frame.selectedDataType == "map" then
-            for _, farm in ipairs(frame.payload.farms or {}) do
-                local selectedFarm = farm
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = "Catalog: " .. BuildMethodLabel(selectedFarm)
-                info.value = "catalog:" .. tostring(selectedFarm.id)
-                info.checked = frame.selectedMethodKind == "catalog"
-                    and frame.selectedCatalogFarmID == selectedFarm.id
-                info.func = function()
-                    frame.selectedMethodKind = "catalog"
-                    frame.selectedCatalogFarmID = selectedFarm.id
-                    frame.previewOption = nil
-                    RefreshMethodDialog(frame)
-                end
-                UIDropDownMenu_AddButton(info, level)
-            end
-            for index, option in ipairs(frame.payload.mapOptions or {}) do
-                local optionIndex = index
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = BuildMapSourceLabel(option)
-                info.value = "map:" .. tostring(optionIndex)
-                info.checked = frame.selectedMethodKind == "map" and frame.selectedMapOptionIndex == optionIndex
-                info.func = function()
-                    frame.selectedMethodKind = "map"
-                    frame.selectedMapOptionIndex = optionIndex
-                    frame.previewOption = nil
-                    RefreshMethodDialog(frame)
-                end
-                UIDropDownMenu_AddButton(info, level)
-            end
-            return
+            PopulateMethodSourceDropdown(frame, level)
         end
     end)
     frame.methodDropdown = methodDropdown
 
-    local detailPanel = CreatePanel(frame, { 0.025, 0.03, 0.045, 0.96 }, { 1, 1, 1, 0.08 })
-    frame.detailPanel = detailPanel
-    detailPanel:SetPoint("TOPLEFT", methodDropdown, "BOTTOMLEFT", 16, -8)
-    detailPanel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 54)
-    local detailText = detailPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    detailText:SetPoint("TOPLEFT", detailPanel, "TOPLEFT", 12, -10)
-    detailText:SetPoint("BOTTOMRIGHT", detailPanel, "BOTTOMRIGHT", -12, 10)
-    detailText:SetJustifyH("LEFT")
-    detailText:SetJustifyV("TOP")
-    detailText:SetWordWrap(true)
-    frame.detailText = detailText
+    local areaLabel = chrome:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    areaLabel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 20, -180)
+    areaLabel:SetText("Farm area")
+    frame.areaLabel = areaLabel
+    local areaDropdown = CreateFrame("Frame", "GoldTrackerCustomFarmAreaDropdown", chrome, "UIDropDownMenuTemplate")
+    areaDropdown:SetPoint("TOPLEFT", chrome, "TOPLEFT", 100, -168)
+    UIDropDownMenu_SetWidth(areaDropdown, METHOD_DROPDOWN_WIDTH)
+    EnableMethodDropdownClicks(areaDropdown)
+    UIDropDownMenu_Initialize(areaDropdown, function(_, level)
+        if level ~= 1 then
+            return
+        end
+        for index, group in ipairs(frame.methodAreaGroups or {}) do
+            local areaKey = group.key
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = GetMapAreaChoiceLabel(group, index)
+            info.value = areaKey
+            info.checked = frame.selectedMapAreaKey == areaKey
+            info.func = function()
+                frame.selectedMapAreaKey = areaKey
+                frame.previewOption = nil
+                frame.methodDetailsScroll:SetVerticalScroll(0)
+                RefreshMethodDialog(frame)
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    frame.areaDropdown = areaDropdown
 
-    local mapPreview = GoldTracker:CreateFarmingMapPreview(frame)
-    mapPreview:SetPoint("TOPLEFT", detailPanel, "TOPLEFT")
-    mapPreview:SetPoint("BOTTOMRIGHT", detailPanel, "BOTTOMRIGHT")
+    local detailPanel = CreatePanel(chrome, { 0.025, 0.03, 0.045, 0.96 }, { 1, 1, 1, 0.08 })
+    frame.detailPanel = detailPanel
+    detailPanel:SetWidth(300)
+    detailPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -20, -172)
+    detailPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -20, 48)
+    local detailsScroll = CreateFrame("ScrollFrame", nil, detailPanel, "UIPanelScrollFrameTemplate")
+    detailsScroll:SetPoint("TOPLEFT", detailPanel, "TOPLEFT", 12, -12)
+    detailsScroll:SetPoint("BOTTOMRIGHT", detailPanel, "BOTTOMRIGHT", -28, 12)
+    local detailsContent = CreateFrame("Frame", nil, detailsScroll)
+    detailsContent:SetSize(260, 1)
+    detailsScroll:SetScrollChild(detailsContent)
+    frame.methodDetailsScroll = detailsScroll
+    frame.methodDetailsContent = detailsContent
+    frame.methodDetailLines = {}
+
+    local mapPreview = GoldTracker:CreateFarmingMapPreview(chrome)
+    mapPreview:SetPoint("TOPLEFT", chrome, "TOPLEFT", 20, -172)
+    mapPreview:SetPoint("BOTTOMRIGHT", detailPanel, "BOTTOMLEFT", -12, 0)
     mapPreview:Hide()
     frame.mapPreview = mapPreview
 
-    local cancelButton = CreateButton(frame, 86, 24, "Cancel", "neutral")
-    cancelButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
+    local cancelButton = CreateButton(chrome, 86, 24, "Cancel", "neutral")
+    cancelButton:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
     cancelButton:SetScript("OnClick", function() frame:Hide() end)
-    local acceptButton = CreateButton(frame, 112, 24, "Add", "primary")
+    local acceptButton = CreateButton(chrome, 112, 24, "Add", "primary")
     acceptButton:SetPoint("RIGHT", cancelButton, "LEFT", -8, 0)
     acceptButton:SetScript("OnClick", function()
         local payload = frame.payload
+        local selectedArea = frame.selectedMapAreaKey ~= nil
         local catalogFarmID = frame.selectedDataType == "map" and frame.selectedMethodKind == "catalog"
-            and frame.selectedCatalogFarmID or nil
-        local mapOption = frame.selectedDataType == "map" and frame.selectedMethodKind == "map"
-            and payload.mapOptions[frame.selectedMapOptionIndex] or nil
+            and not selectedArea and frame.selectedCatalogFarmID or nil
+        local mapOption = frame.selectedDataType == "map"
+            and (frame.selectedMethodKind == "map" or selectedArea)
+            and frame.selectedResolvedMapOption or nil
         local committed
         local reason
         if payload and payload.entryID then
@@ -638,6 +868,7 @@ function GoldTracker:ShowCustomFarmMethodDialog(payload)
     frame.payload = payload
     frame.selectedCatalogFarmID = payload.selectedCatalogFarmID or (payload.farms[1] and payload.farms[1].id)
     frame.selectedMapOptionIndex = 1
+    frame.selectedMapAreaKey = nil
     frame.selectedDataType = (#payload.farms > 0 or #payload.mapOptions > 0) and "map" or "item"
     frame.selectedMethodKind = #payload.farms > 0 and "catalog" or "map"
     if payload.entry.mapSource then
@@ -645,8 +876,13 @@ function GoldTracker:ShowCustomFarmMethodDialog(payload)
         frame.selectedMethodKind = "map"
         local matched
         for index, option in ipairs(payload.mapOptions) do
-            if self:GetCustomFarmMapSourceKey(option) == payload.entry.mapSource.key then
+            local savedSource = payload.entry.mapSource
+            if self:GetCustomFarmMapSourceKey(option) == savedSource.key
+                or (savedSource.parentOptionID ~= nil and savedSource.parentOptionID == option.id
+                    and tonumber(savedSource.mapID) == tonumber(option.mapID))
+            then
                 frame.selectedMapOptionIndex = index
+                frame.selectedMapAreaKey = savedSource.areaKey
                 matched = true
                 break
             end
@@ -659,10 +895,15 @@ function GoldTracker:ShowCustomFarmMethodDialog(payload)
         frame.selectedDataType = "item"
     end
     frame.previewOption = nil
+    frame.methodDetailsScroll:SetVerticalScroll(0)
     frame.dataTypeButtons.map:SetEnabled(#payload.farms > 0 or #payload.mapOptions > 0)
     RefreshMethodDialog(frame)
     frame:Show()
-    frame:Raise()
+    if type(Theme.BringManagedWindowToFront) == "function" then
+        Theme:BringManagedWindowToFront(frame)
+    else
+        frame:Raise()
+    end
     return true
 end
 
@@ -1743,6 +1984,28 @@ local function ConfigureEntryRow(frame, row, entry, yOffset, striped, grouped)
     row:Show()
 end
 
+function GoldTracker:RefreshMyFarmsRouteRunButton(farm, hasRoutePlan)
+    local frame = self.myFarmsFrame
+    local button = frame and frame.routeRunButton or nil
+    if not button then
+        return false
+    end
+
+    local isRunning = hasRoutePlan == true
+        and farm ~= nil
+        and type(self.IsCustomFarmRoutePlanActive) == "function"
+        and self:IsCustomFarmRoutePlanActive(farm.id)
+    button:SetShown(hasRoutePlan == true)
+    button:SetText(isRunning and "Stop" or "Start")
+    button.tooltipText = isRunning
+        and "Stop this farm for the assigned character."
+        or "Start this farm for the assigned character."
+    if button.SetSelected then
+        button:SetSelected(isRunning)
+    end
+    return isRunning
+end
+
 function GoldTracker:RefreshMyFarmsWindow()
     local frame = self.myFarmsFrame
     if not frame then
@@ -1814,6 +2077,16 @@ function GoldTracker:RefreshMyFarmsWindow()
     local hasRoutePlan = type(self.HasCustomFarmRoutePlan) == "function" and self:HasCustomFarmRoutePlan(farm.id)
     frame.planButton:SetText(hasRoutePlan and "Replan Route" or "Plan Route")
     frame.openPlanButton:SetShown(hasRoutePlan)
+    self:RefreshMyFarmsRouteRunButton(farm, hasRoutePlan)
+    if frame.overviewButton then
+        local overview, overviewReason
+        if hasRoutePlan and type(self.BuildCustomFarmRoutePlanOverview) == "function" then
+            overview, overviewReason = self:BuildCustomFarmRoutePlanOverview(farm.id)
+        end
+        frame.overviewButton:SetEnabled(overview ~= nil)
+        frame.overviewButton.tooltipText = overview and "Show every planned stop on one numbered route map."
+            or overviewReason or "Plan a route with map data before opening its overview."
+    end
     local characters = self:GetKnownCustomFarmCharacters()
     UIDropDownMenu_SetText(frame.characterDropdown, farm.assignedCharacter or "Select a character")
     if #characters == 0 and type(UIDropDownMenu_DisableDropDown) == "function" then
@@ -2350,13 +2623,13 @@ function GoldTracker:CreateMyFarmsWindow()
 
     local farmTitleText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     farmTitleText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -14)
-    farmTitleText:SetPoint("RIGHT", bodyPanel, "RIGHT", -430, 0)
+    farmTitleText:SetPoint("RIGHT", bodyPanel, "RIGHT", -394, 0)
     farmTitleText:SetJustifyH("LEFT")
     farmTitleText:SetWordWrap(false)
     frame.farmTitleText = farmTitleText
 
     local buildButton = CreateButton(bodyPanel, 100, 24, "Build", "primary")
-    buildButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -10)
+    buildButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -42)
     buildButton:SetScript("OnClick", function(self)
         local activeFarm = addon:GetActiveCustomFarm()
         if activeFarm and activeFarm.id == frame.selectedFarmID then
@@ -2396,8 +2669,17 @@ function GoldTracker:CreateMyFarmsWindow()
     end)
     frame.planButton = planButton
 
+    local overviewButton = CreateButton(bodyPanel, 112, 24, "Overview map", "primary")
+    overviewButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -10)
+    overviewButton:SetScript("OnClick", function()
+        if type(addon.OpenCustomFarmRoutePlanOverview) == "function" then
+            addon:OpenCustomFarmRoutePlanOverview(frame.selectedFarmID)
+        end
+    end)
+    frame.overviewButton = overviewButton
+
     local openPlanButton = CreateButton(bodyPanel, 88, 24, "Open Plan", "neutral")
-    openPlanButton:SetPoint("RIGHT", planButton, "LEFT", -8, 0)
+    openPlanButton:SetPoint("RIGHT", overviewButton, "LEFT", -8, 0)
     openPlanButton:SetScript("OnClick", function()
         if type(addon.OpenFarmRoutePlanWindow) == "function" then
             addon:OpenFarmRoutePlanWindow(frame.selectedFarmID)
@@ -2406,15 +2688,26 @@ function GoldTracker:CreateMyFarmsWindow()
     openPlanButton:Hide()
     frame.openPlanButton = openPlanButton
 
+    local routeRunButton = CreateButton(bodyPanel, 70, 24, "Start", "primary")
+    routeRunButton:SetPoint("RIGHT", openPlanButton, "LEFT", -8, 0)
+    routeRunButton:SetScript("OnClick", function()
+        if type(addon.ToggleCustomFarmRoutePlan) == "function" then
+            addon:ToggleCustomFarmRoutePlan(frame.selectedFarmID)
+        end
+    end)
+    routeRunButton:Hide()
+    frame.routeRunButton = routeRunButton
+
     local farmMetaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    farmMetaText:SetPoint("TOPLEFT", farmTitleText, "BOTTOMLEFT", 0, -5)
+    farmMetaText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -76)
     farmMetaText:SetPoint("RIGHT", bodyPanel, "RIGHT", -14, 0)
     farmMetaText:SetJustifyH("LEFT")
+    farmMetaText:SetWordWrap(false)
     frame.farmMetaText = farmMetaText
 
     local characterPanel = CreatePanel(bodyPanel, { 0.025, 0.03, 0.045, 0.92 }, { 1, 1, 1, 0.08 })
-    characterPanel:SetPoint("TOPLEFT", farmMetaText, "BOTTOMLEFT", 0, -12)
-    characterPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -64)
+    characterPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -100)
+    characterPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -100)
     characterPanel:SetHeight(72)
     frame.characterPanel = characterPanel
     local assignedTitle = characterPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -2485,6 +2778,8 @@ function GoldTracker:CreateMyFarmsWindow()
         deleteButton,
         planButton,
         openPlanButton,
+        routeRunButton,
+        overviewButton,
         farmMetaText,
         characterPanel,
         entriesTitle,

@@ -180,8 +180,12 @@ UI/ExplorerWindow.lua
 UI/DiagnosisWindow.lua
 UI/OptionsPanel.lua
 UI/MapAreaOverlay.lua
+UI/MinimapAreaFill.lua
+UI/FarmTrail.lua
 UI/WorldMapOverlay.lua
 UI/WorldMapOverlay.xml
+UI/FarmRecoveryWaypoint.lua
+UI/FarmingHud.lua
 UI/StandaloneMapWindow.lua
 UI/FarmDetailsWindow.lua
 UI/History/HistoryConstants.lua

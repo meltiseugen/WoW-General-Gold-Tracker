@@ -1038,6 +1038,98 @@ function GoldTracker:SaveCurrentSessionToHistory(saveReason)
     return true
 end
 
+function GoldTracker:SaveCustomFarmRunToHistory(farm, run, closeReason)
+    if not self:IsSessionHistoryEnabled() or type(farm) ~= "table" or type(run) ~= "table" then
+        return false
+    end
+
+    local startedAt = tonumber(run.startedAt)
+    if not startedAt or startedAt <= 0 then
+        return false
+    end
+
+    local stoppedAt = tonumber(run.closedAt) or (type(time) == "function" and time() or startedAt)
+    local plan = type(self.BuildCustomFarmRoutePlan) == "function"
+        and self:BuildCustomFarmRoutePlan(farm.id, false) or {}
+    local completedCount = 0
+    for _, node in ipairs(plan or {}) do
+        if type(run.completed) == "table" and run.completed[node.key] == true then
+            completedCount = completedCount + 1
+        end
+    end
+
+    local currentNode
+    for _, node in ipairs(plan or {}) do
+        if node.key == run.currentStepKey then
+            currentNode = node
+            break
+        end
+    end
+    if not currentNode and #(plan or {}) > 0 then
+        currentNode = plan[#plan]
+    end
+
+    local source = self:GetCurrentValueSource()
+    local character = GetCurrentHistoryCharacterSnapshot()
+    local farmName = type(farm.name) == "string" and farm.name ~= "" and farm.name or "Custom farm"
+    local entry = {
+        id = self.db.nextHistoryID,
+        recordType = "farm",
+        isFarm = true,
+        saveReason = "farm",
+        farmCloseReason = closeReason or "stopped",
+        farmID = farm.id,
+        farmName = farmName,
+        farmCompletedSteps = completedCount,
+        farmTotalSteps = #(plan or {}),
+        farmCurrentStepKey = run.currentStepKey,
+        savedAt = stoppedAt,
+        startTime = startedAt,
+        stopTime = stoppedAt,
+        duration = math.max(0, stoppedAt - startedAt),
+        activeDuration = math.max(0, stoppedAt - startedAt),
+        rawGold = 0,
+        itemsValue = 0,
+        itemsRawGold = 0,
+        totalValue = 0,
+        highlightItemCount = 0,
+        lowHighlightItemCount = 0,
+        highHighlightItemCount = 0,
+        valueSourceID = source.id,
+        valueSourceLabel = source.label,
+        valueSourceLabels = { source.label },
+        savedByCharacterName = character.name,
+        savedByRealmName = character.realm,
+        savedBy = character.label or "Unknown",
+        savedByCharacters = character.label and { character.label } or {},
+        sessionStyleFilter = "all",
+        zoneName = currentNode and currentNode.mapName or nil,
+        locationLabel = currentNode and (currentNode.mapName or currentNode.name) or nil,
+        mapID = currentNode and currentNode.mapID or nil,
+        mapName = currentNode and currentNode.mapName or nil,
+        itemLoots = {},
+        moneyLoots = {},
+        items = {},
+        pinned = false,
+    }
+    entry.name = string.format("Farm: %s - %s", farmName, date("%Y-%m-%d %H:%M:%S", stoppedAt))
+    self.db.nextHistoryID = self.db.nextHistoryID + 1
+
+    local history = self:GetSessionHistory()
+    table.insert(history, 1, entry)
+    while #history > MAX_HISTORY_SESSIONS do
+        table.remove(history)
+    end
+
+    if self.RefreshHistoryWindow then
+        self:RefreshHistoryWindow()
+    end
+    if self.RefreshHistoryDetailsWindow then
+        self:RefreshHistoryDetailsWindow()
+    end
+    return true
+end
+
 function GoldTracker:ResumeHistorySession(sessionID)
     if not self:IsResumeHistorySessionEnabled() then
         self:Print("Resuming from history is disabled in options.")
@@ -1046,6 +1138,10 @@ function GoldTracker:ResumeHistorySession(sessionID)
 
     local historySession = self:GetHistorySessionByID(sessionID)
     if not historySession then
+        return false
+    end
+    if historySession.recordType == "farm" or historySession.isFarm == true then
+        self:Print("Farm history rows cannot be resumed as loot sessions.")
         return false
     end
 

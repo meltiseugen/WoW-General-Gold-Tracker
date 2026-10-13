@@ -18,11 +18,16 @@ local DETAILS_CONTENT_PADDING = 12
 local SOURCE_BUTTON_WIDTH = 54
 local SOURCE_ROW_HEIGHT = 24
 local DETAIL_TABLE_ROW_HEIGHT = 20
+local DETAIL_TABLE_FILTER_ROW_HEIGHT = 30
+local DETAIL_TABLE_HEADER_ROW_HEIGHT = 22
 local DETAIL_TOGGLE_ROW_HEIGHT = 20
+local DETAIL_BUTTON_ROW_HEIGHT = 28
+local DETAIL_BUTTON_WIDTH = 220
 local DETAIL_DIVIDER_ROW_HEIGHT = 14
-local DETAIL_TABLE_QUANTITY_WIDTH = 58
-local DETAIL_TABLE_VALUE_WIDTH = 116
-local DETAIL_TABLE_COLUMN_GAP = 8
+local DETAIL_TABLE_TYPE_WIDTH = 66
+local DETAIL_TABLE_QUANTITY_WIDTH = 44
+local DETAIL_TABLE_VALUE_WIDTH = 86
+local DETAIL_TABLE_COLUMN_GAP = 4
 local DETAIL_TEXT_HEIGHT_PADDING = 4
 local DETAIL_TEXT_MEASURE_HEIGHT = 1000
 local ROUTE_LINE_THICKNESS = 3
@@ -31,10 +36,19 @@ local MAP_DISPLAY_MODE_ICONS = "icons"
 local MAP_DISPLAY_MODE_BUTTON_WIDTH = 72
 local WAYPOINT_BUTTON_WIDTH = 104
 local ADD_TO_FARM_BUTTON_WIDTH = 104
+local PROJECT_BUTTON_WIDTH = 160
 local MAP_PIN_SIZE = 18
 local MAP_PIN_ICON_SIZE = 14
+local MAP_PIN_DUNGEON_ICON_SIZE = 36
+local MAP_PIN_DUNGEON_ICON_OFFSET_X = -18
 local MAP_PIN_RING_SIZE = 24
+local MAP_PIN_RING_SUBLEVEL = 4
+local MAP_PIN_ICON_SUBLEVEL = 5
+local MAP_PIN_ORDER_BACKGROUND_SUBLEVEL = 6
+local MAP_PIN_ORDER_TEXT_SUBLEVEL = 7
 local MAP_CLICK_DISTANCE = 5
+local RECORDED_YIELDS_WINDOW_WIDTH = 720
+local RECORDED_YIELDS_WINDOW_HEIGHT = 560
 
 local GetSelectedMapOption
 
@@ -76,13 +90,14 @@ local function ClampZoom(value)
 end
 
 local function GetMapName(mapID)
-    if C_Map and C_Map.GetMapInfo then
-        local mapInfo = C_Map.GetMapInfo(mapID)
-        if mapInfo and mapInfo.name then
+    local normalizedMapID = tonumber(mapID)
+    if normalizedMapID and C_Map and type(C_Map.GetMapInfo) == "function" then
+        local ok, mapInfo = pcall(C_Map.GetMapInfo, normalizedMapID)
+        if ok and mapInfo and mapInfo.name then
             return mapInfo.name
         end
     end
-    return "Map " .. tostring(mapID)
+    return normalizedMapID and ("Map " .. tostring(normalizedMapID)) or "Map"
 end
 
 local function SetStatus(frame, text)
@@ -117,6 +132,33 @@ local function GetStandaloneMapToolbarTitle(frame)
         return ""
     end
     return GetMapName(frame and frame.mapID or DEFAULT_MAP_ID)
+end
+
+local function GetStandaloneMapHeaderItemID(frame)
+    local option = GetSelectedMapOption and GetSelectedMapOption(frame)
+    local row = frame.customFarmRow or {}
+    return tonumber(option and option.selectedItemID or row.itemID)
+end
+
+local function RefreshStandaloneMapHeader(frame)
+    local titleText = frame.headerTitleText or frame.TitleText
+    if not titleText then
+        return
+    end
+    local row = frame.customFarmRow or {}
+    local itemID = GetStandaloneMapHeaderItemID(frame)
+    local itemName
+    if HasText(row.itemName) and (not itemID or tonumber(row.itemID) == itemID) then
+        itemName = row.itemName
+    elseif itemID then
+        if C_Item and type(C_Item.GetItemInfo) == "function" then
+            itemName = C_Item.GetItemInfo(itemID)
+        elseif type(GetItemInfo) == "function" then
+            itemName = GetItemInfo(itemID)
+        end
+    end
+    titleText:SetText(itemName or (itemID and ("Item " .. tostring(itemID)))
+        or frame.windowTitle or "Farm map")
 end
 
 local function AppendDetailLine(lines, text, r, g, b, gap, fontObject)
@@ -629,9 +671,18 @@ local function RefreshMapDisplayModeButton(frame)
 end
 
 local function TrySetMapPinAtlas(texture, atlas)
-    return texture
-        and type(texture.SetAtlas) == "function"
-        and pcall(texture.SetAtlas, texture, atlas, true)
+    if not texture or type(texture.SetAtlas) ~= "function" then
+        return false
+    end
+    local ok = pcall(texture.SetAtlas, texture, atlas, true)
+    if not ok then
+        return false
+    end
+    if type(texture.GetAtlas) == "function" then
+        local atlasOK, appliedAtlas = pcall(texture.GetAtlas, texture)
+        return atlasOK and appliedAtlas == atlas
+    end
+    return true
 end
 
 local function ApplyMapPinTexture(texture, atlas, fallbackTexture)
@@ -658,11 +709,35 @@ local function ApplyConfiguredMapPinIcon(texture, addon)
         texture = "Interface\\Icons\\INV_Misc_Map02",
     }
 
-    local textureKind = ApplyMapPinTexture(texture, iconOption.atlas, iconOption.texture)
+    -- Prefer the concrete file texture. SetAtlas can succeed without producing
+    -- visible art on some map/atlas combinations, which leaves a valid pin
+    -- frame looking empty in Icons mode.
+    local textureKind
+    if iconOption.texture then
+        textureKind = ApplyMapPinTexture(texture, nil, iconOption.texture)
+    else
+        textureKind = ApplyMapPinTexture(texture, iconOption.atlas, nil)
+    end
     if textureKind ~= "atlas" and texture and texture.SetTexCoord then
         texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     end
+    if texture and texture.SetVertexColor then
+        texture:SetVertexColor(1, 1, 1, 1)
+    end
+    if texture and texture.SetAlpha then
+        texture:SetAlpha(1)
+    end
     return textureKind
+end
+
+local function ApplyMapPinDataIcon(texture, pinData, addon)
+    if type(pinData) == "table" and HasText(pinData.mapIconAtlas) then
+        local textureKind = ApplyMapPinTexture(texture, pinData.mapIconAtlas, nil)
+        if textureKind then
+            return textureKind
+        end
+    end
+    return ApplyConfiguredMapPinIcon(texture, addon)
 end
 
 local function GetMapPin(frame, index)
@@ -678,7 +753,7 @@ local function GetMapPin(frame, index)
             pin:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         end
 
-        local ring = pin:CreateTexture(nil, "OVERLAY", nil, 6)
+        local ring = pin:CreateTexture(nil, "OVERLAY", nil, MAP_PIN_RING_SUBLEVEL)
         ring:SetPoint("CENTER", pin, "CENTER")
         ring:SetSize(MAP_PIN_RING_SIZE, MAP_PIN_RING_SIZE)
         ApplyMapPinTexture(ring, "worldquest-icon-ring", "Interface\\Minimap\\MiniMap-TrackingBorder")
@@ -687,10 +762,26 @@ local function GetMapPin(frame, index)
         end
         pin.ring = ring
 
-        local icon = pin:CreateTexture(nil, "OVERLAY", nil, 7)
+        local icon = pin:CreateTexture(nil, "OVERLAY", nil, MAP_PIN_ICON_SUBLEVEL)
         icon:SetPoint("CENTER", pin, "CENTER")
         icon:SetSize(MAP_PIN_ICON_SIZE, MAP_PIN_ICON_SIZE)
         pin.icon = icon
+
+        local orderBackground = pin:CreateTexture(nil, "OVERLAY", nil, MAP_PIN_ORDER_BACKGROUND_SUBLEVEL)
+        orderBackground:SetPoint("CENTER", pin, "CENTER")
+        orderBackground:SetSize(MAP_PIN_ICON_SIZE + 2, MAP_PIN_ICON_SIZE + 2)
+        orderBackground:SetColorTexture(0.04, 0.09, 0.07, 0.96)
+        orderBackground:Hide()
+        pin.orderBackground = orderBackground
+
+        local orderText = pin:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        if orderText.SetDrawLayer then
+            orderText:SetDrawLayer("OVERLAY", MAP_PIN_ORDER_TEXT_SUBLEVEL)
+        end
+        orderText:SetPoint("CENTER", pin, "CENTER", 0, 0)
+        orderText:SetTextColor(1.0, 0.82, 0.18, 1)
+        orderText:Hide()
+        pin.orderText = orderText
 
         pin:SetScript("OnEnter", function(self)
             if not GameTooltip or not self.pinData then
@@ -698,6 +789,14 @@ local function GetMapPin(frame, index)
             end
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
             GameTooltip:SetText(self.pinData.label or GetPinTitle(self.pinData), 1.0, 0.82, 0.18)
+            if tonumber(self.pinData.routeOrder) then
+                GameTooltip:AddDoubleLine(
+                    "Route stop",
+                    string.format("%d of %d", self.pinData.routeOrder, self.pinData.routeTotal or self.pinData.routeOrder),
+                    0.72, 0.86, 1.0,
+                    1.0, 0.82, 0.18
+                )
+            end
             local targetName = GetPinTargetName(self.pinData)
             GameTooltip:AddLine(InferFarmAction({
                 farmAction = self.pinData.farmAction,
@@ -732,7 +831,12 @@ local function GetMapPin(frame, index)
     elseif pin.SetParent then
         pin:SetParent(frame.mapContent)
     end
-    ApplyConfiguredMapPinIcon(pin.icon, GoldTracker)
+    if pin.SetFrameLevel and frame.mapContent.GetFrameLevel then
+        pin:SetFrameLevel((tonumber(frame.mapContent:GetFrameLevel()) or 0) + 40)
+    end
+    if pin.SetAlpha then
+        pin:SetAlpha(1)
+    end
     return pin
 end
 
@@ -971,7 +1075,25 @@ local function HideDetailLines(frame, usedLines)
             row.itemLink = nil
         end
     end
+    for index, row in pairs(frame.detailTableFilterRows or {}) do
+        if index > normalizedUsedLines and row then
+            row:Hide()
+            row.onSelect = nil
+        end
+    end
+    for index, row in pairs(frame.detailTableHeaderRows or {}) do
+        if index > normalizedUsedLines and row then
+            row:Hide()
+            row.onSort = nil
+        end
+    end
     for index, row in pairs(frame.detailToggleRows or {}) do
+        if index > normalizedUsedLines and row then
+            row:Hide()
+            row.onClick = nil
+        end
+    end
+    for index, row in pairs(frame.detailButtonRows or {}) do
         if index > normalizedUsedLines and row then
             row:Hide()
             row.onClick = nil
@@ -1120,6 +1242,115 @@ local function ScrollStandaloneMapDetails(scrollFrame, delta)
     scrollFrame:SetVerticalScroll(math.max(0, math.min(maxScroll, current - (delta * step))))
 end
 
+local function GetDetailTableFilterRow(frame, index)
+    frame.detailTableFilterRows = frame.detailTableFilterRows or {}
+    local row = frame.detailTableFilterRows[index]
+    if not row then
+        row = CreateFrame("Frame", nil, frame.detailsContent)
+        row:SetHeight(DETAIL_TABLE_FILTER_ROW_HEIGHT)
+        if type(row.EnableMouseWheel) == "function" then
+            row:EnableMouseWheel(true)
+            row:SetScript("OnMouseWheel", function(_, delta)
+                ScrollStandaloneMapDetails(frame.detailsScrollFrame, delta)
+            end)
+        end
+
+        local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        label:SetText("Show")
+        row.label = label
+
+        local dropdown = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+        dropdown:SetPoint("LEFT", row, "LEFT", 26, 0)
+        row.dropdown = dropdown
+        frame.detailTableFilterRows[index] = row
+    end
+    return row
+end
+
+local DETAIL_TABLE_HEADERS = {
+    { key = "itemName", label = "Item", justify = "LEFT" },
+    { key = "itemType", label = "Type", justify = "LEFT", width = DETAIL_TABLE_TYPE_WIDTH },
+    { key = "quantity", label = "Qty", justify = "RIGHT", width = DETAIL_TABLE_QUANTITY_WIDTH },
+    { key = "totalValue", label = "Value", justify = "RIGHT", width = DETAIL_TABLE_VALUE_WIDTH },
+}
+
+local function GetDetailTableHeaderRow(frame, index)
+    frame.detailTableHeaderRows = frame.detailTableHeaderRows or {}
+    local row = frame.detailTableHeaderRows[index]
+    if not row then
+        row = CreateFrame("Frame", nil, frame.detailsContent)
+        row:SetHeight(DETAIL_TABLE_HEADER_ROW_HEIGHT)
+        if type(row.EnableMouseWheel) == "function" then
+            row:EnableMouseWheel(true)
+            row:SetScript("OnMouseWheel", function(_, delta)
+                ScrollStandaloneMapDetails(frame.detailsScrollFrame, delta)
+            end)
+        end
+        row.buttons = {}
+
+        local previousButton
+        for headerIndex = #DETAIL_TABLE_HEADERS, 1, -1 do
+            local header = DETAIL_TABLE_HEADERS[headerIndex]
+            local button = CreateFrame("Button", nil, row)
+            button:SetHeight(DETAIL_TABLE_HEADER_ROW_HEIGHT)
+            if header.width then
+                button:SetWidth(header.width)
+            end
+            if previousButton then
+                button:SetPoint("RIGHT", previousButton, "LEFT", -DETAIL_TABLE_COLUMN_GAP, 0)
+            else
+                button:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+            end
+            if headerIndex == 1 then
+                button:SetPoint("LEFT", row, "LEFT", 0, 0)
+            end
+
+            local text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            text:SetPoint("LEFT", button, "LEFT", 0, 0)
+            text:SetPoint("RIGHT", button, "RIGHT", 0, 0)
+            text:SetJustifyH(header.justify)
+            text:SetWordWrap(false)
+            button.label = text
+            button.sortKey = header.key
+            button:SetScript("OnClick", function(self)
+                if type(row.onSort) == "function" then
+                    row.onSort(self.sortKey)
+                end
+            end)
+            button:SetScript("OnEnter", function(self)
+                self.label:SetTextColor(1.0, 0.82, 0.18, 1)
+            end)
+            button:SetScript("OnLeave", function(self)
+                local selected = row.sortKey == self.sortKey
+                self.label:SetTextColor(
+                    selected and 1.0 or 0.72,
+                    selected and 0.82 or 0.76,
+                    selected and 0.18 or 0.84,
+                    1
+                )
+            end)
+            row.buttons[header.key] = button
+            previousButton = button
+        end
+        frame.detailTableHeaderRows[index] = row
+    end
+    return row
+end
+
+local function UpdateDetailTableHeaderRow(row, sortKey, sortAscending)
+    row.sortKey = sortKey
+    for _, header in ipairs(DETAIL_TABLE_HEADERS) do
+        local button = row.buttons and row.buttons[header.key]
+        if button then
+            local selected = header.key == sortKey
+            local suffix = selected and (sortAscending and " ^" or " v") or ""
+            button.label:SetText(header.label .. suffix)
+            button.label:SetTextColor(selected and 1.0 or 0.72, selected and 0.82 or 0.76, selected and 0.18 or 0.84, 1)
+        end
+    end
+end
+
 local function GetDetailTableRow(frame, index)
     frame.detailTableRows = frame.detailTableRows or {}
     local row = frame.detailTableRows[index]
@@ -1171,9 +1402,16 @@ local function GetDetailTableRow(frame, index)
         quantityText:SetWordWrap(false)
         row.quantityText = quantityText
 
+        local typeText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        typeText:SetPoint("RIGHT", quantityText, "LEFT", -DETAIL_TABLE_COLUMN_GAP, 0)
+        typeText:SetWidth(DETAIL_TABLE_TYPE_WIDTH)
+        typeText:SetJustifyH("LEFT")
+        typeText:SetWordWrap(false)
+        row.typeText = typeText
+
         local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         itemText:SetPoint("LEFT", row, "LEFT", 0, 0)
-        itemText:SetPoint("RIGHT", quantityText, "LEFT", -DETAIL_TABLE_COLUMN_GAP, 0)
+        itemText:SetPoint("RIGHT", typeText, "LEFT", -DETAIL_TABLE_COLUMN_GAP, 0)
         itemText:SetJustifyH("LEFT")
         itemText:SetWordWrap(false)
         row.itemText = itemText
@@ -1181,6 +1419,28 @@ local function GetDetailTableRow(frame, index)
         frame.detailTableRows[index] = row
     end
     return row
+end
+
+local function HideStandardDetailRowsAtIndex(frame, index)
+    local text = frame.detailTextLines and frame.detailTextLines[index]
+    if text then
+        text:Hide()
+    end
+    local sourceRow = frame.detailSourceRows and frame.detailSourceRows[index]
+    if sourceRow then
+        sourceRow:Hide()
+    end
+    local tableRow = frame.detailTableRows and frame.detailTableRows[index]
+    if tableRow then
+        tableRow:Hide()
+        tableRow.itemID = nil
+        tableRow.itemLink = nil
+    end
+    local toggleRow = frame.detailToggleRows and frame.detailToggleRows[index]
+    if toggleRow then
+        toggleRow:Hide()
+        toggleRow.onClick = nil
+    end
 end
 
 local function GetDetailToggleRow(frame, index)
@@ -1220,6 +1480,32 @@ local function GetDetailToggleRow(frame, index)
     return row
 end
 
+local function GetDetailButtonRow(frame, index)
+    frame.detailButtonRows = frame.detailButtonRows or {}
+    local row = frame.detailButtonRows[index]
+    if not row then
+        row = CreateFrame("Frame", nil, frame.detailsContent)
+        row:SetHeight(DETAIL_BUTTON_ROW_HEIGHT)
+        if type(row.EnableMouseWheel) == "function" then
+            row:EnableMouseWheel(true)
+            row:SetScript("OnMouseWheel", function(_, delta)
+                ScrollStandaloneMapDetails(frame.detailsScrollFrame, delta)
+            end)
+        end
+
+        local button = CreateButton(row, DETAIL_BUTTON_WIDTH, 24, "View all recorded items", "neutral")
+        button:SetPoint("LEFT", row, "LEFT", 0, 0)
+        button:SetScript("OnClick", function()
+            if type(row.onClick) == "function" then
+                row.onClick()
+            end
+        end)
+        row.button = button
+        frame.detailButtonRows[index] = row
+    end
+    return row
+end
+
 local function RefreshStandaloneMapDetails(frame)
     if not frame or not frame.detailsContent or not frame.detailsScrollFrame then
         return
@@ -1247,6 +1533,21 @@ local function RefreshStandaloneMapDetails(frame)
         local existingDivider = frame.detailDividerLines and frame.detailDividerLines[index]
         if existingDivider and line.type ~= "divider" then
             existingDivider:Hide()
+        end
+        local existingFilterRow = frame.detailTableFilterRows and frame.detailTableFilterRows[index]
+        if existingFilterRow and line.type ~= "farmTargetFilter" then
+            existingFilterRow:Hide()
+            existingFilterRow.onSelect = nil
+        end
+        local existingHeaderRow = frame.detailTableHeaderRows and frame.detailTableHeaderRows[index]
+        if existingHeaderRow and line.type ~= "farmTargetHeader" then
+            existingHeaderRow:Hide()
+            existingHeaderRow.onSort = nil
+        end
+        local existingButtonRow = frame.detailButtonRows and frame.detailButtonRows[index]
+        if existingButtonRow and line.type ~= "detailButton" then
+            existingButtonRow:Hide()
+            existingButtonRow.onClick = nil
         end
         if line.type == "source" then
             local text = frame.detailTextLines and frame.detailTextLines[index]
@@ -1303,6 +1604,63 @@ local function RefreshStandaloneMapDetails(frame)
             divider:SetEndPoint("TOPRIGHT", frame.detailsContent, 0, dividerOffset)
             divider:Show()
             lineHeight = DETAIL_DIVIDER_ROW_HEIGHT
+        elseif line.type == "farmTargetFilter" then
+            HideStandardDetailRowsAtIndex(frame, index)
+            local row = GetDetailTableFilterRow(frame, index)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.detailsContent, "TOPLEFT", 0, -yOffset)
+            row:SetWidth(contentWidth)
+            row.onSelect = line.onSelect
+            row.selectedFilter = line.selectedFilter or "all"
+            row.filterOptions = line.filterOptions or {}
+            if type(UIDropDownMenu_SetWidth) == "function" then
+                UIDropDownMenu_SetWidth(row.dropdown, math.max(100, contentWidth - 54))
+            end
+            if type(UIDropDownMenu_Initialize) == "function" then
+                local filterRow = row
+                UIDropDownMenu_Initialize(row.dropdown, function(_, level)
+                    for _, filterOption in ipairs(filterRow.filterOptions or {}) do
+                        local info = type(UIDropDownMenu_CreateInfo) == "function" and UIDropDownMenu_CreateInfo() or {}
+                        local filterID = filterOption.id
+                        info.text = filterOption.label
+                        info.value = filterID
+                        info.checked = filterRow.selectedFilter == filterID
+                        info.func = function()
+                            if type(filterRow.onSelect) == "function" then
+                                filterRow.onSelect(filterID)
+                            end
+                        end
+                        if type(UIDropDownMenu_AddButton) == "function" then
+                            UIDropDownMenu_AddButton(info, level)
+                        end
+                    end
+                end)
+            end
+            if type(UIDropDownMenu_SetSelectedValue) == "function" then
+                UIDropDownMenu_SetSelectedValue(row.dropdown, row.selectedFilter)
+            end
+            if type(UIDropDownMenu_SetText) == "function" then
+                local selectedLabel = "All"
+                for _, filterOption in ipairs(row.filterOptions) do
+                    if filterOption.id == row.selectedFilter then
+                        selectedLabel = filterOption.label
+                        break
+                    end
+                end
+                UIDropDownMenu_SetText(row.dropdown, selectedLabel)
+            end
+            row:Show()
+            lineHeight = DETAIL_TABLE_FILTER_ROW_HEIGHT
+        elseif line.type == "farmTargetHeader" then
+            HideStandardDetailRowsAtIndex(frame, index)
+            local row = GetDetailTableHeaderRow(frame, index)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.detailsContent, "TOPLEFT", 0, -yOffset)
+            row:SetWidth(contentWidth)
+            row.onSort = line.onSort
+            UpdateDetailTableHeaderRow(row, line.sortKey or "itemName", line.sortAscending ~= false)
+            row:Show()
+            lineHeight = DETAIL_TABLE_HEADER_ROW_HEIGHT
         elseif line.type == "farmTarget" then
             local text = frame.detailTextLines and frame.detailTextLines[index]
             if text then
@@ -1330,16 +1688,28 @@ local function RefreshStandaloneMapDetails(frame)
             row.itemID = tonumber(line.itemID)
             row.itemLink = line.itemLink
             row.itemText:SetText(line.itemName or "Unknown item")
+            row.typeText:SetText(line.itemType or "Other")
             row.quantityText:SetText(line.quantityText or "")
             row.valueText:SetText(line.totalValueText or "unavailable")
             local r = line.selected and 0.45 or 0.82
             local g = line.selected and 0.92 or 0.86
             local b = line.selected and 1.0 or 0.92
             row.itemText:SetTextColor(r, g, b, 1)
+            row.typeText:SetTextColor(r, g, b, 1)
             row.quantityText:SetTextColor(r, g, b, 1)
             row.valueText:SetTextColor(r, g, b, 1)
             row:Show()
             lineHeight = DETAIL_TABLE_ROW_HEIGHT
+        elseif line.type == "detailButton" then
+            HideStandardDetailRowsAtIndex(frame, index)
+            local row = GetDetailButtonRow(frame, index)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", frame.detailsContent, "TOPLEFT", 0, -yOffset)
+            row:SetWidth(contentWidth)
+            row.button:SetText(line.text or "View all recorded items")
+            row.onClick = line.onClick
+            row:Show()
+            lineHeight = DETAIL_BUTTON_ROW_HEIGHT
         elseif line.type == "detailToggle" then
             local text = frame.detailTextLines and frame.detailTextLines[index]
             if text then
@@ -1421,6 +1791,119 @@ local function RefreshStandaloneMapDetails(frame)
     end
 end
 
+function GoldTracker:CreateRecordedYieldsWindow()
+    if self.recordedYieldsFrame then
+        return self.recordedYieldsFrame
+    end
+
+    local frame = CreateFrame("Frame", "GoldTrackerRecordedYieldsFrame", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(RECORDED_YIELDS_WINDOW_WIDTH, RECORDED_YIELDS_WINDOW_HEIGHT)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    frame:SetFrameStrata("DIALOG")
+    if frame.SetToplevel then
+        frame:SetToplevel(true)
+    end
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetScript("OnHide", function()
+        local request = GoldTracker.recordedYieldsValuationRequest
+        if request then
+            request.cancelled = true
+            if request.asyncTask then
+                request.asyncTask.cancelled = true
+            end
+            GoldTracker.recordedYieldsValuationRequest = nil
+        end
+    end)
+    frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+    frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
+    frame:SetScript("OnEvent", function(self, _, itemID)
+        if self:IsShown()
+            and type(GoldTracker.CompleteFarmItemDataRequest) == "function"
+            and GoldTracker:CompleteFarmItemDataRequest(itemID)
+        then
+            GoldTracker:RefreshRecordedYieldsWindow()
+        end
+    end)
+    frame:Hide()
+
+    local chrome
+    if Theme and type(Theme.ApplyWindowChrome) == "function" then
+        chrome = Theme:ApplyWindowChrome(frame, "Recorded Yields")
+        Theme:RegisterSpecialFrame("GoldTrackerRecordedYieldsFrame")
+    else
+        chrome = frame
+        if frame.TitleText then
+            frame.TitleText:SetText("Recorded Yields")
+        end
+    end
+
+    local body = CreatePanel(frame, "body", "goldBorder")
+    body:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+    body:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
+
+    local farmTitle = body:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    farmTitle:SetPoint("TOPLEFT", body, "TOPLEFT", DETAILS_CONTENT_PADDING, -DETAILS_CONTENT_PADDING)
+    farmTitle:SetPoint("TOPRIGHT", body, "TOPRIGHT", -DETAILS_CONTENT_PADDING, -DETAILS_CONTENT_PADDING)
+    farmTitle:SetJustifyH("LEFT")
+    farmTitle:SetWordWrap(false)
+
+    local detailsScrollFrame = CreateFrame("ScrollFrame", nil, body, "UIPanelScrollFrameTemplate")
+    detailsScrollFrame:SetPoint("TOPLEFT", farmTitle, "BOTTOMLEFT", 0, -10)
+    detailsScrollFrame:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", -30, DETAILS_CONTENT_PADDING)
+    detailsScrollFrame:EnableMouseWheel(true)
+    detailsScrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        ScrollStandaloneMapDetails(self, delta)
+    end)
+
+    local detailsContent = CreateFrame("Frame", nil, detailsScrollFrame)
+    detailsContent:SetPoint("TOPLEFT", detailsScrollFrame, "TOPLEFT", 0, 0)
+    detailsContent:SetSize(1, 1)
+    detailsScrollFrame:SetScrollChild(detailsContent)
+
+    frame.body = body
+    frame.farmTitle = farmTitle
+    frame.detailsScrollFrame = detailsScrollFrame
+    frame.detailsContent = detailsContent
+    frame.detailTextLines = {}
+    frame.detailSourceRows = {}
+    frame.detailTableRows = {}
+    frame.detailTableFilterRows = {}
+    frame.detailTableHeaderRows = {}
+    frame.detailToggleRows = {}
+    frame.detailButtonRows = {}
+    frame.detailDividerLines = {}
+    self.recordedYieldsFrame = frame
+    return frame
+end
+
+function GoldTracker:RefreshRecordedYieldsWindow()
+    local frame = self.recordedYieldsFrame
+    if frame then
+        RefreshStandaloneMapDetails(frame)
+    end
+end
+
+function GoldTracker:OpenRecordedYieldsWindow(options)
+    options = type(options) == "table" and options or {}
+    local frame = self:CreateRecordedYieldsWindow()
+    frame.detailLinesBuilder = type(options.detailLinesBuilder) == "function" and options.detailLinesBuilder or nil
+    frame.farmTitle:SetText((options.title or "Farm") .. " - all recorded items")
+    frame.detailsScrollFrame:SetVerticalScroll(0)
+    frame:Show()
+    if Theme and type(Theme.BringManagedWindowToFront) == "function" then
+        Theme:BringManagedWindowToFront(frame)
+    else
+        frame:Raise()
+    end
+    self:RefreshRecordedYieldsWindow()
+    return frame
+end
+
 local function RenderRouteLines(frame)
     HideRouteLines(frame)
     if not frame.mapLayer or not frame.mapContent then
@@ -1485,6 +1968,67 @@ local function RenderMapPins(frame)
             local pin = GetMapPin(frame, pinIndex)
             if pin then
                 pin.pinData = pinData
+                local textureKind = ApplyMapPinDataIcon(pin.icon, pinData, GoldTracker)
+                if not textureKind and pin.icon and pin.icon.SetTexture then
+                    pin.icon:SetTexture("Interface\\Icons\\INV_Misc_Map02")
+                    if pin.icon.SetTexCoord then
+                        pin.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    end
+                end
+                if pin.icon and pin.icon.SetDrawLayer then
+                    pin.icon:SetDrawLayer("OVERLAY", MAP_PIN_ICON_SUBLEVEL)
+                end
+                if pin.icon and pin.icon.SetVertexColor then
+                    pin.icon:SetVertexColor(1, 1, 1, 1)
+                end
+                if pin.icon and pin.icon.SetAlpha then
+                    pin.icon:SetAlpha(1)
+                end
+                local routeOrder = tonumber(pinData.routeOrder)
+                local isDungeonStop = routeOrder and (pinData.mapIconType == "dungeon"
+                    or pinData.mapIconAtlas == "Dungeon")
+                local iconSize = isDungeonStop and MAP_PIN_DUNGEON_ICON_SIZE or MAP_PIN_ICON_SIZE
+                pin.icon:ClearAllPoints()
+                pin.icon:SetPoint("CENTER", pin, "CENTER",
+                    isDungeonStop and MAP_PIN_DUNGEON_ICON_OFFSET_X or 0, 0)
+                pin.icon:SetSize(iconSize, iconSize)
+                -- Include the shifted icon in the pin's hover/click area, and
+                -- reset the bounds when this pooled pin is reused elsewhere.
+                pin:SetHitRectInsets(isDungeonStop and -27 or 0, 0,
+                    isDungeonStop and -9 or 0, isDungeonStop and -9 or 0)
+                if pin.ring then
+                    pin.ring:Show()
+                end
+                if routeOrder then
+                    local showLocationIcon = pinData.mapIconType == "dungeon"
+                        or HasText(pinData.mapIconAtlas)
+                    if showLocationIcon then
+                        pin.icon:Show()
+                    else
+                        pin.icon:Hide()
+                    end
+                    pin.orderBackground:ClearAllPoints()
+                    pin.orderText:ClearAllPoints()
+                    if showLocationIcon and not isDungeonStop then
+                        pin.orderBackground:SetSize(14, 14)
+                        pin.orderBackground:SetPoint("TOPRIGHT", pin, "TOPRIGHT", 4, 4)
+                        pin.orderText:SetPoint("CENTER", pin.orderBackground, "CENTER", 0, 0)
+                    else
+                        pin.orderBackground:SetSize(MAP_PIN_ICON_SIZE + 2, MAP_PIN_ICON_SIZE + 2)
+                        pin.orderBackground:SetPoint("CENTER", pin, "CENTER")
+                        pin.orderText:SetPoint("CENTER", pin, "CENTER", 0, 0)
+                    end
+                    pin.orderBackground:Show()
+                    pin.orderText:SetText(tostring(routeOrder))
+                    pin.orderText:Show()
+                else
+                    if pin.icon.SetAlpha then
+                        pin.icon:SetAlpha(1)
+                    end
+                    pin.icon:Show()
+                    pin.orderBackground:Hide()
+                    pin.orderText:Hide()
+                end
                 pin:ClearAllPoints()
                 pin:SetPoint("CENTER", frame.mapContent, "TOPLEFT", x * width, -(y * height))
                 pin:Show()
@@ -1614,6 +2158,7 @@ local function ApplyStandaloneMapOption(frame, optionIndex)
     frame.selectedMapOptionIndex = optionIndex
     frame.mapID = tonumber(option.mapID) or frame.mapID or DEFAULT_MAP_ID
     frame.mapPins = type(option.pins) == "table" and option.pins or {}
+    frame.showRouteLinesWithIcons = option.showRouteLinesWithIcons == true
     frame.selectedMapAreaKey = nil
     frame.mapZoom = 1
     frame.mapPanX = 0
@@ -1925,6 +2470,7 @@ function GoldTracker:RefreshStandaloneMapWindow()
     RefreshStandaloneAddToFarmButton(frame)
     frame.mapTitle:SetText(GetStandaloneMapToolbarTitle(frame))
     RefreshStandaloneMapDetails(frame)
+    RefreshStandaloneMapHeader(frame)
     local layer, textureFileIDs = LoadMapArt(frame, frame.mapID)
     frame.mapLayer = layer
     frame.mapTextureFileIDs = textureFileIDs
@@ -1946,7 +2492,11 @@ function GoldTracker:RefreshStandaloneMapWindow()
     local areaCount = 0
     local iconCount = 0
     if displayMode == MAP_DISPLAY_MODE_ICONS then
-        HideRouteLines(frame)
+        if frame.showRouteLinesWithIcons then
+            routeLineCount = RenderRouteLines(frame)
+        else
+            HideRouteLines(frame)
+        end
         HideMapAreas(frame)
         iconCount = RenderMapPins(frame)
     else
@@ -1977,7 +2527,8 @@ function GoldTracker:RefreshStandaloneMapWindow()
             frame.mapZoom or 1
         ))
     elseif displayMode == MAP_DISPLAY_MODE_ICONS and iconCount > 0 then
-        SetStatus(frame, string.format("%d farming location %s visible. Zoom %.2fx", iconCount, iconCount == 1 and "icon" or "icons", frame.mapZoom or 1))
+        local iconLabel = frame.showRouteLinesWithIcons and "numbered route stops" or "farming location icons"
+        SetStatus(frame, string.format("%d %s visible. Zoom %.2fx", iconCount, iconLabel, frame.mapZoom or 1))
     elseif displayMode == MAP_DISPLAY_MODE_ICONS then
         SetStatus(frame, string.format("No farming locations on this map. Zoom %.2fx", frame.mapZoom or 1))
     elseif routeLineCount > 0 and areaCount > 0 then
@@ -2097,6 +2648,8 @@ function GoldTracker:ProjectStandaloneMapToWorldMap()
         mapOptions = frame.mapOptions,
         selectedMapOptionIndex = frame.selectedMapOptionIndex,
         customFarmRow = frame.customFarmRow,
+        displayMode = frame.mapDisplayMode,
+        showRouteLinesWithIcons = frame.showRouteLinesWithIcons,
     })
     if projected then
         local pinCount = 0
@@ -2149,18 +2702,23 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     frame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
     frame:SetScript("OnEvent", function(self, _, itemID)
-        if self:IsShown()
-            and type(GoldTracker.CompleteFarmItemDataRequest) == "function"
+        if not self:IsShown() then
+            return
+        end
+        if type(GoldTracker.CompleteFarmItemDataRequest) == "function"
             and GoldTracker:CompleteFarmItemDataRequest(itemID)
         then
             RefreshStandaloneMapDetails(self)
+        end
+        if tonumber(itemID) == GetStandaloneMapHeaderItemID(self) then
+            RefreshStandaloneMapHeader(self)
         end
     end)
     frame:Hide()
 
     local chrome
     if Theme and type(Theme.ApplyWindowChrome) == "function" then
-        chrome = Theme:ApplyWindowChrome(frame, "Farming Route Map")
+        chrome = Theme:ApplyWindowChrome(frame, "")
         Theme:RegisterSpecialFrame("GoldTrackerStandaloneMapFrame")
     else
         chrome = frame
@@ -2186,7 +2744,7 @@ function GoldTracker:CreateStandaloneMapWindow()
     local resetButton = CreateButton(toolbar, 72, 24, "Reset", "neutral")
     resetButton:SetPoint("RIGHT", toolbar, "RIGHT", -12, 0)
 
-    local projectButton = CreateButton(toolbar, 72, 24, "Project", "neutral")
+    local projectButton = CreateButton(toolbar, PROJECT_BUTTON_WIDTH, 24, "Project on BLizzard map", "neutral")
     projectButton:SetPoint("RIGHT", resetButton, "LEFT", -6, 0)
 
     local clearProjectionButton = CreateButton(toolbar, 92, 24, "Clear Pins", "neutral")
@@ -2315,6 +2873,7 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame.body = body
     frame.mapTitle = mapTitle
     frame.resetButton = resetButton
+    frame.projectButton = projectButton
     frame.mapViewport = mapViewport
     frame.mapContent = mapContent
     frame.detailsPanel = detailsPanel
@@ -2323,7 +2882,10 @@ function GoldTracker:CreateStandaloneMapWindow()
     frame.detailTextLines = {}
     frame.detailSourceRows = {}
     frame.detailTableRows = {}
+    frame.detailTableFilterRows = {}
+    frame.detailTableHeaderRows = {}
     frame.detailToggleRows = {}
+    frame.detailButtonRows = {}
     frame.statusText = statusText
     frame.mapDropdown = mapDropdown
     frame.displayModeButton = displayModeButton
@@ -2447,6 +3009,7 @@ function GoldTracker:OpenStandaloneMapWindow(options)
     frame.detailLinesBuilder = type(options.detailLinesBuilder) == "function" and options.detailLinesBuilder or nil
     frame.mapDisplayMode = NormalizeMapDisplayMode(options.displayMode or frame.mapDisplayMode)
     frame.mapOptions = type(options.mapOptions) == "table" and options.mapOptions or nil
+    frame.showRouteLinesWithIcons = options.showRouteLinesWithIcons == true
     frame.selectedMapOptionIndex = tonumber(options.selectedMapOptionIndex) or 1
     if frame.mapOptions and frame.mapOptions[frame.selectedMapOptionIndex] then
         ApplyStandaloneMapOption(frame, frame.selectedMapOptionIndex)

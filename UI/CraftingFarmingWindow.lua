@@ -432,7 +432,20 @@ local function GetMaterialFarmingSpotData(itemID)
 end
 
 local function IsRouteMaterial(item)
-    return type(item) == "table" and (item.category == "Herb" or item.category == "Ore")
+    if type(item) ~= "table" then
+        return false
+    end
+    if item.category == "Herb" or item.category == "Ore" then
+        return true
+    end
+    local itemID = tonumber(item.itemID)
+    for _, farmingItem in ipairs(type(NS.FarmingItems) == "table" and NS.FarmingItems.items or {}) do
+        if tonumber(farmingItem.itemID) == itemID
+            and (farmingItem.tag == "Herb" or farmingItem.tag == "Ore") then
+            return true
+        end
+    end
+    return false
 end
 
 local function BuildMaterialFarmingPin(item, spot, coord, mapID)
@@ -450,7 +463,7 @@ local function BuildMaterialFarmingPin(item, spot, coord, mapID)
         -- A sequence of pins is a rendered route only for raw herbs and ore.
         -- Other materials can retain every mapped point without a misleading
         -- line joining unrelated spawn locations.
-        isRoute = IsRouteMaterial(item) and (spot.isRoute == true or item.isRoute == true),
+        isRoute = IsRouteMaterial(item),
         routeID = spot.id,
         routeType = spot.routeType,
         density = spot.density,
@@ -1975,7 +1988,7 @@ function GoldTracker:OpenMaterialFarmingMap(itemID)
     end
 
     local valuationSnapshots = {}
-    local expandedFarmTargets = {}
+    local farmTargetTableStates = {}
     self:OpenStandaloneMapWindow({
         title = title or ("Item " .. tostring(itemID)),
         projectionKey = "material:" .. tostring(itemID),
@@ -1986,12 +1999,24 @@ function GoldTracker:OpenMaterialFarmingMap(itemID)
             if mapOption and mapOption.farm and type(self.BuildFarmMapDetailLines) == "function" then
                 local farm = mapOption.farm
                 local key = farm.id or tostring(farm)
-                valuationSnapshots[key] = valuationSnapshots[key] or self:BuildFarmValuationSnapshot(farm)
+                if not valuationSnapshots[key] then
+                    valuationSnapshots[key] = type(self.BuildFarmPreviewValuationSnapshot) == "function"
+                        and self:BuildFarmPreviewValuationSnapshot(farm)
+                        or self:BuildFarmValuationSnapshot(farm)
+                end
+                local tableState = farmTargetTableStates[key]
+                if not tableState then
+                    tableState = { filter = "all", sortKey = "itemName", sortAscending = true }
+                    farmTargetTableStates[key] = tableState
+                end
                 return self:BuildFarmMapDetailLines(farm, itemID, mapLabel, valuationSnapshots[key], {
-                    showAllTargets = expandedFarmTargets[key] == true,
-                    onToggleTargets = function()
-                        expandedFarmTargets[key] = not expandedFarmTargets[key]
-                        self:RefreshStandaloneMapWindow()
+                    onOpenAllTargets = function()
+                        self:OpenFarmRecordedYieldsForFarm(
+                            farm,
+                            itemID,
+                            valuationSnapshots[key],
+                            tableState
+                        )
                     end,
                 })
             end

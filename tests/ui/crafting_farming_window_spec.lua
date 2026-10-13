@@ -224,6 +224,37 @@ local function project_rows(rows)
 end
 
 describe("UI/CraftingFarmingWindow rows", function()
+    it("renders herb coordinates as a route without requiring a redundant spot flag", function()
+        local addon = build_addon()
+        addon.materialFarmingSpots = {
+            items = {
+                [3002] = {
+                    itemID = 3002,
+                    itemName = "New Herb",
+                    spots = {
+                        {
+                            id = "new-herb-loop",
+                            mapName = "Nagrand",
+                            coords = {
+                                { x = 0.20, y = 0.30 },
+                                { x = 0.40, y = 0.50 },
+                            },
+                        },
+                    },
+                },
+            },
+        }
+        addon = load_window(addon)
+
+        local options = addon:BuildMaterialFarmingMapOptions(3002)
+
+        assert.equals(1, #options)
+        assert.equals(2, #options[1].pins)
+        assert.is_true(options[1].pins[1].isRoute)
+        assert.is_true(options[1].pins[2].isRoute)
+        assert.equals("new-herb-loop", options[1].pins[1].routeID)
+    end)
+
     it("provides a separate expanded materials results window", function()
         local addon = load_window(build_addon())
 
@@ -966,7 +997,7 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("Kill: Twilight Serpent and loot Old Ore.", options[1].pins[1].farmAction)
         assert.equals("static", options[1].sourceType)
         assert.equals("Addon seed data", options[1].pins[1].sourceLabel)
-        assert.is_false(options[1].pins[1].isRoute)
+        assert.is_true(options[1].pins[1].isRoute)
         assert.equals("nagrand-main", options[1].pins[1].routeID)
         assert.equals("Catalog: Warmaul route", options[2].label)
         assert.equals(107, options[2].mapID)
@@ -1075,10 +1106,11 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("old-ore-nagrand-route", capturedOptions.mapOptions[1].pins[1].routeID)
     end)
 
-    it("groups material map options and expands a selected farm's recorded yields", function()
+    it("groups material map options and retains each farm's full-yield-window state", function()
         local capturedOptions
-        local refreshCount = 0
         local buildOptions = {}
+        local openedStates = {}
+        local previewedFarms = {}
         local smallerFarm = {
             id = "smaller-farm",
             name = "Smaller Farm",
@@ -1115,12 +1147,27 @@ describe("UI/CraftingFarmingWindow rows", function()
                 { id = "larger-farm-map", mapID = 107, label = "farm: Larger Farm", farm = largerFarm, pins = {} },
             }
         end
-        addon.BuildFarmValuationSnapshot = function() return {} end
+        addon.BuildFarmPreviewValuationSnapshot = function(_, farm)
+            previewedFarms[#previewedFarms + 1] = farm
+            return {}
+        end
+        addon.BuildFarmValuationSnapshot = function()
+            error("the map dropdown must not build a full-farm valuation")
+        end
         addon.BuildFarmMapDetailLines = function(_, _, _, _, _, options)
             buildOptions[#buildOptions + 1] = options
-            return { { type = "detailToggle", text = "+ 74 more recorded items", onClick = options.onToggleTargets } }
+            return {
+                { type = "detailButton", onClick = options.onOpenAllTargets },
+            }
         end
-        addon.RefreshStandaloneMapWindow = function() refreshCount = refreshCount + 1 end
+        addon.OpenFarmRecordedYieldsForFarm = function(_, farm, _, _, tableState)
+            openedStates[#openedStates + 1] = { farm = farm, state = tableState }
+            if farm == largerFarm then
+                tableState.filter = "equipment"
+                tableState.sortKey = "totalValue"
+                tableState.sortAscending = false
+            end
+        end
         addon.OpenStandaloneMapWindow = function(_, options) capturedOptions = options end
 
         assert.is_true(addon:OpenMaterialFarmingMap(3001))
@@ -1139,12 +1186,24 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals("farm: Larger Farm", capturedOptions.mapOptions[3].label)
         assert.equals("farm: Smaller Farm", capturedOptions.mapOptions[4].label)
 
-        local collapsed = capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[3], 107, "Nagrand")
-        assert.is_false(buildOptions[1].showAllTargets)
-        collapsed[1].onClick()
-        assert.equals(1, refreshCount)
-        capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[3], 107, "Nagrand")
-        assert.is_true(buildOptions[2].showAllTargets)
+        local largerLines = capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[3], 107, "Nagrand")
+        largerLines[1].onClick()
+        assert.equals(largerFarm, openedStates[1].farm)
+        assert.equals("equipment", openedStates[1].state.filter)
+        assert.equals("totalValue", openedStates[1].state.sortKey)
+        assert.is_false(openedStates[1].state.sortAscending)
+
+        capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[3], 107, "Nagrand")[1].onClick()
+        assert.equals(openedStates[1].state, openedStates[2].state)
+        assert.equals("equipment", openedStates[2].state.filter)
+
+        capturedOptions.detailLinesBuilder(capturedOptions.mapOptions[4], 107, "Nagrand")[1].onClick()
+        assert.equals(smallerFarm, openedStates[3].farm)
+        assert.equals("all", openedStates[3].state.filter)
+        assert.equals("itemName", openedStates[3].state.sortKey)
+        assert.is_true(openedStates[3].state.sortAscending)
+        assert.equals(3, #buildOptions)
+        assert.same({ largerFarm, smallerFarm }, previewedFarms)
     end)
 
     it("marks rows that have material farming map data", function()

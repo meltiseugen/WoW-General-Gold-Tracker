@@ -154,8 +154,6 @@ end
 
 function MapAreaOverlay:BuildGroups(pins, mapID, options)
     options = type(options) == "table" and options or {}
-    local paddingX = tonumber(options.paddingX) or DEFAULT_PADDING_X
-    local paddingY = tonumber(options.paddingY) or DEFAULT_PADDING_Y
     local clusterDistanceX = tonumber(options.clusterDistanceX) or DEFAULT_CLUSTER_DISTANCE_X
     local clusterDistanceY = tonumber(options.clusterDistanceY) or DEFAULT_CLUSTER_DISTANCE_Y
     local normalizedMapID = tonumber(mapID)
@@ -204,7 +202,9 @@ function MapAreaOverlay:BuildGroups(pins, mapID, options)
         label = "User-discovered farming cluster",
         isUserCluster = true,
     }
-    AddSeparatedGroups(separatedGroups, userGroup, paddingX * 2, paddingY * 2)
+    -- Group nearby discoveries into farming areas using the same distance rule
+    -- as other spots, independently of the small visual padding around a pin.
+    AddSeparatedGroups(separatedGroups, userGroup, clusterDistanceX, clusterDistanceY)
 
     return separatedGroups
 end
@@ -232,7 +232,23 @@ function MapAreaOverlay:BuildPolygons(pins, mapID, options)
     return polygons
 end
 
-local function BuildScanlines(points, width, height, step)
+local function GetHorizontalBounds(pixelPoints, y)
+    local intersections = {}
+    for index, first in ipairs(pixelPoints) do
+        local second = pixelPoints[(index % #pixelPoints) + 1]
+        if (first.y <= y and second.y > y) or (second.y <= y and first.y > y) then
+            local ratio = (y - first.y) / (second.y - first.y)
+            intersections[#intersections + 1] = first.x + ((second.x - first.x) * ratio)
+        end
+    end
+    table.sort(intersections)
+    if #intersections < 2 then
+        return nil, nil
+    end
+    return intersections[1], intersections[#intersections]
+end
+
+local function BuildScanlines(points, width, height, step, thickness, edgeInset)
     local pixelPoints = {}
     local minY
     local maxY
@@ -251,27 +267,94 @@ local function BuildScanlines(points, width, height, step)
         return scanlines
     end
 
-    local y = minY + (step * 0.5)
-    while y <= maxY do
-        local intersections = {}
-        for index, first in ipairs(pixelPoints) do
-            local second = pixelPoints[(index % #pixelPoints) + 1]
-            if (first.y <= y and second.y > y) or (second.y <= y and first.y > y) then
-                local ratio = (y - first.y) / (second.y - first.y)
-                intersections[#intersections + 1] = first.x + ((second.x - first.x) * ratio)
+    local halfThickness = math.max(0, (tonumber(thickness) or step) * 0.5)
+    edgeInset = math.max(0, tonumber(edgeInset) or 0)
+    local y = minY + halfThickness + edgeInset
+    local lastY = maxY - halfThickness - edgeInset
+    while y <= lastY do
+        local sampleYValues = { y - halfThickness, y + halfThickness }
+        for _, point in ipairs(pixelPoints) do
+            if point.y > sampleYValues[1] and point.y < sampleYValues[2] then
+                sampleYValues[#sampleYValues + 1] = point.y
             end
         end
-        table.sort(intersections)
-        for index = 1, #intersections - 1, 2 do
+
+        local leftEdge
+        local rightEdge
+        for _, sampleY in ipairs(sampleYValues) do
+            local left, right = GetHorizontalBounds(pixelPoints, sampleY)
+            if left and right then
+                leftEdge = math.max(leftEdge or left, left)
+                rightEdge = math.min(rightEdge or right, right)
+            else
+                leftEdge = nil
+                rightEdge = nil
+                break
+            end
+        end
+        if leftEdge and rightEdge and (leftEdge + edgeInset) < (rightEdge - edgeInset) then
             scanlines[#scanlines + 1] = {
-                x1 = intersections[index],
-                x2 = intersections[index + 1],
+                x1 = leftEdge + edgeInset,
+                x2 = rightEdge - edgeInset,
                 y = y,
             }
         end
         y = y + step
     end
     return scanlines
+end
+
+function MapAreaOverlay:BuildSegments(polygons, width, height, options)
+    options = type(options) == "table" and options or {}
+    width = math.max(1, tonumber(width) or 1)
+    height = math.max(1, tonumber(height) or 1)
+    local fillStep = tonumber(options.fillStep) or DEFAULT_FILL_STEP
+    local fillThickness = tonumber(options.fillThickness) or (fillStep + 0.5)
+    local glowThickness = tonumber(options.glowThickness) or 11
+    local borderThickness = tonumber(options.borderThickness) or 2.5
+    local fillInset = math.max(0, tonumber(options.fillInset) or (borderThickness * 0.5))
+    local fillColor = options.fillColor or { 0.08, 0.42, 1.0, 0.20 }
+    local glowColor = options.glowColor or { 0.10, 0.50, 1.0, 0.16 }
+    local borderColor = options.borderColor or { 0.28, 0.68, 1.0, 0.78 }
+    local segments = {}
+
+    local function addSegment(role, x1, y1, x2, y2, thickness, color)
+        segments[#segments + 1] = {
+            role = role,
+            x1 = x1 / width,
+            y1 = y1 / height,
+            x2 = x2 / width,
+            y2 = y2 / height,
+            thickness = thickness,
+            color = color,
+        }
+    end
+
+    for _, polygon in ipairs(polygons or {}) do
+        local points = polygon.points or {}
+        if #points >= 3 then
+            for _, scanline in ipairs(BuildScanlines(
+                points,
+                width,
+                height,
+                fillStep,
+                fillThickness,
+                fillInset
+            )) do
+                addSegment("fill", scanline.x1, scanline.y, scanline.x2, scanline.y, fillThickness, fillColor)
+            end
+            for index, first in ipairs(points) do
+                local second = points[(index % #points) + 1]
+                local x1 = first.x * width
+                local y1 = first.y * height
+                local x2 = second.x * width
+                local y2 = second.y * height
+                addSegment("glow", x1, y1, x2, y2, glowThickness, glowColor)
+                addSegment("border", x1, y1, x2, y2, borderThickness, borderColor)
+            end
+        end
+    end
+    return segments
 end
 
 local function HideLinePool(owner, poolKey, usedLines)
@@ -338,6 +421,7 @@ function MapAreaOverlay:Render(owner, parent, prefix, polygons, width, height, o
     local fillThickness = tonumber(options.fillThickness) or (fillStep + 0.5)
     local glowThickness = tonumber(options.glowThickness) or 11
     local borderThickness = tonumber(options.borderThickness) or 2.5
+    local fillInset = math.max(0, tonumber(options.fillInset) or (borderThickness * 0.5))
     local fillColor = options.fillColor or { 0.08, 0.42, 1.0, 0.20 }
     local glowColor = options.glowColor or { 0.10, 0.50, 1.0, 0.16 }
     local borderColor = options.borderColor or { 0.28, 0.68, 1.0, 0.78 }
@@ -353,7 +437,14 @@ function MapAreaOverlay:Render(owner, parent, prefix, polygons, width, height, o
     for _, polygon in ipairs(polygons or {}) do
         local points = polygon.points or {}
         if #points >= 3 then
-            for _, scanline in ipairs(BuildScanlines(points, width, height, fillStep)) do
+            for _, scanline in ipairs(BuildScanlines(
+                points,
+                width,
+                height,
+                fillStep,
+                fillThickness,
+                fillInset
+            )) do
                 local line = GetLine(owner, parent, prefix .. "FillLines", fillIndex, layer, fillSubLevel)
                 local rendered = SetLine(
                     line,

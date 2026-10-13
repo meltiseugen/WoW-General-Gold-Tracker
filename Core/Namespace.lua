@@ -5,6 +5,8 @@ NS.GoldTracker = GoldTracker
 
 GoldTracker.ADDON_NAME = ADDON_NAME
 GoldTracker.PREFIX = "|cffffd200[General Gold Tracker]|r"
+-- Temporary mute: preserve the saved preference, but emit no chat/console logs.
+GoldTracker.CHAT_LOGGING_MUTED = true
 GoldTracker.COPPER_PER_GOLD = 10000
 GoldTracker.MIN_INTERFACE = 120000
 GoldTracker.REQUIRED_PROJECT = WOW_PROJECT_MAINLINE
@@ -120,9 +122,10 @@ GoldTracker.DEFAULTS = {
         items = {},
     },
     customFarms = {
-        schemaVersion = 3,
+        schemaVersion = 4,
         nextID = 1,
         activeBuildFarmID = nil,
+        activeRouteFarmIDs = {},
         knownCharacters = {},
         farms = {},
     },
@@ -2148,6 +2151,9 @@ function GoldTracker:IsTotalWindowGoldPerHourEnabled()
 end
 
 function GoldTracker:IsChatLoggingEnabled()
+    if self.CHAT_LOGGING_MUTED then
+        return false
+    end
     if not self.db then
         return self.DEFAULTS.enableChatLogging == true
     end

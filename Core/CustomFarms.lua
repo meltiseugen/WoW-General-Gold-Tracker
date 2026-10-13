@@ -63,7 +63,8 @@ end
 
 local function GetMapSourceKey(option)
     return table.concat({ option.sourceType or "static", tostring(option.mapID),
-        tostring(option.id or (option.sourceType == "user" and "discoveries") or option.label or "map") }, ":")
+        tostring(option.id or (option.sourceType == "user" and "discoveries") or option.label or "map"),
+        tostring(option.areaKey or "all") }, ":")
 end
 
 local function CopyMapSource(option)
@@ -77,6 +78,9 @@ local function CopyMapSource(option)
         mapLabel = TrimText(option.mapLabel),
         sourceType = TrimText(option.sourceType) or "static",
         sourceLabel = TrimText(option.sourceLabel),
+        parentOptionID = option.parentOptionID,
+        areaKey = TrimText(option.areaKey),
+        areaLabel = TrimText(option.areaLabel),
         pins = {},
     }
     copy.key = GetMapSourceKey(copy)
@@ -241,6 +245,7 @@ function GoldTracker:GetCustomFarmStore()
     local store = self.db.customFarms
     if self.customFarmsNormalizedStore == store
         and store.schemaVersion == SCHEMA_VERSION
+        and type(store.activeRouteFarmIDs) == "table"
         and type(store.knownCharacters) == "table"
         and type(store.farms) == "table" then
         if store.activeBuildFarmID and not GetFarmByIDFromStore(store, store.activeBuildFarmID) then
@@ -249,6 +254,7 @@ function GoldTracker:GetCustomFarmStore()
         return store
     end
     store.schemaVersion = SCHEMA_VERSION
+    store.activeRouteFarmIDs = type(store.activeRouteFarmIDs) == "table" and store.activeRouteFarmIDs or {}
     store.knownCharacters = type(store.knownCharacters) == "table" and store.knownCharacters or {}
     store.farms = type(store.farms) == "table" and store.farms or {}
 
@@ -274,6 +280,14 @@ function GoldTracker:GetCustomFarmStore()
     store.activeBuildFarmID = NormalizePositiveInteger(store.activeBuildFarmID)
     if store.activeBuildFarmID and not GetFarmByIDFromStore(store, store.activeBuildFarmID) then
         store.activeBuildFarmID = nil
+    end
+    for character, farmID in pairs(store.activeRouteFarmIDs) do
+        local normalizedFarmID = NormalizePositiveInteger(farmID)
+        if not TrimText(character) or not normalizedFarmID or not GetFarmByIDFromStore(store, normalizedFarmID) then
+            store.activeRouteFarmIDs[character] = nil
+        else
+            store.activeRouteFarmIDs[character] = normalizedFarmID
+        end
     end
     self.customFarmsNormalizedStore = store
     return store
@@ -340,11 +354,17 @@ function GoldTracker:GetSuggestedCustomFarmName()
 end
 
 function GoldTracker:NotifyCustomFarmsChanged()
+    if type(self.InvalidateCustomFarmRoutePlanCache) == "function" then
+        self:InvalidateCustomFarmRoutePlanCache()
+    end
     if self.myFarmsFrame and type(self.RefreshMyFarmsWindow) == "function" then
         self:RefreshMyFarmsWindow()
     end
     if self.farmRoutePlanFrame and type(self.RefreshFarmRoutePlanWindow) == "function" then
         self:RefreshFarmRoutePlanWindow()
+    end
+    if self.mainFrame and type(self.UpdateMainWindow) == "function" then
+        self:UpdateMainWindow()
     end
 end
 
@@ -403,6 +423,11 @@ function GoldTracker:DeleteCustomFarm(farmID)
             table.remove(store.farms, index)
             if store.activeBuildFarmID == normalizedID then
                 store.activeBuildFarmID = nil
+            end
+            for character, activeRouteFarmID in pairs(store.activeRouteFarmIDs or {}) do
+                if NormalizePositiveInteger(activeRouteFarmID) == normalizedID then
+                    store.activeRouteFarmIDs[character] = nil
+                end
             end
             self:NotifyCustomFarmsChanged()
             return true
@@ -791,15 +816,19 @@ function GoldTracker:RequestAddToCustomFarm(row, sourceType, mapOption)
         end
     end
     local activeFarm = self:GetActiveCustomFarm()
-    local matchingFarms = type(self.GetFarmsForItem) == "function" and self:GetFarmsForItem(entry.itemID) or {}
-    local mapOptions = self:GetCustomFarmMapOptions(entry.itemID)
-    if (entry.mapSource or #matchingFarms > 0 or #mapOptions > 0) and type(self.ShowCustomFarmMethodDialog) == "function" then
-        return self:ShowCustomFarmMethodDialog({
-            farmID = activeFarm and activeFarm.id or nil,
-            entry = entry,
-            farms = matchingFarms,
-            mapOptions = mapOptions,
-        })
+    -- An explicit map option already contains the area/route selected on the
+    -- map. Preserve it and go straight to confirmation instead of choosing again.
+    if not mapOption then
+        local matchingFarms = type(self.GetFarmsForItem) == "function" and self:GetFarmsForItem(entry.itemID) or {}
+        local mapOptions = self:GetCustomFarmMapOptions(entry.itemID)
+        if (entry.mapSource or #matchingFarms > 0 or #mapOptions > 0) and type(self.ShowCustomFarmMethodDialog) == "function" then
+            return self:ShowCustomFarmMethodDialog({
+                farmID = activeFarm and activeFarm.id or nil,
+                entry = entry,
+                farms = matchingFarms,
+                mapOptions = mapOptions,
+            })
+        end
     end
     if not EnsureCustomFarmDialogs() or type(StaticPopup_Show) ~= "function" then
         return false

@@ -1,6 +1,15 @@
 local loader = require("tests.helpers.addon_loader")
 
 describe("UI/FarmRoutePlanWindow", function()
+    it("uses the supported GameTooltip SetText signature for overview help", function()
+        local file = assert(io.open("UI/FarmRoutePlanWindow.lua", "r"))
+        local source = file:read("*a")
+        file:close()
+
+        assert.matches("GameTooltip:SetText%(self%.tooltipText, 1%.0, 0%.82, 0%.18%)", source)
+        assert.is_nil(source:find("GameTooltip:SetText(self.tooltipText, 1.0, 0.82, 0.18, true)", 1, true))
+    end)
+
     it("brings an already-open route plan in front through managed focus", function()
         local focusedFrame
         local refreshed = false

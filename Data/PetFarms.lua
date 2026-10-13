@@ -1,6 +1,6 @@
 local _, NS = ...
 
--- Curated Retail acquisition research for every visible Drops > Pets row.
+-- Curated Retail acquisition research for Drops > Pets and Instances > Pets.
 -- Coordinates are normalized UI-map coordinates. Research reviewed 2026-10-08.
 
 local outdoorByPetID = {
@@ -209,7 +209,7 @@ local function BuildCuratedPetRows(rawRows)
     end
     for index, data in ipairs(classicRaidPetRows) do
         rows[#rows + 1] = {
-            recordID = "pets:" .. data.farmID .. ":pet:" .. tostring(data.petID),
+            recordID = "raidPets:" .. data.farmID .. ":pet:" .. tostring(data.petID),
             farmID = data.farmID,
             farmName = data.farmName,
             itemID = 82800,
@@ -289,13 +289,15 @@ for _, row in ipairs(petRows) do
     local name = GetPetName(row)
     local outdoor = petID and outdoorByPetID[petID]
     local raid = raidByFarmID[row.farmID]
+    local sourceCategory = raid and "raidPets" or "pets"
+    local sourcePath = raid and "Instances > Pets" or "Drops > Pets"
     local bossResearch = petID and bossResearchByPetID[petID]
     local sourceName
     local mapOptions = {}
     local summary
     local guide
     local details = {
-        "This record is matched to the exact Drops > Pets row " .. tostring(row.recordID) .. ".",
+        "This record is matched to the exact " .. sourcePath .. " row " .. tostring(row.recordID) .. ".",
     }
 
     if outdoor then
@@ -362,8 +364,8 @@ for _, row in ipairs(petRows) do
             id = "ggt:pet:" .. Slug(row.recordID),
             sourceType = "curated",
             sourceDataset = "GGTPetFarmData",
-            sourceCategory = "pets",
-            sourcePath = "Drops > Pets",
+            sourceCategory = sourceCategory,
+            sourcePath = sourcePath,
             activity = petID and "pet" or "item",
             name = name,
             expansion = row.expansionLabel or row.expansion or "Unknown expansion",

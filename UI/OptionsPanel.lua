@@ -114,6 +114,7 @@ function GoldTracker:RefreshOptionsControls()
     end
     if controls.chatLoggingCheckbox then
         controls.chatLoggingCheckbox:SetChecked(self:IsChatLoggingEnabled())
+        controls.chatLoggingCheckbox:SetEnabled(not self.CHAT_LOGGING_MUTED)
     end
     if controls.resumeHistorySessionCheckbox then
         controls.resumeHistorySessionCheckbox:SetChecked(self:IsResumeHistorySessionEnabled())
@@ -834,7 +835,8 @@ function GoldTracker:CreateOptionsPanel()
 
     local chatLoggingLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     chatLoggingLabel:SetPoint("LEFT", chatLoggingCheckbox, "RIGHT", 4, 1)
-    chatLoggingLabel:SetText("Allow addon messages in game chat")
+    chatLoggingLabel:SetText("Allow addon messages in game chat"
+        .. (addon.CHAT_LOGGING_MUTED and " (temporarily disabled)" or ""))
 
     local slashOpenModeLabel = generalDisplaySection:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     slashOpenModeLabel:SetPoint("TOPLEFT", chatLoggingCheckbox, "BOTTOMLEFT", 4, -12)

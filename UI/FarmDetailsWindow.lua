@@ -10,10 +10,12 @@ local FARM_DETAILS_MAX_WIDTH = 1100
 local FARM_DETAILS_MAX_HEIGHT = 900
 local FARM_SUMMARY_HEIGHT = 116
 local MAX_VISIBLE_TARGETS = 80
-local MAX_MAP_DETAIL_TARGETS = 8
 local FARM_ITEM_DATA_REQUEST_TTL = 1
 local RARE_BONUS_MAX_RECORDED_QUANTITY = 1
 local RARE_BONUS_MIN_VALUE_SHARE = 0.50
+local MAX_MAP_RECORDED_YIELDS = 10
+local FARM_VALUATION_ASYNC_BUDGET_MS = 4
+local FARM_VALUATION_ASYNC_FALLBACK_BATCH_SIZE = 2
 
 local farmItemDataRequests = {}
 
@@ -200,6 +202,105 @@ local function GetItemInfoSafe(itemID)
         end
     end
     return name or ("Item " .. tostring(itemID)), link or ("item:" .. tostring(itemID)), HasText(name)
+end
+
+local function GetFarmTargetItemMetadata(itemID)
+    local metadata = {}
+    if type(C_Item) == "table" and type(C_Item.GetItemInfo) == "function" then
+        local results = { pcall(C_Item.GetItemInfo, itemID) }
+        if results[1] then
+            metadata.className = results[7]
+            metadata.subclassName = results[8]
+            metadata.classID = tonumber(results[13])
+            metadata.subclassID = tonumber(results[14])
+            metadata.isCraftingReagent = results[18] == true
+        end
+    end
+
+    if metadata.classID == nil then
+        local instantGetter = type(C_Item) == "table" and C_Item.GetItemInfoInstant or GetItemInfoInstant
+        if type(instantGetter) == "function" then
+            local ok, _, itemClassName, itemSubclassName, _, _, classID, subclassID = pcall(instantGetter, itemID)
+            if ok then
+                metadata.className = metadata.className or itemClassName
+                metadata.subclassName = metadata.subclassName or itemSubclassName
+                metadata.classID = tonumber(classID)
+                metadata.subclassID = tonumber(subclassID)
+            end
+        end
+    end
+    return metadata
+end
+
+local FARM_TARGET_TYPE_BY_CLASS = {
+    [1] = "Container",
+    [2] = "Weapon",
+    [3] = "Gem",
+    [4] = "Armor",
+    [5] = "Reagent",
+    [6] = "Projectile",
+    [9] = "Recipe",
+    [10] = "Currency",
+    [12] = "Quest item",
+    [13] = "Key",
+    [15] = "Miscellaneous",
+    [16] = "Glyph",
+    [17] = "Battle pet",
+}
+
+local CONSUMABLE_TYPE_BY_SUBCLASS = {
+    [1] = "Potion",
+    [2] = "Elixir",
+    [3] = "Flask",
+    [4] = "Scroll",
+    [5] = "Food & Drink",
+    [8] = "Bandage",
+}
+
+local TRADE_GOOD_TYPE_BY_SUBCLASS = {
+    [5] = "Cloth",
+    [6] = "Leather",
+    [7] = "Ore",
+    [8] = "Cooking",
+    [9] = "Herb",
+}
+
+local function GetFarmTargetItemType(metadata)
+    local classID = tonumber(metadata and metadata.classID)
+    local subclassID = tonumber(metadata and metadata.subclassID)
+    if classID == 0 and CONSUMABLE_TYPE_BY_SUBCLASS[subclassID] then
+        return CONSUMABLE_TYPE_BY_SUBCLASS[subclassID]
+    end
+    if classID == 7 and TRADE_GOOD_TYPE_BY_SUBCLASS[subclassID] then
+        return TRADE_GOOD_TYPE_BY_SUBCLASS[subclassID]
+    end
+    if FARM_TARGET_TYPE_BY_CLASS[classID] then
+        return FARM_TARGET_TYPE_BY_CLASS[classID]
+    end
+    if HasText(metadata and metadata.subclassName) then
+        return metadata.subclassName
+    end
+    if HasText(metadata and metadata.className) then
+        return metadata.className
+    end
+    return "Other"
+end
+
+local function GetFarmTargetFilterCategory(metadata, itemType)
+    local classID = tonumber(metadata and metadata.classID)
+    if classID == 2 or classID == 4 then
+        return "equipment"
+    end
+    if metadata and metadata.isCraftingReagent == true then
+        return "reagents"
+    end
+    if classID == 3 or classID == 5 or classID == 7 or classID == 8 then
+        return "reagents"
+    end
+    if itemType == "Ore" or itemType == "Herb" or itemType == "Cloth" or itemType == "Leather" then
+        return "reagents"
+    end
+    return "other"
 end
 
 local function RequestItemData(itemID, isLoaded)
@@ -530,7 +631,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
                     local x = tonumber(sourcePin and sourcePin.x)
                     local y = tonumber(sourcePin and sourcePin.y)
                     if x and y and x >= 0 and x <= 1 and y >= 0 and y <= 1 then
-                        local isRoute = IsRouteMaterialFarm(farm) and sourceOption.isRoute == true
+                        local isRoute = IsRouteMaterialFarm(farm) and sourceOption.isRoute ~= false
                         option.pins[#option.pins + 1] = {
                             mapID = mapID,
                             x = x,
@@ -725,14 +826,27 @@ local function BuildCuratedFarmMapDetailLines(farm, mapLabel)
     return lines
 end
 
-local function AppendMapDetailFarmTarget(lines, itemID, itemLink, itemName, quantity, totalValue, selected)
+local function AppendMapDetailFarmTarget(
+    lines,
+    itemID,
+    itemLink,
+    itemName,
+    itemType,
+    quantity,
+    totalValue,
+    totalValueText,
+    selected
+)
     lines[#lines + 1] = {
         type = "farmTarget",
         itemID = itemID,
         itemLink = itemLink,
         itemName = itemName,
+        itemType = itemType,
+        quantity = tonumber(quantity) or 0,
         quantityText = "x" .. FormatQuantity(quantity),
-        totalValueText = totalValue,
+        totalValue = tonumber(totalValue) or 0,
+        totalValueText = totalValueText,
         selected = selected == true,
         gap = 3,
     }
@@ -751,12 +865,264 @@ local function GetFarmValuationTarget(valuationSnapshot, itemID)
     return nil
 end
 
-local function FormatFarmTargetTotalValue(addon, valuationSnapshot, itemID)
+local function GetFarmTargetTotalValue(valuationSnapshot, itemID)
     local target = GetFarmValuationTarget(valuationSnapshot, itemID)
     if not target or (tonumber(target.unitValue) or 0) <= 0 then
-        return "unavailable"
+        return 0
     end
-    return addon:FormatMoney(math.floor((tonumber(target.sampleValue) or 0) + 0.5))
+    return math.floor((tonumber(target.sampleValue) or 0) + 0.5)
+end
+
+local function FormatFarmTargetTotalValue(addon, valuationSnapshot, itemID)
+    local totalValue = GetFarmTargetTotalValue(valuationSnapshot, itemID)
+    return totalValue > 0 and addon:FormatMoney(totalValue) or "unavailable"
+end
+
+local FARM_TARGET_FILTER_OPTIONS = {
+    { id = "all", label = "All" },
+    { id = "reagents", label = "Reagents" },
+    { id = "equipment", label = "Armor and Weapons" },
+    { id = "other", label = "Other" },
+}
+
+local FARM_TARGET_FILTERS = {
+    all = true,
+    reagents = true,
+    equipment = true,
+    other = true,
+}
+
+local FARM_TARGET_SORT_KEYS = {
+    itemName = true,
+    itemType = true,
+    quantity = true,
+    totalValue = true,
+}
+
+local function SortFarmMapTargets(targets, sortKey, sortAscending)
+    table.sort(targets, function(left, right)
+        local leftValue = left[sortKey]
+        local rightValue = right[sortKey]
+        if type(leftValue) == "string" then
+            leftValue = string.lower(leftValue)
+            rightValue = string.lower(tostring(rightValue or ""))
+        else
+            leftValue = tonumber(leftValue) or 0
+            rightValue = tonumber(rightValue) or 0
+        end
+        if leftValue == rightValue then
+            return left.sourceIndex < right.sourceIndex
+        end
+        if sortAscending == true then
+            return leftValue < rightValue
+        end
+        return leftValue > rightValue
+    end)
+end
+
+local function BuildFarmMapTarget(addon, target, sourceIndex, normalizedSelectedItemID, valuationSnapshot)
+    local itemID = NormalizeItemID(target and target.itemID)
+    if not itemID then
+        return nil
+    end
+    local itemName, itemLink, isLoaded = GetItemInfoSafe(itemID)
+    RequestItemData(itemID, isLoaded)
+    local metadata = GetFarmTargetItemMetadata(itemID)
+    local itemType = GetFarmTargetItemType(metadata)
+    local targetValue = GetFarmTargetTotalValue(valuationSnapshot, itemID)
+    return {
+        itemID = itemID,
+        itemLink = itemLink,
+        itemName = itemName,
+        itemType = itemType,
+        filterCategory = GetFarmTargetFilterCategory(metadata, itemType),
+        quantity = tonumber(target.quantity) or 0,
+        totalValue = targetValue,
+        totalValueText = targetValue > 0 and addon:FormatMoney(targetValue) or "unavailable",
+        selected = itemID == normalizedSelectedItemID,
+        sourceIndex = sourceIndex,
+    }
+end
+
+local function BuildFarmMapTargets(addon, farm, selectedItemID, valuationSnapshot, targetFilter)
+    local targets = {}
+    local normalizedSelectedItemID = NormalizeItemID(selectedItemID)
+    for sourceIndex, target in ipairs(farm.targets or {}) do
+        local entry = BuildFarmMapTarget(addon, target, sourceIndex, normalizedSelectedItemID, valuationSnapshot)
+        if entry and (targetFilter == "all" or targetFilter == entry.filterCategory) then
+            targets[#targets + 1] = entry
+        end
+    end
+    return targets
+end
+
+local function GetTopFarmTargetsByQuantity(farm, limit)
+    local candidates = {}
+    for sourceIndex, target in ipairs(farm.targets or {}) do
+        if NormalizeItemID(target.itemID) then
+            candidates[#candidates + 1] = {
+                target = target,
+                sourceIndex = sourceIndex,
+                quantity = tonumber(target.quantity) or 0,
+            }
+        end
+    end
+    table.sort(candidates, function(left, right)
+        if left.quantity == right.quantity then
+            return left.sourceIndex < right.sourceIndex
+        end
+        return left.quantity > right.quantity
+    end)
+
+    local limited = {}
+    for index = 1, math.min(#candidates, tonumber(limit) or #candidates) do
+        limited[index] = candidates[index]
+    end
+    return limited, #candidates
+end
+
+local function BuildTopFarmMapTargetsByQuantity(addon, farm, selectedItemID, valuationSnapshot, limit)
+    local candidates, totalTargetCount = GetTopFarmTargetsByQuantity(farm, limit)
+
+    local targets = {}
+    local normalizedSelectedItemID = NormalizeItemID(selectedItemID)
+    for _, candidate in ipairs(candidates) do
+        local entry = BuildFarmMapTarget(
+            addon,
+            candidate.target,
+            candidate.sourceIndex,
+            normalizedSelectedItemID,
+            valuationSnapshot
+        )
+        if entry then
+            targets[#targets + 1] = entry
+        end
+    end
+    return targets, totalTargetCount
+end
+
+local function AppendFarmMapTargetRows(lines, targets, maximumRows)
+    local rowCount = math.min(#targets, tonumber(maximumRows) or #targets)
+    for index = 1, rowCount do
+        local entry = targets[index]
+        AppendMapDetailFarmTarget(
+            lines,
+            entry.itemID,
+            entry.itemLink,
+            entry.itemName,
+            entry.itemType,
+            entry.quantity,
+            entry.totalValue,
+            entry.totalValueText,
+            entry.selected
+        )
+    end
+end
+
+function GoldTracker:BuildFarmRecordedYieldLines(farm, selectedItemID, valuationSnapshot, options)
+    options = type(options) == "table" and options or {}
+    if type(farm) ~= "table" then
+        return {
+            { type = "text", text = "Farm data is unavailable.", r = 0.72, g = 0.76, b = 0.84 },
+        }
+    end
+
+    valuationSnapshot = valuationSnapshot or self:BuildFarmValuationSnapshot(farm)
+    local targetFilter = FARM_TARGET_FILTERS[options.targetFilter] and options.targetFilter or "all"
+    local targetSortKey = FARM_TARGET_SORT_KEYS[options.targetSortKey] and options.targetSortKey or "itemName"
+    local targetSortAscending = options.targetSortAscending ~= false
+    local targets = BuildFarmMapTargets(self, farm, selectedItemID, valuationSnapshot, targetFilter)
+    SortFarmMapTargets(targets, targetSortKey, targetSortAscending)
+
+    local lines = {
+        {
+            type = "farmTargetFilter",
+            selectedFilter = targetFilter,
+            filterOptions = FARM_TARGET_FILTER_OPTIONS,
+            onSelect = options.onTargetFilterChanged,
+            gap = 3,
+        },
+        {
+            type = "farmTargetHeader",
+            sortKey = targetSortKey,
+            sortAscending = targetSortAscending,
+            onSort = options.onTargetSortChanged,
+            gap = 2,
+        },
+    }
+    AppendFarmMapTargetRows(lines, targets)
+    if #targets == 0 then
+        local emptyText = #(farm.targets or {}) == 0
+            and "No recorded item yields."
+            or "No recorded items match this filter."
+        AppendMapDetailLine(lines, emptyText, 0.72, 0.76, 0.84, 8, "GameFontDisable")
+    end
+    return lines
+end
+
+function GoldTracker:OpenFarmRecordedYieldsForFarm(farm, selectedItemID, valuationSnapshot, tableState)
+    if type(farm) ~= "table" or type(self.OpenRecordedYieldsWindow) ~= "function" then
+        return false
+    end
+
+    tableState = type(tableState) == "table" and tableState or {}
+    tableState.filter = FARM_TARGET_FILTERS[tableState.filter] and tableState.filter or "all"
+    tableState.sortKey = FARM_TARGET_SORT_KEYS[tableState.sortKey] and tableState.sortKey or "itemName"
+    if tableState.sortAscending == nil then
+        tableState.sortAscending = true
+    end
+
+    local previousRequest = self.recordedYieldsValuationRequest
+    if previousRequest then
+        previousRequest.cancelled = true
+        if previousRequest.asyncTask then
+            previousRequest.asyncTask.cancelled = true
+        end
+    end
+
+    local addon = self
+    local activeSnapshot = valuationSnapshot
+    self:OpenRecordedYieldsWindow({
+        title = farm.name or farm.id or "Farm",
+        detailLinesBuilder = function()
+            return addon:BuildFarmRecordedYieldLines(farm, selectedItemID, activeSnapshot, {
+                targetFilter = tableState.filter,
+                targetSortKey = tableState.sortKey,
+                targetSortAscending = tableState.sortAscending,
+                onTargetFilterChanged = function(filterID)
+                    tableState.filter = filterID
+                    addon:RefreshRecordedYieldsWindow()
+                end,
+                onTargetSortChanged = function(sortKey)
+                    if tableState.sortKey == sortKey then
+                        tableState.sortAscending = not tableState.sortAscending
+                    else
+                        tableState.sortKey = sortKey
+                        tableState.sortAscending = sortKey == "itemName" or sortKey == "itemType"
+                    end
+                    addon:RefreshRecordedYieldsWindow()
+                end,
+            })
+        end,
+    })
+
+    local _, totalTargetCount = GetTopFarmTargetsByQuantity(farm, 0)
+    local snapshotTargetCount = type(activeSnapshot) == "table" and #(activeSnapshot.targets or {}) or 0
+    if snapshotTargetCount < totalTargetCount then
+        local request = { cancelled = false }
+        self.recordedYieldsValuationRequest = request
+        request.asyncTask = self:BuildFarmValuationSnapshotAsync(farm, function(completedSnapshot)
+            if request.cancelled or addon.recordedYieldsValuationRequest ~= request then
+                return
+            end
+            activeSnapshot = completedSnapshot
+            addon.recordedYieldsValuationRequest = nil
+            addon:RefreshRecordedYieldsWindow()
+        end)
+    else
+        self.recordedYieldsValuationRequest = nil
+    end
+    return true
 end
 
 function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, valuationSnapshot, options)
@@ -838,7 +1204,7 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
                 0.72,
                 0.80,
                 8,
-                "GameFontHighlightSmall"
+                "GameFontHighlight"
             )
         end
         lines[#lines + 1] = {
@@ -847,7 +1213,15 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
         }
     end
 
-    AppendMapDetailLine(lines, "Farm estimate", 1.0, 0.82, 0.18, 4, "GameFontNormal")
+    AppendMapDetailLine(
+        lines,
+        valuationSnapshot.isPartial and "Top 10 yield estimate" or "Farm estimate",
+        1.0,
+        0.82,
+        0.18,
+        4,
+        "GameFontNormal"
+    )
     if pricedTargets > 0 or (tonumber(farm.rawCopper) or 0) > 0 then
         AppendMapDetailLine(lines, self:FormatMoney(hourlyValue) .. "/hour", 0.35, 0.95, 0.55, 3, "GameFontNormalLarge")
         if valuationSnapshot.rareBonus then
@@ -895,61 +1269,60 @@ function GoldTracker:BuildFarmMapDetailLines(farm, selectedItemID, mapLabel, val
             8,
             "GameFontHighlightSmall"
         )
+        if valuationSnapshot.isPartial then
+            AppendMapDetailLine(
+                lines,
+                "Open all recorded items to calculate the complete farm estimate.",
+                0.72,
+                0.76,
+                0.84,
+                8,
+                "GameFontHighlightSmall"
+            )
+        end
     else
-        AppendMapDetailLine(lines, "Waiting for item prices.", 0.72, 0.76, 0.84, 8, "GameFontDisable")
+        AppendMapDetailLine(
+            lines,
+            valuationSnapshot.isPartial
+                and "Open all recorded items to calculate the complete farm estimate."
+                or "Waiting for item prices.",
+            0.72,
+            0.76,
+            0.84,
+            8,
+            "GameFontDisable"
+        )
     end
 
     AppendMapDetailLine(lines, "How to farm", 1.0, 0.82, 0.18, 4, "GameFontNormal")
     AppendMapDetailLine(lines, guide.action, 1.0, 0.45, 0.20, 4, "GameFontHighlight")
     AppendMapDetailLine(lines, guide.requirement, 0.72, 0.86, 1.0, 8, "GameFontHighlight")
 
-    local targets = {}
-    local normalizedSelectedItemID = NormalizeItemID(selectedItemID)
-    for sourceIndex, target in ipairs(farm.targets or {}) do
-        targets[#targets + 1] = { target = target, sourceIndex = sourceIndex }
-    end
-    table.sort(targets, function(left, right)
-        local leftSelected = NormalizeItemID(left.target.itemID) == normalizedSelectedItemID
-        local rightSelected = NormalizeItemID(right.target.itemID) == normalizedSelectedItemID
-        if leftSelected ~= rightSelected then
-            return leftSelected
-        end
-        return left.sourceIndex < right.sourceIndex
-    end)
+    local targets, totalTargetCount = BuildTopFarmMapTargetsByQuantity(
+        self,
+        farm,
+        selectedItemID,
+        valuationSnapshot,
+        MAX_MAP_RECORDED_YIELDS
+    )
 
     AppendMapDetailLine(lines, "Recorded yields", 1.0, 0.82, 0.18, 4, "GameFontNormal")
-    local visibleTargetCount = options.showAllTargets == true and #targets or MAX_MAP_DETAIL_TARGETS
-    for index, entry in ipairs(targets) do
-        if index > visibleTargetCount then
-            break
-        end
-        local itemID = NormalizeItemID(entry.target.itemID)
-        if itemID then
-            local itemName, itemLink, isLoaded = GetItemInfoSafe(itemID)
-            RequestItemData(itemID, isLoaded)
-            local isSelected = itemID == normalizedSelectedItemID
-            AppendMapDetailFarmTarget(
-                lines,
-                itemID,
-                itemLink,
-                itemName,
-                entry.target.quantity,
-                FormatFarmTargetTotalValue(self, valuationSnapshot, itemID),
-                isSelected
-            )
-        end
-    end
-    if #targets > MAX_MAP_DETAIL_TARGETS then
+    if totalTargetCount > 0 then
         lines[#lines + 1] = {
-            type = "detailToggle",
-            text = options.showAllTargets == true
-                and "- Show fewer recorded items"
-                or string.format("+ %d more recorded items", #targets - MAX_MAP_DETAIL_TARGETS),
-            expanded = options.showAllTargets == true,
-            onClick = options.onToggleTargets,
-            gap = 8,
+            type = "detailButton",
+            text = "View all recorded items (" .. tostring(totalTargetCount) .. ")",
+            onClick = options.onOpenAllTargets,
+            gap = 4,
         }
-    elseif #targets == 0 then
+    end
+    lines[#lines + 1] = {
+        type = "farmTargetHeader",
+        sortKey = "quantity",
+        sortAscending = false,
+        gap = 2,
+    }
+    AppendFarmMapTargetRows(lines, targets)
+    if totalTargetCount == 0 then
         AppendMapDetailLine(lines, "No recorded item yields.", 0.72, 0.76, 0.84, 8, "GameFontDisable")
     end
 
@@ -1002,9 +1375,104 @@ function GoldTracker:BuildFarmDetailsMapOptions(farms, selectedItemID)
     return options
 end
 
-function GoldTracker:BuildFarmValuationSnapshot(farm, options)
+local function CreateFarmValuationState(addon, farm, options)
     options = type(options) == "table" and options or {}
     local includeTargets = options.includeTargets ~= false
+    local source = type(addon.GetCraftingFarmingValueSource) == "function" and addon:GetCraftingFarmingValueSource()
+        or (type(addon.GetCurrentValueSource) == "function" and addon:GetCurrentValueSource())
+    return {
+        addon = addon,
+        farm = farm,
+        includeTargets = includeTargets,
+        source = source,
+        total = math.max(0, tonumber(farm and farm.rawCopper) or 0),
+        pricedTargets = 0,
+        targets = {},
+        primaryItemID = NormalizeItemID(farm and farm.primaryItemID),
+    }
+end
+
+local function AccumulateFarmValuationTarget(state, target)
+    local itemID = NormalizeItemID(target and target.itemID)
+    if not itemID then
+        return
+    end
+
+    local _, itemLink = GetItemInfoSafe(itemID)
+    local value = 0
+    if type(state.addon.ResolveItemUnitValue) == "function" then
+        value = tonumber((state.addon:ResolveItemUnitValue(
+            state.source and state.source.id,
+            itemLink,
+            itemID,
+            true
+        ))) or 0
+    end
+    local quantity = math.max(0, tonumber(target.quantity) or 0)
+    local sampleValue = value * quantity
+    if value > 0 then
+        state.pricedTargets = state.pricedTargets + 1
+        state.total = state.total + sampleValue
+        if state.farm.sourceType == "gathering"
+            and itemID ~= state.primaryItemID
+            and quantity > 0
+            and quantity <= RARE_BONUS_MAX_RECORDED_QUANTITY
+            and (not state.rareBonusCandidate or sampleValue > state.rareBonusCandidate.sampleValue)
+        then
+            state.rareBonusCandidate = {
+                itemID = itemID,
+                quantity = quantity,
+                unitValue = value,
+                sampleValue = sampleValue,
+            }
+        end
+    end
+    if state.includeTargets then
+        state.targets[#state.targets + 1] = {
+            itemID = itemID,
+            quantity = quantity,
+            unitValue = value,
+            sampleValue = sampleValue,
+        }
+    end
+end
+
+local function FinalizeFarmValuationState(state)
+    local duration = math.max(1, tonumber(state.farm and state.farm.recordedSeconds) or 3600)
+    local perHour = math.floor(((state.total * 3600) / duration) + 0.5)
+    local rareBonus
+    if state.rareBonusCandidate and state.total > state.rareBonusCandidate.sampleValue then
+        local valueShare = state.rareBonusCandidate.sampleValue / state.total
+        if valueShare >= RARE_BONUS_MIN_VALUE_SHARE then
+            rareBonus = state.rareBonusCandidate
+            rareBonus.valueSharePercent = valueShare * 100
+            rareBonus.valuePerHour = math.floor(((rareBonus.sampleValue * 3600) / duration) + 0.5)
+        end
+    end
+    local steadyTotal = rareBonus and (state.total - rareBonus.sampleValue) or state.total
+    local steadyPerHour = math.floor(((steadyTotal * 3600) / duration) + 0.5)
+    if rareBonus and state.includeTargets then
+        for _, target in ipairs(state.targets) do
+            if target.itemID == rareBonus.itemID then
+                target.isRareBonus = true
+                break
+            end
+        end
+    end
+    return {
+        totalValue = math.floor(state.total + 0.5),
+        hourlyValue = perHour,
+        estimatedHourlyValue = steadyPerHour,
+        steadyTotalValue = math.floor(steadyTotal + 0.5),
+        rareBonus = rareBonus,
+        pricedTargets = state.pricedTargets,
+        sourceLabel = state.source and state.source.label or "Unknown",
+        duration = duration,
+        targets = state.targets,
+    }
+end
+
+function GoldTracker:BuildFarmValuationSnapshot(farm, options)
     if type(farm) ~= "table" then
         return {
             totalValue = 0,
@@ -1016,82 +1484,96 @@ function GoldTracker:BuildFarmValuationSnapshot(farm, options)
             targets = {},
         }
     end
-    local source = type(self.GetCraftingFarmingValueSource) == "function" and self:GetCraftingFarmingValueSource()
-        or (type(self.GetCurrentValueSource) == "function" and self:GetCurrentValueSource())
-    local total = math.max(0, tonumber(farm.rawCopper) or 0)
-    local pricedTargets = 0
-    local targets = {}
-    local rareBonusCandidate
-    local primaryItemID = NormalizeItemID(farm.primaryItemID)
+
+    local state = CreateFarmValuationState(self, farm, options)
     for _, target in ipairs(farm.targets or {}) do
-        local itemID = NormalizeItemID(target.itemID)
-        if itemID then
-            local _, itemLink = GetItemInfoSafe(itemID)
-            local value = 0
-            if type(self.ResolveItemUnitValue) == "function" then
-                value = tonumber((self:ResolveItemUnitValue(source and source.id, itemLink, itemID, true))) or 0
-            end
-            if value > 0 then
-                pricedTargets = pricedTargets + 1
-                local quantity = math.max(0, tonumber(target.quantity) or 0)
-                local sampleValue = value * quantity
-                total = total + sampleValue
-                if farm.sourceType == "gathering"
-                    and itemID ~= primaryItemID
-                    and quantity > 0
-                    and quantity <= RARE_BONUS_MAX_RECORDED_QUANTITY
-                    and (not rareBonusCandidate or sampleValue > rareBonusCandidate.sampleValue)
-                then
-                    rareBonusCandidate = {
-                        itemID = itemID,
-                        quantity = quantity,
-                        unitValue = value,
-                        sampleValue = sampleValue,
-                    }
+        AccumulateFarmValuationTarget(state, target)
+    end
+    return FinalizeFarmValuationState(state)
+end
+
+function GoldTracker:BuildFarmValuationSnapshotAsync(farm, onComplete, options)
+    if type(onComplete) ~= "function" then
+        return nil
+    end
+    if type(farm) ~= "table" or not C_Timer or type(C_Timer.After) ~= "function" then
+        onComplete(self:BuildFarmValuationSnapshot(farm, options))
+        return nil
+    end
+
+    local task = { cancelled = false }
+    local state = CreateFarmValuationState(self, farm, options)
+    local targets = farm.targets or {}
+    local targetIndex = 1
+
+    local function processBatch()
+        if task.cancelled then
+            return
+        end
+        local startedAt = type(debugprofilestop) == "function" and debugprofilestop() or nil
+        local processed = 0
+        while targetIndex <= #targets do
+            AccumulateFarmValuationTarget(state, targets[targetIndex])
+            targetIndex = targetIndex + 1
+            processed = processed + 1
+            if startedAt then
+                if (debugprofilestop() - startedAt) >= FARM_VALUATION_ASYNC_BUDGET_MS then
+                    break
                 end
-            end
-            if includeTargets then
-                targets[#targets + 1] = {
-                    itemID = itemID,
-                    quantity = math.max(0, tonumber(target.quantity) or 0),
-                    unitValue = value,
-                    sampleValue = value * math.max(0, tonumber(target.quantity) or 0),
-                }
-            end
-        end
-    end
-    local duration = math.max(1, tonumber(farm.recordedSeconds) or 3600)
-    local perHour = math.floor(((total * 3600) / duration) + 0.5)
-    local rareBonus
-    if rareBonusCandidate and total > rareBonusCandidate.sampleValue then
-        local valueShare = rareBonusCandidate.sampleValue / total
-        if valueShare >= RARE_BONUS_MIN_VALUE_SHARE then
-            rareBonus = rareBonusCandidate
-            rareBonus.valueSharePercent = valueShare * 100
-            rareBonus.valuePerHour = math.floor(((rareBonus.sampleValue * 3600) / duration) + 0.5)
-        end
-    end
-    local steadyTotal = rareBonus and (total - rareBonus.sampleValue) or total
-    local steadyPerHour = math.floor(((steadyTotal * 3600) / duration) + 0.5)
-    if rareBonus and includeTargets then
-        for _, target in ipairs(targets) do
-            if target.itemID == rareBonus.itemID then
-                target.isRareBonus = true
+            elseif processed >= FARM_VALUATION_ASYNC_FALLBACK_BATCH_SIZE then
                 break
             end
         end
+        if task.cancelled then
+            return
+        end
+        if targetIndex <= #targets then
+            C_Timer.After(0, processBatch)
+        else
+            onComplete(FinalizeFarmValuationState(state))
+        end
     end
-    return {
-        totalValue = math.floor(total + 0.5),
-        hourlyValue = perHour,
-        estimatedHourlyValue = steadyPerHour,
-        steadyTotalValue = math.floor(steadyTotal + 0.5),
-        rareBonus = rareBonus,
-        pricedTargets = pricedTargets,
-        sourceLabel = source and source.label or "Unknown",
-        duration = duration,
-        targets = targets,
-    }
+
+    C_Timer.After(0, processBatch)
+    return task
+end
+
+function GoldTracker:BuildFarmPreviewValuationSnapshot(farm)
+    if type(farm) ~= "table" then
+        return self:BuildFarmValuationSnapshot(farm)
+    end
+
+    local state = CreateFarmValuationState(self, farm, { includeTargets = true })
+    local topTargets, totalTargetCount = GetTopFarmTargetsByQuantity(farm, MAX_MAP_RECORDED_YIELDS)
+    for _, candidate in ipairs(topTargets) do
+        AccumulateFarmValuationTarget(state, candidate.target)
+    end
+    local snapshot = FinalizeFarmValuationState(state)
+
+    local cache = type(self.db) == "table" and self.db.farmCatalogValueCache or self.farmCatalogViewSnapshots
+    local cachedSnapshot = type(cache) == "table" and cache[farm.id] or nil
+    if type(cachedSnapshot) == "table"
+        and cachedSnapshot.totalValue ~= nil
+        and (cachedSnapshot.estimatedHourlyValue ~= nil or cachedSnapshot.hourlyValue ~= nil)
+    then
+        for _, key in ipairs({
+            "totalValue",
+            "hourlyValue",
+            "estimatedHourlyValue",
+            "steadyTotalValue",
+            "pricedTargets",
+            "sourceLabel",
+            "duration",
+        }) do
+            if cachedSnapshot[key] ~= nil then
+                snapshot[key] = cachedSnapshot[key]
+            end
+        end
+        snapshot.usesCachedSummary = true
+    end
+    snapshot.isPartial = totalTargetCount > #topTargets and snapshot.usesCachedSummary ~= true
+    snapshot.totalTargetCount = totalTargetCount
+    return snapshot
 end
 
 function GoldTracker:GetFarmEstimatedValue(farm, valuationSnapshot)
@@ -1697,7 +2179,7 @@ function GoldTracker:OpenFarmDetails(farmID, options)
         end
         local addon = self
         local valuationSnapshots = {}
-        local expandedFarmTargets = {}
+        local farmTargetTableStates = {}
         self:OpenStandaloneMapWindow({
             title = farm.name or farm.id,
             projectionKey = selectedItemID and ("farm-item:" .. tostring(selectedItemID)) or farm.id,
@@ -1708,14 +2190,22 @@ function GoldTracker:OpenFarmDetails(farmID, options)
                 local valuationKey = selectedFarm.id or tostring(selectedFarm)
                 local valuationSnapshot = valuationSnapshots[valuationKey]
                 if not valuationSnapshot then
-                    valuationSnapshot = addon:BuildFarmValuationSnapshot(selectedFarm)
+                    valuationSnapshot = addon:BuildFarmPreviewValuationSnapshot(selectedFarm)
                     valuationSnapshots[valuationKey] = valuationSnapshot
                 end
+                local tableState = farmTargetTableStates[valuationKey]
+                if not tableState then
+                    tableState = { filter = "all", sortKey = "itemName", sortAscending = true }
+                    farmTargetTableStates[valuationKey] = tableState
+                end
                 return addon:BuildFarmMapDetailLines(selectedFarm, selectedItemID, mapLabel, valuationSnapshot, {
-                    showAllTargets = expandedFarmTargets[valuationKey] == true,
-                    onToggleTargets = function()
-                        expandedFarmTargets[valuationKey] = not expandedFarmTargets[valuationKey]
-                        addon:RefreshStandaloneMapWindow()
+                    onOpenAllTargets = function()
+                        addon:OpenFarmRecordedYieldsForFarm(
+                            selectedFarm,
+                            selectedItemID,
+                            valuationSnapshot,
+                            tableState
+                        )
                     end,
                 })
             end,

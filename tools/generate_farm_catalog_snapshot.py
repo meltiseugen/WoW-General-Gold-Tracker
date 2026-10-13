@@ -41,8 +41,9 @@ DROP_MODULES = {
         ("Modules/retail/Farming/ToysModule.lua", "Toys.lua"),
     ],
     "pets": [
+        # Raid pets have their own Instances > Pets category below. Keeping the
+        # raid module out of this list prevents duplicate rows and map options.
         ("Modules/retail/BattlePets/OpenWorldBattlePetModule.lua", "OpenWorldPets.lua"),
-        ("Modules/retail/BattlePets/RaidBattlePetModule.lua", "BattlePets.lua"),
         ("Modules/retail/BattlePets/RareBattlePetModule.lua", "RareBattlePets.lua"),
     ],
     "raidPets": [

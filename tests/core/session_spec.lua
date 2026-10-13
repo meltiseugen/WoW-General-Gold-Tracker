@@ -152,3 +152,36 @@ describe("Core/Session reload persistence", function()
         assert.is_nil(addon.db.pendingReloadSession)
     end)
 end)
+
+describe("Core/Session logout farm cleanup", function()
+    it("closes the active farm and clears all projections on logout", function()
+        local stoppedFarmID
+        local closeReason
+        local projectionClearCount = 0
+        local addon = load_session({
+            db = {},
+            session = { active = false },
+            IsResumeSessionAfterReloadEnabled = function() return true end,
+            GetActiveCustomFarmRoutePlan = function()
+                return { farm = { id = 42 } }
+            end,
+            StopCustomFarmRoutePlan = function(_, farmID, reason)
+                stoppedFarmID = farmID
+                closeReason = reason
+            end,
+            ClearWorldMapProjection = function()
+                projectionClearCount = projectionClearCount + 1
+            end,
+        }, {
+            IsReloadingUI = function() return false end,
+        })
+
+        loader.with_globals({ IsReloadingUI = function() return false end }, function()
+            addon:HandlePlayerLogout()
+        end)
+
+        assert.equals(42, stoppedFarmID)
+        assert.equals("logout", closeReason)
+        assert.equals(1, projectionClearCount)
+    end)
+end)

@@ -26,10 +26,10 @@ describe("Data/PetFarms", function()
         local raidRows = ns.CatalogDropsData.categories.raidPets
         local rows = ns.PetFarmData.rows
 
-        assert.equals(179, #outdoorRows)
+        assert.equals(47, #outdoorRows)
         assert.equals(91, #raidRows)
         assert.equals(#outdoorRows + #raidRows, ns.PetFarmData.sourceRowCount)
-        assert.equals(238, ns.PetFarmData.curatedRowCount)
+        assert.equals(147, ns.PetFarmData.curatedRowCount)
         assert.equals(#rows, #ns.PetFarmData.farms)
         assert.equals("2026-10-08", ns.PetFarmData.researchedAt)
         assert.equals(#rows, ns.FarmCatalog.sourceCounts.curatedPets)
@@ -45,8 +45,9 @@ describe("Data/PetFarms", function()
             local farm = ns.FarmCatalog.farms[positions[1]]
             assert.equals(row.recordID, farm.sourceRecordID)
             assert.equals("GGTPetFarmData", farm.sourceDataset)
-            assert.equals("pets", farm.sourceCategory)
-            assert.equals("Drops > Pets", farm.sourcePath)
+            local isRaidPet = row.recordID:match("^raidPets:") ~= nil
+            assert.equals(isRaidPet and "raidPets" or "pets", farm.sourceCategory)
+            assert.equals(isRaidPet and "Instances > Pets" or "Drops > Pets", farm.sourcePath)
             assert.is_true(#farm.sourceUrls >= 2)
             assert.is_true(#farm.guide.tips >= 3)
             assert.equals(farm.routeCount, #farm.mapOptions)
@@ -80,9 +81,9 @@ describe("Data/PetFarms", function()
             end
         end
 
-        assert.equals(238, petRows)
-        assert.is_true(optionCount >= 238)
-        assert.is_true(pinCount >= 238)
+        assert.equals(147, petRows)
+        assert.is_true(optionCount >= 147)
+        assert.is_true(pinCount >= 147)
         assert.is_nil(ns.FarmCatalog.indexes.byItemID and ns.FarmCatalog.indexes.byItemID[82800],
             "shared pet cage item must never drive pet lookup")
 
@@ -128,6 +129,12 @@ describe("Data/PetFarms", function()
         assert.equals("Icehowl", RaidFarm(1953).bossName)
         assert.equals("Conclave of the Chosen", RaidFarm(2527).bossName)
         assert.equals("The Hivemind", RaidFarm(2834).bossName)
+
+        local discardedExperimentPositions = ns.FarmCatalog.indexes.byPetID[2079]
+        assert.equals(1, #discardedExperimentPositions)
+        local discardedExperiment = ns.FarmCatalog.farms[discardedExperimentPositions[1]]
+        assert.equals("Instances > Pets", discardedExperiment.sourcePath)
+        assert.equals("raidPets:BlackwingDecentPets:1", discardedExperiment.sourceRecordID)
     end)
 
     it("keeps pet identity exact when Catalog farm IDs or cage item IDs collide", function()
@@ -150,7 +157,7 @@ describe("Data/PetFarms", function()
         local second = load_pet_farms(first.FarmCatalog)
         local firstRecordID = second.CatalogDropsData.categories.pets[1].recordID
 
-        assert.equals(238, #second.FarmCatalog.farms)
+        assert.equals(147, #second.FarmCatalog.farms)
         assert.equals(1, #second.FarmCatalog.indexes.byPetID[59])
         assert.equals(1, #second.FarmCatalog.indexes.byRecordID[firstRecordID])
     end)

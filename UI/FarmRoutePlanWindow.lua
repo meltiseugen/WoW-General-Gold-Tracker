@@ -64,7 +64,7 @@ local function GetOrCreatePlanRow(frame, index)
 
     row.nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     row.nameText:SetPoint("TOPLEFT", row, "TOPLEFT", 44, -8)
-    row.nameText:SetPoint("RIGHT", row, "RIGHT", -410, 0)
+    row.nameText:SetPoint("RIGHT", row, "RIGHT", -490, 0)
     row.nameText:SetJustifyH("LEFT")
     row.nameText:SetWordWrap(false)
 
@@ -91,12 +91,20 @@ local function GetOrCreatePlanRow(frame, index)
     row.navigateButton:SetPoint("RIGHT", row.completeButton, "LEFT", -6, 0)
     row.navigateButton:SetScript("OnClick", function(self)
         local parent = self:GetParent()
-        GoldTracker:SetCustomFarmRoutePlanCurrentStep(frame.selectedFarmID, parent.stepKey)
-        GoldTracker:NavigateCustomFarmRoutePlanStep(frame.selectedFarmID, parent.stepKey)
+        if GoldTracker:SetCustomFarmRoutePlanCurrentStep(frame.selectedFarmID, parent.stepKey) then
+            GoldTracker:ActivateCustomFarmRoutePlanStep(frame.selectedFarmID, parent.stepKey)
+        end
+    end)
+
+    row.mapDataButton = CreateButton(row, 74, 22, "Map data", "primary")
+    row.mapDataButton:SetPoint("RIGHT", row.navigateButton, "LEFT", -6, 0)
+    row.mapDataButton:SetScript("OnClick", function(self)
+        local parent = self:GetParent()
+        GoldTracker:OpenCustomFarmRoutePlanStepMap(frame.selectedFarmID, parent.stepKey)
     end)
 
     row.locationButton = CreateButton(row, 66, 22, "Location", "neutral")
-    row.locationButton:SetPoint("RIGHT", row.navigateButton, "LEFT", -6, 0)
+    row.locationButton:SetPoint("RIGHT", row.mapDataButton, "LEFT", -6, 0)
     row.locationButton:SetScript("OnClick", function(self)
         GoldTracker:CycleCustomFarmRoutePlanLocation(frame.selectedFarmID, self:GetParent().stepKey)
     end)
@@ -145,21 +153,31 @@ function GoldTracker:RefreshFarmRoutePlanWindow(recalculate)
     end
 
     frame.titleText:SetText("Route Plan — " .. farm.name)
+    local runStatus = run.currentStepKey and "Active route"
+        or (completedCount == #plan and #plan > 0 and "Plan complete")
+        or (run.startedAt and "Stopped")
+        or "Not started"
     frame.statusText:SetText(string.format(
         "%s | %d/%d complete%s",
         character or "Current character",
         completedCount,
         #plan,
-        run.currentStepKey and " | Active route" or " | Not started"
+        " | " .. runStatus
     ))
     frame.emptyText:SetShown(#plan == 0)
     local hasRemainingSteps = completedCount < #plan
     frame.navigateNextButton:SetEnabled(#plan > 0 and hasRemainingSteps)
     frame.navigateNextButton:SetText(hasRemainingSteps and "Navigate Next" or "Plan Complete")
     frame.skipButton:SetEnabled(run.currentStepKey ~= nil)
+    frame.stopButton:SetEnabled(run.currentStepKey ~= nil)
     frame.resetButton:SetEnabled(completedCount > 0 or run.currentStepKey ~= nil)
     frame.startButton:SetText((run.currentStepKey or completedCount > 0) and "Restart" or "Start")
-
+    if frame.overviewButton then
+        local overview, overviewReason = self:BuildCustomFarmRoutePlanOverview(farm.id)
+        frame.overviewButton:SetEnabled(overview ~= nil)
+        frame.overviewButton.tooltipText = overview and "Show every planned stop on one numbered route map."
+            or overviewReason
+    end
     local contentWidth = frame.scrollFrame and (frame.scrollFrame:GetWidth() or 0) or 0
     frame.content:SetWidth(math.max(1, contentWidth - 2))
     local yOffset = 0
@@ -189,6 +207,7 @@ function GoldTracker:RefreshFarmRoutePlanWindow(recalculate)
         row.completeButton:SetText(isComplete and "Undo" or "Complete")
         row.navigateButton:SetText(node.confidence == "exact" and "Navigate" or "Map")
         row.navigateButton:SetEnabled(node.mapID ~= nil or node.catalogFarmID ~= nil)
+        row.mapDataButton:SetEnabled(node.mapID ~= nil or node.catalogFarmID ~= nil)
         row.locationButton:SetShown(#node.candidates > 1)
         row.lockButton:SetText(node.locked and "Unlock" or "Lock")
         if row.lockButton.SetSelected then
@@ -263,9 +282,16 @@ function GoldTracker:CreateFarmRoutePlanWindow()
     end)
     frame.startButton = startButton
 
+    local stopButton = CreateButton(frame, 62, 24, "Stop", "neutral")
+    stopButton:SetPoint("RIGHT", startButton, "LEFT", -8, 0)
+    stopButton:SetScript("OnClick", function()
+        addon:StopCustomFarmRoutePlan(frame.selectedFarmID)
+    end)
+    frame.stopButton = stopButton
+
     local statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     statusText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -6)
-    statusText:SetPoint("RIGHT", startButton, "LEFT", -10, 0)
+    statusText:SetPoint("RIGHT", stopButton, "LEFT", -10, 0)
     statusText:SetJustifyH("LEFT")
     statusText:SetTextColor(0.72, 0.86, 1.0)
     frame.statusText = statusText
@@ -277,7 +303,7 @@ function GoldTracker:CreateFarmRoutePlanWindow()
     hintText:SetText("Suggested order groups locations conservatively. Lock important positions, use Up/Down for manual edits, and recalculate from your current location.")
 
     local listPanel = CreatePanel(frame, { 0.025, 0.03, 0.045, 0.94 }, { 1, 1, 1, 0.08 })
-    listPanel:SetPoint("TOPLEFT", hintText, "BOTTOMLEFT", 0, -10)
+    listPanel:SetPoint("TOPLEFT", hintText, "BOTTOMLEFT", 0, -9)
     listPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -18, 58)
     frame.listPanel = listPanel
     local scrollFrame = CreateFrame("ScrollFrame", nil, listPanel, "UIPanelScrollFrameTemplate")
@@ -293,6 +319,25 @@ function GoldTracker:CreateFarmRoutePlanWindow()
     emptyText:SetText("This farm has no steps to plan yet.")
     frame.emptyText = emptyText
 
+    local overviewButton = CreateButton(frame, 112, 24, "Overview Map", "primary")
+    overviewButton:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", 18, 20)
+    overviewButton:SetScript("OnClick", function()
+        addon:OpenCustomFarmRoutePlanOverview(frame.selectedFarmID)
+    end)
+    overviewButton:SetScript("OnEnter", function(self)
+        if GameTooltip and self.tooltipText then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(self.tooltipText, 1.0, 0.82, 0.18)
+            GameTooltip:Show()
+        end
+    end)
+    overviewButton:SetScript("OnLeave", function()
+        if GameTooltip then
+            GameTooltip:Hide()
+        end
+    end)
+    frame.overviewButton = overviewButton
+
     local skipButton = CreateButton(frame, 70, 24, "Skip", "neutral")
     skipButton:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -18, 20)
     skipButton:SetScript("OnClick", function()
@@ -307,11 +352,11 @@ function GoldTracker:CreateFarmRoutePlanWindow()
         local run = addon:GetCustomFarmRoutePlanRun(frame.selectedFarmID)
         if not run or not run.currentStepKey then
             addon:StartCustomFarmRoutePlan(frame.selectedFarmID)
-            run = addon:GetCustomFarmRoutePlanRun(frame.selectedFarmID)
+            return
         end
         local stepKey = run and run.currentStepKey or (plan[1] and plan[1].key)
         if stepKey then
-            addon:NavigateCustomFarmRoutePlanStep(frame.selectedFarmID, stepKey)
+            addon:ActivateCustomFarmRoutePlanStep(frame.selectedFarmID, stepKey)
         end
     end)
     frame.navigateNextButton = navigateNextButton

@@ -332,3 +332,26 @@ describe("UI/History data service", function()
         assert.equals("pet", other[1].itemLink)
     end)
 end)
+
+describe("UI/History farm rows", function()
+    it("labels farm history separately from loot sessions", function()
+        local addon, constants, Model = load_history_namespace()
+        local session = {
+            recordType = "farm",
+            farmName = "Starter Materials",
+            farmCompletedSteps = 1,
+            farmTotalSteps = 3,
+            farmCloseReason = "logout",
+            startTime = 4900,
+        }
+        local title, subtitle = loader.with_globals({
+            date = function() return "STAMP" end,
+        }, function()
+            return Model:New(addon, session, constants.DETAILS_LOCATION_FILTER_ALL)
+                :BuildRowTitleAndSubtitle(session)
+        end)
+
+        assert.equals("[Farm] Starter Materials - STAMP", title)
+        assert.equals("1/3 locations completed | Logout", subtitle)
+    end)
+end)

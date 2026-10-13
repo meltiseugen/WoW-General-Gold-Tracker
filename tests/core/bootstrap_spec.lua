@@ -151,3 +151,85 @@ describe("Core/Bootstrap world-entry behavior", function()
         assert.equals(1, opened)
     end)
 end)
+
+describe("Core/Bootstrap Trading Post window guard", function()
+    local function frame(shown)
+        local value = {
+            shown = shown == true,
+            scripts = {},
+            hideCalls = 0,
+            showCalls = 0,
+        }
+
+        function value:IsShown()
+            return self.shown
+        end
+
+        function value:Hide()
+            self.shown = false
+            self.hideCalls = self.hideCalls + 1
+        end
+
+        function value:Show()
+            self.shown = true
+            self.showCalls = self.showCalls + 1
+        end
+
+        function value:HookScript(scriptName, callback)
+            self.scripts[scriptName] = callback
+        end
+
+        return value
+    end
+
+    it("removes shown addon windows from the Trading Post and restores only those windows", function()
+        local mainFrame = frame(true)
+        local totalFrame = frame(false)
+        local explorerFrame = frame(true)
+        local tradingPostFrame = frame(false)
+        local addon = load_bootstrap({
+            mainFrame = mainFrame,
+            totalFrame = totalFrame,
+            explorerFrame = explorerFrame,
+        })
+
+        loader.with_globals({
+            PerksProgramFrame = tradingPostFrame,
+        }, function()
+            assert.is_true(addon:InstallTradingPostWindowGuard())
+            tradingPostFrame.shown = true
+            tradingPostFrame.scripts.OnShow()
+
+            assert.is_false(mainFrame.shown)
+            assert.is_false(explorerFrame.shown)
+            assert.equals(1, mainFrame.hideCalls)
+            assert.equals(1, explorerFrame.hideCalls)
+            assert.equals(0, totalFrame.hideCalls)
+
+            tradingPostFrame.shown = false
+            tradingPostFrame.scripts.OnHide()
+
+            assert.is_true(mainFrame.shown)
+            assert.is_true(explorerFrame.shown)
+            assert.is_false(totalFrame.shown)
+            assert.equals(1, mainFrame.showCalls)
+            assert.equals(1, explorerFrame.showCalls)
+            assert.equals(0, totalFrame.showCalls)
+        end)
+    end)
+
+    it("installs the guard when Blizzard's load-on-demand Trading Post UI loads", function()
+        local tradingPostFrame = frame(false)
+        local addon = load_bootstrap({})
+
+        loader.with_globals({
+            PerksProgramFrame = tradingPostFrame,
+        }, function()
+            addon:OnAddonLoaded("Blizzard_PerksProgram")
+        end)
+
+        assert.equals(tradingPostFrame, addon.tradingPostWindowGuardFrame)
+        assert.is_function(tradingPostFrame.scripts.OnShow)
+        assert.is_function(tradingPostFrame.scripts.OnHide)
+    end)
+end)

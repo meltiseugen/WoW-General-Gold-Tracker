@@ -397,6 +397,17 @@ function GoldTracker:HandlePlayerLogout()
         return
     end
 
+    if not isReloading then
+        local activeFarm = type(self.GetActiveCustomFarmRoutePlan) == "function"
+            and self:GetActiveCustomFarmRoutePlan() or nil
+        if activeFarm and activeFarm.farm and type(self.StopCustomFarmRoutePlan) == "function" then
+            self:StopCustomFarmRoutePlan(activeFarm.farm.id, "logout")
+        end
+        if type(self.ClearWorldMapProjection) == "function" then
+            self:ClearWorldMapProjection()
+        end
+    end
+
     self:ClearPendingReloadSession()
 
     if not self.session or not self.session.active then

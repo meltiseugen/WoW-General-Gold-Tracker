@@ -74,6 +74,66 @@ local function GetContinentMapID(mapID)
     return lastMapID
 end
 
+local function GetSharedRouteOverviewMapID(plan)
+    local firstMapID
+    local allSameMap = true
+    for _, node in ipairs(plan or {}) do
+        local mapID = tonumber(node and node.mapID)
+        if not mapID then
+            return nil, "Every route stop needs map data before an overview can be built."
+        end
+        firstMapID = firstMapID or mapID
+        if mapID ~= firstMapID then
+            allSameMap = false
+        end
+    end
+    if not firstMapID then
+        return nil, "This route has no stops to display."
+    end
+    if allSameMap then
+        return firstMapID
+    end
+
+    local sharedParentMapID
+    for _, node in ipairs(plan) do
+        local mapInfo = GetMapInfo(node.mapID)
+        local parentMapID = tonumber(mapInfo and mapInfo.parentMapID)
+        if not parentMapID or parentMapID <= 0 then
+            return nil, "The route stops do not share one parent map."
+        end
+        sharedParentMapID = sharedParentMapID or parentMapID
+        if parentMapID ~= sharedParentMapID then
+            return nil, "The route stops do not share one parent map."
+        end
+    end
+    return sharedParentMapID
+end
+
+local function ProjectRoutePointToOverviewMap(sourceMapID, overviewMapID, x, y)
+    sourceMapID = tonumber(sourceMapID)
+    overviewMapID = tonumber(overviewMapID)
+    x = NormalizeCoordinate(x) or 0.5
+    y = NormalizeCoordinate(y) or 0.5
+    if sourceMapID == overviewMapID then
+        return x, y
+    end
+    if not sourceMapID or not overviewMapID or type(C_Map) ~= "table"
+        or type(C_Map.GetMapRectOnMap) ~= "function" then
+        return nil, nil
+    end
+    local ok, minX, maxX, minY, maxY = pcall(C_Map.GetMapRectOnMap, sourceMapID, overviewMapID)
+    minX, maxX, minY, maxY = tonumber(minX), tonumber(maxX), tonumber(minY), tonumber(maxY)
+    if not ok or not minX or not maxX or not minY or not maxY or minX == maxX or minY == maxY then
+        return nil, nil
+    end
+    local projectedX = minX + (x * (maxX - minX))
+    local projectedY = minY + (y * (maxY - minY))
+    if projectedX < 0 or projectedX > 1 or projectedY < 0 or projectedY > 1 then
+        return nil, nil
+    end
+    return projectedX, projectedY
+end
+
 local function GetPlayerLocation()
     if type(C_Map) ~= "table" or type(C_Map.GetBestMapForUnit) ~= "function" then
         return nil
@@ -213,6 +273,92 @@ local function GetPlanState(farm)
     return state
 end
 
+local FARM_GUIDANCE_SETTING_KEYS = {
+    areaIndicator = true,
+    routeDeviation = true,
+    recoveryArrow = true,
+    breadcrumbs = true,
+    minimapOverlay = true,
+}
+
+function GoldTracker:GetCustomFarmGuidanceSettings(farmID)
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then
+        return nil
+    end
+    local state = GetPlanState(farm)
+    state.guidance = type(state.guidance) == "table" and state.guidance or {}
+    for key in pairs(FARM_GUIDANCE_SETTING_KEYS) do
+        if type(state.guidance[key]) ~= "boolean" then
+            state.guidance[key] = true
+        end
+    end
+    return state.guidance
+end
+
+function GoldTracker:SetCustomFarmGuidanceSetting(farmID, key, enabled)
+    if FARM_GUIDANCE_SETTING_KEYS[key] ~= true then
+        return false
+    end
+    local settings = self:GetCustomFarmGuidanceSettings(farmID)
+    if not settings then
+        return false
+    end
+    settings[key] = enabled == true
+    if key == "areaIndicator" then
+        settings.minimapOverlay = settings.areaIndicator
+    elseif key == "minimapOverlay" then
+        settings.areaIndicator = settings.minimapOverlay
+    end
+    local farm = self:GetCustomFarmByID(farmID)
+    if farm then
+        farm.updatedAt = type(time) == "function" and time() or farm.updatedAt
+    end
+    self:NotifyFarmRoutePlanChanged()
+    if (key == "minimapOverlay" or key == "areaIndicator")
+        and type(self.RefreshMinimapProjectionPins) == "function" then
+        self:RefreshMinimapProjectionPins(true)
+    end
+    return true
+end
+
+function GoldTracker:ToggleActiveCustomFarmGuidanceSetting(key)
+    local active = type(self.GetActiveCustomFarmRoutePlan) == "function"
+        and self:GetActiveCustomFarmRoutePlan() or nil
+    if not active or not active.farm then
+        return false
+    end
+    local settings = self:GetCustomFarmGuidanceSettings(active.farm.id)
+    if not settings or FARM_GUIDANCE_SETTING_KEYS[key] ~= true then
+        return false
+    end
+    return self:SetCustomFarmGuidanceSetting(active.farm.id, key, settings[key] == false)
+end
+
+function GoldTracker:IsActiveCustomFarmMinimapOverlayEnabled()
+    local store = self:GetCustomFarmStore()
+    local character = self:RegisterCurrentCustomFarmCharacter()
+    local farmID = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] or nil
+    if not farmID then
+        return true
+    end
+    local settings = self:GetCustomFarmGuidanceSettings(farmID)
+    return not settings or (settings.minimapOverlay ~= false and settings.areaIndicator ~= false)
+end
+
+function GoldTracker:IsActiveCustomFarmBreadcrumbsEnabled()
+    local store = self:GetCustomFarmStore()
+    local character = self:RegisterCurrentCustomFarmCharacter()
+    local farmID = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] or nil
+    if not farmID then
+        return true
+    end
+    local settings = self:GetCustomFarmGuidanceSettings(farmID)
+    return not settings or settings.breadcrumbs ~= false
+end
+
 local function SelectCandidate(candidates, overrideID, playerLocation)
     for _, candidate in ipairs(candidates) do
         if candidate.id == overrideID then
@@ -227,6 +373,22 @@ local function SelectCandidate(candidates, overrideID, playerLocation)
         end
     end
     return candidates[1]
+end
+
+local function IsInstancePlanStop(step, catalogFarm, destination)
+    if destination and tonumber(destination.journalInstanceID) then
+        return true
+    end
+    local sourcePath = TrimText((catalogFarm and catalogFarm.sourcePath) or (step and step.sourcePath))
+    sourcePath = sourcePath and sourcePath:lower() or ""
+    if sourcePath == "instances" or sourcePath:find("^instances%s*>") then
+        return true
+    end
+    local activity = TrimText((catalogFarm and catalogFarm.activity) or (step and step.activity))
+    activity = activity and activity:lower() or ""
+    return activity:find("dungeon", 1, true) ~= nil
+        or activity:find("raid", 1, true) ~= nil
+        or activity:find("instance", 1, true) ~= nil
 end
 
 local function BuildPlanNodes(addon, farm, playerLocation)
@@ -256,6 +418,7 @@ local function BuildPlanNodes(addon, farm, playerLocation)
             y = destination and destination.y or nil,
             confidence = destination and destination.confidence or "unknown",
             confidenceLabel = destination and destination.confidenceLabel or "Location unavailable",
+            isInstance = IsInstancePlanStop(step, catalogFarm, destination),
             locked = state.locked[step.key] == true,
         }
     end
@@ -394,10 +557,26 @@ local function SaveOrder(state, nodes)
     end
 end
 
+function GoldTracker:InvalidateCustomFarmRoutePlanCache(farmID)
+    if farmID == nil then
+        self.customFarmRoutePlanCache = {}
+        return
+    end
+    if type(self.customFarmRoutePlanCache) == "table" then
+        self.customFarmRoutePlanCache[farmID] = nil
+    end
+end
+
 function GoldTracker:BuildCustomFarmRoutePlan(farmID, recalculate)
     local farm = self:GetCustomFarmByID(farmID)
     if not farm then
         return {}
+    end
+    self.customFarmRoutePlanCache = type(self.customFarmRoutePlanCache) == "table"
+        and self.customFarmRoutePlanCache or {}
+    local cached = self.customFarmRoutePlanCache[farm.id]
+    if recalculate ~= true and cached and cached.farm == farm then
+        return cached.plan
     end
     local state = GetPlanState(farm)
     local playerLocation = GetPlayerLocation()
@@ -411,6 +590,10 @@ function GoldTracker:BuildCustomFarmRoutePlan(farmID, recalculate)
         ordered = OrderFromSavedKeys(nodes, state.order)
         SaveOrder(state, ordered)
     end
+    self.customFarmRoutePlanCache[farm.id] = {
+        farm = farm,
+        plan = ordered,
+    }
     return ordered
 end
 
@@ -423,11 +606,18 @@ function GoldTracker:HasCustomFarmRoutePlan(farmID)
 end
 
 function GoldTracker:NotifyFarmRoutePlanChanged()
+    self:InvalidateCustomFarmRoutePlanCache()
     if self.farmRoutePlanFrame and type(self.RefreshFarmRoutePlanWindow) == "function" then
         self:RefreshFarmRoutePlanWindow()
     end
     if self.myFarmsFrame and type(self.RefreshMyFarmsWindow) == "function" then
         self:RefreshMyFarmsWindow()
+    end
+    if self.mainFrame and type(self.UpdateMainWindow) == "function" then
+        self:UpdateMainWindow()
+    end
+    if type(self.RefreshFarmingHud) == "function" then
+        self:RefreshFarmingHud(true)
     end
 end
 
@@ -504,6 +694,159 @@ local function GetCharacterRunState(addon, farm, reset)
     return run, character
 end
 
+local function GetActiveRouteProjectionKey(farmID)
+    return "active-farm-route:" .. tostring(farmID)
+end
+
+local function RecordClosedFarmRun(addon, farm, run, closeReason)
+    if type(run) ~= "table" then
+        return false
+    end
+    run.closedAt = type(time) == "function" and time() or 0
+    run.closeReason = closeReason or "stopped"
+    if type(addon.SaveCustomFarmRunToHistory) == "function" then
+        return addon:SaveCustomFarmRunToHistory(farm, run, run.closeReason) == true
+    end
+    return false
+end
+
+local function FindRoutePlanNode(addon, farmID, stepKey)
+    for _, node in ipairs(addon:BuildCustomFarmRoutePlan(farmID, false)) do
+        if node.key == stepKey then
+            return node
+        end
+    end
+    return nil
+end
+
+local function SelectRoutePlanMapOption(mapOptions, node)
+    local selectedIndex = 1
+    local sameMapIndex
+    for index, option in ipairs(mapOptions or {}) do
+        if tonumber(option.mapID) == tonumber(node and node.mapID) then
+            sameMapIndex = sameMapIndex or index
+            if node.destination and option.location == node.destination.label then
+                selectedIndex = index
+                break
+            end
+        end
+    end
+    if selectedIndex == 1 and sameMapIndex then
+        selectedIndex = sameMapIndex
+    end
+    return mapOptions and mapOptions[selectedIndex] or nil, selectedIndex
+end
+
+function GoldTracker:BuildCustomFarmRoutePlanStepProjection(farmID, stepKey)
+    local selected = FindRoutePlanNode(self, farmID, stepKey)
+    if not selected or not selected.mapID then
+        return nil
+    end
+
+    local firstEntry = selected.entries and selected.entries[1] or nil
+    local mapOptions
+    local mapOption
+    local selectedMapOptionIndex = 1
+    if selected.catalogFarmID and type(self.BuildFarmDetailsMapOptions) == "function" then
+        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID)
+        mapOptions = catalogFarm and self:BuildFarmDetailsMapOptions(
+            { catalogFarm },
+            firstEntry and firstEntry.itemID or nil
+        ) or nil
+        mapOption, selectedMapOptionIndex = SelectRoutePlanMapOption(mapOptions, selected)
+    elseif firstEntry and firstEntry.mapSource and type(self.ResolveCustomFarmEntryMapOption) == "function" then
+        mapOption = self:ResolveCustomFarmEntryMapOption(firstEntry)
+        mapOptions = mapOption and { mapOption } or nil
+    end
+
+    local pins = mapOption and mapOption.pins or nil
+    if type(pins) ~= "table" or #pins == 0 then
+        if not selected.x or not selected.y then
+            return nil
+        end
+        pins = {
+            {
+                mapID = selected.mapID,
+                x = selected.x,
+                y = selected.y,
+                label = selected.destination and selected.destination.label or selected.name,
+                isRoute = false,
+            },
+        }
+        mapOptions = {
+            {
+                id = selected.destination and selected.destination.id or tostring(stepKey),
+                mapID = selected.mapID,
+                mapLabel = selected.mapName,
+                label = selected.destination and selected.destination.label or selected.mapName,
+                pins = pins,
+            },
+        }
+        selectedMapOptionIndex = 1
+    end
+
+    return {
+        title = selected.name or "Active farm route",
+        projectionKey = GetActiveRouteProjectionKey(farmID),
+        mapID = selected.mapID,
+        mapLabel = selected.mapName,
+        pins = pins,
+        mapOptions = mapOptions,
+        selectedMapOptionIndex = selectedMapOptionIndex,
+        customFarmRow = firstEntry and {
+            itemID = firstEntry.itemID,
+            itemName = firstEntry.itemName,
+            itemLink = firstEntry.itemLink,
+        } or nil,
+        silent = true,
+        openMap = false,
+    }
+end
+
+function GoldTracker:ClearCustomFarmRoutePlanNavigation(farmID, clearWaypoint)
+    if farmID == nil then
+        return false
+    end
+    local hudRuntime = self.farmingHudRuntime
+    if clearWaypoint == true and hudRuntime and hudRuntime.farmID == farmID and self.FarmRecoveryWaypoint then
+        self.FarmRecoveryWaypoint:Clear(hudRuntime)
+    end
+    local cleared = false
+    if type(self.ClearWorldMapProjectionByKey) == "function" then
+        cleared = self:ClearWorldMapProjectionByKey(GetActiveRouteProjectionKey(farmID), true) == true or cleared
+    end
+    if clearWaypoint == true and type(C_Map) == "table" and type(C_Map.ClearUserWaypoint) == "function" then
+        pcall(C_Map.ClearUserWaypoint)
+        if C_SuperTrack and type(C_SuperTrack.SetSuperTrackedUserWaypoint) == "function" then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
+        end
+        cleared = true
+    end
+    return cleared
+end
+
+function GoldTracker:ActivateCustomFarmRoutePlanStep(farmID, stepKey)
+    local selected = FindRoutePlanNode(self, farmID, stepKey)
+    if not selected then
+        return false
+    end
+
+    self:ClearCustomFarmRoutePlanNavigation(farmID, true)
+    local projection = self:BuildCustomFarmRoutePlanStepProjection(farmID, stepKey)
+    local projected = false
+    if projection and type(self.ProjectMapRouteToWorldMap) == "function" then
+        projected = self:ProjectMapRouteToWorldMap(projection) == true
+    end
+
+    if selected.x and selected.y then
+        return self:NavigateCustomFarmRoutePlanStep(farmID, stepKey) or projected
+    end
+    if projected then
+        return true
+    end
+    return self:NavigateCustomFarmRoutePlanStep(farmID, stepKey)
+end
+
 function GoldTracker:GetCustomFarmRoutePlanRun(farmID)
     local farm = self:GetCustomFarmByID(farmID)
     if not farm then
@@ -518,10 +861,34 @@ function GoldTracker:StartCustomFarmRoutePlan(farmID)
         return false
     end
     local plan = self:BuildCustomFarmRoutePlan(farmID, false)
-    local run = GetCharacterRunState(self, farm, true)
+    local run, character = GetCharacterRunState(self, farm, true)
     run.startedAt = type(time) == "function" and time() or 0
     run.currentStepKey = plan[1] and plan[1].key or nil
+    local store = self:GetCustomFarmStore()
+    local previousActiveFarmID = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] or nil
+    if previousActiveFarmID and previousActiveFarmID ~= farm.id then
+        self:StopCustomFarmRoutePlan(previousActiveFarmID, "replaced")
+    end
+    if store and character then
+        store.activeRouteFarmIDs = type(store.activeRouteFarmIDs) == "table" and store.activeRouteFarmIDs or {}
+        if run.currentStepKey then
+            store.activeRouteFarmIDs[character] = farm.id
+        elseif store.activeRouteFarmIDs[character] == farm.id then
+            store.activeRouteFarmIDs[character] = nil
+        end
+    end
+    local guidanceSettings = self:GetCustomFarmGuidanceSettings(farm.id)
+    if guidanceSettings then
+        guidanceSettings.breadcrumbs = false
+        guidanceSettings.minimapOverlay = true
+    end
     self:NotifyFarmRoutePlanChanged()
+    if run.currentStepKey then
+        self:ActivateCustomFarmRoutePlanStep(farm.id, run.currentStepKey)
+    else
+        self:ClearCustomFarmRoutePlanNavigation(farm.id, true)
+    end
     return #plan > 0
 end
 
@@ -530,9 +897,51 @@ function GoldTracker:ResetCustomFarmRoutePlanRun(farmID)
     if not farm then
         return false
     end
+    local run, character = GetCharacterRunState(self, farm, false)
+    local store = self:GetCustomFarmStore()
+    local wasActive = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] == farm.id
+    if wasActive then
+        store.activeRouteFarmIDs[character] = nil
+        RecordClosedFarmRun(self, farm, run, "reset")
+    end
     GetCharacterRunState(self, farm, true)
+    self:ClearCustomFarmRoutePlanNavigation(farm.id, wasActive)
     self:NotifyFarmRoutePlanChanged()
     return true
+end
+
+function GoldTracker:StopCustomFarmRoutePlan(farmID, closeReason)
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then
+        return false
+    end
+    local run, character = GetCharacterRunState(self, farm, false)
+    local store = self:GetCustomFarmStore()
+    local wasActive = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] == farm.id
+    if wasActive then
+        store.activeRouteFarmIDs[character] = nil
+        RecordClosedFarmRun(self, farm, run, closeReason or "stopped")
+    end
+    run.currentStepKey = nil
+    self:ClearCustomFarmRoutePlanNavigation(farm.id, wasActive)
+    self:NotifyFarmRoutePlanChanged()
+    return true
+end
+
+function GoldTracker:IsCustomFarmRoutePlanActive(farmID)
+    local active = self:GetActiveCustomFarmRoutePlan()
+    return active ~= nil
+        and active.farm ~= nil
+        and active.farm.id == farmID
+end
+
+function GoldTracker:ToggleCustomFarmRoutePlan(farmID)
+    if self:IsCustomFarmRoutePlanActive(farmID) then
+        return self:StopCustomFarmRoutePlan(farmID)
+    end
+    return self:StartCustomFarmRoutePlan(farmID)
 end
 
 local function FindNextIncomplete(plan, run, currentKey, wrap)
@@ -564,14 +973,44 @@ function GoldTracker:SetCustomFarmRoutePlanStepComplete(farmID, stepKey, complet
         return false
     end
     local plan = self:BuildCustomFarmRoutePlan(farmID, false)
-    local run = GetCharacterRunState(self, farm, false)
+    local run, character = GetCharacterRunState(self, farm, false)
+    local wasCurrent = run.currentStepKey == stepKey
     run.completed[stepKey] = complete == true or nil
-    if complete == true and run.currentStepKey == stepKey then
+    if complete == true and wasCurrent then
         run.currentStepKey = FindNextIncomplete(plan, run, stepKey, false)
     elseif complete ~= true then
         run.currentStepKey = stepKey
     end
+    local store = self:GetCustomFarmStore()
+    local previousActiveFarmID = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] or nil
+    local closedActiveFarm = false
+    if store and character then
+        store.activeRouteFarmIDs = type(store.activeRouteFarmIDs) == "table" and store.activeRouteFarmIDs or {}
+        local isActiveFarm = store.activeRouteFarmIDs[character] == farm.id
+        if complete ~= true and run.currentStepKey then
+            store.activeRouteFarmIDs[character] = farm.id
+        elseif isActiveFarm and not run.currentStepKey then
+            store.activeRouteFarmIDs[character] = nil
+            closedActiveFarm = true
+        end
+    end
+    if closedActiveFarm then
+        RecordClosedFarmRun(self, farm, run, "completed")
+    end
     self:NotifyFarmRoutePlanChanged()
+    if complete ~= true and run.currentStepKey == stepKey then
+        if previousActiveFarmID and previousActiveFarmID ~= farm.id then
+            self:ClearCustomFarmRoutePlanNavigation(previousActiveFarmID, true)
+        end
+        self:ActivateCustomFarmRoutePlanStep(farm.id, stepKey)
+    elseif wasCurrent and previousActiveFarmID == farm.id then
+        if run.currentStepKey then
+            self:ActivateCustomFarmRoutePlanStep(farm.id, run.currentStepKey)
+        else
+            self:ClearCustomFarmRoutePlanNavigation(farm.id, true)
+        end
+    end
     return true
 end
 
@@ -581,9 +1020,17 @@ function GoldTracker:SkipCustomFarmRoutePlanStep(farmID)
         return false
     end
     local plan = self:BuildCustomFarmRoutePlan(farmID, false)
-    local run = GetCharacterRunState(self, farm, false)
+    local run, character = GetCharacterRunState(self, farm, false)
     run.currentStepKey = FindNextIncomplete(plan, run, run.currentStepKey, true)
     self:NotifyFarmRoutePlanChanged()
+    local store = self:GetCustomFarmStore()
+    local isActive = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] == farm.id
+    if isActive and run.currentStepKey then
+        self:ActivateCustomFarmRoutePlanStep(farm.id, run.currentStepKey)
+    elseif isActive then
+        self:ClearCustomFarmRoutePlanNavigation(farm.id, true)
+    end
     return run.currentStepKey ~= nil
 end
 
@@ -602,10 +1049,282 @@ function GoldTracker:SetCustomFarmRoutePlanCurrentStep(farmID, stepKey)
     if not exists then
         return false
     end
-    local run = GetCharacterRunState(self, farm, false)
+    local run, character = GetCharacterRunState(self, farm, false)
     run.currentStepKey = stepKey
+    run.startedAt = tonumber(run.startedAt) or (type(time) == "function" and time() or 0)
+    local store = self:GetCustomFarmStore()
+    local previousActiveFarmID = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] or nil
+    if previousActiveFarmID and previousActiveFarmID ~= farm.id then
+        self:ClearCustomFarmRoutePlanNavigation(previousActiveFarmID, true)
+    end
+    if store and character then
+        store.activeRouteFarmIDs = type(store.activeRouteFarmIDs) == "table" and store.activeRouteFarmIDs or {}
+        store.activeRouteFarmIDs[character] = farm.id
+    end
     self:NotifyFarmRoutePlanChanged()
     return true
+end
+
+function GoldTracker:GetActiveCustomFarmRoutePlan()
+    local store = self:GetCustomFarmStore()
+    local character = self:RegisterCurrentCustomFarmCharacter()
+    local farmID = store and character and type(store.activeRouteFarmIDs) == "table"
+        and store.activeRouteFarmIDs[character] or nil
+    local farm = farmID and self:GetCustomFarmByID(farmID) or nil
+    if not farm then
+        return nil
+    end
+
+    local plan = self:BuildCustomFarmRoutePlan(farm.id, false)
+    local run = GetCharacterRunState(self, farm, false)
+    local currentNode
+    local currentIndex
+    for index, node in ipairs(plan) do
+        if node.key == run.currentStepKey then
+            currentNode = node
+            currentIndex = index
+            break
+        end
+    end
+    if not currentNode then
+        store.activeRouteFarmIDs[character] = nil
+        self:ClearCustomFarmRoutePlanNavigation(farm.id, true)
+        return nil
+    end
+
+    return {
+        farm = farm,
+        plan = plan,
+        run = run,
+        character = character,
+        currentNode = currentNode,
+        currentIndex = currentIndex,
+        totalSteps = #plan,
+        canGoPrevious = currentIndex > 1,
+        canGoNext = currentIndex < #plan,
+    }
+end
+
+function GoldTracker:NavigateActiveCustomFarmRoutePlanStep(direction)
+    local active = self:GetActiveCustomFarmRoutePlan()
+    local offset = tonumber(direction) or 0
+    local targetIndex = active and (active.currentIndex + offset) or nil
+    local target = targetIndex and active.plan[targetIndex] or nil
+    if not target then
+        return false
+    end
+    if not self:SetCustomFarmRoutePlanCurrentStep(active.farm.id, target.key) then
+        return false
+    end
+    return self:ActivateCustomFarmRoutePlanStep(active.farm.id, target.key)
+end
+
+function GoldTracker:BuildCustomFarmRoutePlanOverview(farmID)
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then
+        return nil, "The selected custom farm is unavailable."
+    end
+    local plan = self:BuildCustomFarmRoutePlan(farm.id, false)
+    local overviewMapID, reason = GetSharedRouteOverviewMapID(plan)
+    if not overviewMapID then
+        return nil, reason
+    end
+
+    local routeID = "farm-plan:" .. tostring(farm.id)
+    local pins = {}
+    for index, node in ipairs(plan) do
+        local hasExactLocation = node.x ~= nil and node.y ~= nil
+        local x, y = ProjectRoutePointToOverviewMap(node.mapID, overviewMapID, node.x, node.y)
+        if not x or not y then
+            return nil, "A route stop could not be projected onto the shared parent map."
+        end
+        local sourceMapName = node.mapName or (GetMapInfo(node.mapID) or {}).name
+            or ("Map " .. tostring(node.mapID))
+        pins[#pins + 1] = {
+            mapID = overviewMapID,
+            x = x,
+            y = y,
+            label = string.format("%d. %s", index, node.name or "Farm stop"),
+            itemName = node.name,
+            spotLocation = hasExactLocation and sourceMapName
+                or (sourceMapName .. " zone center; exact arrival unavailable"),
+            isRoute = true,
+            routeID = routeID,
+            routeType = "farm-plan",
+            routeOrder = index,
+            routeTotal = #plan,
+            mapIconType = node.isInstance and "dungeon" or nil,
+            mapIconAtlas = node.isInstance and "Dungeon" or nil,
+            sourceMapID = node.mapID,
+            sourceMapName = sourceMapName,
+            confidence = node.confidence,
+            approximate = not hasExactLocation,
+        }
+    end
+
+    local overviewMapInfo = GetMapInfo(overviewMapID)
+    return {
+        farm = farm,
+        plan = plan,
+        mapID = overviewMapID,
+        mapName = overviewMapInfo and overviewMapInfo.name or ("Map " .. tostring(overviewMapID)),
+        pins = pins,
+        routeID = routeID,
+        usesParentMap = tonumber(plan[1] and plan[1].mapID) ~= overviewMapID,
+    }
+end
+
+function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
+    local overview, reason = self:BuildCustomFarmRoutePlanOverview(farmID)
+    if not overview then
+        if reason and type(self.Print) == "function" then
+            self:Print(reason)
+        end
+        return false
+    end
+    if type(self.OpenStandaloneMapWindow) ~= "function" then
+        return false
+    end
+
+    local detailLines = {
+        {
+            type = "text",
+            text = "Route plan — " .. overview.farm.name,
+            r = 1.0, g = 0.82, b = 0.18,
+            gap = 8,
+            fontObject = "GameFontNormalLarge",
+        },
+        {
+            type = "text",
+            text = overview.usesParentMap
+                and ("Shared parent map: " .. overview.mapName)
+                or ("All route stops are on " .. overview.mapName),
+            r = 0.72, g = 0.86, b = 1.0,
+            gap = 8,
+            fontObject = "GameFontHighlight",
+        },
+    }
+    for index, node in ipairs(overview.plan) do
+        local pin = overview.pins[index]
+        detailLines[#detailLines + 1] = {
+            type = "text",
+            text = string.format(
+                "%d. %s — %s%s",
+                index,
+                node.name or "Farm stop",
+                node.mapName or "Unknown location",
+                pin.approximate and " (zone center)" or ""
+            ),
+            r = 0.82, g = 0.86, b = 0.92,
+            gap = 4,
+            fontObject = "GameFontHighlightSmall",
+        }
+    end
+
+    self:OpenStandaloneMapWindow({
+        title = "Route Overview — " .. overview.farm.name,
+        projectionKey = overview.routeID,
+        mapOptions = {
+            {
+                id = overview.routeID,
+                mapID = overview.mapID,
+                mapLabel = overview.mapName,
+                label = "Route overview",
+                sourceType = "route-plan",
+                sourceLabel = "Custom farm route plan",
+                showRouteLinesWithIcons = true,
+                pins = overview.pins,
+            },
+        },
+        displayMode = "icons",
+        detailLinesBuilder = function()
+            return detailLines
+        end,
+    })
+    return true
+end
+
+function GoldTracker:OpenCustomFarmRoutePlanStepMap(farmID, stepKey)
+    local selected
+    for _, node in ipairs(self:BuildCustomFarmRoutePlan(farmID, false)) do
+        if node.key == stepKey then
+            selected = node
+            break
+        end
+    end
+    if not selected then
+        return false
+    end
+
+    local firstEntry = selected.entries and selected.entries[1] or nil
+    if selected.catalogFarmID and type(self.BuildFarmDetailsMapOptions) == "function"
+        and type(self.OpenStandaloneMapWindow) == "function" then
+        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID)
+        local mapOptions = catalogFarm and self:BuildFarmDetailsMapOptions(
+            { catalogFarm },
+            firstEntry and firstEntry.itemID or nil
+        ) or {}
+        if #mapOptions > 0 then
+            local selectedIndex = 1
+            local sameMapIndex
+            for index, option in ipairs(mapOptions) do
+                if tonumber(option.mapID) == tonumber(selected.mapID) then
+                    sameMapIndex = sameMapIndex or index
+                    if selected.destination and option.location == selected.destination.label then
+                        selectedIndex = index
+                        break
+                    end
+                end
+            end
+            if selectedIndex == 1 and sameMapIndex then
+                selectedIndex = sameMapIndex
+            end
+            self:OpenStandaloneMapWindow({
+                title = selected.name or catalogFarm.name,
+                projectionKey = "route-plan:" .. tostring(farmID) .. ":" .. tostring(stepKey),
+                mapOptions = mapOptions,
+                selectedMapOptionIndex = selectedIndex,
+                displayMode = "overlay",
+            })
+            return true
+        end
+    end
+
+    if firstEntry and firstEntry.mapSource and type(self.OpenCustomFarmEntryMap) == "function"
+        and self:OpenCustomFarmEntryMap(firstEntry) then
+        return true
+    end
+
+    if selected.mapID and type(self.OpenStandaloneMapWindow) == "function" then
+        local pins = {}
+        if selected.x and selected.y then
+            pins[1] = {
+                mapID = selected.mapID,
+                x = selected.x,
+                y = selected.y,
+                label = selected.destination and selected.destination.label or selected.name,
+                isRoute = false,
+            }
+        end
+        self:OpenStandaloneMapWindow({
+            title = selected.name or "Farm map data",
+            projectionKey = "route-plan:" .. tostring(farmID) .. ":" .. tostring(stepKey),
+            mapOptions = {
+                {
+                    id = selected.destination and selected.destination.id or tostring(stepKey),
+                    mapID = selected.mapID,
+                    mapLabel = selected.mapName,
+                    label = selected.destination and selected.destination.label or selected.mapName,
+                    mapOnly = #pins == 0,
+                    pins = pins,
+                },
+            },
+            displayMode = "overlay",
+        })
+        return true
+    end
+    return false
 end
 
 function GoldTracker:NavigateCustomFarmRoutePlanStep(farmID, stepKey)

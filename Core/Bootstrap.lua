@@ -1,6 +1,100 @@
 local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
+local TRADING_POST_ADDON_NAME = "Blizzard_PerksProgram"
+local TRADING_POST_WINDOW_KEYS = {
+    "mainFrame",
+    "totalFrame",
+    "explorerFrame",
+    "historyFrame",
+    "historyExportFrame",
+    "historyBreakdownFrame",
+    "diagnosisFrame",
+    "helpFrame",
+    "standaloneMapFrame",
+    "standaloneMapSourceLinkFrame",
+    "farmDetailsFrame",
+    "farmSourceLinkFrame",
+    "farmRoutePlanFrame",
+    "myFarmsFrame",
+    "farmCatalogExpandedFrame",
+    "craftingFarmingFrame",
+    "craftingFarmingExpandedFrame",
+    "rareFarmingFrame",
+    "instanceFarmingFrame",
+    "instanceTransmogExpandedFrame",
+    "observedDropsFrame",
+    "inventoryFrame",
+    "inventoryItemDetailsFrame",
+    "priceIncreaseAlertsFrame",
+    "customFarmMethodDialog",
+    "farmingHudFrame",
+}
+
+function GoldTracker:SuspendWindowsForTradingPost()
+    if self.tradingPostSuspendedWindows then
+        return
+    end
+
+    local suspended = {}
+    for _, key in ipairs(TRADING_POST_WINDOW_KEYS) do
+        local frame = self[key]
+        if frame and type(frame.IsShown) == "function" and frame:IsShown()
+            and type(frame.Hide) == "function" then
+            suspended[#suspended + 1] = {
+                key = key,
+                frame = frame,
+            }
+            frame:Hide()
+        end
+    end
+    self.tradingPostSuspendedWindows = suspended
+end
+
+function GoldTracker:RestoreWindowsAfterTradingPost()
+    local suspended = self.tradingPostSuspendedWindows
+    self.tradingPostSuspendedWindows = nil
+    if type(suspended) ~= "table" then
+        return
+    end
+
+    local tradingPostFrame = _G.PerksProgramFrame
+    if tradingPostFrame and type(tradingPostFrame.IsShown) == "function"
+        and tradingPostFrame:IsShown() then
+        self.tradingPostSuspendedWindows = suspended
+        return
+    end
+
+    for _, entry in ipairs(suspended) do
+        if self[entry.key] == entry.frame and type(entry.frame.Show) == "function" then
+            entry.frame:Show()
+        end
+    end
+end
+
+function GoldTracker:InstallTradingPostWindowGuard()
+    local tradingPostFrame = _G.PerksProgramFrame
+    if not tradingPostFrame or type(tradingPostFrame.HookScript) ~= "function" then
+        return false
+    end
+    if self.tradingPostWindowGuardFrame == tradingPostFrame then
+        return true
+    end
+
+    tradingPostFrame:HookScript("OnShow", function()
+        GoldTracker:SuspendWindowsForTradingPost()
+    end)
+    tradingPostFrame:HookScript("OnHide", function()
+        GoldTracker:RestoreWindowsAfterTradingPost()
+    end)
+    self.tradingPostWindowGuardFrame = tradingPostFrame
+
+    if type(tradingPostFrame.IsShown) == "function" and tradingPostFrame:IsShown() then
+        self:SuspendWindowsForTradingPost()
+    end
+    return true
+end
+
 function GoldTracker:HandleSlashCommand(message)
     local rawMessage = self:Trim(message or "")
     local command, commandArgs = string.match(rawMessage, "^(%S*)%s*(.-)%s*$")
@@ -171,6 +265,10 @@ function GoldTracker:HandleSlashCommand(message)
 end
 
 function GoldTracker:OnAddonLoaded(addonName)
+    if addonName == TRADING_POST_ADDON_NAME then
+        self:InstallTradingPostWindowGuard()
+        return
+    end
     if addonName ~= self.ADDON_NAME then
         return
     end
@@ -207,7 +305,6 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:RegisterEvent("BAG_UPDATE_DELAYED")
     self:RegisterEvent("AUCTION_HOUSE_SHOW")
     self:RegisterEvent("PLAYER_LOGOUT")
-    self:UnregisterEvent("ADDON_LOADED")
 
     if type(self.QueueMarketHistoryBagSnapshot) == "function" then
         self:QueueMarketHistoryBagSnapshot()
@@ -234,6 +331,7 @@ function GoldTracker:OnAddonLoaded(addonName)
         self:QueueAutomaticKnownPriceScan()
     end
 
+    self:InstallTradingPostWindowGuard()
     self:Print("Loaded. Use /gt to open the tracker window.")
 end
 

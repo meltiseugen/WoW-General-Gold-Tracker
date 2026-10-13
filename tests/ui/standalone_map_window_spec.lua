@@ -71,6 +71,27 @@ local function make_frame()
         self.textColor = { r, g, b, a }
     end
 
+    function frame:SetVertexColor(r, g, b, a)
+        self.vertexColor = { r, g, b, a }
+    end
+
+    function frame:SetAlpha(alpha)
+        self.alpha = alpha
+    end
+
+    function frame:SetFrameLevel(level)
+        self.frameLevel = level
+    end
+
+    function frame:SetDrawLayer(layer, subLevel)
+        self.drawLayer = layer
+        self.drawSubLevel = subLevel
+    end
+
+    function frame:GetFrameLevel()
+        return self.frameLevel or 0
+    end
+
     function frame:SetFontObject(fontObject)
         self.fontObject = fontObject
     end
@@ -95,17 +116,32 @@ local function make_frame()
         self.scripts[scriptName] = handler
     end
 
-    function frame:CreateFontString()
+    function frame:CreateFontString(_, layer, _, subLevel)
+        if subLevel ~= nil then
+            assert.is_true(subLevel >= -8 and subLevel <= 7, "font-string sublevel must be between -8 and 7")
+        end
         local text = make_frame()
+        text.layer = layer
+        text.subLevel = subLevel
         self.children[#self.children + 1] = text
         return text
     end
 
-    function frame:CreateTexture(_, layer)
+    function frame:CreateTexture(_, layer, _, subLevel)
+        if subLevel ~= nil then
+            assert.is_true(subLevel >= -8 and subLevel <= 7, "texture sublevel must be between -8 and 7")
+        end
         local texture = make_frame()
         texture.layer = layer
+        texture.subLevel = subLevel
         texture.SetTexture = function(_, value)
             texture.texture = value
+        end
+        texture.SetAtlas = function(_, value)
+            texture.atlas = value
+        end
+        texture.GetAtlas = function()
+            return texture.atlas
         end
         texture.SetTexCoord = function(_, ...)
             texture.texCoord = { ... }
@@ -561,6 +597,11 @@ describe("UI/StandaloneMapWindow", function()
         }
         local builderOption
         local toggleClicked = false
+        local buttonClicked = false
+        local selectedFilter
+        local selectedSort
+        local dropdownInitializer
+        local dropdownEntries = {}
         local tooltip = {
             SetOwner = function(self, owner, anchor)
                 self.owner = owner
@@ -598,10 +639,28 @@ describe("UI/StandaloneMapWindow", function()
                     { type = "text", text = "Farm estimate", fontObject = "GameFontNormal" },
                     { type = "text", text = "12,345g/hour", fontObject = "GameFontNormalLarge" },
                     {
+                        type = "farmTargetFilter",
+                        selectedFilter = "all",
+                        filterOptions = {
+                            { id = "all", label = "All" },
+                            { id = "reagents", label = "Reagents" },
+                            { id = "equipment", label = "Armor and Weapons" },
+                            { id = "other", label = "Other" },
+                        },
+                        onSelect = function(filterID) selectedFilter = filterID end,
+                    },
+                    {
+                        type = "farmTargetHeader",
+                        sortKey = "itemName",
+                        sortAscending = true,
+                        onSort = function(sortKey) selectedSort = sortKey end,
+                    },
+                    {
                         type = "farmTarget",
                         itemID = 3002,
                         itemLink = "item:3002",
                         itemName = "New Herb",
+                        itemType = "Herb",
                         quantityText = "x2",
                         totalValueText = "5g",
                         selected = true,
@@ -614,6 +673,13 @@ describe("UI/StandaloneMapWindow", function()
                         end,
                     },
                     { type = "divider", gap = 6 },
+                    {
+                        type = "detailButton",
+                        text = "View all recorded items (8)",
+                        onClick = function()
+                            buttonClicked = true
+                        end,
+                    },
                 }
             end,
             mapTileTextures = {},
@@ -628,6 +694,12 @@ describe("UI/StandaloneMapWindow", function()
                 created.parent = parent
                 return created
             end,
+            UIDropDownMenu_SetWidth = function(dropdown, width) dropdown.width = width end,
+            UIDropDownMenu_Initialize = function(_, initializer) dropdownInitializer = initializer end,
+            UIDropDownMenu_CreateInfo = function() return {} end,
+            UIDropDownMenu_AddButton = function(info) dropdownEntries[#dropdownEntries + 1] = info end,
+            UIDropDownMenu_SetSelectedValue = function(dropdown, value) dropdown.selectedValue = value end,
+            UIDropDownMenu_SetText = function(dropdown, value) dropdown.text = value end,
             GameTooltip = tooltip,
             C_Map = {
                 GetMapArtLayers = function()
@@ -638,7 +710,13 @@ describe("UI/StandaloneMapWindow", function()
         }, function()
             addon:RefreshStandaloneMapWindow()
 
-            local itemRow = addon.standaloneMapFrame.detailTableRows[3]
+            dropdownInitializer(nil, 1)
+            dropdownEntries[3].func()
+            addon.standaloneMapFrame.detailTableHeaderRows[4].buttons.quantity.scripts.OnClick(
+                addon.standaloneMapFrame.detailTableHeaderRows[4].buttons.quantity
+            )
+
+            local itemRow = addon.standaloneMapFrame.detailTableRows[5]
             itemRow.scripts.OnEnter(itemRow)
             assert.equals(itemRow, tooltip.owner)
             assert.equals("ANCHOR_CURSOR", tooltip.anchor)
@@ -647,27 +725,35 @@ describe("UI/StandaloneMapWindow", function()
             itemRow.scripts.OnLeave(itemRow)
             assert.is_false(tooltip.shown)
 
-            local toggleRow = addon.standaloneMapFrame.detailToggleRows[4]
+            local toggleRow = addon.standaloneMapFrame.detailToggleRows[6]
             toggleRow.scripts.OnClick(toggleRow)
+            addon.standaloneMapFrame.detailButtonRows[8].button.scripts.OnClick()
         end)
 
         assert.equals(selectedOption, builderOption)
         assert.equals("Old Ore Route", addon.standaloneMapFrame.mapTitle.text)
         assert.equals("Farm estimate", addon.standaloneMapFrame.detailTextLines[1].text)
         assert.equals("12,345g/hour", addon.standaloneMapFrame.detailTextLines[2].text)
-        assert.equals("New Herb", addon.standaloneMapFrame.detailTableRows[3].itemText.text)
-        assert.equals("x2", addon.standaloneMapFrame.detailTableRows[3].quantityText.text)
-        assert.equals("5g", addon.standaloneMapFrame.detailTableRows[3].valueText.text)
-        assert.equals(3002, addon.standaloneMapFrame.detailTableRows[3].itemID)
-        assert.equals("item:3002", addon.standaloneMapFrame.detailTableRows[3].itemLink)
-        assert.same({ 0.45, 0.92, 1.0, 1 }, addon.standaloneMapFrame.detailTableRows[3].itemText.textColor)
-        assert.equals("+ 7 more recorded items", addon.standaloneMapFrame.detailToggleRows[4].label.text)
-        assert.is_true(addon.standaloneMapFrame.detailDividerLines[5].shown)
-        assert.equals(2, addon.standaloneMapFrame.detailDividerLines[5].thickness)
-        assert.same({ 1.0, 0.82, 0.18, 0.85 }, addon.standaloneMapFrame.detailDividerLines[5].color)
-        assert.equals("TOPLEFT", addon.standaloneMapFrame.detailDividerLines[5].startPoint[1])
-        assert.equals("TOPRIGHT", addon.standaloneMapFrame.detailDividerLines[5].endPoint[1])
+        assert.equals("All", addon.standaloneMapFrame.detailTableFilterRows[3].dropdown.text)
+        assert.equals("equipment", selectedFilter)
+        assert.equals("Item ^", addon.standaloneMapFrame.detailTableHeaderRows[4].buttons.itemName.label.text)
+        assert.equals("quantity", selectedSort)
+        assert.equals("New Herb", addon.standaloneMapFrame.detailTableRows[5].itemText.text)
+        assert.equals("Herb", addon.standaloneMapFrame.detailTableRows[5].typeText.text)
+        assert.equals("x2", addon.standaloneMapFrame.detailTableRows[5].quantityText.text)
+        assert.equals("5g", addon.standaloneMapFrame.detailTableRows[5].valueText.text)
+        assert.equals(3002, addon.standaloneMapFrame.detailTableRows[5].itemID)
+        assert.equals("item:3002", addon.standaloneMapFrame.detailTableRows[5].itemLink)
+        assert.same({ 0.45, 0.92, 1.0, 1 }, addon.standaloneMapFrame.detailTableRows[5].itemText.textColor)
+        assert.equals("+ 7 more recorded items", addon.standaloneMapFrame.detailToggleRows[6].label.text)
+        assert.is_true(addon.standaloneMapFrame.detailDividerLines[7].shown)
+        assert.equals(2, addon.standaloneMapFrame.detailDividerLines[7].thickness)
+        assert.same({ 1.0, 0.82, 0.18, 0.85 }, addon.standaloneMapFrame.detailDividerLines[7].color)
+        assert.equals("TOPLEFT", addon.standaloneMapFrame.detailDividerLines[7].startPoint[1])
+        assert.equals("TOPRIGHT", addon.standaloneMapFrame.detailDividerLines[7].endPoint[1])
         assert.is_true(toggleClicked)
+        assert.equals("View all recorded items (8)", addon.standaloneMapFrame.detailButtonRows[8].button.text)
+        assert.is_true(buttonClicked)
         assert.equals(
             "Instance map shown; no route coordinates are available. Zoom 1.00x",
             addon.standaloneMapFrame.statusText.text
@@ -761,10 +847,85 @@ describe("UI/StandaloneMapWindow", function()
         end)
     end)
 
+    it("renders numbered route-plan pins together with their connecting line", function()
+        local addon = load_window()
+        local map_content = make_frame()
+        local map_viewport = make_frame()
+        map_viewport:SetSize(500, 500)
+        addon.standaloneMapFrame = {
+            mapID = 12,
+            windowTitle = "Route Overview",
+            mapDisplayMode = "icons",
+            showRouteLinesWithIcons = true,
+            mapPins = {
+                {
+                    mapID = 12, x = 0.20, y = 0.30, label = "1. West Farm",
+                    isRoute = true, routeID = "farm-plan:1", routeOrder = 1, routeTotal = 2,
+                },
+                {
+                    mapID = 12, x = 0.70, y = 0.60, label = "2. East Farm",
+                    isRoute = true, routeID = "farm-plan:1", routeOrder = 2, routeTotal = 2,
+                    mapIconType = "dungeon", mapIconAtlas = "Dungeon",
+                },
+            },
+            mapTitle = make_frame(),
+            detailsContent = make_frame(),
+            detailsScrollFrame = make_frame(),
+            detailTextLines = {},
+            detailSourceRows = {},
+            mapTileTextures = {},
+            mapExploredTileTextures = {},
+            mapRouteLines = {},
+            mapPinFrames = {},
+            mapViewport = map_viewport,
+            mapContent = map_content,
+            statusText = make_frame(),
+        }
+
+        loader.with_globals({
+            C_Map = {
+                GetMapArtLayers = function()
+                    return { { layerWidth = 1000, layerHeight = 1000, tileWidth = 500, tileHeight = 500 } }
+                end,
+                GetMapArtLayerTextures = function() return { 1, 2, 3, 4 } end,
+            },
+            C_MapExplorationInfo = false,
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            GameTooltip = false,
+        }, function()
+            addon:RefreshStandaloneMapWindow()
+
+            assert.equals(1, #addon.standaloneMapFrame.mapRouteLines)
+            assert.is_true(addon.standaloneMapFrame.mapRouteLines[1].shown)
+            assert.equals(2, #addon.standaloneMapFrame.mapPinFrames)
+            assert.equals("1", addon.standaloneMapFrame.mapPinFrames[1].orderText.text)
+            assert.equals("2", addon.standaloneMapFrame.mapPinFrames[2].orderText.text)
+            assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].orderText.shown)
+            assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].orderBackground.shown)
+            assert.is_false(addon.standaloneMapFrame.mapPinFrames[1].icon.shown)
+            assert.equals(7, addon.standaloneMapFrame.mapPinFrames[1].orderText.drawSubLevel)
+            assert.is_true(addon.standaloneMapFrame.mapPinFrames[2].icon.shown)
+            assert.equals("Dungeon", addon.standaloneMapFrame.mapPinFrames[2].icon.atlas)
+            assert.same(
+                { "TOPRIGHT", addon.standaloneMapFrame.mapPinFrames[2], "TOPRIGHT", 4, 4 },
+                addon.standaloneMapFrame.mapPinFrames[2].orderBackground.points[1]
+            )
+            assert.matches("2 numbered route stops visible", addon.standaloneMapFrame.statusText.text, 1, true)
+        end)
+    end)
+
     it("switches the selected farm between its area overlay and coordinate icons", function()
         local addon = load_window({
             GetMapPinIconOption = function()
-                return { id = "ore", texture = "Interface\\Icons\\INV_Ore_Copper_01" }
+                return {
+                    id = "ore",
+                    atlas = "VignetteLoot",
+                    texture = "Interface\\Icons\\INV_Ore_Copper_01",
+                }
             end,
         })
         local map_content = make_frame()
@@ -833,11 +994,15 @@ describe("UI/StandaloneMapWindow", function()
             assert.equals(2, #addon.standaloneMapFrame.mapPinFrames)
             assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].shown)
             assert.is_true(addon.standaloneMapFrame.mapPinFrames[2].shown)
+            assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].ring.shown)
             assert.equals("West dragonhawk", addon.standaloneMapFrame.mapPinFrames[1].pinData.label)
             assert.equals(
                 "Interface\\Icons\\INV_Ore_Copper_01",
                 addon.standaloneMapFrame.mapPinFrames[1].icon.texture
             )
+            assert.equals(40, addon.standaloneMapFrame.mapPinFrames[1].frameLevel)
+            assert.same({ 1, 1, 1, 1 }, addon.standaloneMapFrame.mapPinFrames[1].icon.vertexColor)
+            assert.equals(1, addon.standaloneMapFrame.mapPinFrames[1].icon.alpha)
             assert.same({ "CENTER", map_content, "TOPLEFT", 100, -150 }, addon.standaloneMapFrame.mapPinFrames[1].points[1])
             assert.is_false(addon.standaloneMapFrame.standaloneMapAreaFillLines[1].shown)
             assert.matches("Select one of the 2 farming overlays", addon.standaloneMapFrame.statusText.text, 1, true)
@@ -847,6 +1012,68 @@ describe("UI/StandaloneMapWindow", function()
             assert.equals("Icons", display_mode_button.text)
             assert.is_false(addon.standaloneMapFrame.mapPinFrames[1].shown)
             assert.is_true(addon.standaloneMapFrame.standaloneMapAreaFillLines[1].shown)
+        end)
+    end)
+
+    it("shows ordinary gathering-route coordinates as icons when the route overlay is toggled off", function()
+        local addon = load_window({
+            GetMapPinIconOption = function()
+                return { texture = "Interface\\Icons\\INV_Misc_Herb_10" }
+            end,
+        })
+        local map_content = make_frame()
+        local map_viewport = make_frame()
+        map_viewport:SetSize(500, 500)
+        addon.standaloneMapFrame = {
+            mapID = 109,
+            windowTitle = "Mana Thistle",
+            mapDisplayMode = "overlay",
+            mapPins = {
+                { mapID = 109, x = 0.20, y = 0.30, label = "Mana Thistle", isRoute = true, routeID = "mana-thistle" },
+                { mapID = 109, x = 0.40, y = 0.50, label = "Mana Thistle", isRoute = true, routeID = "mana-thistle" },
+            },
+            mapTitle = make_frame(),
+            detailsContent = make_frame(),
+            detailsScrollFrame = make_frame(),
+            detailTextLines = {},
+            detailSourceRows = {},
+            mapTileTextures = {},
+            mapExploredTileTextures = {},
+            mapRouteLines = {},
+            mapPinFrames = {},
+            mapViewport = map_viewport,
+            mapContent = map_content,
+            statusText = make_frame(),
+            displayModeButton = make_frame(),
+        }
+
+        loader.with_globals({
+            C_Map = {
+                GetMapArtLayers = function()
+                    return { { layerWidth = 1000, layerHeight = 1000, tileWidth = 500, tileHeight = 500 } }
+                end,
+                GetMapArtLayerTextures = function() return { 1, 2, 3, 4 } end,
+            },
+            C_MapExplorationInfo = false,
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            GameTooltip = false,
+        }, function()
+            addon:RefreshStandaloneMapWindow()
+            assert.equals(1, #addon.standaloneMapFrame.mapRouteLines)
+            assert.is_true(addon.standaloneMapFrame.mapRouteLines[1].shown)
+
+            assert.is_true(addon:ToggleStandaloneMapDisplayMode())
+            assert.equals("icons", addon.standaloneMapFrame.mapDisplayMode)
+            assert.is_false(addon.standaloneMapFrame.mapRouteLines[1].shown)
+            assert.equals(2, #addon.standaloneMapFrame.mapPinFrames)
+            assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].shown)
+            assert.is_true(addon.standaloneMapFrame.mapPinFrames[1].icon.shown)
+            assert.equals("Interface\\Icons\\INV_Misc_Herb_10", addon.standaloneMapFrame.mapPinFrames[1].icon.texture)
+            assert.matches("2 farming location icons visible", addon.standaloneMapFrame.statusText.text, 1, true)
         end)
     end)
 
@@ -961,9 +1188,14 @@ describe("UI/StandaloneMapWindow", function()
 
     it("creates an Add to farm button that submits the current map selection", function()
         local captured
+        local projected
         local addon = load_window()
         addon.RequestAddToCustomFarm = function(_, row, sourceType, mapSource)
             captured = { row = row, sourceType = sourceType, mapSource = mapSource }
+            return true
+        end
+        addon.ProjectMapRouteToWorldMap = function(_, options)
+            projected = options
             return true
         end
         local function create_frame()
@@ -992,12 +1224,87 @@ describe("UI/StandaloneMapWindow", function()
             })
             local button = addon.standaloneMapFrame.addToFarmButton
             assert.equals("Add to farm", button.text)
+            assert.equals("Project on BLizzard map", addon.standaloneMapFrame.projectButton.text)
+            assert.equals(160, addon.standaloneMapFrame.projectButton.width)
+            addon.standaloneMapFrame.projectButton.scripts.OnClick()
+            assert.equals(100, projected.mapID)
+            assert.equals(1, #projected.pins)
+            assert.equals("overlay", projected.displayMode)
+            assert.is_false(projected.showRouteLinesWithIcons)
+            assert.near(0.2, projected.pins[1].x, 0.0001)
+            assert.near(0.3, projected.pins[1].y, 0.0001)
             button.scripts.OnClick(button)
             assert.equals(2770, captured.row.itemID)
             assert.equals("materials", captured.sourceType)
             assert.equals(1, #captured.mapSource.pins)
             assert.near(0.2, captured.row.x, 0.0001)
         end)
+    end)
+
+    it("opens a dedicated scrollable window for all recorded yields", function()
+        local addon = load_window()
+        local dropdownInitializer
+        local mapInfoCalls = 0
+        local function create_frame()
+            local frame = make_frame()
+            for _, method in ipairs({
+                "SetBackdrop", "SetBackdropColor", "SetBackdropBorderColor", "SetFrameStrata",
+                "SetToplevel", "SetClampedToScreen", "SetMovable", "EnableMouse", "RegisterForDrag",
+                "RegisterEvent", "EnableMouseWheel", "SetScrollChild", "SetVerticalScroll", "Raise",
+            }) do
+                frame[method] = function() end
+            end
+            return frame
+        end
+
+        loader.with_globals({
+            CreateFrame = create_frame,
+            UIDropDownMenu_SetWidth = function() end,
+            UIDropDownMenu_Initialize = function(_, initializer) dropdownInitializer = initializer end,
+            UIDropDownMenu_SetSelectedValue = function() end,
+            UIDropDownMenu_SetText = function(dropdown, text) dropdown.text = text end,
+            C_Map = {
+                GetMapInfo = function(mapID)
+                    mapInfoCalls = mapInfoCalls + 1
+                    if mapID == nil then
+                        error("bad argument #1 to 'GetMapInfo'")
+                    end
+                end,
+            },
+        }, function()
+            addon:OpenRecordedYieldsWindow({
+                title = "Mana Thistle",
+                detailLinesBuilder = function()
+                    return {
+                        {
+                            type = "farmTargetFilter",
+                            selectedFilter = "reagents",
+                            filterOptions = { { id = "reagents", label = "Reagents" } },
+                        },
+                        { type = "farmTargetHeader", sortKey = "quantity", sortAscending = false },
+                        {
+                            type = "farmTarget",
+                            itemID = 22793,
+                            itemLink = "item:22793",
+                            itemName = "Mana Thistle",
+                            itemType = "Herb",
+                            quantityText = "x12",
+                            totalValueText = "120g",
+                        },
+                    }
+                end,
+            })
+        end)
+
+        local frame = addon.recordedYieldsFrame
+        assert.is_true(frame.shown)
+        assert.equals("Mana Thistle - all recorded items", frame.farmTitle.text)
+        assert.equals("Reagents", frame.detailTableFilterRows[1].dropdown.text)
+        assert.equals("Qty v", frame.detailTableHeaderRows[2].buttons.quantity.label.text)
+        assert.equals("Mana Thistle", frame.detailTableRows[3].itemText.text)
+        assert.equals("x12", frame.detailTableRows[3].quantityText.text)
+        assert.is_function(dropdownInitializer)
+        assert.equals(0, mapInfoCalls)
     end)
 
     it("renders grouped map options with non-selectable dropdown section headers", function()

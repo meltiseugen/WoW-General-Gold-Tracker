@@ -720,6 +720,20 @@ function GoldTracker:UpdateMainLastHighlight()
     end
 end
 
+function GoldTracker:RefreshMainFarmRouteControls()
+    local frame = self.mainFrame
+    if not frame then
+        return nil
+    end
+
+    local active = type(self.GetActiveCustomFarmRoutePlan) == "function"
+        and self:GetActiveCustomFarmRoutePlan() or nil
+    if frame.mainLastHighlightContainer then
+        frame.mainLastHighlightContainer:SetShown(not self:IsMainLootStreamExpanded())
+    end
+    return active
+end
+
 function GoldTracker:UpdateMainCompactWindow()
     local frame = self.mainFrame
     if not frame or not frame.compactPanel then
@@ -1149,6 +1163,7 @@ function GoldTracker:RefreshMainWindowLayout()
         frame.mainLastHighlightContainer:SetShown(not isLootStreamExpanded)
     end
     self:UpdateMainLastHighlight()
+    self:RefreshMainFarmRouteControls()
 
     local actionButtons = {}
     if frame.optionsButton then
@@ -1727,12 +1742,17 @@ function GoldTracker:UpdateMainWindow()
     local session = self.session
     local viewSummary = self:BuildSessionViewSummary(session, self:GetSessionStyleFilter())
 
+    local activeFarmRoute = self:RefreshMainFarmRouteControls()
     if frame.statusValue then
-        frame.statusValue:SetText(session.active and "LIVE" or "IDLE")
-        frame.statusValue:SetTextColor(session.active and 0.42 or 1.0, session.active and 1.0 or 0.70, session.active and 0.72 or 0.70)
+        frame.statusValue:SetText(activeFarmRoute and "FARMING" or (session.active and "LIVE" or "IDLE"))
+        frame.statusValue:SetTextColor(
+            (activeFarmRoute or session.active) and 0.42 or 1.0,
+            (activeFarmRoute or session.active) and 1.0 or 0.70,
+            (activeFarmRoute or session.active) and 0.72 or 0.70
+        )
     end
     if frame.sessionStatusBadge then
-        if session.active then
+        if activeFarmRoute or session.active then
             frame.sessionStatusBadge:SetBackdropColor(0.10, 0.22, 0.16, 0.96)
             frame.sessionStatusBadge:SetBackdropBorderColor(0.42, 1.0, 0.72, 0.26)
         else
@@ -2190,7 +2210,7 @@ function GoldTracker:CreateMainWindow()
     end)
     frame.minimizeButton = minimizeButton
 
-    local expandButton = CreateModernButton(headerBar, 22, 22, "<3", "neutral")
+    local expandButton = CreateModernButton(headerBar, 22, 22, "+", "neutral")
     expandButton:SetPoint("RIGHT", closeButton, "LEFT", -6, 0)
     expandButton.tooltipText = "Restore tracker"
     expandButton:SetScript("OnClick", function()

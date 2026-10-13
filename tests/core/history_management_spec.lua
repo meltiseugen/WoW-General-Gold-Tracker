@@ -131,6 +131,42 @@ describe("Core/History management", function()
         assert.same({ "Mimi - Silvermoon" }, entry.savedByCharacters)
     end)
 
+    it("saves closed farms as distinct zero-value history rows", function()
+        local addon = build_addon()
+        addon.db.enableSessionHistory = true
+        addon.BuildCustomFarmRoutePlan = function()
+            return {
+                { key = "ore", name = "Copper Ore", mapID = 1, mapName = "Durotar" },
+                { key = "herb", name = "Peacebloom", mapID = 37, mapName = "Elwynn Forest" },
+            }
+        end
+
+        local saved = loader.with_globals({
+            UnitFullName = function() return "Mimi", "Silvermoon" end,
+            GetRealmName = function() return "Silvermoon" end,
+            date = function() return "STAMP" end,
+        }, function()
+            return addon:SaveCustomFarmRunToHistory({ id = 7, name = "Starter Materials" }, {
+                startedAt = 4900,
+                closedAt = 5000,
+                currentStepKey = "herb",
+                completed = { ore = true },
+            }, "logout")
+        end)
+
+        assert.is_true(saved)
+        local entry = addon.db.sessionHistory[1]
+        assert.equals("farm", entry.recordType)
+        assert.is_true(entry.isFarm)
+        assert.equals(7, entry.farmID)
+        assert.equals("Starter Materials", entry.farmName)
+        assert.equals("logout", entry.farmCloseReason)
+        assert.equals(1, entry.farmCompletedSteps)
+        assert.equals(2, entry.farmTotalSteps)
+        assert.equals(0, entry.totalValue)
+        assert.equals("Farm: Starter Materials - STAMP", entry.name)
+    end)
+
     it("merges selected sessions into a single aggregate and removes sources", function()
         local addon = build_addon({
             {

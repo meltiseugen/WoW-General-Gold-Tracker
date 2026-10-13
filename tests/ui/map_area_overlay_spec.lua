@@ -90,4 +90,39 @@ describe("UI/MapAreaOverlay", function()
         assert.is_true(polygons[2].isUserCluster)
         assert.equals(1, polygons[2].sourcePointCount)
     end)
+
+    it("keeps translucent fill strips inside the bright perimeter", function()
+        local overlay = load_overlay()
+        local segments = overlay:BuildSegments({
+            {
+                points = {
+                    { x = 0.50, y = 0.20 },
+                    { x = 0.80, y = 0.50 },
+                    { x = 0.50, y = 0.80 },
+                    { x = 0.20, y = 0.50 },
+                },
+            },
+        }, 100, 100, {
+            fillStep = 4,
+            fillThickness = 4,
+            borderThickness = 4,
+        })
+
+        local fillCount = 0
+        local borderCount = 0
+        for _, segment in ipairs(segments) do
+            if segment.role == "fill" then
+                fillCount = fillCount + 1
+                for _, x in ipairs({ segment.x1, segment.x2 }) do
+                    for _, y in ipairs({ segment.y1 - 0.02, segment.y1 + 0.02 }) do
+                        assert.is_true((math.abs(x - 0.50) + math.abs(y - 0.50)) <= 0.300001)
+                    end
+                end
+            elseif segment.role == "border" then
+                borderCount = borderCount + 1
+            end
+        end
+        assert.is_true(fillCount > 0)
+        assert.equals(4, borderCount)
+    end)
 end)

@@ -148,6 +148,24 @@ local gathering = {
     },
 }
 
+local function get_test_item_info(itemID)
+    local names = {
+        [3001] = "Old Ore",
+        [3002] = "New Herb",
+        [3003] = "Rare Sword",
+        [3004] = "Test Potion",
+    }
+    local metadata = {
+        [3001] = { "Trade Goods", "Metal & Stone", 7, 7, true },
+        [3002] = { "Trade Goods", "Herb", 7, 9, true },
+        [3003] = { "Weapon", "Sword", 2, 7, false },
+        [3004] = { "Consumable", "Potion", 0, 1, false },
+    }
+    local item = metadata[itemID] or { nil, nil, nil, nil, false }
+    return names[itemID], "item:" .. tostring(itemID), nil, nil, nil,
+        item[1], item[2], nil, nil, nil, nil, item[3], item[4], nil, nil, nil, item[5]
+end
+
 local function load_window(catalogOverride)
     local addon = {
         GetCraftingFarmingValueSource = function()
@@ -163,9 +181,7 @@ local function load_window(catalogOverride)
 
     return loader.with_globals({
         C_Item = {
-            GetItemInfo = function(itemID)
-                return ({ [3001] = "Old Ore", [3002] = "New Herb", [3003] = "Rare Sword" })[itemID], "item:" .. tostring(itemID)
-            end,
+            GetItemInfo = get_test_item_info,
             RequestLoadItemDataByID = function() end,
         },
     }, function()
@@ -178,6 +194,33 @@ local function load_window(catalogOverride)
 end
 
 describe("UI/FarmDetailsWindow data flow", function()
+    it("renders researched herb map options as routes by default", function()
+        local addon = load_window()
+        local options = addon:BuildFarmRouteMapOptions({
+            id = "catalog:gathering:herb:test-herb",
+            sourceDataset = "CatalogGatheringData",
+            sourceCategory = "Herb",
+            activity = "herbalism",
+            name = "Test Herb",
+            mapOptions = {
+                {
+                    id = "test-herb-loop",
+                    mapID = 42,
+                    label = "Test herb loop",
+                    pins = {
+                        { x = 0.20, y = 0.30 },
+                        { x = 0.40, y = 0.50 },
+                    },
+                },
+            },
+        })
+
+        assert.equals(1, #options)
+        assert.is_true(options[1].pins[1].isRoute)
+        assert.is_true(options[1].pins[2].isRoute)
+        assert.equals(options[1].id, options[1].pins[1].routeID)
+    end)
+
     it("orders a material's primary gathering farm before byproduct farms", function()
         local addon = load_window()
         local farms = addon:GetFarmsForItem(3001)
@@ -735,9 +778,7 @@ describe("UI/FarmDetailsWindow data flow", function()
         local lines
         loader.with_globals({
             C_Item = {
-                GetItemInfo = function(itemID)
-                    return ({ [3001] = "Old Ore", [3002] = "New Herb" })[itemID], "item:" .. tostring(itemID)
-                end,
+                GetItemInfo = get_test_item_info,
                 RequestLoadItemDataByID = function() end,
             },
         }, function()
@@ -749,6 +790,7 @@ describe("UI/FarmDetailsWindow data flow", function()
         local dividerIndex
         local farmEstimateIndex
         local selectedEstimateLine
+        local selectedValueShareLine
         for index, line in ipairs(lines) do
             if line.type == "farmTarget" then
                 if line.selected then
@@ -764,6 +806,8 @@ describe("UI/FarmDetailsWindow data flow", function()
                     farmEstimateIndex = index
                 elseif line.text == "1000c/hour" then
                     selectedEstimateLine = line
+                elseif line.text == "25.0% of the recorded farm value" then
+                    selectedValueShareLine = line
                 end
             end
         end
@@ -778,6 +822,8 @@ describe("UI/FarmDetailsWindow data flow", function()
             selectedEstimateLine.g,
             selectedEstimateLine.b,
         })
+        assert.is_table(selectedValueShareLine)
+        assert.equals("GameFontHighlight", selectedValueShareLine.fontObject)
         assert.equals(farmEstimateIndex - 1, dividerIndex)
         assert.is_truthy(string.find(text, "4000c/hour", 1, true))
         assert.is_truthy(string.find(text, "How to farm", 1, true))
@@ -786,16 +832,119 @@ describe("UI/FarmDetailsWindow data flow", function()
         assert.equals("item:3002", selectedYield.itemLink)
         assert.equals("x2", selectedYield.quantityText)
         assert.equals("500c", selectedYield.totalValueText)
+        assert.equals("Herb", selectedYield.itemType)
         assert.is_true(selectedYield.selected)
         assert.equals("Old Ore", otherYield.itemName)
         assert.equals("x10", otherYield.quantityText)
         assert.equals("1000c", otherYield.totalValueText)
+        assert.equals("Ore", otherYield.itemType)
         assert.is_false(otherYield.selected)
         assert.is_truthy(string.find(text, "Farm catalog source", 1, true))
     end)
 
-    it("builds an expandable recorded-yields list for the map details panel", function()
+    it("shows the quantity-ranked yield preview and moves filtering into the full recorded-yields table", function()
         local addon = load_window()
+        local farm = {
+            id = "typed-yields",
+            activity = "miscellaneous",
+            expansion = "classic",
+            recordedSeconds = 3600,
+            mapNames = { "Test Valley" },
+            targets = {
+                { itemID = 3001, quantity = 10 },
+                { itemID = 3002, quantity = 2 },
+                { itemID = 3003, quantity = 1 },
+                { itemID = 3004, quantity = 5 },
+            },
+        }
+        local valuation = addon:BuildFarmValuationSnapshot(farm)
+        local openedAllItems = false
+        local previewLines
+        local fullLines
+        loader.with_globals({
+            C_Item = {
+                GetItemInfo = get_test_item_info,
+                RequestLoadItemDataByID = function() end,
+            },
+        }, function()
+            previewLines = addon:BuildFarmMapDetailLines(farm, nil, "Test Valley", valuation, {
+                onOpenAllTargets = function()
+                    openedAllItems = true
+                end,
+            })
+            fullLines = addon:BuildFarmRecordedYieldLines(farm, nil, valuation, {
+                targetFilter = "reagents",
+                targetSortKey = "quantity",
+                targetSortAscending = false,
+                onTargetFilterChanged = function(filterID)
+                    assert.equals("equipment", filterID)
+                end,
+                onTargetSortChanged = function(sortKey)
+                    assert.equals("totalValue", sortKey)
+                end,
+            })
+        end)
+
+        local previewFilter
+        local previewButton
+        local previewHeader
+        local previewTargets = {}
+        for _, line in ipairs(previewLines) do
+            if line.type == "farmTarget" then
+                previewTargets[#previewTargets + 1] = line
+            elseif line.type == "farmTargetFilter" then
+                previewFilter = line
+            elseif line.type == "detailButton" then
+                previewButton = line
+            elseif line.type == "farmTargetHeader" then
+                previewHeader = line
+            end
+        end
+        assert.is_nil(previewFilter)
+        assert.equals("View all recorded items (4)", previewButton.text)
+        assert.equals("quantity", previewHeader.sortKey)
+        assert.is_false(previewHeader.sortAscending)
+        assert.is_nil(previewHeader.onSort)
+        assert.same(
+            { "Old Ore", "Test Potion", "New Herb", "Rare Sword" },
+            {
+                previewTargets[1].itemName,
+                previewTargets[2].itemName,
+                previewTargets[3].itemName,
+                previewTargets[4].itemName,
+            }
+        )
+        previewButton.onClick()
+        assert.is_true(openedAllItems)
+
+        local filterLine = fullLines[1]
+        local headerLine = fullLines[2]
+        local targets = { fullLines[3], fullLines[4] }
+        assert.equals("reagents", filterLine.selectedFilter)
+        assert.same({ "All", "Reagents", "Armor and Weapons", "Other" }, {
+            filterLine.filterOptions[1].label,
+            filterLine.filterOptions[2].label,
+            filterLine.filterOptions[3].label,
+            filterLine.filterOptions[4].label,
+        })
+        assert.equals("quantity", headerLine.sortKey)
+        assert.is_false(headerLine.sortAscending)
+        assert.equals(2, #targets)
+        assert.same({ "Old Ore", "New Herb" }, { targets[1].itemName, targets[2].itemName })
+        assert.same({ "Ore", "Herb" }, { targets[1].itemType, targets[2].itemType })
+        filterLine.onSelect("equipment")
+        headerLine.onSort("totalValue")
+    end)
+
+    it("limits the map preview to the ten largest recorded quantities", function()
+        local addon = load_window()
+        local valuationCalls = 0
+        local fullItemsOpened = false
+        local hiddenItemTouchedBeforeFull = false
+        addon.ResolveItemUnitValue = function(_, _, _, itemID)
+            valuationCalls = valuationCalls + 1
+            return itemID, nil, "Test Value"
+        end
         local farm = {
             id = "many-yields",
             activity = "miscellaneous",
@@ -804,46 +953,131 @@ describe("UI/FarmDetailsWindow data flow", function()
             mapNames = { "Test Valley" },
             targets = {},
         }
-        for itemID = 3001, 3010 do
-            farm.targets[#farm.targets + 1] = { itemID = itemID, quantity = 1 }
+        for index = 1, 12 do
+            farm.targets[#farm.targets + 1] = { itemID = 4000 + index, quantity = index }
         end
+
+        local lines
+        local fullLines
+        loader.with_globals({
+            C_Item = {
+                GetItemInfo = function(itemID)
+                    if not fullItemsOpened and itemID <= 4002 then
+                        hiddenItemTouchedBeforeFull = true
+                    end
+                    return "Item " .. tostring(itemID), "item:" .. tostring(itemID), nil, nil, nil,
+                        "Trade Goods", "Other", nil, nil, nil, nil, 7, 0
+                end,
+                RequestLoadItemDataByID = function() end,
+            },
+        }, function()
+            local valuation = addon:BuildFarmPreviewValuationSnapshot(farm)
+            lines = addon:BuildFarmMapDetailLines(farm, nil, "Test Valley", valuation)
+            fullItemsOpened = true
+            fullLines = addon:BuildFarmRecordedYieldLines(farm, nil, valuation)
+            assert.is_true(valuation.isPartial)
+        end)
+
+        local quantities = {}
+        for _, line in ipairs(lines) do
+            if line.type == "farmTarget" then
+                quantities[#quantities + 1] = line.quantity
+            end
+        end
+        local fullTargetCount = 0
+        for _, line in ipairs(fullLines) do
+            if line.type == "farmTarget" then
+                fullTargetCount = fullTargetCount + 1
+            end
+        end
+        assert.equals(10, #quantities)
+        assert.same({ 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 }, quantities)
+        assert.equals(12, fullTargetCount)
+        assert.equals(10, valuationCalls)
+        assert.is_false(hiddenItemTouchedBeforeFull)
+    end)
+
+    it("does not value hidden yields until the full recorded-items window is opened", function()
+        local addon = load_window()
+        local farm = {
+            id = "deferred-yields",
+            name = "Deferred Yields",
+            sourceType = "drops",
+            recordedSeconds = 3600,
+            targets = {},
+        }
+        for index = 1, 12 do
+            farm.targets[#farm.targets + 1] = { itemID = 5000 + index, quantity = index }
+        end
+        local valuationCalls = 0
+        addon.ResolveItemUnitValue = function(_, _, _, itemID)
+            valuationCalls = valuationCalls + 1
+            return itemID, nil, "Test Value"
+        end
+        local preview = addon:BuildFarmPreviewValuationSnapshot(farm)
+        assert.equals(10, valuationCalls)
+
+        local timers = {}
+        local captured
+        local refreshCount = 0
+        addon.OpenRecordedYieldsWindow = function(_, options)
+            captured = options
+        end
+        addon.RefreshRecordedYieldsWindow = function()
+            refreshCount = refreshCount + 1
+        end
+        loader.with_globals({
+            C_Timer = {
+                After = function(_, callback)
+                    timers[#timers + 1] = callback
+                end,
+            },
+            debugprofilestop = false,
+        }, function()
+            assert.is_true(addon:OpenFarmRecordedYieldsForFarm(farm, nil, preview, {}))
+            assert.equals(10, valuationCalls)
+            assert.is_table(captured.detailLinesBuilder())
+            while #timers > 0 do
+                local callback = table.remove(timers, 1)
+                callback()
+            end
+        end)
+
+        assert.equals(22, valuationCalls)
+        assert.equals(1, refreshCount)
+        local completedLines = captured.detailLinesBuilder()
+        assert.equals(12, #completedLines - 2)
+        assert.is_true(completedLines[3].totalValue > 0)
+    end)
+
+    it("keeps filter and sort state inside the full recorded-yields window", function()
+        local addon = load_window()
+        local farm = addon:GetFarmByID("catalog:gathering:mining:old-ore")
         local valuation = addon:BuildFarmValuationSnapshot(farm)
-        local toggled = false
-        local collapsed = addon:BuildFarmMapDetailLines(farm, nil, "Test Valley", valuation, {
-            onToggleTargets = function()
-                toggled = true
-            end,
-        })
-
-        local collapsedTargets = 0
-        local collapsedToggle
-        for _, line in ipairs(collapsed) do
-            if line.type == "farmTarget" then
-                collapsedTargets = collapsedTargets + 1
-            elseif line.type == "detailToggle" then
-                collapsedToggle = line
-            end
+        local state = { filter = "all", sortKey = "itemName", sortAscending = true }
+        local captured
+        local refreshCount = 0
+        addon.OpenRecordedYieldsWindow = function(_, options)
+            captured = options
         end
-        assert.equals(8, collapsedTargets)
-        assert.equals("+ 2 more recorded items", collapsedToggle.text)
-        collapsedToggle.onClick()
-        assert.is_true(toggled)
-
-        local expanded = addon:BuildFarmMapDetailLines(farm, nil, "Test Valley", valuation, {
-            showAllTargets = true,
-        })
-        local expandedTargets = 0
-        local expandedToggle
-        for _, line in ipairs(expanded) do
-            if line.type == "farmTarget" then
-                expandedTargets = expandedTargets + 1
-            elseif line.type == "detailToggle" then
-                expandedToggle = line
-            end
+        addon.RefreshRecordedYieldsWindow = function()
+            refreshCount = refreshCount + 1
         end
-        assert.equals(10, expandedTargets)
-        assert.equals("- Show fewer recorded items", expandedToggle.text)
-        assert.is_true(expandedToggle.expanded)
+
+        assert.is_true(addon:OpenFarmRecordedYieldsForFarm(farm, 3002, valuation, state))
+        assert.equals("Old Ore Route", captured.title)
+        local lines = captured.detailLinesBuilder()
+        assert.equals("all", lines[1].selectedFilter)
+        assert.equals("itemName", lines[2].sortKey)
+        assert.is_true(lines[2].sortAscending)
+
+        lines[1].onSelect("reagents")
+        assert.equals("reagents", state.filter)
+        assert.equals(1, refreshCount)
+        lines[2].onSort("quantity")
+        assert.equals("quantity", state.sortKey)
+        assert.is_false(state.sortAscending)
+        assert.equals(2, refreshCount)
     end)
 
     it("reuses one valuation pass while building farm map details", function()

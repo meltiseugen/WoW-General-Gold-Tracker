@@ -63,6 +63,20 @@ local function make_frame()
         self.frameStrata = strata
     end
 
+    function frame:SetScale(scale)
+        self.scale = scale
+    end
+
+    function frame:SetScalingLimits(scaleFactor, startScale, endScale)
+        self.scaleFactor = scaleFactor
+        self.startScale = startScale
+        self.endScale = endScale
+    end
+
+    function frame:SetRotation(rotation)
+        self.rotation = rotation
+    end
+
     function frame:GetFrameLevel()
         return self.frameLevel
     end
@@ -198,6 +212,8 @@ describe("UI/WorldMapOverlay", function()
         assert.equals(107, payload.mapID)
         assert.equals("Nagrand", payload.mapName)
         assert.equals(2, payload.selectedMapOptionIndex)
+        assert.equals("overlay", payload.displayMode)
+        assert.is_false(payload.showRouteLinesWithIcons)
         assert.equals(1, #payload.pins)
         assert.equals(0.14, payload.pins[1].x)
         assert.equals(0.24, payload.pins[1].y)
@@ -218,6 +234,8 @@ describe("UI/WorldMapOverlay", function()
             customFarmRow = { itemID = 2770, farmingSourceType = "materials" },
             mapID = 100,
             mapLabel = "Hellfire Peninsula",
+            displayMode = "icons",
+            showRouteLinesWithIcons = true,
             pins = {
                 { mapID = 100, x = 0.20, y = 0.30, label = "Route point" },
             },
@@ -229,6 +247,7 @@ describe("UI/WorldMapOverlay", function()
                     mapLabel = "Hellfire Peninsula",
                     label = "Hellfire Peninsula: Citadel perimeter",
                     location = "Citadel perimeter",
+                    showRouteLinesWithIcons = true,
                     pins = {
                         { mapID = 100, x = 0.20, y = 0.30, label = "Route point" },
                     },
@@ -247,7 +266,40 @@ describe("UI/WorldMapOverlay", function()
         assert.equals("Hellfire Peninsula", capturedOptions.mapOptions[1].mapLabel)
         assert.equals("Hellfire Peninsula: Citadel perimeter", capturedOptions.mapOptions[1].label)
         assert.equals("Citadel perimeter", capturedOptions.mapOptions[1].location)
+        assert.is_true(capturedOptions.mapOptions[1].showRouteLinesWithIcons)
         assert.equals("Route point", capturedOptions.pins[1].label)
+        assert.equals("icons", capturedOptions.displayMode)
+        assert.is_true(capturedOptions.showRouteLinesWithIcons)
+    end)
+
+    it("keeps breadcrumb projections in the background of map details", function()
+        local capturedOptions
+        local addon = load_overlay({
+            OpenStandaloneMapWindow = function(_, options)
+                capturedOptions = options
+            end,
+        })
+        local farmProjection = addon:BuildWorldMapProjectionPayload({
+            title = "Active farm",
+            projectionKey = "active-farm-route:1",
+            mapID = 100,
+            pins = { { mapID = 100, x = 0.20, y = 0.30 } },
+        })
+        local breadcrumbs = addon:BuildWorldMapProjectionPayload({
+            title = "Breadcrumb trail",
+            projectionKey = "active-farm-breadcrumb:1:100",
+            mapID = 100,
+            pins = {
+                { mapID = 100, x = 0.21, y = 0.31, isRoute = true, routeType = "farm-breadcrumb" },
+            },
+            background = true,
+        })
+        addon.worldMapProjections = { farmProjection, breadcrumbs }
+        addon.worldMapProjection = nil
+
+        assert.is_true(addon:OpenWorldMapProjectionDetails())
+        assert.equals("Active farm", capturedOptions.title)
+        assert.is_true(breadcrumbs.background)
     end)
 
     it("anchors projection controls to the map canvas viewport", function()
@@ -334,13 +386,14 @@ describe("UI/WorldMapOverlay", function()
             end,
             Minimap = false,
         }, function()
+            local canvas = make_frame()
+            canvas:SetSize(500, 500)
             local map = {
+                ScrollContainer = { Child = canvas },
                 GetMapID = function()
                     return 100
                 end,
                 GetCanvas = function()
-                    local canvas = make_frame()
-                    canvas:SetSize(500, 500)
                     return canvas
                 end,
                 RemoveAllPinsByTemplate = function(self, template)
@@ -348,6 +401,9 @@ describe("UI/WorldMapOverlay", function()
                 end,
                 AcquirePin = function(self, template, provider, pinData, pinIndex, pinCount)
                     local pin = make_frame()
+                    for key, value in pairs(GoldTrackerWorldMapRoutePinMixin or {}) do
+                        pin[key] = value
+                    end
                     pin.template = template
                     pin.provider = provider
                     pin.pinData = pinData
@@ -356,6 +412,7 @@ describe("UI/WorldMapOverlay", function()
                     pin.SetPosition = function(_, x, y)
                         pin.position = { x, y }
                     end
+                    pin:OnAcquired(provider, pinData, pinIndex, pinCount)
                     return pin
                 end,
             }
@@ -386,6 +443,8 @@ describe("UI/WorldMapOverlay", function()
             assert.is_true(addon:ProjectMapRouteToWorldMap({
                 title = "Herb",
                 mapID = 100,
+                displayMode = "icons",
+                showRouteLinesWithIcons = true,
                 pins = {
                     { mapID = 100, x = 0.40, y = 0.50, itemName = "Herb", isRoute = true, routeID = "herb" },
                     { mapID = 100, x = 0.50, y = 0.60, itemName = "Herb", isRoute = true, routeID = "herb" },
@@ -400,28 +459,38 @@ describe("UI/WorldMapOverlay", function()
 
             worldMapFrame.provider:RefreshAllData()
 
-            assert.equals(0, #worldMapFrame.provider.acquiredPins)
-            assert.is_true(#worldMapFrame.provider.worldMapAreaFillLines > 0)
-            assert.is_true(#worldMapFrame.provider.worldMapAreaGlowLines > 0)
-            assert.is_true(#worldMapFrame.provider.worldMapAreaBorderLines > 0)
-            assert.same({ 0.08, 0.42, 1.0, 0.20 }, worldMapFrame.provider.worldMapAreaFillLines[1].color)
-            assert.is_true(worldMapFrame.provider.worldMapAreaFillLines[1].shown)
-            assert.equals(2, #worldMapFrame.provider.routeLines)
-            local firstLine = worldMapFrame.provider.routeLines[1]
-            local secondLine = worldMapFrame.provider.routeLines[2]
-            local routeOverlay = worldMapFrame.provider.routeOverlay
-            assert.equals(firstLine.parent, routeOverlay)
-            assert.equals(secondLine.parent, routeOverlay)
-            assert.equals(firstLine.startPoint[2], routeOverlay)
-            assert.equals(routeOverlay.parent, routeOverlay.allPointsParent)
-            assert.equals(110, routeOverlay.frameLevel)
-            assert.is_false(routeOverlay.mouseEnabled)
-            assert.same({ "TOPLEFT", firstLine.parent, 100, -150 }, firstLine.startPoint)
-            assert.same({ "TOPLEFT", firstLine.parent, 150, -200 }, firstLine.endPoint)
-            assert.same({ "TOPLEFT", secondLine.parent, 200, -250 }, secondLine.startPoint)
-            assert.same({ "TOPLEFT", secondLine.parent, 250, -300 }, secondLine.endPoint)
-            assert.is_true(worldMapFrame.provider.routeLines[1].shown)
-            assert.is_true(worldMapFrame.provider.routeLines[2].shown)
+            local segmentPins = {}
+            local iconPins = {}
+            local routeSegmentCount = 0
+            for _, pin in ipairs(worldMapFrame.provider.acquiredPins) do
+                if pin.pinData.visualType == "projection-segment" then
+                    segmentPins[#segmentPins + 1] = pin
+                    if pin.pinData.segmentRole == "route" then
+                        routeSegmentCount = routeSegmentCount + 1
+                    end
+                else
+                    iconPins[#iconPins + 1] = pin
+                end
+            end
+            assert.is_true(#segmentPins > 0)
+            assert.equals("fill", segmentPins[1].pinData.segmentRole)
+            assert.same({ 0.08, 0.42, 1.0, 0.20 }, segmentPins[1].pinData.color)
+            assert.equals("Interface\\Buttons\\WHITE8X8", segmentPins[1].Segment.texture)
+            assert.same({ 0.08, 0.42, 1.0, 1 }, segmentPins[1].Segment.vertexColor)
+            assert.equals(0.20, segmentPins[1].Segment.alpha)
+            assert.is_true(segmentPins[1].Segment.shown)
+            assert.is_true(segmentPins[1].width > 1)
+            assert.is_not_nil(segmentPins[1].Segment.rotation)
+            assert.is_nil(segmentPins[1].startScale)
+            assert.is_nil(segmentPins[1].endScale)
+            assert.equals(1, segmentPins[1].scale)
+            assert.equals(2, routeSegmentCount)
+            assert.equals(2, #iconPins)
+            assert.equals(1.0, iconPins[1].startScale)
+            assert.equals(1.2, iconPins[1].endScale)
+            assert.same({ 0.40, 0.50 }, iconPins[1].position)
+            assert.same({ 0.50, 0.60 }, iconPins[2].position)
+            assert.equals("Herb", iconPins[1].pinData.projectionTitle)
         end)
     end)
 
@@ -497,6 +566,7 @@ describe("UI/WorldMapOverlay", function()
             addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
                 title = "Ore",
                 mapID = 100,
+                displayMode = "icons",
                 pins = {
                     { mapID = 100, x = 0.52, y = 0.50, label = "Near ore" },
                     { mapID = 101, x = 0.52, y = 0.50, label = "Wrong map" },
@@ -518,6 +588,445 @@ describe("UI/WorldMapOverlay", function()
             assert.is_false(overlay.pins[1].shown)
             assert.same({}, addon.worldMapProjections)
             assert.is_nil(addon.worldMapProjection)
+        end)
+    end)
+
+    it("renders projected overlay mode as a minimap area without location icons", function()
+        local minimap = make_frame()
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    return { x = 0.50, y = 0.50 }
+                end,
+            },
+            C_Minimap = false,
+        }, function()
+            minimap:SetSize(140, 140)
+            local addon = load_overlay({})
+            addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
+                title = "Mote of Fire",
+                mapID = 100,
+                displayMode = "overlay",
+                pins = {
+                    { mapID = 100, x = 0.49, y = 0.49, label = "Fire elemental" },
+                    { mapID = 100, x = 0.51, y = 0.49, label = "Fire elemental" },
+                    { mapID = 100, x = 0.50, y = 0.51, label = "Fire elemental" },
+                },
+            })
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            local overlay = addon.minimapProjectionOverlay
+            assert.is_true(overlay.shown)
+            assert.equals(0, #overlay.pins)
+            assert.is_true(#overlay.minimapAreaFillLines > 0)
+            assert.is_true(#overlay.minimapAreaGlowLines > 0)
+            assert.is_true(#overlay.minimapAreaBorderLines > 0)
+            assert.same({ 0.08, 0.42, 1.0, 0.20 }, overlay.minimapAreaFillLines[1].color)
+
+            addon:ClearWorldMapProjection()
+
+            assert.is_false(overlay.shown)
+            assert.is_false(overlay.minimapAreaBorderLines[1].shown)
+        end)
+    end)
+
+    it("moves the rendered minimap area opposite player movement so it stays on terrain", function()
+        local minimap = make_frame()
+        local playerX = 0.50
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            UiMapPoint = {
+                CreateFromCoordinates = function(_, x, y)
+                    return { x = x, y = y }
+                end,
+            },
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    return { x = playerX, y = 0.50 }
+                end,
+                GetWorldPosFromMapPos = function(_, point)
+                    return 1, {
+                        GetXY = function()
+                            return (1 - point.y) * 1000, (1 - point.x) * 1000
+                        end,
+                    }
+                end,
+            },
+            C_Minimap = {
+                GetViewRadius = function()
+                    return 100
+                end,
+            },
+            GetCVar = function()
+                return "0"
+            end,
+            GetPlayerFacing = false,
+        }, function()
+            minimap:SetSize(140, 140)
+            local addon = load_overlay({})
+            addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
+                mapID = 100,
+                displayMode = "overlay",
+                pins = {
+                    { mapID = 100, x = 0.515, y = 0.495, areaID = "farm" },
+                    { mapID = 100, x = 0.525, y = 0.500, areaID = "farm" },
+                    { mapID = 100, x = 0.515, y = 0.510, areaID = "farm" },
+                },
+            })
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            local overlay = addon.minimapProjectionOverlay
+            local border = overlay.minimapAreaBorderLines[1]
+            local initialStartX = border.startPoint[3]
+            local initialEndX = border.endPoint[3]
+
+            playerX = 0.51
+            assert.is_true(addon:RefreshMinimapProjectionPins(false))
+            assert.equals(border, overlay.minimapAreaBorderLines[1])
+            assert.is_true(border.startPoint[3] < initialStartX)
+            assert.is_true(border.endPoint[3] < initialEndX)
+        end)
+    end)
+
+    it("keeps the blue minimap area north-up while the minimap rotates", function()
+        local minimap = make_frame()
+        local facing = 0
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            UiMapPoint = {
+                CreateFromCoordinates = function(_, x, y)
+                    return { x = x, y = y }
+                end,
+            },
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    return { x = 0.50, y = 0.50 }
+                end,
+                GetWorldPosFromMapPos = function(_, point)
+                    return 1, {
+                        GetXY = function()
+                            return (1 - point.y) * 1000, (1 - point.x) * 1000
+                        end,
+                    }
+                end,
+            },
+            C_Minimap = {
+                GetViewRadius = function()
+                    return 100
+                end,
+            },
+            GetCVar = function(name)
+                return name == "rotateMinimap" and "1" or "0"
+            end,
+            GetPlayerFacing = function()
+                return facing
+            end,
+        }, function()
+            minimap:SetSize(140, 140)
+            local addon = load_overlay({})
+            addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
+                mapID = 100,
+                displayMode = "overlay",
+                pins = {
+                    { mapID = 100, x = 0.515, y = 0.495, areaID = "farm" },
+                    { mapID = 100, x = 0.525, y = 0.500, areaID = "farm" },
+                    { mapID = 100, x = 0.515, y = 0.510, areaID = "farm" },
+                },
+            })
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            local border = addon.minimapProjectionOverlay.minimapAreaBorderLines[1]
+            local initialStart = { border.startPoint[3], border.startPoint[4] }
+            local initialEnd = { border.endPoint[3], border.endPoint[4] }
+
+            facing = math.pi * 0.5
+            assert.is_true(addon:RefreshMinimapProjectionPins(false))
+            assert.near(initialStart[1], border.startPoint[3], 0.0001)
+            assert.near(initialStart[2], border.startPoint[4], 0.0001)
+            assert.near(initialEnd[1], border.endPoint[3], 0.0001)
+            assert.near(initialEnd[2], border.endPoint[4], 0.0001)
+        end)
+    end)
+
+    it("keeps farm-location pins visible while the breadcrumb trail is toggled", function()
+        local minimap = make_frame()
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    return { x = 0.50, y = 0.50 }
+                end,
+            },
+            C_Minimap = false,
+        }, function()
+            minimap:SetSize(140, 140)
+            local showBreadcrumbs = false
+            local addon = load_overlay({
+                IsActiveCustomFarmBreadcrumbsEnabled = function()
+                    return showBreadcrumbs
+                end,
+            })
+            addon.worldMapProjections = {
+                addon:BuildWorldMapProjectionPayload({
+                    mapID = 100,
+                    displayMode = "icons",
+                    pins = { { mapID = 100, x = 0.52, y = 0.50, label = "Farm location" } },
+                }),
+                addon:BuildWorldMapProjectionPayload({
+                    mapID = 100,
+                    displayMode = "icons",
+                    pins = { {
+                        mapID = 100,
+                        x = 0.51,
+                        y = 0.50,
+                        label = "Breadcrumb",
+                        routeType = "farm-breadcrumb",
+                    } },
+                }),
+            }
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            local overlay = addon.minimapProjectionOverlay
+            assert.is_true(overlay.shown)
+            assert.equals("Farm location", overlay.pins[1].pinData.label)
+
+            showBreadcrumbs = true
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            assert.is_true(overlay.shown)
+            assert.equals("Farm location", overlay.pins[1].pinData.label)
+            assert.equals("Breadcrumb", overlay.pins[2].pinData.label)
+            assert.is_true(overlay.pins[2].shown)
+
+            showBreadcrumbs = false
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            assert.is_true(overlay.shown)
+            assert.equals("Farm location", overlay.pins[1].pinData.label)
+            assert.is_false(overlay.pins[2].shown)
+        end)
+    end)
+
+    it("batches player map work and caches static pin world positions", function()
+        local minimap = make_frame()
+        local playerPositionCalls = 0
+        local worldPositionCalls = 0
+        local viewRadiusCalls = 0
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            UiMapPoint = {
+                CreateFromCoordinates = function(_, x, y)
+                    return { x = x, y = y }
+                end,
+            },
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    playerPositionCalls = playerPositionCalls + 1
+                    return { x = 0.50, y = 0.50 }
+                end,
+                GetWorldPosFromMapPos = function(_, point)
+                    worldPositionCalls = worldPositionCalls + 1
+                    return 1, {
+                        GetXY = function()
+                            return (1 - point.y) * 1000, (1 - point.x) * 1000
+                        end,
+                    }
+                end,
+            },
+            C_Minimap = {
+                GetViewRadius = function()
+                    viewRadiusCalls = viewRadiusCalls + 1
+                    return 100
+                end,
+            },
+            GetCVar = false,
+            GetPlayerFacing = false,
+        }, function()
+            minimap:SetSize(140, 140)
+            local addon = load_overlay({})
+            addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
+                mapID = 100,
+                displayMode = "icons",
+                pins = {
+                    { mapID = 100, x = 0.51, y = 0.50 },
+                    { mapID = 100, x = 0.52, y = 0.50 },
+                    { mapID = 100, x = 0.53, y = 0.50 },
+                },
+            })
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            assert.is_true(addon:RefreshMinimapProjectionPins(false))
+
+            assert.equals(2, playerPositionCalls)
+            assert.equals(2, viewRadiusCalls)
+            assert.equals(5, worldPositionCalls)
+            assert.is_true(addon.minimapProjectionOverlay.pins[1].points[1][4] > 0)
+            assert.near(0, addon.minimapProjectionOverlay.pins[1].points[1][5], 0.0001)
+        end)
+    end)
+
+    it("keeps minimap projections fixed while the player moves across Blizzard world axes", function()
+        local minimap = make_frame()
+        local playerX = 0.50
+        local playerY = 0.50
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            UiMapPoint = {
+                CreateFromCoordinates = function(_, x, y)
+                    return { x = x, y = y }
+                end,
+            },
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    return { x = playerX, y = playerY }
+                end,
+                GetWorldPosFromMapPos = function(_, point)
+                    return 1, {
+                        GetXY = function()
+                            return (1 - point.y) * 1000, (1 - point.x) * 1000
+                        end,
+                    }
+                end,
+            },
+            C_Minimap = {
+                GetViewRadius = function()
+                    return 100
+                end,
+            },
+            GetCVar = function()
+                return "0"
+            end,
+            GetPlayerFacing = false,
+        }, function()
+            minimap:SetSize(140, 140)
+            local addon = load_overlay({})
+            addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
+                mapID = 100,
+                displayMode = "icons",
+                pins = { { mapID = 100, x = 0.52, y = 0.50 } },
+            })
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            local pin = addon.minimapProjectionOverlay.pins[1]
+            local initialX = pin.points[1][4]
+            local initialY = pin.points[1][5]
+            assert.is_true(initialX > 0)
+            assert.near(0, initialY, 0.0001)
+
+            playerX = 0.51
+            assert.is_true(addon:RefreshMinimapProjectionPins(false))
+            local afterEastMovementX = pin.points[1][4]
+            assert.is_true(afterEastMovementX < initialX)
+            assert.is_true(afterEastMovementX > 0)
+
+            playerX = 0.50
+            playerY = 0.51
+            assert.is_true(addon:RefreshMinimapProjectionPins(false))
+            assert.near(initialX, pin.points[1][4], 0.0001)
+            assert.is_true(pin.points[1][5] > initialY)
+        end)
+    end)
+
+    it("rotates fixed-world minimap projections with a rotating minimap", function()
+        local minimap = make_frame()
+        loader.with_globals({
+            CreateFrame = function(_, _, parent)
+                local frame = make_frame()
+                frame.parent = parent
+                return frame
+            end,
+            Minimap = minimap,
+            UiMapPoint = {
+                CreateFromCoordinates = function(_, x, y)
+                    return { x = x, y = y }
+                end,
+            },
+            C_Map = {
+                GetBestMapForUnit = function()
+                    return 100
+                end,
+                GetPlayerMapPosition = function()
+                    return { x = 0.50, y = 0.50 }
+                end,
+                GetWorldPosFromMapPos = function(_, point)
+                    return 1, {
+                        GetXY = function()
+                            return (1 - point.y) * 1000, (1 - point.x) * 1000
+                        end,
+                    }
+                end,
+            },
+            C_Minimap = {
+                GetViewRadius = function()
+                    return 100
+                end,
+            },
+            GetCVar = function(name)
+                return name == "rotateMinimap" and "1" or "0"
+            end,
+            GetPlayerFacing = function()
+                return math.pi * 0.5
+            end,
+        }, function()
+            minimap:SetSize(140, 140)
+            local addon = load_overlay({})
+            addon.worldMapProjection = addon:BuildWorldMapProjectionPayload({
+                mapID = 100,
+                displayMode = "icons",
+                pins = { { mapID = 100, x = 0.52, y = 0.50 } },
+            })
+
+            assert.is_true(addon:RefreshMinimapProjectionPins(true))
+            local point = addon.minimapProjectionOverlay.pins[1].points[1]
+            assert.near(0, point[4], 0.0001)
+            assert.is_true(point[5] < 0)
         end)
     end)
 end)

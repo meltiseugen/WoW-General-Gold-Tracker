@@ -593,6 +593,18 @@ function HistorySessionModel:BuildRowTitleAndSubtitle(session)
         return "Session", nil
     end
 
+    if resolvedSession.recordType == "farm" or resolvedSession.isFarm == true then
+        local startedAt = tonumber(resolvedSession.startTime or resolvedSession.savedAt) or 0
+        local startText = startedAt > 0 and date("%Y-%m-%d %H:%M", startedAt) or "Unknown start"
+        local farmName = resolvedSession.farmName or "Custom farm"
+        local completed = math.max(0, tonumber(resolvedSession.farmCompletedSteps) or 0)
+        local total = math.max(0, tonumber(resolvedSession.farmTotalSteps) or 0)
+        local reason = resolvedSession.farmCloseReason or "stopped"
+        reason = reason:sub(1, 1):upper() .. reason:sub(2)
+        return string.format("[Farm] %s - %s", farmName, startText),
+            string.format("%d/%d locations completed | %s", completed, total, reason)
+    end
+
     local locationOptions = self:BuildHistoryLocationOptions(resolvedSession)
     local locationLabels = {}
     local labelsByKey = {}

@@ -2382,7 +2382,9 @@ function GoldTracker:RefreshHistoryDetailsWindow()
         frame.splitButton:SetShown(#locationOptions > 2)
     end
     if frame.resumeSessionButton then
-        local enabled = self:IsResumeHistorySessionEnabled()
+        local isFarmHistory = session.recordType == "farm" or session.isFarm == true
+        local enabled = not isFarmHistory and self:IsResumeHistorySessionEnabled()
+        frame.resumeSessionButton:SetShown(not isFarmHistory)
         frame.resumeSessionButton:SetEnabled(enabled)
         frame.resumeSessionButton:SetAlpha(enabled and 1 or 0.45)
     end

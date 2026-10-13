@@ -78,6 +78,18 @@ local function spot_has_coord(item, spot_id, x, y)
     return false
 end
 
+local function max_adjacent_coord_distance(coords)
+    local maximum = 0
+    for index = 2, #(coords or {}) do
+        local previous = coords[index - 1]
+        local current = coords[index]
+        local delta_x = current.x - previous.x
+        local delta_y = current.y - previous.y
+        maximum = math.max(maximum, math.sqrt((delta_x * delta_x) + (delta_y * delta_y)))
+    end
+    return maximum
+end
+
 local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/MaterialFarmingSpots.lua",
     "Data/MaterialFarmingSpots/Shared.lua",
@@ -2415,26 +2427,26 @@ describe("Data/MaterialFarmingSpots", function()
         local expected_routes = {
             { 22710, "bloodthistle-eversong-outer-settlements-main", 94, 9, 0.36, 0.48, 0.39, 0.38 },
             { 22710, "bloodthistle-eversong-central-settlements-alternative", 94, 7, 0.53, 0.44, 0.59, 0.41 },
-            { 22785, "felweed-blades-edge-supplied-main", 105, 15, 0.72, 0.39, 0.81, 0.30 },
-            { 22785, "felweed-nagrand-supplied-alternative", 107, 11, 0.82, 0.26, 0.84, 0.29 },
-            { 22786, "dreaming-glory-blades-edge-supplied-main", 105, 15, 0.72, 0.39, 0.81, 0.30 },
-            { 22786, "dreaming-glory-nagrand-supplied-alternative", 107, 11, 0.82, 0.25, 0.84, 0.29 },
-            { 22787, "ragveil-zangarmarsh-supplied-main", 102, 32, 0.72, 0.38, 0.32, 0.31 },
-            { 22787, "ragveil-terokkar-supplied-alternative", 108, 14, 0.16, 0.25, 0.22, 0.25 },
-            { 22788, "flame-cap-zangarmarsh-supplied-main", 102, 13, 0.46, 0.18, 0.21, 0.22 },
-            { 22788, "flame-cap-zangarmarsh-supplied-alternative", 102, 11, 0.72, 0.38, 0.68, 0.30 },
-            { 22789, "terocone-terokkar-supplied-main", 108, 14, 0.16, 0.25, 0.22, 0.25 },
-            { 22789, "terocone-shadowmoon-supplied-alternative", 104, 19, 0.32, 0.29, 0.43, 0.20 },
+            { 22785, "felweed-blades-edge-supplied-main", 105, 23, 0.3917, 0.2290, 0.3385, 0.2185 },
+            { 22785, "felweed-nagrand-supplied-alternative", 107, 34, 0.3028, 0.2090, 0.2602, 0.2290 },
+            { 22786, "dreaming-glory-blades-edge-supplied-main", 105, 23, 0.3917, 0.2290, 0.3385, 0.2185 },
+            { 22786, "dreaming-glory-nagrand-supplied-alternative", 107, 34, 0.3028, 0.2090, 0.2602, 0.2290 },
+            { 22787, "ragveil-zangarmarsh-supplied-main", 102, 32, 0.1902, 0.1912, 0.1623, 0.2615 },
+            { 22787, "ragveil-terokkar-supplied-alternative", 108, 22, 0.4621, 0.1767, 0.3371, 0.3912 },
+            { 22788, "flame-cap-zangarmarsh-supplied-main", 102, 32, 0.1902, 0.1912, 0.1623, 0.2615 },
+            { 22788, "flame-cap-zangarmarsh-supplied-alternative", 102, 26, 0.8696, 0.2712, 0.8420, 0.3319 },
+            { 22789, "terocone-terokkar-supplied-main", 108, 22, 0.4621, 0.1767, 0.3371, 0.3912 },
+            { 22789, "terocone-shadowmoon-supplied-alternative", 104, 30, 0.2932, 0.2879, 0.2288, 0.3231 },
             { 22790, "ancient-lichen-slave-pens-supplied-main", 260, 11, 0.55, 0.18, 0.34, 0.32 },
             { 22790, "ancient-lichen-underbog-supplied-alternative", 262, 11, 0.62, 0.16, 0.70, 0.30 },
-            { 22791, "netherbloom-netherstorm-supplied-main", 109, 24, 0.28, 0.36, 0.26, 0.33 },
-            { 22791, "netherbloom-netherstorm-supplied-alternative", 109, 14, 0.70, 0.18, 0.45, 0.25 },
-            { 22792, "nightmare-vine-shadowmoon-supplied-main", 104, 19, 0.32, 0.29, 0.43, 0.20 },
-            { 22792, "nightmare-vine-blades-edge-supplied-alternative", 105, 13, 0.72, 0.39, 0.18, 0.39 },
-            { 22793, "mana-thistle-blades-edge-supplied-main", 105, 14, 0.68, 0.27, 0.60, 0.44 },
-            { 22793, "mana-thistle-skettis-supplied-alternative", 108, 7, 0.65, 0.61, 0.68, 0.57 },
-            { 22794, "fel-lotus-netherstorm-supplied-main", 109, 24, 0.28, 0.36, 0.26, 0.33 },
-            { 22794, "fel-lotus-shadowmoon-supplied-alternative", 104, 19, 0.32, 0.29, 0.43, 0.20 },
+            { 22791, "netherbloom-netherstorm-supplied-main", 109, 29, 0.3628, 0.1901, 0.3326, 0.2876 },
+            { 22791, "netherbloom-netherstorm-supplied-alternative", 109, 24, 0.4609, 0.1430, 0.3707, 0.2013 },
+            { 22792, "nightmare-vine-shadowmoon-supplied-main", 104, 30, 0.2932, 0.2879, 0.2288, 0.3231 },
+            { 22792, "nightmare-vine-blades-edge-supplied-alternative", 105, 23, 0.3917, 0.2290, 0.3385, 0.2185 },
+            { 22793, "mana-thistle-blades-edge-supplied-main", 105, 14, 0.27, 0.68, 0.44, 0.60 },
+            { 22793, "mana-thistle-skettis-supplied-alternative", 108, 7, 0.61, 0.65, 0.57, 0.68 },
+            { 22794, "fel-lotus-netherstorm-supplied-main", 109, 29, 0.3628, 0.1901, 0.3326, 0.2876 },
+            { 22794, "fel-lotus-shadowmoon-supplied-alternative", 104, 30, 0.2932, 0.2879, 0.2288, 0.3231 },
         }
 
         assert.is_nil(data.missingItems[22710])
@@ -2452,9 +2464,22 @@ describe("Data/MaterialFarmingSpots", function()
             assert.equals(expected[8], spot.coords[#spot.coords].y, context)
             assert.is_true(#spot.tips >= 3, context)
             assert.is_true(#spot.sourceUrls >= 2, context)
+            assert.is_true(max_adjacent_coord_distance(spot.coords) < 0.35, context .. " contains an implausible map-spanning segment")
             local has_route_variant = spot.location:find("^Main %- ") ~= nil
                 or spot.location:find("^Alternative %- ") ~= nil
             assert.is_true(has_route_variant, context)
+        end
+
+        local mana_main = find_spot(data.items[22793], "mana-thistle-blades-edge-supplied-main")
+        for _, coord in ipairs(mana_main.coords) do
+            assert.is_true(coord.x >= 0.25 and coord.x <= 0.72)
+            assert.is_true(coord.y >= 0.54 and coord.y <= 0.93)
+        end
+
+        local mana_skettis = find_spot(data.items[22793], "mana-thistle-skettis-supplied-alternative")
+        for _, coord in ipairs(mana_skettis.coords) do
+            assert.is_true(coord.x >= 0.55 and coord.x <= 0.73)
+            assert.is_true(coord.y >= 0.64 and coord.y <= 0.85)
         end
     end)
 
@@ -2523,7 +2548,7 @@ describe("Data/MaterialFarmingSpots", function()
     end)
 
     it("keeps imported Burning Crusade herbalism routes as separate spot entries", function()
-        local data = load_material_farming_spots()
+        local data, ns = load_material_farming_spots()
         local expected_routes = {
             { 22787, "ragveil-zangarmarsh-golden-routes-main", 0.8646, 0.3365 },
             { 22787, "ragveil-zangarmarsh-golden-routes-alt", 0.8696, 0.2712 },
@@ -2551,7 +2576,25 @@ describe("Data/MaterialFarmingSpots", function()
             local message = "missing route spot: " .. tostring(item_id) .. " / " .. spot_id
             assert.is_true(item_has_spot(item, spot_id), message)
             assert.is_true(spot_has_coord(item, spot_id, x, y), message)
+            assert.is_true(find_spot(item, spot_id).isRoute, message .. " is not marked as a route")
         end
+
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+        local mana_options = ns.GoldTracker:BuildMaterialFarmingMapOptions(22793)
+        local found_netherstorm_route = false
+        for _, option in ipairs(mana_options) do
+            if option.id == "mana-thistle-netherstorm-catalog-mixed-alt" then
+                found_netherstorm_route = true
+                assert.is_true(#option.pins > 1)
+                for _, pin in ipairs(option.pins) do
+                    assert.is_true(pin.isRoute)
+                    assert.equals(option.id, pin.routeID)
+                end
+            end
+        end
+        assert.is_true(found_netherstorm_route)
     end)
 
     it("does not include placeholder farming routes in researched data", function()
@@ -3309,8 +3352,27 @@ describe("Data/CatalogDrops", function()
         assert.equals(147, data.categoryCounts.openWorldInstances)
         assert.equals(7, data.categoryCounts.mounts)
         assert.equals(7, data.categoryCounts.toys)
-        assert.equals(179, data.categoryCounts.pets)
+        assert.equals(47, data.categoryCounts.pets)
         assert.equals(91, data.categoryCounts.raidPets)
+
+        local outdoorPetIDs = {}
+        for _, row in ipairs(data.categories.pets) do
+            if row.petID then
+                outdoorPetIDs[row.petID] = true
+            end
+        end
+        for _, row in ipairs(data.categories.raidPets) do
+            assert.is_nil(outdoorPetIDs[row.petID], "raid pet also appears in Drops > Pets: " .. tostring(row.petID))
+        end
+
+        local discardedExperimentInRaidPets = false
+        for _, row in ipairs(data.categories.raidPets) do
+            if row.petID == 2079 then
+                discardedExperimentInRaidPets = true
+                break
+            end
+        end
+        assert.is_true(discardedExperimentInRaidPets)
     end)
 end)
 
