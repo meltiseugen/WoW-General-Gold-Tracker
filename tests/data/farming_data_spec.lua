@@ -91,137 +91,137 @@ local function max_adjacent_coord_distance(coords)
 end
 
 local MATERIAL_FARMING_SPOT_MODULES = {
-    "Data/MaterialFarmingSpots.lua",
-    "Data/MaterialFarmingSpots/Shared.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocations.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsElementals.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsSkinning.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsCooking.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsStarterZones.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsTailoring.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsMiscellaneous.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsReputation.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsReputationAdditional.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/NpcLocationsNagrandMiscellaneous.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/ObjectLocations.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/ObjectLocationsFishing.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/ObjectLocationsMiscellaneous.lua",
-    "Data/MaterialFarmingSpots/Classic/Alchemy.lua",
-    "Data/MaterialFarmingSpots/Classic/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Classic/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Classic/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Classic/Mining.lua",
-    "Data/MaterialFarmingSpots/Classic/Skinning.lua",
-    "Data/MaterialFarmingSpots/Classic/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Classic/Fishing.lua",
-    "Data/MaterialFarmingSpots/Classic/Reagents.lua",
-    "Data/MaterialFarmingSpots/Classic/Housing.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Alchemy.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Cooking.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Enchanting.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Fishing.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Herbalism.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Mining.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Skinning.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Tailoring.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Miscellaneous.lua",
-    "Data/MaterialFarmingSpots/BurningCrusade/Housing.lua",
-    "Data/MaterialFarmingSpots/Wrath/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Wrath/Engineering.lua",
-    "Data/MaterialFarmingSpots/Wrath/Cooking.lua",
-    "Data/MaterialFarmingSpots/Wrath/Fishing.lua",
-    "Data/MaterialFarmingSpots/Wrath/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Wrath/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Wrath/Mining.lua",
-    "Data/MaterialFarmingSpots/Wrath/Skinning.lua",
-    "Data/MaterialFarmingSpots/Wrath/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Wrath/Reagents.lua",
-    "Data/MaterialFarmingSpots/Wrath/Miscellaneous.lua",
-    "Data/MaterialFarmingSpots/Wrath/Housing.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Alchemy.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Cooking.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Fishing.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Mining.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Skinning.lua",
-    "Data/MaterialFarmingSpots/Cataclysm/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Mists/Alchemy.lua",
-    "Data/MaterialFarmingSpots/Mists/Cooking.lua",
-    "Data/MaterialFarmingSpots/Mists/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Mists/Fishing.lua",
-    "Data/MaterialFarmingSpots/Mists/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Mists/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Mists/Mining.lua",
-    "Data/MaterialFarmingSpots/Mists/Skinning.lua",
-    "Data/MaterialFarmingSpots/Mists/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Mists/Reagents.lua",
-    "Data/MaterialFarmingSpots/Warlords/Alchemy.lua",
-    "Data/MaterialFarmingSpots/Warlords/Cooking.lua",
-    "Data/MaterialFarmingSpots/Warlords/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Warlords/Fishing.lua",
-    "Data/MaterialFarmingSpots/Warlords/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Warlords/Mining.lua",
-    "Data/MaterialFarmingSpots/Warlords/Skinning.lua",
-    "Data/MaterialFarmingSpots/Warlords/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Legion/Cooking.lua",
-    "Data/MaterialFarmingSpots/Legion/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Legion/Fishing.lua",
-    "Data/MaterialFarmingSpots/Legion/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Legion/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Legion/Mining.lua",
-    "Data/MaterialFarmingSpots/Legion/Reagents.lua",
-    "Data/MaterialFarmingSpots/Legion/Skinning.lua",
-    "Data/MaterialFarmingSpots/Legion/Tailoring.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Herbalism.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Mining.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Reagents.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Skinning.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Cooking.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Enchanting.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Fishing.lua",
-    "Data/MaterialFarmingSpots/BattleForAzeroth/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Mining.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Reagents.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Skinning.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Cooking.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Fishing.lua",
-    "Data/MaterialFarmingSpots/Shadowlands/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Mining.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Skinning.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Cooking.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Fishing.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Elemental.lua",
-    "Data/MaterialFarmingSpots/Dragonflight/Reagents.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Herbalism.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Mining.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Skinning.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Tailoring.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Enchanting.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Fishing.lua",
-    "Data/MaterialFarmingSpots/WarWithin/Reagents.lua",
-    "Data/MaterialFarmingSpots/Midnight/Mining.lua",
-    "Data/MaterialFarmingSpots/Midnight/Herbalism.lua",
-    "Data/MaterialFarmingSpots/Midnight/Skinning.lua",
-    "Data/MaterialFarmingSpots/Midnight/Tailoring.lua",
-    "Data/MaterialFarmingSpots/Midnight/Enchanting.lua",
-    "Data/MaterialFarmingSpots/Midnight/Fishing.lua",
-    "Data/MaterialFarmingSpots/Midnight/Cooking.lua",
-    "Data/MaterialFarmingSpots/Midnight/Jewelcrafting.lua",
-    "Data/MaterialFarmingSpots/Midnight/Engineering.lua",
-    "Data/MaterialFarmingSpots/CatalogGathering.lua",
-    "Data/MaterialFarmingSpots/Finalize.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shared.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocations.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsElementals.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsSkinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsCooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsStarterZones.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsTailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsMiscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsReputation.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsReputationAdditional.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsNagrandMiscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/ObjectLocations.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/ObjectLocationsFishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/ObjectLocationsMiscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Alchemy.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Housing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Alchemy.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Housing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Engineering.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Housing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Alchemy.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Alchemy.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Alchemy.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Elemental.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Mining.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Herbalism.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Skinning.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Enchanting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Fishing.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Cooking.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Jewelcrafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Engineering.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/CatalogGathering.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Finalize.lua",
 }
 
 local function load_material_farming_spots(include_material_catalog)
@@ -396,7 +396,7 @@ describe("Data/FarmingItems", function()
     end)
 end)
 
-describe("Data/MaterialFarmingSpots", function()
+describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
     local function build_material_lookup()
         local farming_data = load_data("Data/FarmingItems.lua", "FarmingItems")
         local lookup = {}
@@ -3167,7 +3167,7 @@ end)
 
 describe("Data/RareDrops", function()
     it("matches the generated rare and loot counters", function()
-        local data = load_data("Data/RareDrops.lua", "RareDropsData")
+        local data = load_data("Data/General-Gold-Tracker_Rares/RareDrops.lua", "RareDropsData")
 
         assert_non_empty_string(data.source)
         assert.is_table(data.expansions)
@@ -3193,7 +3193,7 @@ describe("Data/RareDrops", function()
     end)
 
     it("keeps rare location coordinates usable for waypoint actions", function()
-        local data = load_data("Data/RareDrops.lua", "RareDropsData")
+        local data = load_data("Data/General-Gold-Tracker_Rares/RareDrops.lua", "RareDropsData")
         local located_rares = 0
 
         for _, rare in pairs(data.rares) do
@@ -3216,7 +3216,7 @@ end)
 
 describe("Data/InstanceDrops", function()
     it("matches the generated instance, boss, and source counters", function()
-        local data = load_data("Data/InstanceDrops.lua", "InstanceDropsData")
+        local data = load_data("Data/General-Gold-Tracker_Instances/InstanceDrops.lua", "InstanceDropsData")
 
         assert_non_empty_string(data.source)
         assert_non_empty_string(data.sourceLicense)
@@ -3258,7 +3258,7 @@ end)
 
 describe("Data/ATTBoEDrops", function()
     it("matches the generated ATT BoE counters", function()
-        local data = load_data("Data/ATTBoEDrops.lua", "ATTBoEDropsData")
+        local data = load_data("Data/General-Gold-Tracker_Instances/ATTBoEDrops.lua", "ATTBoEDropsData")
 
         assert_non_empty_string(data.source)
         assert_non_empty_string(data.sourceLicense)
@@ -3315,7 +3315,7 @@ end)
 
 describe("Data/CatalogDrops", function()
     it("matches the generated Catalog category counters", function()
-        local data = load_data("Data/CatalogDrops.lua", "CatalogDropsData")
+        local data = load_data("Data/General-Gold-Tracker_Drops/CatalogDrops.lua", "CatalogDropsData")
 
         assert_non_empty_string(data.sourceVersion)
         assert.is_nil(data.sourceURL)
@@ -3378,7 +3378,7 @@ end)
 
 describe("Data/Farms", function()
     it("contains the generated, runtime-independent Catalog farm index", function()
-        local data = load_data("Data/Farms.lua", "FarmCatalog")
+        local data = load_data("Data/General-Gold-Tracker_Farms/Farms.lua", "FarmCatalog")
 
         assert.equals(2, data.dataVersion)
         assert.equals("v4.3.1", data.sourceVersion)
@@ -3452,8 +3452,8 @@ end)
 describe("Data/FarmLocationOverrides", function()
     it("gives every Catalog gathering farm without a decoded or material route a researched map pin", function()
         local _, ns = load_modules({
-            "Data/Farms.lua",
-            "Data/FarmLocationOverrides.lua",
+            "Data/General-Gold-Tracker_Farms/Farms.lua",
+            "Data/General-Gold-Tracker_Farms/FarmLocationOverrides.lua",
         })
         local catalog = ns.FarmCatalog
         local expectedCount = 38
@@ -3481,8 +3481,8 @@ describe("Data/FarmLocationOverrides", function()
 
     it("normalizes every legacy Catalog instance label that needs an Encounter Journal match", function()
         local _, ns = load_modules({
-            "Data/Farms.lua",
-            "Data/FarmLocationOverrides.lua",
+            "Data/General-Gold-Tracker_Farms/Farms.lua",
+            "Data/General-Gold-Tracker_Farms/FarmLocationOverrides.lua",
         })
         local aliases = 0
         for _, farm in ipairs(ns.FarmCatalog.farms) do

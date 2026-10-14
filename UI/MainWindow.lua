@@ -929,6 +929,9 @@ end
 
 function GoldTracker:OpenMainWindow()
     if not self.mainFrame then
+        self:CreateMainWindow()
+    end
+    if not self.mainFrame then
         return
     end
 
@@ -936,6 +939,9 @@ function GoldTracker:OpenMainWindow()
 end
 
 function GoldTracker:OpenMainWindowFromSlash()
+    if not self.mainFrame then
+        self:CreateMainWindow()
+    end
     if not self.mainFrame then
         return
     end
@@ -1733,7 +1739,7 @@ function GoldTracker:ImportSessionLootsToMainLootLog(itemLoots, moneyLoots, repl
 end
 
 function GoldTracker:UpdateMainWindow()
-    if not self.mainFrame then
+    if not self.mainFrame or (self.mainFrame.IsShown and not self.mainFrame:IsShown()) then
         return
     end
 
@@ -1821,6 +1827,9 @@ function GoldTracker:RefreshDiagnosisButtonVisibility()
 end
 
 function GoldTracker:ToggleMainWindow()
+    if not self.mainFrame then
+        self:CreateMainWindow()
+    end
     if not self.mainFrame then
         return
     end

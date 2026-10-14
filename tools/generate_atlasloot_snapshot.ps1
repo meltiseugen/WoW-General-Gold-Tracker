@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $AddOnsRoot = Split-Path -Parent $RepoRoot
-$OutputPath = Join-Path $RepoRoot "Data\InstanceDrops.lua"
+$OutputPath = Join-Path $RepoRoot "Data\General-Gold-Tracker_Instances\InstanceDrops.lua"
 
 $ModuleLabels = [ordered] @{
     AtlasLoot_Classic = "Classic"
@@ -490,5 +490,5 @@ try {
     $writer.Dispose()
 }
 
-Write-Host "Wrote Data\InstanceDrops.lua"
+Write-Host "Wrote Data\General-Gold-Tracker_Instances\InstanceDrops.lua"
 Write-Host "AtlasLoot Enhanced ${sourceVersion}: $($instances.Count) instances, $bossCount bosses, $($uniqueItems.Count) unique items, $itemSourceCount boss/item sources"

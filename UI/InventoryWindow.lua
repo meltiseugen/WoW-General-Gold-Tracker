@@ -314,7 +314,7 @@ local function GetInventoryMaterialFarmingSpotData(addon, itemID)
         return nil
     end
 
-    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialFarmingSpots
+    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialIndex or NS.MaterialFarmingSpots
     local items = type(farmingSpots) == "table" and farmingSpots.items or nil
     return items and items[math.floor(normalizedItemID + 0.5)] or nil
 end
@@ -2124,6 +2124,9 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     end)
     frame:SetScript("OnHide", function()
         GameTooltip:Hide()
+        if type(addon.ReleaseHiddenExplorerCaches) == "function" then
+            addon:ReleaseHiddenExplorerCaches()
+        end
     end)
 
     self.inventoryItemDetailsFrame = frame
@@ -2216,7 +2219,8 @@ end
 function GoldTracker:HasInventoryMaterialFarmingMap(rowOrItemID)
     local itemID = type(rowOrItemID) == "table" and rowOrItemID.itemID or rowOrItemID
     local materialData = GetInventoryMaterialFarmingSpotData(self, itemID)
-    return type(materialData) == "table" and type(materialData.spots) == "table" and #materialData.spots > 0
+    return type(materialData) == "table" and (materialData.hasMap == true
+        or (type(materialData.spots) == "table" and #materialData.spots > 0))
 end
 
 function GoldTracker:OpenInventoryMaterialFarmingMap(row)
@@ -3424,6 +3428,9 @@ function GoldTracker:CreateInventoryWindow()
     end)
     frame:SetScript("OnHide", function()
         GameTooltip:Hide()
+        if type(addon.ReleaseHiddenExplorerCaches) == "function" then
+            addon:ReleaseHiddenExplorerCaches()
+        end
     end)
 
     self.inventoryFrame = frame

@@ -61,21 +61,39 @@ def main() -> int:
     if version and not SEMVER_PATTERN.fullmatch(version):
         errors.append(f"TOC version must use semantic versioning, got: {version}")
 
-    seen_entries: set[str] = set()
-    for entry in entries:
-        if "\\" in entry:
-            errors.append(f"TOC entry must use forward slashes: {entry}")
-        if entry in seen_entries:
-            errors.append(f"Duplicate TOC entry: {entry}")
-            continue
-        seen_entries.add(entry)
+    manifests = [(TOC_PATH, entries)]
+    for module_toc in sorted((REPO_ROOT / "Data").glob("General-Gold-Tracker_*/*.toc")):
+        module_headers, module_entries = parse_toc(module_toc)
+        if module_headers.get("Interface") != headers.get("Interface"):
+            errors.append(f"Catalog interface must match the main addon: {module_toc.name}")
+        if module_headers.get("LoadOnDemand") != "1":
+            errors.append(f"Catalog must load on demand: {module_toc.name}")
+        if module_headers.get("Dependencies") != "General-Gold-Tracker":
+            errors.append(f"Catalog must depend on GGT: {module_toc.name}")
+        if not module_entries or module_entries[0] != "Namespace.lua":
+            errors.append(f"Catalog namespace must load first: {module_toc.name}")
+        manifests.append((module_toc, module_entries))
 
-        file_path = REPO_ROOT / Path(entry)
-        if not file_path.is_file():
-            errors.append(f"TOC entry does not exist: {entry}")
+    toc_runtime_files: set[str] = set()
+    for manifest, manifest_entries in manifests:
+        seen_entries: set[str] = set()
+        for entry in manifest_entries:
+            if "\\" in entry:
+                errors.append(f"TOC entry must use forward slashes: {entry}")
+            if entry in seen_entries:
+                errors.append(f"Duplicate TOC entry: {entry}")
+                continue
+            seen_entries.add(entry)
+            file_path = manifest.parent / entry
+            if not file_path.is_file():
+                errors.append(f"TOC entry does not exist: {file_path}")
+            if entry.endswith(".lua"):
+                relative = file_path.relative_to(REPO_ROOT).as_posix()
+                if relative in toc_runtime_files:
+                    errors.append(f"Runtime file loaded by multiple manifests: {relative}")
+                toc_runtime_files.add(relative)
 
     runtime_files = collect_runtime_files()
-    toc_runtime_files = {entry for entry in entries if entry.endswith(".lua")}
     missing_runtime_entries = sorted(runtime_files - toc_runtime_files)
     if missing_runtime_entries:
         for missing_entry in missing_runtime_entries:
@@ -87,7 +105,7 @@ def main() -> int:
         return 1
 
     print("Addon manifest validation passed.")
-    print(f"Validated {len(entries)} TOC entries and {len(runtime_files)} runtime Lua files.")
+    print(f"Validated {len(manifests)} manifests and {len(runtime_files)} runtime Lua files.")
     return 0
 
 

@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $AddOnsRoot = Split-Path -Parent $RepoRoot
 $RareScannerRoot = Join-Path $AddOnsRoot "RareScanner"
-$OutputPath = Join-Path $RepoRoot "Data\RareDrops.lua"
+$OutputPath = Join-Path $RepoRoot "Data\General-Gold-Tracker_Rares\RareDrops.lua"
 
 function ConvertTo-LuaString {
     param([string] $Value)
@@ -341,5 +341,5 @@ try {
     $writer.Dispose()
 }
 
-Write-Host "Wrote Data\RareDrops.lua"
+Write-Host "Wrote Data\General-Gold-Tracker_Rares\RareDrops.lua"
 Write-Host "RareScanner ${version}: $($rares.Count) rares, $totalDrops item drops"

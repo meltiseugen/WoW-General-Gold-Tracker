@@ -8,7 +8,7 @@ local function load_mount_farms(catalog)
             uniqueItemCount = 0,
         },
     }
-    local chunk, err = loadfile("Data/MountFarms.lua")
+    local chunk, err = loadfile("Data/General-Gold-Tracker_Farms/MountFarms.lua")
     assert(chunk, err)
     chunk("General-Gold-Tracker", ns)
     return ns

@@ -65,8 +65,9 @@ describe("UI/Theme focus management", function()
         loader.with_globals({
             CreateFrame = function()
                 return {
+                    RegisterEvent = function() end,
                     SetScript = function(_, event, callback)
-                        if event == "OnUpdate" then
+                        if event == "OnEvent" then
                             watcher_script = callback
                         end
                     end,
@@ -74,7 +75,6 @@ describe("UI/Theme focus management", function()
             end,
         }, function()
             theme = load_theme()
-            theme.windowFocusFrames = nil
             theme.addonFocusFrames = nil
             theme.windowFocusWatcher = nil
             theme.windowFocusLevel = nil
@@ -103,8 +103,9 @@ describe("UI/Theme focus management", function()
         loader.with_globals({
             CreateFrame = function()
                 return {
+                    RegisterEvent = function() end,
                     SetScript = function(_, event, callback)
-                        if event == "OnUpdate" then
+                        if event == "OnEvent" then
                             watcher_script = callback
                         end
                     end,
@@ -112,7 +113,6 @@ describe("UI/Theme focus management", function()
             end,
         }, function()
             theme = load_theme()
-            theme.windowFocusFrames = nil
             theme.addonFocusFrames = nil
             theme.windowFocusWatcher = nil
             theme.windowFocusLevel = nil
@@ -122,14 +122,11 @@ describe("UI/Theme focus management", function()
         assert.is_function(watcher_script)
 
         loader.with_globals({
-            IsMouseButtonDown = function(button)
-                return button == "LeftButton"
-            end,
             GetMouseFoci = function()
                 return { child }
             end,
         }, function()
-            watcher_script({})
+            watcher_script({}, "GLOBAL_MOUSE_DOWN", "LeftButton")
         end)
 
         assert.is_true(parent.raised)
@@ -153,9 +150,9 @@ describe("UI/Theme focus management", function()
         }, function()
             theme = load_theme()
 
-            assert.is_false(theme:IsKnownExternalWindow(world_map))
-            assert.is_nil(theme:RegisterExternalWindowForFocus(world_map))
-            theme:RegisterExternalFocusFrames({ "WorldMapFrame" })
+            assert.is_nil(theme:FindFocusableWindow(world_map))
+            assert.is_nil(theme:RegisterWindowForFocus(world_map, "external"))
+            assert.is_nil(theme:BringManagedWindowToFront(world_map))
         end)
 
         assert.is_nil(world_map.goldTrackerWindowFocusRegistered)
@@ -177,14 +174,12 @@ describe("UI/Theme focus management", function()
         }, function()
             local theme = load_theme()
 
-            assert.is_false(theme:IsKnownExternalWindow(trading_post))
-            assert.is_nil(theme:RegisterExternalWindowForFocus(trading_post))
+            assert.is_nil(theme:FindFocusableWindow(trading_post))
             assert.is_nil(theme:RegisterWindowForFocus(trading_post, "external"))
-            theme:RegisterExternalFocusFrames({ "PerksProgramFrame" })
             assert.is_nil(theme:BringManagedWindowToFront(trading_post))
 
-            assert.is_nil(theme.externalFocusWindowNames.PerksProgramFrame)
-            assert.is_nil(theme.windowFocusFrames[trading_post])
+            theme:EnsureWindowFocusState()
+            assert.is_nil(theme.addonFocusFrames[trading_post])
             assert.is_nil(trading_post.goldTrackerWindowFocusRegistered)
             assert.is_nil(trading_post.goldTrackerManagedWindow)
             assert.same({}, trading_post.scripts)
@@ -205,15 +200,17 @@ describe("UI/Theme focus management", function()
         purchase:SetParent(popup)
         local cancel = frame(nil, "DIALOG", 12)
         cancel:SetParent(popup)
-        local mouse_focus, mouse_down
-        local watcher = { SetScript = function(self, event, callback) self[event] = callback end }
+        local mouse_focus
+        local watcher = {
+            SetScript = function(self, event, callback) self[event] = callback end,
+            RegisterEvent = function() end,
+        }
 
         loader.with_globals({
             PerksProgramFrame = trading_post,
             UIPanelWindows = { PerksProgramFrame = { area = "full" } },
             CreateFrame = function() return watcher end,
             GetMouseFoci = function() return { mouse_focus } end,
-            IsMouseButtonDown = function() return mouse_down end,
         }, function()
             local theme = load_theme()
             theme:EnsureWindowFocusWatcher()
@@ -222,10 +219,7 @@ describe("UI/Theme focus management", function()
                 for _, target in ipairs({ product, purchase, cancel }) do
                     mouse_focus = target
                     assert.is_nil(theme:FindFocusableWindow(target))
-                    mouse_down = true
-                    watcher.OnUpdate(watcher)
-                    mouse_down = false
-                    watcher.OnUpdate(watcher)
+                    watcher.OnEvent(watcher, "GLOBAL_MOUSE_DOWN", "LeftButton")
                 end
             end
 
@@ -235,10 +229,7 @@ describe("UI/Theme focus management", function()
             for _, target in ipairs({ purchase, cancel }) do
                 mouse_focus = target
                 assert.is_nil(theme:FindFocusableWindow(target))
-                mouse_down = true
-                watcher.OnUpdate(watcher)
-                mouse_down = false
-                watcher.OnUpdate(watcher)
+                watcher.OnEvent(watcher, "GLOBAL_MOUSE_DOWN", "LeftButton")
             end
 
             assert.same({}, trading_post.scripts)

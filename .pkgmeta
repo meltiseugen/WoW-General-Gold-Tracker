@@ -1,4 +1,9 @@
+package-as: General-Gold-Tracker
+
 ignore:
+  - tools
+  - tests
+  - docs
   - .github
   - .vscode
   - .idea
@@ -9,3 +14,10 @@ ignore:
   - tools/generate_atlasloot_snapshot.ps1
   - tools/generate_rarescanner_snapshot.py
   - tools/generate_rarescanner_snapshot.ps1
+
+move-folders:
+  General-Gold-Tracker/Data/General-Gold-Tracker_Rares: General-Gold-Tracker_Rares
+  General-Gold-Tracker/Data/General-Gold-Tracker_Instances: General-Gold-Tracker_Instances
+  General-Gold-Tracker/Data/General-Gold-Tracker_Drops: General-Gold-Tracker_Drops
+  General-Gold-Tracker/Data/General-Gold-Tracker_Materials: General-Gold-Tracker_Materials
+  General-Gold-Tracker/Data/General-Gold-Tracker_Farms: General-Gold-Tracker_Farms

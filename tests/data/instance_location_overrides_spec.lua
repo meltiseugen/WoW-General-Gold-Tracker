@@ -3,10 +3,10 @@ local function load_location_data(includeCatalog)
         GoldTracker = {},
         JanisTheme = {},
     }
-    assert(loadfile("Data/InstanceDrops.lua"))("General-Gold-Tracker", ns)
-    assert(loadfile("Data/InstanceLocationOverrides.lua"))("General-Gold-Tracker", ns)
+    assert(loadfile("Data/General-Gold-Tracker_Instances/InstanceDrops.lua"))("General-Gold-Tracker", ns)
+    assert(loadfile("Data/General-Gold-Tracker_Instances/InstanceLocationOverrides.lua"))("General-Gold-Tracker", ns)
     if includeCatalog then
-        assert(loadfile("Data/CatalogDrops.lua"))("General-Gold-Tracker", ns)
+        assert(loadfile("Data/General-Gold-Tracker_Drops/CatalogDrops.lua"))("General-Gold-Tracker", ns)
         assert(loadfile("UI/InstanceFarmingWindow.lua"))("General-Gold-Tracker", ns)
     end
     return ns

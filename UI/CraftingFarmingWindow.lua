@@ -3978,6 +3978,9 @@ function GoldTracker:CreateCraftingFarmingWindow()
     frame:SetScript("OnHide", function()
         frame.materialsRefreshGeneration = (tonumber(frame.materialsRefreshGeneration) or 0) + 1
         frame.materialsRealtimeLoading = false
+        if type(addon.ReleaseHiddenExplorerCaches) == "function" then
+            addon:ReleaseHiddenExplorerCaches()
+        end
         GameTooltip:Hide()
     end)
 
@@ -4184,6 +4187,9 @@ function GoldTracker:CreateCraftingFarmingExpandedWindow()
     end)
     frame:SetScript("OnHide", function()
         GameTooltip:Hide()
+        if type(addon.ReleaseHiddenExplorerCaches) == "function" then
+            addon:ReleaseHiddenExplorerCaches()
+        end
     end)
 
     self.craftingFarmingExpandedFrame = frame

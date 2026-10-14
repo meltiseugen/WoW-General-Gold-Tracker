@@ -3945,6 +3945,9 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     frame:SetScript("OnHide", function()
         GameTooltip:Hide()
+        if type(addon.ReleaseHiddenExplorerCaches) == "function" then
+            addon:ReleaseHiddenExplorerCaches()
+        end
     end)
 
     self.observedDropsFrame = frame

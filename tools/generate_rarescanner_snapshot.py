@@ -10,7 +10,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ADDONS_ROOT = REPO_ROOT.parent
 RARESCANNER_ROOT = ADDONS_ROOT / "RareScanner"
-OUTPUT_PATH = REPO_ROOT / "Data" / "RareDrops.lua"
+OUTPUT_PATH = REPO_ROOT / "Data" / "General-Gold-Tracker_Rares" / "RareDrops.lua"
 
 
 def read_text(path: Path) -> str:

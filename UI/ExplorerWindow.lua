@@ -615,6 +615,9 @@ function GoldTracker:CreateExplorerWindow()
     frame:SetScript("OnHide", function()
         HideExplorerChildFrames(addon)
         HideTransientExplorerUI()
+        if type(addon.ReleaseHiddenExplorerCaches) == "function" then
+            addon:ReleaseHiddenExplorerCaches()
+        end
     end)
 
     self.explorerFrame = frame

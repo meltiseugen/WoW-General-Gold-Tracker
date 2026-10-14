@@ -9,11 +9,11 @@ local function load_toy_farms(catalog)
         },
     }
 
-    local dropsChunk, dropsError = loadfile("Data/CatalogDrops.lua")
+    local dropsChunk, dropsError = loadfile("Data/General-Gold-Tracker_Drops/CatalogDrops.lua")
     assert(dropsChunk, dropsError)
     dropsChunk("General-Gold-Tracker", ns)
 
-    local toysChunk, toysError = loadfile("Data/ToyFarms.lua")
+    local toysChunk, toysError = loadfile("Data/General-Gold-Tracker_Farms/ToyFarms.lua")
     assert(toysChunk, toysError)
     toysChunk("General-Gold-Tracker", ns)
     return ns
@@ -114,7 +114,7 @@ describe("Data/ToyFarms", function()
         local initialFarmCount = #ns.FarmCatalog.farms
         local initialItemCount = ns.FarmCatalog.uniqueItemCount
 
-        local toysChunk, toysError = loadfile("Data/ToyFarms.lua")
+        local toysChunk, toysError = loadfile("Data/General-Gold-Tracker_Farms/ToyFarms.lua")
         assert(toysChunk, toysError)
         toysChunk("General-Gold-Tracker", ns)
 

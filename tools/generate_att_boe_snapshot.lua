@@ -4,8 +4,8 @@ if repoRoot == arg[0] then
 end
 local addonsRoot = repoRoot == "." and ".." or repoRoot:gsub("[/\\][^/\\]+$", "")
 local attRoot = addonsRoot .. "\\AllTheThings"
-local outputPath = repoRoot .. "\\Data\\ATTBoEDrops.lua"
-local instanceDropsPath = repoRoot .. "\\Data\\InstanceDrops.lua"
+local outputPath = repoRoot .. "\\Data\\General-Gold-Tracker_Instances\\ATTBoEDrops.lua"
+local instanceDropsPath = repoRoot .. "\\Data\\General-Gold-Tracker_Instances\\InstanceDrops.lua"
 
 local ZONE_DROPS_HEADER_ID = -63
 

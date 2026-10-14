@@ -30,31 +30,6 @@ local STRATA_ORDER = {
     TOOLTIP = 8,
 }
 
-local COMMON_EXTERNAL_WINDOW_NAMES = {
-    "AuctionHouseFrame",
-    "CharacterFrame",
-    "CollectionsJournal",
-    "EncounterJournal",
-    "FriendsFrame",
-    "GameMenuFrame",
-    "GuildFrame",
-    "PVEFrame",
-    "PlayerSpellsFrame",
-    "ProfessionsFrame",
-    "QuestLogPopupDetailFrame",
-    "SettingsPanel",
-    "SpellBookFrame",
-    "TradeSkillFrame",
-}
-
--- These composite Blizzard panels manage their own child and popup layers.
--- Raising their roots can put content above controls or confirmation dialogs.
--- In particular, Trading Post static popups are parented to PerksProgramFrame.
-local EXCLUDED_EXTERNAL_WINDOW_NAMES = {
-    WorldMapFrame = true,
-    PerksProgramFrame = true,
-}
-
 local BaseApplyWindowChrome = Theme.ApplyWindowChrome
 local BaseCreateButton = Theme.CreateButton
 
@@ -82,11 +57,8 @@ local function GetFrameLevel(frame, fallback)
     return fallback
 end
 
-local function GetFrameName(frame)
-    if frame and type(frame.GetName) == "function" then
-        return frame:GetName()
-    end
-    return nil
+local function IsForbiddenFrame(frame)
+    return frame and type(frame.IsForbidden) == "function" and frame:IsForbidden()
 end
 
 local function GetCurrentMouseFocus()
@@ -113,58 +85,31 @@ local function ResolveActiveStrata(frame, fallback)
 end
 
 function Theme:EnsureWindowFocusState()
-    self.windowFocusFrames = self.windowFocusFrames or {}
     self.addonFocusFrames = self.addonFocusFrames or {}
-    self.externalFocusWindowNames = self.externalFocusWindowNames or {}
     self.windowFocusLevel = tonumber(self.windowFocusLevel) or FOCUS_LEVEL_START
 end
 
-function Theme:IsKnownExternalWindow(frame)
-    local frameName = GetFrameName(frame)
-    if type(frameName) ~= "string" or frameName == "" then
-        return false
-    end
-    if EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
-        return false
-    end
-
-    self:EnsureWindowFocusState()
-    if self.externalFocusWindowNames[frameName] then
-        return true
-    end
-
-    return type(_G.UIPanelWindows) == "table" and _G.UIPanelWindows[frameName] ~= nil
-end
-
 function Theme:RegisterWindowForFocus(frame, role, options)
-    if not frame then
-        return nil
-    end
-    local frameName = GetFrameName(frame)
-    if frameName and EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
+    -- Only explicitly registered GGT windows belong to this manager. Never
+    -- discover or hook Blizzard/other-addon windows through UIPanelWindows.
+    if not frame or IsForbiddenFrame(frame) or (role and role ~= "addon") then
         return nil
     end
 
     self:EnsureWindowFocusState()
     options = type(options) == "table" and options or {}
-    role = role or "addon"
 
     if not frame.goldTrackerWindowFocusRegistered then
         frame.goldTrackerWindowOriginalStrata = GetFrameStrata(frame, DEFAULT_ACTIVE_STRATA)
-        frame.goldTrackerWindowOriginalLevel = GetFrameLevel(frame, 0)
         frame.goldTrackerWindowFocusRegistered = true
     end
 
     frame.goldTrackerManagedWindow = frame
-    frame.goldTrackerWindowFocusRole = role
     frame.goldTrackerWindowActiveStrata = options.activeStrata
-        or ResolveActiveStrata(frame, role == "external" and DEFAULT_ACTIVE_STRATA or frame.goldTrackerWindowOriginalStrata)
+        or ResolveActiveStrata(frame, frame.goldTrackerWindowOriginalStrata)
     frame.goldTrackerWindowRestingStrata = options.restingStrata or ADDON_WINDOW_RESTING_STRATA
 
-    self.windowFocusFrames[frame] = true
-    if role == "addon" then
-        self.addonFocusFrames[frame] = true
-    end
+    self.addonFocusFrames[frame] = true
 
     if type(frame.HookScript) == "function" and not frame.goldTrackerWindowFocusHooked then
         frame.goldTrackerWindowFocusHooked = true
@@ -178,56 +123,29 @@ function Theme:RegisterWindowForFocus(frame, role, options)
         frame:HookScript("OnShow", function(shownFrame)
             theme:BringManagedWindowToFront(shownFrame)
         end)
-        if role == "external" then
-            frame:HookScript("OnHide", function(hiddenFrame)
-                theme:RestoreExternalWindowFocusState(hiddenFrame)
-            end)
-        end
     end
 
     self:EnsureWindowFocusWatcher()
     return frame
 end
 
-function Theme:RegisterExternalWindowForFocus(frame)
-    local frameName = GetFrameName(frame)
-    if frameName and EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
+function Theme:FindFocusableWindow(frame)
+    local ownedFrames = self.addonFocusFrames
+    if not ownedFrames then
         return nil
     end
-    return self:RegisterWindowForFocus(frame, "external")
-end
-
-function Theme:RegisterExternalFocusFrames(frameNames)
-    self:EnsureWindowFocusState()
-    for _, frameName in ipairs(frameNames or COMMON_EXTERNAL_WINDOW_NAMES) do
-        if type(frameName) == "string"
-            and frameName ~= ""
-            and not EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
-            self.externalFocusWindowNames[frameName] = true
-        end
-    end
-    self:RefreshExternalFocusFrames()
-end
-
-function Theme:RefreshExternalFocusFrames()
-    self:EnsureWindowFocusState()
-    for frameName in pairs(self.externalFocusWindowNames) do
-        local frame = _G[frameName]
-        if frame then
-            self:RegisterExternalWindowForFocus(frame)
-        end
-    end
-end
-
-function Theme:FindFocusableWindow(frame)
     local current = frame
     while current do
-        if current.goldTrackerManagedWindow then
-            return current.goldTrackerManagedWindow
+        if IsForbiddenFrame(current) then
+            return nil
         end
-        if self:IsKnownExternalWindow(current) then
-            self:RegisterExternalWindowForFocus(current)
-            return current
+        if ownedFrames[current] then
+            -- Explorer embeds registered GGT panels under its own window.
+            local owner = current.goldTrackerManagedWindow or current
+            if ownedFrames[owner] and not IsForbiddenFrame(owner) then
+                return owner
+            end
+            return nil
         end
         if type(current.GetParent) ~= "function" then
             return nil
@@ -259,24 +177,12 @@ function Theme:GetNextFocusFrameLevel()
 end
 
 function Theme:BringManagedWindowToFront(frame)
+    frame = self:FindFocusableWindow(frame)
     if not frame then
         return nil
     end
 
     self:EnsureWindowFocusState()
-    local managedFrame = frame.goldTrackerManagedWindow
-    if managedFrame and managedFrame ~= frame then
-        frame = managedFrame
-    end
-    local frameName = GetFrameName(frame)
-    if frameName and EXCLUDED_EXTERNAL_WINDOW_NAMES[frameName] then
-        return nil
-    end
-
-    if not frame.goldTrackerWindowFocusRole and self:IsKnownExternalWindow(frame) then
-        self:RegisterExternalWindowForFocus(frame)
-    end
-
     self:DemoteInactiveAddonWindows(frame)
 
     local activeStrata = frame.goldTrackerWindowActiveStrata or ResolveActiveStrata(frame, DEFAULT_ACTIVE_STRATA)
@@ -296,43 +202,29 @@ function Theme:BringManagedWindowToFront(frame)
     return frame
 end
 
-function Theme:RestoreExternalWindowFocusState(frame)
-    if not frame or frame.goldTrackerWindowFocusRole ~= "external" then
-        return
-    end
-    if type(frame.SetFrameStrata) == "function" and frame.goldTrackerWindowOriginalStrata then
-        frame:SetFrameStrata(frame.goldTrackerWindowOriginalStrata)
-    end
-    if type(frame.SetFrameLevel) == "function" and frame.goldTrackerWindowOriginalLevel then
-        frame:SetFrameLevel(frame.goldTrackerWindowOriginalLevel)
-    end
-end
-
 function Theme:EnsureWindowFocusWatcher()
     if self.windowFocusWatcher or type(CreateFrame) ~= "function" then
         return
     end
 
     local watcher = CreateFrame("Frame")
-    if not watcher or type(watcher.SetScript) ~= "function" then
+    if not watcher or type(watcher.SetScript) ~= "function" or type(watcher.RegisterEvent) ~= "function" then
         return
     end
 
     local theme = self
-    watcher:SetScript("OnUpdate", function(self)
-        if type(IsMouseButtonDown) ~= "function" then
+    watcher:RegisterEvent("GLOBAL_MOUSE_DOWN")
+    watcher:SetScript("OnEvent", function(_, event, button)
+        if event ~= "GLOBAL_MOUSE_DOWN" or button ~= "LeftButton" then
             return
         end
-
-        local leftButtonDown = IsMouseButtonDown("LeftButton") == true
-        if leftButtonDown and not self.goldTrackerLeftButtonWasDown then
-            theme:RefreshExternalFocusFrames()
-            local focusWindow = theme:FindFocusableWindow(GetCurrentMouseFocus())
-            if focusWindow then
-                theme:BringManagedWindowToFront(focusWindow)
-            end
+        local focusWindow = theme:FindFocusableWindow(GetCurrentMouseFocus())
+        if focusWindow then
+            theme:BringManagedWindowToFront(focusWindow)
+        else
+            -- Yield only our own windows when the player interacts elsewhere.
+            theme:DemoteInactiveAddonWindows(nil)
         end
-        self.goldTrackerLeftButtonWasDown = leftButtonDown
     end)
     self.windowFocusWatcher = watcher
 end
@@ -502,8 +394,6 @@ function Theme:LayoutExplorerTabs(chrome, buttons, options)
         end
     end
 end
-
-Theme:RegisterExternalFocusFrames(COMMON_EXTERNAL_WINDOW_NAMES)
 
 local function GetCursorPointForFrame(frame)
     if type(GetCursorPosition) ~= "function" then

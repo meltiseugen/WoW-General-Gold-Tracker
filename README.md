@@ -146,18 +146,42 @@ That updates `Data/CraftingFarmingLearned.lua`, which is loaded by the addon on 
 
 ## Bundled Data Sources
 
-`Data/RareDrops.lua` is generated from an installed RareScanner copy.
+`Data/General-Gold-Tracker_Rares/RareDrops.lua` is generated from an installed RareScanner copy.
 
-`Data/InstanceDrops.lua` is generated from installed AtlasLoot Enhanced modules:
+`Data/General-Gold-Tracker_Instances/InstanceDrops.lua` is generated from installed AtlasLoot Enhanced modules:
 - Source: https://github.com/nanderson11/AtlasLootEnhanced
 - License noted by the source addon: GPL v2 / GPL-2.0
 
-`Data/ATTBoEDrops.lua` is generated from an installed AllTheThings copy:
+`Data/General-Gold-Tracker_Instances/ATTBoEDrops.lua` is generated from an installed AllTheThings copy:
 - Run: `lua tools/generate_att_boe_snapshot.lua`
 - Source: https://github.com/DFortun81/AllTheThings
 - License noted by the source addon: MIT
 
 The generator scripts are developer tools and are excluded from packaged CurseForge releases.
+
+### Catalog loading and memory
+
+Explorer's large datasets are separate load-on-demand addons: `General-Gold-Tracker_Rares`,
+`General-Gold-Tracker_Instances`, `General-Gold-Tracker_Drops`, `General-Gold-Tracker_Materials`,
+and `General-Gold-Tracker_Farms`. Install every folder from the release ZIP. A catalog loads
+when a feature reads it, including an active farm that needs its route data. Opening Inventory
+or Alerts does not itself require the full material/location catalog. Once loaded, catalogs
+remain available until the next UI reload; closing a window releases rebuildable view caches.
+
+For a development checkout directly in `Interface/AddOns`, run
+`powershell -NoProfile -ExecutionPolicy Bypass -File tools/install_catalog_modules.ps1`.
+This creates sibling junctions to the five data modules without copying the datasets.
+Restart WoW completely once after adding them. Release packaging puts the modules in the
+same sibling layout through `.pkgmeta`; end users do not need the development script.
+
+After editing the material-location catalogs, regenerate the small startup index with
+`lua tools/generate_material_index.lua`. Keep `tests/core/catalog_loader_spec.lua` passing
+so Alerts eligibility, metadata and map availability stay aligned with the full dataset.
+
+Startup migrates automatic known-price records to priced materials used by Alerts. Detailed
+market snapshots use a compact saved format that retains their values and respects the
+existing retention settings. Session history, favorites, user maps and farms are preserved.
+See [the memory change report](docs/MEMORY_OPTIMIZATION.md) for measurements and validation.
 
 ---
 

@@ -1,0 +1,11 @@
+## Interface: 120001, 120000
+## Title: General Gold Tracker - Instances
+## Notes: On-demand Explorer data for General Gold Tracker.
+## LoadOnDemand: 1
+## Dependencies: General-Gold-Tracker
+## DefaultState: enabled
+
+Namespace.lua
+InstanceDrops.lua
+InstanceLocationOverrides.lua
+ATTBoEDrops.lua

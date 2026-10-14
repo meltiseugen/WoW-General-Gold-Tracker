@@ -16,23 +16,64 @@ local SNAPSHOT_SOURCES = {
     auctioningMax = "AuctioningOpMax",
 }
 
+-- Dense saved arrays avoid a large hash allocation for every historical sample.
+-- The shared metatable preserves named-field access throughout graphs/insights.
+-- False represents an absent value, keeping the array dense after serialization.
+local SNAPSHOT_FORMAT = "GGT:market:1"
+local SNAPSHOT_FIELDS = {
+    "timestamp", "dbMarket", "dbRecent", "dbMinBuyout", "dbHistorical",
+    "dbRegionMarketAvg", "dbRegionHistorical", "dbRegionSaleAvg",
+    "dbRegionSaleRate", "dbRegionSoldPerDay", "auctioningMin",
+    "auctioningNormal", "auctioningMax", "date", "hourKey", "hour",
+    "weekday", "selectedSourceID", "selectedUnitValue", "quantity", "totalValue",
+}
+local SNAPSHOT_FIELD_INDEX = {}
+for index, field in ipairs(SNAPSHOT_FIELDS) do
+    SNAPSHOT_FIELD_INDEX[field] = index + 1
+end
+local SNAPSHOT_METATABLE = {
+    __index = function(snapshot, field)
+        local index = SNAPSHOT_FIELD_INDEX[field]
+        local value = index and rawget(snapshot, index)
+        if value ~= false then
+            return value
+        end
+    end,
+    __newindex = function(snapshot, field, value)
+        local index = SNAPSHOT_FIELD_INDEX[field]
+        if index then
+            if value == nil then value = false end
+            rawset(snapshot, index, value)
+        else
+            rawset(snapshot, field, value)
+        end
+    end,
+}
+
+local function CompactMarketSnapshot(snapshot)
+    if type(snapshot) == "table" and snapshot[1] == SNAPSHOT_FORMAT then
+        return setmetatable(snapshot, SNAPSHOT_METATABLE)
+    end
+    local compact = { SNAPSHOT_FORMAT }
+    for index, field in ipairs(SNAPSHOT_FIELDS) do
+        local value = type(snapshot) == "table" and snapshot[field]
+        if value == nil then value = false end
+        compact[index + 1] = value
+    end
+    -- Preserve any extension fields rather than silently discarding data.
+    for field, value in pairs(type(snapshot) == "table" and snapshot or {}) do
+        if not SNAPSHOT_FIELD_INDEX[field] then
+            compact[field] = value
+        end
+    end
+    return setmetatable(compact, SNAPSHOT_METATABLE)
+end
+
 local KNOWN_PRICE_SCAN_INTERVAL = 12 * 60 * 60
 local KNOWN_PRICE_SCAN_BATCH_SIZE = 40
 local KNOWN_PRICE_SOURCES = {
     { key = "dbMarket", tsmKey = "DBMarket", label = "DBMarket" },
     { key = "dbMinBuyout", tsmKey = "DBMinBuyout", label = "Min Buyout" },
-}
-local KNOWN_PRICE_STATIC_ROOT_KEYS = {
-    "FarmingItems",
-    "MaterialFarmingSpots",
-    "CraftingFarmingLearnedData",
-    "InstanceDropsData",
-    "ATTBoEDropsData",
-    "CatalogDropsData",
-    "RareDropsData",
-    "MountFarmData",
-    "PetFarmData",
-    "ToyFarmData",
 }
 
 local WEEKDAY_LABELS = {
@@ -470,7 +511,7 @@ local function IsPriceIncreaseAlertQualityAllowed(item)
 end
 
 local function GetPriceIncreaseAlertMaterialData(addon)
-    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialFarmingSpots
+    local farmingSpots = addon and addon.materialFarmingSpots or NS.MaterialIndex or NS.MaterialFarmingSpots
     local materialItems = type(farmingSpots) == "table" and farmingSpots.items or nil
     return type(materialItems) == "table" and materialItems or nil
 end
@@ -592,6 +633,10 @@ local function HasPriceIncreaseAlertMaterialMap(addon, itemID)
         return false
     end
 
+    local indexed = GetPriceIncreaseIndexedMaterialItem(addon, itemID)
+    if indexed and indexed.hasMap ~= nil then
+        return indexed.hasMap == true
+    end
     if type(addon.BuildMaterialFarmingMapOptions) == "function" then
         local mapOptions = addon:BuildMaterialFarmingMapOptions(itemID)
         return type(mapOptions) == "table" and #mapOptions > 0
@@ -869,7 +914,17 @@ function GoldTracker:NormalizeMarketHistory()
         self.db.marketHistory.items = {}
     end
 
-    return self.db.marketHistory
+    local store = self.db.marketHistory
+    if self.normalizedMarketHistory ~= store then
+        for _, history in pairs(store.items) do
+            for index, snapshot in ipairs(type(history) == "table" and history.snapshots or {}) do
+                history.snapshots[index] = CompactMarketSnapshot(snapshot)
+            end
+        end
+        store.schemaVersion = 2
+        self.normalizedMarketHistory = store
+    end
+    return store
 end
 
 function GoldTracker:GetMarketHistorySampleCount(itemLink)
@@ -883,7 +938,7 @@ function GoldTracker:GetMarketHistorySampleCount(itemLink)
 end
 
 function GoldTracker:GetMarketHistorySourceSnapshot(itemLink, itemID, initialSnapshot)
-    local snapshot = type(initialSnapshot) == "table" and initialSnapshot or {}
+    local snapshot = CompactMarketSnapshot(initialSnapshot)
     if type(self.GetTSMRawCustomValue) ~= "function"
         and not (type(TSM_API) == "table" and type(TSM_API.GetCustomPriceValue) == "function") then
         return snapshot
@@ -910,6 +965,7 @@ function GoldTracker:PruneMarketHistory(now)
     end
 
     now = tonumber(now) or time()
+    self.marketHistoryNextPruneAt = now + 300
     local retentionDays = tonumber(self.db and self.db.marketHistoryRetentionDays) or self.DEFAULTS.marketHistoryRetentionDays
     local maxSnapshotsPerItem = tonumber(self.db and self.db.marketHistoryMaxSnapshotsPerItem)
         or self.DEFAULTS.marketHistoryMaxSnapshotsPerItem
@@ -921,21 +977,29 @@ function GoldTracker:PruneMarketHistory(now)
         if type(history) ~= "table" or type(history.snapshots) ~= "table" then
             marketHistory.items[itemKey] = nil
         else
-            local kept = {}
-            for _, snapshot in ipairs(history.snapshots) do
+            local snapshots = history.snapshots
+            local oldCount = #snapshots
+            local retained = 0
+            for index = 1, oldCount do
+                local snapshot = snapshots[index]
                 if (tonumber(snapshot.timestamp) or 0) >= cutoff then
-                    kept[#kept + 1] = snapshot
+                    retained = retained + 1
+                    snapshots[retained] = snapshot
                 end
             end
-            while #kept > maxSnapshotsPerItem do
-                table.remove(kept, 1)
+            local skip = math.max(0, retained - maxSnapshotsPerItem)
+            for index = 1, retained - skip do
+                snapshots[index] = snapshots[index + skip]
             end
-            history.snapshots = kept
-            if #kept == 0 then
+            retained = retained - skip
+            for index = retained + 1, oldCount do
+                snapshots[index] = nil
+            end
+            if retained == 0 then
                 marketHistory.items[itemKey] = nil
             else
-                history.firstSeen = kept[1].timestamp
-                history.lastSeen = kept[#kept].timestamp
+                history.firstSeen = snapshots[1].timestamp
+                history.lastSeen = snapshots[retained].timestamp
                 itemCount = itemCount + 1
                 oldestByKey[itemKey] = tonumber(history.lastSeen) or 0
             end
@@ -961,6 +1025,12 @@ function GoldTracker:PruneMarketHistory(now)
     end
 end
 
+function GoldTracker:InitializeMemoryStorage()
+    self:NormalizeMarketHistory()
+    self:NormalizeKnownPriceHistory()
+    self:PruneMarketHistory()
+end
+
 function GoldTracker:RecordInventoryMarketSnapshots(items)
     if type(items) ~= "table" or #items == 0 then
         return
@@ -977,6 +1047,7 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
     local hour = tonumber(date("%H", now)) or 0
     local weekday = tonumber(date("%w", now)) or 0
     local touched = false
+    local addedHistory = false
 
     for _, item in ipairs(items) do
         local itemLink = GetMarketHistoryDisplayItemLink(item)
@@ -985,6 +1056,7 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
         if itemKey then
             local history = marketHistory.items[itemKey]
             if type(history) ~= "table" then
+                addedHistory = true
                 history = {
                     itemKey = itemKey,
                     itemLink = itemLink,
@@ -1029,11 +1101,16 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
             else
                 snapshots[#snapshots + 1] = snapshot
             end
+            local maxSnapshots = tonumber(self.db.marketHistoryMaxSnapshotsPerItem)
+                or self.DEFAULTS.marketHistoryMaxSnapshotsPerItem
+            while #snapshots > maxSnapshots do
+                table.remove(snapshots, 1)
+            end
             touched = true
         end
     end
 
-    if touched then
+    if touched and (addedHistory or now >= (self.marketHistoryNextPruneAt or 0)) then
         self:PruneMarketHistory(now)
     end
 end
@@ -1179,6 +1256,18 @@ local function RecordKnownPriceSourceSample(sourceHistory, value, timestamp, hou
     return true, sourceHistory
 end
 
+local function HasKnownPriceSamples(entry)
+    for _, source in pairs(type(entry and entry.sources) == "table" and entry.sources or {}) do
+        if type(source) == "table" and (
+            (tonumber(source.latest and source.latest.value) or 0) > 0
+            or (tonumber(source.previous and source.previous.value) or 0) > 0
+        ) then
+            return true
+        end
+    end
+    return false
+end
+
 function GoldTracker:NormalizeKnownPriceHistory()
     if type(self.db) ~= "table" then
         return nil
@@ -1187,9 +1276,21 @@ function GoldTracker:NormalizeKnownPriceHistory()
         self.db.knownPriceHistory = {}
     end
     local store = self.db.knownPriceHistory
-    store.schemaVersion = 1
     if type(store.items) ~= "table" then
         store.items = {}
+    end
+    if self.normalizedKnownPriceHistory ~= store then
+        -- Rebuild the hash table as well: deleting 28,000 unused keys in place
+        -- leaves its old capacity allocated. Only automatic alert data is pruned.
+        local retained = {}
+        for key, entry in pairs(store.items) do
+            if IsPriceIncreaseAlertMaterialItem(self, entry) and HasKnownPriceSamples(entry) then
+                retained[key] = entry
+            end
+        end
+        store.items = retained
+        store.schemaVersion = 2
+        self.normalizedKnownPriceHistory = store
     end
     return store
 end
@@ -1259,53 +1360,15 @@ local function AddKnownPriceCandidate(addon, candidates, byKey, item, sourceLabe
     candidates[#candidates + 1] = candidate
 end
 
-local function CollectKnownPriceCandidatesFromTable(addon, candidates, byKey, root, sourceLabel, seenTables)
-    if type(root) ~= "table" or seenTables[root] then
-        return
-    end
-    seenTables[root] = true
-
-    if root.itemID or root.petID or root.petId or root.PetId then
-        AddKnownPriceCandidate(addon, candidates, byKey, root, sourceLabel)
-    end
-    for _, value in pairs(root) do
-        if type(value) == "table" then
-            CollectKnownPriceCandidatesFromTable(addon, candidates, byKey, value, sourceLabel, seenTables)
-        end
-    end
-end
-
 function GoldTracker:BuildKnownPriceScanCandidates()
     local candidates = {}
     local byKey = {}
-
-    -- These are all of the addon's static item catalogs except NS.FarmCatalog.
-    -- FarmCatalog is intentionally omitted until its much larger pricing scope has a separate policy.
-    for _, rootKey in ipairs(KNOWN_PRICE_STATIC_ROOT_KEYS) do
-        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, NS[rootKey], "Static", {})
+    local farmingData = GetPriceIncreaseFarmingData(self)
+    for _, item in ipairs(farmingData and farmingData.items or {}) do
+        AddKnownPriceCandidate(self, candidates, byKey, item, "Material")
     end
-
-    if type(self.db) == "table" then
-        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.sessionHistory, "Session", {})
-        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.craftingFarmingCustomItems, "Session", {})
-        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.craftingFarmingDropRates, "Session", {})
-        CollectKnownPriceCandidatesFromTable(self, candidates, byKey, self.db.farmingItemFavorites, "Favorite", {})
-    end
-
-    local marketHistory = self:NormalizeMarketHistory()
-    for itemKey, history in pairs(type(marketHistory and marketHistory.items) == "table" and marketHistory.items or {}) do
-        if type(history) == "table" then
-            history.marketHistoryItemKey = itemKey
-            AddKnownPriceCandidate(self, candidates, byKey, history, "History")
-        end
-    end
-
-    if type(self.BuildInventoryAuctionItemList) == "function" then
-        local source = self.GetAuctionableInventoryValueSource and self:GetAuctionableInventoryValueSource() or nil
-        local bagItems = self:BuildInventoryAuctionItemList(source and source.id, 0, 0, "itemName", true)
-        for _, item in ipairs(type(bagItems) == "table" and bagItems or {}) do
-            AddKnownPriceCandidate(self, candidates, byKey, item, "Bags")
-        end
+    for _, item in pairs(GetPriceIncreaseAlertMaterialData(self) or {}) do
+        AddKnownPriceCandidate(self, candidates, byKey, item, "Material")
     end
 
     table.sort(candidates, function(left, right)
@@ -1342,7 +1405,7 @@ local function SeedKnownPriceEntryFromMarketHistory(addon, entry)
 end
 
 function GoldTracker:RecordKnownPriceCandidate(candidate, timestamp)
-    if type(candidate) ~= "table" then
+    if not IsPriceIncreaseAlertMaterialItem(self, candidate) then
         return false
     end
     local store = self:NormalizeKnownPriceHistory()
@@ -1357,7 +1420,6 @@ function GoldTracker:RecordKnownPriceCandidate(candidate, timestamp)
     local entry = store.items[itemKey]
     if type(entry) ~= "table" then
         entry = { itemKey = itemKey, sources = {} }
-        store.items[itemKey] = entry
     end
     if type(entry.sources) ~= "table" then
         entry.sources = {}
@@ -1392,6 +1454,9 @@ function GoldTracker:RecordKnownPriceCandidate(candidate, timestamp)
             priced = true
         end
     end
+    if priced or HasKnownPriceSamples(entry) then
+        store.items[itemKey] = entry
+    end
     if priced then
         entry.lastSeen = timestamp
     end
@@ -1425,6 +1490,7 @@ function GoldTracker:StartKnownPriceScan(options)
         end
     end
     local function Finish()
+        candidates = nil
         state.running = false
         state.completedAt = time()
         local store = self:NormalizeKnownPriceHistory()
@@ -1444,6 +1510,7 @@ function GoldTracker:StartKnownPriceScan(options)
             if self:RecordKnownPriceCandidate(candidates[index]) then
                 state.priced = state.priced + 1
             end
+            candidates[index] = nil
         end
         state.processed = lastIndex
         NotifyProgress()

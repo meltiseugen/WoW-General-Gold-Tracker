@@ -281,12 +281,14 @@ function GoldTracker:OnAddonLoaded(addonName)
     end
 
     self:InitializeDatabase()
+    if type(self.InitializeMemoryStorage) == "function" then
+        self:InitializeMemoryStorage()
+    end
     if type(self.RegisterCurrentCustomFarmCharacter) == "function" then
         self:RegisterCurrentCustomFarmCharacter()
     end
     self:CreateMinimapButton()
-    self:CreateMainWindow()
-    self:CreateOptionsPanel()
+    self:CreateOptionsPanel(true)
     self:UpdateMainWindow()
     self:StartAlertTicker()
 
@@ -308,24 +310,6 @@ function GoldTracker:OnAddonLoaded(addonName)
 
     if type(self.QueueMarketHistoryBagSnapshot) == "function" then
         self:QueueMarketHistoryBagSnapshot()
-    end
-    if type(self.RecordSavedRareFarmingMarketSnapshots) == "function" then
-        if C_Timer and type(C_Timer.After) == "function" then
-            C_Timer.After(8, function()
-                GoldTracker:RecordSavedRareFarmingMarketSnapshots()
-            end)
-        else
-            self:RecordSavedRareFarmingMarketSnapshots()
-        end
-    end
-    if type(self.RecordSavedInstanceFarmingMarketSnapshots) == "function" then
-        if C_Timer and type(C_Timer.After) == "function" then
-            C_Timer.After(10, function()
-                GoldTracker:RecordSavedInstanceFarmingMarketSnapshots()
-            end)
-        else
-            self:RecordSavedInstanceFarmingMarketSnapshots()
-        end
     end
     if type(self.QueueAutomaticKnownPriceScan) == "function" then
         self:QueueAutomaticKnownPriceScan()

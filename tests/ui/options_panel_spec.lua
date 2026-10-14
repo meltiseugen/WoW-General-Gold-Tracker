@@ -19,6 +19,34 @@ local function load_options(addon)
 end
 
 describe("UI/OptionsPanel numeric inputs", function()
+    it("registers the settings entry at login without constructing the options window", function()
+        local created, registrations = {}, 0
+        local function widget()
+            return setmetatable({}, { __index = function(_, key)
+                if key == "CreateFontString" then return widget end
+                return function() end
+            end })
+        end
+        loader.with_globals({
+            CreateFrame = function(_, name)
+                created[#created + 1] = name or "button"
+                return widget()
+            end,
+            Settings = {
+                RegisterCanvasLayoutCategory = function() return {} end,
+                RegisterAddOnCategory = function() registrations = registrations + 1 end,
+            },
+        }, function()
+            local addon = load_options({})
+            addon:CreateOptionsPanel(true)
+            addon:CreateOptionsPanel(true)
+            assert.same({ "GoldTrackerOptionsPanel", "button" }, created)
+            assert.equals(1, registrations)
+            assert.is_table(addon.optionsPanel)
+            assert.is_nil(addon.optionsWindow)
+        end)
+    end)
+
     it("saves highlight thresholds as copper and restores invalid input to the current value", function()
         local refresh_count = 0
         local update_count = 0

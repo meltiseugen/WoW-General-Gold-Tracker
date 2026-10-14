@@ -1316,17 +1316,17 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "Data" / "MaterialFarmingSpots" / "CatalogGathering.lua",
+        default=Path(__file__).resolve().parents[1] / "Data" / "General-Gold-Tracker_Materials" / "MaterialFarmingSpots" / "CatalogGathering.lua",
     )
     parser.add_argument(
         "--drops-output",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "Data" / "CatalogDrops.lua",
+        default=Path(__file__).resolve().parents[1] / "Data" / "General-Gold-Tracker_Drops" / "CatalogDrops.lua",
     )
     parser.add_argument(
         "--farms-output",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "Data" / "Farms.lua",
+        default=Path(__file__).resolve().parents[1] / "Data" / "General-Gold-Tracker_Farms" / "Farms.lua",
     )
     args = parser.parse_args()
     source_root = args.source_root.resolve()

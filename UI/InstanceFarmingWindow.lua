@@ -4717,6 +4717,9 @@ function GoldTracker:CreateInstanceFarmingWindow()
         end
     end)
     frame:SetScript("OnHide", function()
+        if type(self.ReleaseHiddenExplorerCaches) == "function" then
+            self:ReleaseHiddenExplorerCaches()
+        end
         if frame.suppressInstanceFarmingHideMessage == true then
             return
         end

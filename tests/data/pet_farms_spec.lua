@@ -9,11 +9,11 @@ local function load_pet_farms(catalog)
         },
     }
 
-    local dropsChunk, dropsError = loadfile("Data/CatalogDrops.lua")
+    local dropsChunk, dropsError = loadfile("Data/General-Gold-Tracker_Drops/CatalogDrops.lua")
     assert(dropsChunk, dropsError)
     dropsChunk("General-Gold-Tracker", ns)
 
-    local petsChunk, petsError = loadfile("Data/PetFarms.lua")
+    local petsChunk, petsError = loadfile("Data/General-Gold-Tracker_Farms/PetFarms.lua")
     assert(petsChunk, petsError)
     petsChunk("General-Gold-Tracker", ns)
     return ns

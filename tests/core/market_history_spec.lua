@@ -296,7 +296,7 @@ describe("Core/MarketHistory", function()
         assert.equals(-50, rows[1].changePercent)
     end)
 
-    it("collects every known non-farm source and excludes FarmCatalog", function()
+    it("scans only the material set consumed by alerts without walking bags or other catalogs", function()
         local addon = load_market_history({}, {
             FarmingItems = { items = { { itemID = 101 } } },
             MaterialFarmingSpots = { items = { [102] = { itemID = 102 } } },
@@ -309,7 +309,7 @@ describe("Core/MarketHistory", function()
         addon.db.farmingItemFavorites = { favorite = { itemID = 107 } }
         addon.db.marketHistory.items["i:108"] = { itemID = 108, snapshots = {} }
         addon.BuildInventoryAuctionItemList = function()
-            return { { itemID = 109 } }
+            error("The material price scan must not scan bags")
         end
 
         local candidates = addon:BuildKnownPriceScanCandidates()
@@ -317,10 +317,100 @@ describe("Core/MarketHistory", function()
         for _, candidate in ipairs(candidates) do
             keys[candidate.itemKey] = true
         end
-        for itemID = 101, 109 do
+        for itemID = 101, 102 do
             assert.is_true(keys["i:" .. tostring(itemID)])
         end
+        for itemID = 103, 109 do
+            assert.is_nil(keys["i:" .. tostring(itemID)])
+        end
         assert.is_nil(keys["i:999"])
+    end)
+
+    it("does not persist unpriced or non-material candidates", function()
+        local addon = load_market_history({}, {
+            FarmingItems = { items = { { itemID = 101 } } },
+        })
+        with_time(1710000000, function()
+            assert.is_false(addon:RecordKnownPriceCandidate({ itemID = 101 }))
+            assert.is_false(addon:RecordKnownPriceCandidate({ itemID = 999 }))
+        end)
+        assert.same({}, addon.db.knownPriceHistory.items)
+    end)
+
+    it("migrates known prices to priced materials while preserving other user data", function()
+        local addon = load_market_history({}, {
+            MaterialIndex = { items = { [101] = { itemID = 101 }, [102] = { itemID = 102 } } },
+        })
+        local material = { itemID = 101, sources = { dbMarket = { latest = { value = 500 } } } }
+        addon.db.knownPriceHistory = { items = {
+            ["i:101"] = material,
+            ["i:102"] = { itemID = 102, sources = {} },
+            ["i:999"] = { itemID = 999, sources = { dbMarket = { latest = { value = 1000 } } } },
+        } }
+        local sessions = { { id = "saved-session" } }
+        local favorites = { favorite = { itemID = 999 } }
+        addon.db.sessionHistory = sessions
+        addon.db.farmingItemFavorites = favorites
+        local store = addon:NormalizeKnownPriceHistory()
+        assert.same({ ["i:101"] = material }, store.items)
+        assert.equals(material, store.items["i:101"])
+        assert.equals(sessions, addon.db.sessionHistory)
+        assert.equals(favorites, addon.db.farmingItemFavorites)
+        local retained = store.items
+        addon:NormalizeKnownPriceHistory()
+        assert.equals(retained, store.items)
+    end)
+
+    it("preserves every snapshot field through compaction and a saved-variable round trip", function()
+        local addon = load_market_history()
+        local original = {
+            timestamp = 1710000000, dbMarket = 1234, dbRecent = 0, dbRegionSaleRate = 0.42,
+            hourKey = "2024-03-09 16", date = "2024-03-09", hour = 16, weekday = 6,
+            selectedSourceID = "TSM_DBMARKET", selectedUnitValue = 1234,
+            quantity = 2, totalValue = 2468, extensionField = "preserve-me",
+        }
+        addon.db.marketHistory.items["i:101"] = { snapshots = { original } }
+        local snapshot = addon:NormalizeMarketHistory().items["i:101"].snapshots[1]
+        for field, value in pairs(original) do assert.equals(value, snapshot[field]) end
+        assert.is_nil(snapshot.dbHistorical)
+        snapshot.dbHistorical = 5678
+        snapshot.dbHistorical = nil
+        assert.is_nil(snapshot.dbHistorical)
+        assert.is_false(rawget(snapshot, 6))
+
+        local serialized = {}
+        for key, value in pairs(snapshot) do serialized[key] = value end
+        addon.db.marketHistory = { items = { ["i:101"] = { snapshots = { serialized } } } }
+        local restored = addon:NormalizeMarketHistory().items["i:101"].snapshots[1]
+        assert.equals(serialized, restored)
+        for field, value in pairs(original) do assert.equals(value, restored[field]) end
+        assert.is_nil(restored.dbHistorical)
+    end)
+
+    it("prunes snapshot arrays in place and avoids a full-history pass for every loot item", function()
+        local addon = load_market_history()
+        addon.db.marketHistoryMaxSnapshotsPerItem = 2
+        local originalPrune = addon.PruneMarketHistory
+        local pruneCalls = 0
+        addon.PruneMarketHistory = function(self, now)
+            pruneCalls = pruneCalls + 1
+            return originalPrune(self, now)
+        end
+        with_time(1710000000, function()
+            addon:RecordInventoryMarketSnapshots({ { itemID = 12345, itemLink = item_link } })
+            addon:RecordInventoryMarketSnapshots({ { itemID = 12345, itemLink = item_link } })
+        end)
+        assert.equals(1, pruneCalls)
+        local snapshots = addon.db.marketHistory.items["i:12345"].snapshots
+        with_time(1710003600, function()
+            addon:RecordInventoryMarketSnapshots({ { itemID = 12345, itemLink = item_link } })
+        end)
+        with_time(1710007200, function()
+            addon:RecordInventoryMarketSnapshots({ { itemID = 12345, itemLink = item_link } })
+        end)
+        assert.equals(snapshots, addon.db.marketHistory.items["i:12345"].snapshots)
+        assert.equals(2, #snapshots)
+        assert.equals(1710003600, snapshots[1].timestamp)
     end)
 
     it("keeps same-hour rescans in one snapshot slot", function()

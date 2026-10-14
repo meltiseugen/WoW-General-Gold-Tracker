@@ -20,6 +20,31 @@ local function load_bootstrap(addon)
 end
 
 describe("Core/Bootstrap slash commands", function()
+    it("initializes memory storage and registers settings without replaying archived scan prices", function()
+        local calls = {}
+        local function record(name)
+            return function() calls[name] = true end
+        end
+        local addon = load_bootstrap({
+            ADDON_NAME = "General-Gold-Tracker",
+            IsSupportedClient = function() return true end,
+            InitializeDatabase = record("database"),
+            InitializeMemoryStorage = record("migration"),
+            CreateMinimapButton = function() end,
+            CreateMainWindow = function() error("The closed tracker must not be constructed at login") end,
+            CreateOptionsPanel = function(_, registerOnly) calls.registerOnly = registerOnly end,
+            UpdateMainWindow = function() end,
+            StartAlertTicker = function() end,
+            QueueMarketHistoryBagSnapshot = record("bags"),
+            QueueAutomaticKnownPriceScan = record("materials"),
+            RecordSavedRareFarmingMarketSnapshots = function() error("Archived scans must not reprice at login") end,
+            RecordSavedInstanceFarmingMarketSnapshots = function() error("Archived scans must not reprice at login") end,
+            Print = function() end,
+        })
+        addon:OnAddonLoaded("General-Gold-Tracker")
+        assert.same({ database = true, migration = true, registerOnly = true, bags = true, materials = true }, calls)
+    end)
+
     it("routes common slash commands to the right addon actions", function()
         local calls = {}
         local addon = load_bootstrap({

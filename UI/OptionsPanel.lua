@@ -221,37 +221,50 @@ function GoldTracker:SaveMarketHistoryNumberInput(editBox, dbKey, minimumValue, 
     self:RefreshOptionsControls()
 end
 
-function GoldTracker:CreateOptionsPanel()
+function GoldTracker:CreateOptionsPanel(registerOnly)
     if self.optionsPanel and self.optionsWindow then
         return
     end
 
     local addon = self
-    local settingsPanel = CreateFrame("Frame", "GoldTrackerOptionsPanel", UIParent)
+    local settingsPanel = self.optionsPanel
+    if not settingsPanel then
+        settingsPanel = CreateFrame("Frame", "GoldTrackerOptionsPanel", UIParent)
 
-    local settingsTitle = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    settingsTitle:SetPoint("TOPLEFT", 16, -16)
-    settingsTitle:SetText("General Gold Tracker")
+        local settingsTitle = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        settingsTitle:SetPoint("TOPLEFT", 16, -16)
+        settingsTitle:SetText("General Gold Tracker")
 
-    local settingsSubtitle = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    settingsSubtitle:SetPoint("TOPLEFT", settingsTitle, "BOTTOMLEFT", 0, -8)
-    settingsSubtitle:SetWidth(620)
-    settingsSubtitle:SetJustifyH("LEFT")
-    settingsSubtitle:SetText("Options are managed in a standalone addon window.")
+        local settingsSubtitle = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        settingsSubtitle:SetPoint("TOPLEFT", settingsTitle, "BOTTOMLEFT", 0, -8)
+        settingsSubtitle:SetWidth(620)
+        settingsSubtitle:SetJustifyH("LEFT")
+        settingsSubtitle:SetText("Options are managed in a standalone addon window.")
 
-    local openWindowButton = CreateFrame("Button", nil, settingsPanel, "UIPanelButtonTemplate")
-    openWindowButton:SetSize(180, 24)
-    openWindowButton:SetPoint("TOPLEFT", settingsSubtitle, "BOTTOMLEFT", 0, -18)
-    openWindowButton:SetText("Open Options Window")
-    openWindowButton:SetScript("OnClick", function()
-        addon:OpenOptions()
-    end)
+        local openWindowButton = CreateFrame("Button", nil, settingsPanel, "UIPanelButtonTemplate")
+        openWindowButton:SetSize(180, 24)
+        openWindowButton:SetPoint("TOPLEFT", settingsSubtitle, "BOTTOMLEFT", 0, -18)
+        openWindowButton:SetText("Open Options Window")
+        openWindowButton:SetScript("OnClick", function()
+            addon:OpenOptions()
+        end)
 
-    local settingsHint = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    settingsHint:SetPoint("TOPLEFT", openWindowButton, "BOTTOMLEFT", 0, -12)
-    settingsHint:SetWidth(620)
-    settingsHint:SetJustifyH("LEFT")
-    settingsHint:SetText("You can also open it from the tracker window or with /gt options.")
+        local settingsHint = settingsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        settingsHint:SetPoint("TOPLEFT", openWindowButton, "BOTTOMLEFT", 0, -12)
+        settingsHint:SetWidth(620)
+        settingsHint:SetJustifyH("LEFT")
+        settingsHint:SetText("You can also open it from the tracker window or with /gt options.")
+
+        self.optionsPanel = settingsPanel
+        if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
+            local category = Settings.RegisterCanvasLayoutCategory(settingsPanel, "General Gold Tracker")
+            Settings.RegisterAddOnCategory(category)
+            self.optionsCategory = category
+        end
+    end
+    if registerOnly then
+        return
+    end
 
     local window = CreateFrame("Frame", "GoldTrackerOptionsWindow", UIParent, "BasicFrameTemplateWithInset")
     window:SetSize(860, 640)
@@ -1628,12 +1641,6 @@ function GoldTracker:CreateOptionsPanel()
     self.optionsPanel = settingsPanel
     self.optionsWindow = window
     self.optionsContentPanel = panel
-
-    if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
-        local category = Settings.RegisterCanvasLayoutCategory(settingsPanel, "General Gold Tracker")
-        Settings.RegisterAddOnCategory(category)
-        self.optionsCategory = category
-    end
 
     SelectTab("General")
 end

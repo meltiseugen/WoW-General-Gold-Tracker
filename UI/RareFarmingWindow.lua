@@ -3916,6 +3916,18 @@ function GoldTracker:FinishRareFarmingScan()
         self:RefreshRareFarmingWindow(true)
     end
     self:NotifyRareFarmingScanComplete(resultCount, expansionLabel)
+    self:ReleaseRareFarmingScanWorkingData()
+end
+
+function GoldTracker:ReleaseRareFarmingScanWorkingData()
+    local state = self.rareFarmingFrame and self.rareFarmingFrame.scanState
+    if not state or IsRareFarmingScanStateActive(state) then
+        return
+    end
+    state.itemCache = nil
+    state.resultsByKey = nil
+    state.rares = nil
+    state.rareIDs = nil
 end
 
 function GoldTracker:CancelRareFarmingScan()
@@ -3945,6 +3957,7 @@ function GoldTracker:CancelRareFarmingScan()
     end
 
     self:RefreshRareFarmingWindow(false)
+    self:ReleaseRareFarmingScanWorkingData()
 end
 
 local function ProcessRareFarmingScanFrame(worker, elapsed)
