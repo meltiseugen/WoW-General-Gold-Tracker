@@ -805,7 +805,7 @@ function GoldTracker:GetLootItemMetadata(itemLink)
     end
 
     if C_Item and type(C_Item.GetItemInfo) == "function" then
-        local ok, name, link, quality, _, _, itemType, itemSubType, _, itemEquipLoc, icon, _, itemClassID, itemSubclassID, _, _, isCraftingReagent =
+        local ok, name, link, quality, _, _, itemType, itemSubType, _, itemEquipLoc, icon, _, itemClassID, itemSubclassID, _, _, _, isCraftingReagent =
             pcall(C_Item.GetItemInfo, itemLink)
         if ok then
             metadata.itemName = name
@@ -822,7 +822,7 @@ function GoldTracker:GetLootItemMetadata(itemLink)
             end
         end
     elseif type(GetItemInfo) == "function" then
-        local name, link, quality, _, _, itemType, itemSubType, _, itemEquipLoc, icon, _, itemClassID, itemSubclassID, _, _, isCraftingReagent =
+        local name, link, quality, _, _, itemType, itemSubType, _, itemEquipLoc, icon, _, itemClassID, itemSubclassID, _, _, _, isCraftingReagent =
             GetItemInfo(itemLink)
         metadata.itemName = name
         metadata.itemLink = link
@@ -1975,13 +1975,15 @@ function GoldTracker:GetItemQualityFromLink(itemLink)
         end
     end
 
-    local itemQuality
-    if C_Item and C_Item.GetItemInfo then
-        itemQuality = select(3, C_Item.GetItemInfo(itemLink))
-    else
-        itemQuality = select(3, GetItemInfo(itemLink))
+    local getItemInfo = C_Item and C_Item.GetItemInfo
+    if type(getItemInfo) ~= "function" then
+        getItemInfo = GetItemInfo
+    end
+    if type(getItemInfo) ~= "function" then
+        return nil
     end
 
+    local _, _, itemQuality = getItemInfo(itemLink)
     if type(itemQuality) == "number" then
         return math.floor(itemQuality + 0.5)
     end
@@ -2001,12 +2003,19 @@ function GoldTracker:IsCraftingReagentItem(itemLink)
         end
     end
 
-    local isCraftingReagent = select(17, GetItemInfo(itemLink))
+    local getItemInfo = C_Item and C_Item.GetItemInfo
+    if type(getItemInfo) ~= "function" then
+        getItemInfo = GetItemInfo
+    end
+    if type(getItemInfo) ~= "function" then
+        return false
+    end
+
+    local _, _, _, _, _, _, _, _, _, _, _, itemClassID, _, _, _, _, isCraftingReagent = getItemInfo(itemLink)
     if type(isCraftingReagent) == "boolean" then
         return isCraftingReagent
     end
 
-    local itemClassID = select(12, GetItemInfo(itemLink))
     local tradeGoodsClassID = (Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods) or LE_ITEM_CLASS_TRADEGOODS or 7
     return tonumber(itemClassID) == tonumber(tradeGoodsClassID)
 end

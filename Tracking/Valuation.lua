@@ -297,7 +297,15 @@ function GoldTracker:ScheduleLootCoordinateRecovery(lootEntry, onFinished)
 end
 
 function GoldTracker:GetVendorItemValue(itemLink)
-    local vendorPrice = select(11, GetItemInfo(itemLink))
+    local getItemInfo = C_Item and C_Item.GetItemInfo
+    if type(getItemInfo) ~= "function" then
+        getItemInfo = GetItemInfo
+    end
+    if type(getItemInfo) ~= "function" then
+        return 0
+    end
+
+    local _, _, _, _, _, _, _, _, _, _, vendorPrice = getItemInfo(itemLink)
     if type(vendorPrice) == "number" and vendorPrice > 0 then
         return vendorPrice
     end

@@ -177,19 +177,20 @@ function GoldTracker:IsLootItemBindingRestricted(itemLink)
         end
     end
 
-    local bindType
-    if C_Item and C_Item.GetItemInfo then
-        bindType = select(14, C_Item.GetItemInfo(itemLink))
-    else
-        bindType = select(14, GetItemInfo(itemLink))
+    local getItemInfo = C_Item and C_Item.GetItemInfo
+    if type(getItemInfo) ~= "function" then
+        getItemInfo = GetItemInfo
     end
 
-    if type(bindType) == "number" then
-        local isRestricted =
-            ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST))
-        if isRestricted then
-            self.lootItemBindingRestrictionCache[cacheKey] = true
-            return true
+    if type(getItemInfo) == "function" then
+        local _, _, _, _, _, _, _, _, _, _, _, _, _, bindType = getItemInfo(itemLink)
+        if type(bindType) == "number" then
+            local isRestricted =
+                ((BIND_ON_ACQUIRE and bindType == BIND_ON_ACQUIRE) or (BIND_QUEST and bindType == BIND_QUEST))
+            if isRestricted then
+                self.lootItemBindingRestrictionCache[cacheKey] = true
+                return true
+            end
         end
     end
 
