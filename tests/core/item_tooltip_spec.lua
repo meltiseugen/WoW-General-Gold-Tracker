@@ -9,6 +9,15 @@ local function new_target(parent)
 
     function target:EnableMouse(enabled)
         self.mouseEnabled = enabled
+        self.mouseMotionEnabled = enabled
+    end
+
+    function target:SetMouseClickEnabled(enabled)
+        self.mouseEnabled = enabled
+    end
+
+    function target:SetMouseMotionEnabled(enabled)
+        self.mouseMotionEnabled = enabled
     end
 
     function target:SetPropagateMouseClicks(enabled)
@@ -52,15 +61,47 @@ describe("item tooltip targets", function()
             end)
 
             assert.equals(row, target.parent)
-            assert.is_true(target.mouseEnabled)
-            assert.is_true(target.propagateMouseClicks)
-            assert.is_true(target.propagateMouseMotion)
+            assert.is_false(target.mouseEnabled)
+            assert.is_true(target.mouseMotionEnabled)
+            assert.is_nil(target.propagateMouseClicks)
+            assert.is_nil(target.propagateMouseMotion)
+            assert.is_nil(target.scripts.OnMouseUp)
+            assert.is_nil(target.scripts.OnClick)
             assert.same({ "TOPLEFT", itemIcon, "TOPLEFT", 0, 0 }, target.points[1])
             assert.same({ "BOTTOMRIGHT", itemText, "BOTTOMRIGHT", 0, 0 }, target.points[2])
 
             target.scripts.OnEnter(target)
             assert.equals(row, enteredRow)
             assert.equals(target, enteredTarget)
+        end)
+    end)
+
+    it("creates hover targets in combat without calling restricted propagation setters", function()
+        loader.with_globals({
+            InCombatLockdown = function() return true end,
+            CreateFrame = function(_, _, parent)
+                local target = new_target(parent)
+                target.SetPropagateMouseClicks = function()
+                    error("ADDON_ACTION_BLOCKED: SetPropagateMouseClicks")
+                end
+                target.SetPropagateMouseMotion = function()
+                    error("ADDON_ACTION_BLOCKED: SetPropagateMouseMotion")
+                end
+                return target
+            end,
+        }, function()
+            local addon = loader.load_module("Core/ItemTooltip.lua", {})
+            local row = {}
+            local leftRow, leftTarget
+            local target = addon:CreateItemTooltipTarget(row, {}, nil, function() end, function(r, t)
+                leftRow, leftTarget = r, t
+            end)
+            assert.equals(target, row.itemTooltipTarget)
+            assert.is_false(target.mouseEnabled)
+            assert.is_true(target.mouseMotionEnabled)
+            target.scripts.OnLeave(target)
+            assert.equals(row, leftRow)
+            assert.equals(target, leftTarget)
         end)
     end)
 

@@ -8,13 +8,6 @@ function GoldTracker:CreateItemTooltipTarget(row, itemText, itemIcon, onEnter, o
 
     local target = CreateFrame("Frame", nil, row)
     target.goldTrackerItemTooltipRow = row
-    target:EnableMouse(true)
-    if type(target.SetPropagateMouseClicks) == "function" then
-        target:SetPropagateMouseClicks(true)
-    end
-    if type(target.SetPropagateMouseMotion) == "function" then
-        target:SetPropagateMouseMotion(true)
-    end
 
     local leftRegion = itemIcon or itemText
     target:SetPoint("TOPLEFT", leftRegion, "TOPLEFT", 0, 0)
@@ -29,6 +22,11 @@ function GoldTracker:CreateItemTooltipTarget(row, itemText, itemIcon, onEnter, o
             GameTooltip:Hide()
         end
     end)
+
+    -- This overlay only needs hover events. Leave clicks with the row instead of
+    -- capturing and propagating them: propagation setters are restricted in combat.
+    target:SetMouseClickEnabled(false)
+    target:SetMouseMotionEnabled(true)
 
     row.itemTooltipTarget = target
     return target

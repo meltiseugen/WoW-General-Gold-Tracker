@@ -101,10 +101,22 @@ local function SetMainWindowFrameClickThrough(region, isClickThrough)
         if isClickThrough then
             if region.goldTrackerMouseEnabledBeforeClickThrough == nil then
                 region.goldTrackerMouseEnabledBeforeClickThrough = region:IsMouseEnabled() == true
+                if type(region.IsMouseClickEnabled) == "function"
+                    and type(region.IsMouseMotionEnabled) == "function"
+                    and type(region.SetMouseMotionEnabled) == "function" then
+                    -- Hover-only tooltip overlays must remain click-through when
+                    -- Ctrl or opaque mode restores the window's mouse interaction.
+                    region.goldTrackerMouseEnabledBeforeClickThrough = region:IsMouseClickEnabled() == true
+                    region.goldTrackerMouseMotionEnabledBeforeClickThrough = region:IsMouseMotionEnabled() == true
+                end
             end
             region:EnableMouse(false)
         elseif region.goldTrackerMouseEnabledBeforeClickThrough ~= nil then
             region:EnableMouse(region.goldTrackerMouseEnabledBeforeClickThrough)
+            if region.goldTrackerMouseMotionEnabledBeforeClickThrough ~= nil then
+                region:SetMouseMotionEnabled(region.goldTrackerMouseMotionEnabledBeforeClickThrough)
+                region.goldTrackerMouseMotionEnabledBeforeClickThrough = nil
+            end
             region.goldTrackerMouseEnabledBeforeClickThrough = nil
         end
     end
