@@ -267,6 +267,22 @@ local GOLDEN_CARP_ROUTE = {
 }
 
 local function RegisterFish(itemID, itemName, spots, summary, professions)
+    local crateTip = "Open bound Sealed Crates caught while fishing for their tradeable contents; the crate itself is not an Auction House product."
+    for _, spot in ipairs(spots) do
+        local found = false
+        for _, tip in ipairs(spot.tips or {}) do
+            if tip == crateTip then
+                found = true
+                break
+            end
+        end
+        if not found then
+            spot.tips = spot.tips or {}
+            spot.tips[#spot.tips + 1] = crateTip
+            spot.sourceUrls = spot.sourceUrls or {}
+            spot.sourceUrls[#spot.sourceUrls + 1] = "https://www.elsanglin.com/fish/sealed_crate_pandaria.html"
+        end
+    end
     Register({
         itemID = itemID,
         itemName = itemName,

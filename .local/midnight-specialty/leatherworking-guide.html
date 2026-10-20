@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en" class="has-rail">
+<head>
+  <!-- InMobi Choice. Consent Manager Tag v3.0 (for TCF 2.2) -->
+<script id="inmobi-consent-script" class="ad-related">
+  (function() {
+    var host = window.location.hostname;
+    var element = document.createElement('script');
+    var firstScript = document.getElementsByTagName('script')[0];
+    var url = 'https://cmp.inmobi.com'
+      .concat('/choice/', 'R49-_XfAAzJmS', '/', host, '/choice.js?tag_version=V3');
+    var uspTries = 0;
+    var uspTriesLimit = 3;
+    element.async = true;
+    element.type = 'text/javascript';
+    element.src = url;
+  
+    firstScript.parentNode.insertBefore(element, firstScript);
+  
+    function makeStub() {
+      var TCF_LOCATOR_NAME = '__tcfapiLocator';
+      var queue = [];
+      var win = window;
+      var cmpFrame;
+  
+      function addFrame() {
+        var doc = win.document;
+        var otherCMP = !!(win.frames[TCF_LOCATOR_NAME]);
+  
+        if (!otherCMP) {
+          if (doc.body) {
+            var iframe = doc.createElement('iframe');
+  
+            iframe.style.cssText = 'display:none';
+            iframe.name = TCF_LOCATOR_NAME;
+            doc.body.appendChild(iframe);
+          } else {
+            setTimeout(addFrame, 5);
+          }
+        }
+        return !otherCMP;
+      }
+  
+      function tcfAPIHandler() {
+        var gdprApplies;
+        var args = arguments;
+  
+        if (!args.length) {
+          return queue;
+        } else if (args[0] === 'setGdprApplies') {
+          if (
+            args.length > 3 &&
+            args[2] === 2 &&
+            typeof args[3] === 'boolean'
+          ) {
+            gdprApplies = args[3];
+            if (typeof args[2] === 'function') {
+              args[2]('set', true);
+            }
+          }
+        } else if (args[0] === 'ping') {
+          var retr = {
+            gdprApplies: gdprApplies,
+            cmpLoaded: false,
+            cmpStatus: 'stub'
+          };
+  
+          if (typeof args[2] === 'function') {
+            args[2](retr);
+          }
+        } else {
+          if(args[0] === 'init' && typeof args[3] === 'object') {
+            args[3] = Object.assign(args[3], { tag_version: 'V3' });
+          }
+          queue.push(args);
+        }
+      }
+  
+      function postMessageEventHandler(event) {
+        var msgIsString = typeof event.data === 'string';
+        var json = {};
+  
+        try {
+          if (msgIsString) {
+            json = JSON.parse(event.data);
+          } else {
+            json = event.data;
+          }
+        } catch (ignore) {}
+  
+        var payload = json.__tcfapiCall;
+  
+        if (payload) {
+          window.__tcfapi(
+            payload.command,
+            payload.version,
+            function(retValue, success) {
+              var returnMsg = {
+                __tcfapiReturn: {
+                  returnValue: retValue,
+                  success: success,
+                  callId: payload.callId
+                }
+              };
+              if (msgIsString) {
+                returnMsg = JSON.stringify(returnMsg);
+              }
+              if (event && event.source && event.source.postMessage) {
+                event.source.postMessage(returnMsg, '*');
+              }
+            },
+            payload.parameter
+          );
+        }
+      }
+  
+      while (win) {
+        try {
+          if (win.frames[TCF_LOCATOR_NAME]) {
+            cmpFrame = win;
+            break;
+          }
+        } catch (ignore) {}
+  
+        if (win === window.top) {
+          break;
+        }
+        win = win.parent;
+      }
+      if (!cmpFrame) {
+        addFrame();
+        win.__tcfapi = tcfAPIHandler;
+        win.addEventListener('message', postMessageEventHandler, false);
+      }
+    };
+  
+    makeStub();
+  
+    function makeGppStub() {
+      const CMP_ID = 10;
+      const SUPPORTED_APIS = [
+        '2:tcfeuv2',
+        '6:uspv1',
+        '7:usnatv1',
+        '8:usca',
+        '9:usvav1',
+        '10:uscov1',
+        '11:usutv1',
+        '12:usctv1'
+      ];
+  
+      window.__gpp_addFrame = function (n) {
+        if (!window.frames[n]) {
+          if (document.body) {
+            var i = document.createElement("iframe");
+            i.style.cssText = "display:none";
+            i.name = n;
+            document.body.appendChild(i);
+          } else {
+            window.setTimeout(window.__gpp_addFrame, 10, n);
+          }
+        }
+      };
+      window.__gpp_stub = function () {
+        var b = arguments;
+        __gpp.queue = __gpp.queue || [];
+        __gpp.events = __gpp.events || [];
+  
+        if (!b.length || (b.length == 1 && b[0] == "queue")) {
+          return __gpp.queue;
+        }
+  
+        if (b.length == 1 && b[0] == "events") {
+          return __gpp.events;
+        }
+  
+        var cmd = b[0];
+        var clb = b.length > 1 ? b[1] : null;
+        var par = b.length > 2 ? b[2] : null;
+        if (cmd === "ping") {
+          clb(
+            {
+              gppVersion: "1.1", // must be “Version.Subversion”, current: “1.1”
+              cmpStatus: "stub", // possible values: stub, loading, loaded, error
+              cmpDisplayStatus: "hidden", // possible values: hidden, visible, disabled
+              signalStatus: "not ready", // possible values: not ready, ready
+              supportedAPIs: SUPPORTED_APIS, // list of supported APIs
+              cmpId: CMP_ID, // IAB assigned CMP ID, may be 0 during stub/loading
+              sectionList: [],
+              applicableSections: [-1],
+              gppString: "",
+              parsedSections: {},
+            },
+            true
+          );
+        } else if (cmd === "addEventListener") {
+          if (!("lastId" in __gpp)) {
+            __gpp.lastId = 0;
+          }
+          __gpp.lastId++;
+          var lnr = __gpp.lastId;
+          __gpp.events.push({
+            id: lnr,
+            callback: clb,
+            parameter: par,
+          });
+          clb(
+            {
+              eventName: "listenerRegistered",
+              listenerId: lnr, // Registered ID of the listener
+              data: true, // positive signal
+              pingData: {
+                gppVersion: "1.1", // must be “Version.Subversion”, current: “1.1”
+                cmpStatus: "stub", // possible values: stub, loading, loaded, error
+                cmpDisplayStatus: "hidden", // possible values: hidden, visible, disabled
+                signalStatus: "not ready", // possible values: not ready, ready
+                supportedAPIs: SUPPORTED_APIS, // list of supported APIs
+                cmpId: CMP_ID, // list of supported APIs
+                sectionList: [],
+                applicableSections: [-1],
+                gppString: "",
+                parsedSections: {},
+              },
+            },
+            true
+          );
+        } else if (cmd === "removeEventListener") {
+          var success = false;
+          for (var i = 0; i < __gpp.events.length; i++) {
+            if (__gpp.events[i].id == par) {
+              __gpp.events.splice(i, 1);
+              success = true;
+              break;
+            }
+          }
+          clb(
+            {
+              eventName: "listenerRemoved",
+              listenerId: par, // Registered ID of the listener
+              data: success, // status info
+              pingData: {
+                gppVersion: "1.1", // must be “Version.Subversion”, current: “1.1”
+                cmpStatus: "stub", // possible values: stub, loading, loaded, error
+                cmpDisplayStatus: "hidden", // possible values: hidden, visible, disabled
+                signalStatus: "not ready", // possible values: not ready, ready
+                supportedAPIs: SUPPORTED_APIS, // list of supported APIs
+                cmpId: CMP_ID, // CMP ID
+                sectionList: [],
+                applicableSections: [-1],
+                gppString: "",
+                parsedSections: {},
+              },
+            },
+            true
+          );
+        } else if (cmd === "hasSection") {
+          clb(false, true);
+        } else if (cmd === "getSection" || cmd === "getField") {
+          clb(null, true);
+        }
+        //queue all other commands
+        else {
+          __gpp.queue.push([].slice.apply(b));
+        }
+      };
+      window.__gpp_msghandler = function (event) {
+        var msgIsString = typeof event.data === "string";
+        try {
+          var json = msgIsString ? JSON.parse(event.data) : event.data;
+        } catch (e) {
+          var json = null;
+        }
+        if (typeof json === "object" && json !== null && "__gppCall" in json) {
+          var i = json.__gppCall;
+          window.__gpp(
+            i.command,
+            function (retValue, success) {
+              var returnMsg = {
+                __gppReturn: {
+                  returnValue: retValue,
+                  success: success,
+                  callId: i.callId,
+                },
+              };
+              event.source.postMessage(msgIsString ? JSON.stringify(returnMsg) : returnMsg, "*");
+            },
+            "parameter" in i ? i.parameter : null,
+            "version" in i ? i.version : "1.1"
+          );
+        }
+      };
+      if (!("__gpp" in window) || typeof window.__gpp !== "function") {
+        window.__gpp = window.__gpp_stub;
+        window.addEventListener("message", window.__gpp_msghandler, false);
+        window.__gpp_addFrame("__gppLocator");
+      }
+    };
+  
+    makeGppStub();
+  
+    var uspStubFunction = function() {
+      var arg = arguments;
+      if (typeof window.__uspapi !== uspStubFunction) {
+        setTimeout(function() {
+          if (typeof window.__uspapi !== 'undefined') {
+            window.__uspapi.apply(window.__uspapi, arg);
+          }
+        }, 500);
+      }
+    };
+  
+    var checkIfUspIsReady = function() {
+      uspTries++;
+      if (window.__uspapi === uspStubFunction && uspTries < uspTriesLimit) {
+        console.warn('USP is not accessible');
+      } else {
+        clearInterval(uspInterval);
+      }
+    };
+  
+    if (typeof window.__uspapi === 'undefined') {
+      window.__uspapi = uspStubFunction;
+      var uspInterval = setInterval(checkIfUspIsReady, 6000);
+    }
+  })();
+  </script>
+  <!-- End InMobi Choice. Consent Manager Tag v3.0 (for TCF 2.2) -->
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WCX9MQDXGQ" class="ad-related"></script>
+<script class="ad-related">
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-WCX9MQDXGQ');
+</script>
+<!-- Meta Tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Midnight Leatherworking guide with all Knowledge Points (weekly sources and 8 one-time treasures), specializations, and full recipe lists for gear, embellishments, reagents, and House Decor.">
+<meta property="og:title" content="Midnight Leatherworking Guide: Recipes &amp; Knowledge Points">
+<meta property="og:description" content="Midnight Leatherworking guide with all Knowledge Points (weekly sources and 8 one-time treasures), specializations, and full recipe lists for gear, embellishments, reagents, and House Decor.">
+<meta property="og:image" content="https://www.wow-professions.com/assets/img/share-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.wow-professions.com/midnight/leatherworking-guide">
+<!-- Favicons -->
+
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/img/favicon.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png"><!-- 180×180 -->
+<title>Midnight Leatherworking Guide: Recipes &amp; Knowledge Points</title>
+<script type="text/javascript" src="//wow.zamimg.com/widgets/power.js" async></script>
+<!-- Styles and JS -->
+
+<script>
+  (function() {
+    var savedTheme = localStorage.getItem("theme");
+    if (savedTheme && savedTheme !== "system") {
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+    // The guide rail (rail.njk) is icons only when the reader folded it, at any width from 768 px (rail.js keeps this
+    // in step on resize). Set before the first paint, so the page never jumps.
+    var root = document.documentElement;
+    if (root.classList.contains("has-rail") && !root.classList.contains("rl-norail")) {
+      var w = window.innerWidth, pref = false;
+      try { pref = localStorage.getItem("rail") === "collapsed"; } catch (e) {}
+      if (pref && w >= 768) root.classList.add("rl-collapsed");
+    }
+  })();
+</script>
+<link rel="stylesheet" href="/assets/styles-29f9d3ef.css">
+<script defer src="/assets/scripts-33921ee0.js"></script>
+<script defer src="/assets/js/session-manager.js"></script>
+<!-- Wowhead tooltips -->
+<script>var whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
+<!-- Freestar preconnect start -->
+<link rel="preconnect" href="https://a.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://b.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://c.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://d.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://c.amazon-adsystem.com" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://s.amazon-adsystem.com" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://btloader.com/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://api.btloader.com/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://cdn.confiant-integrations.net" crossorigin class="ad-related" />
+<!-- Freestar preconnect end -->
+<link rel="stylesheet" href="https://a.pub.network/wow-professions-com/cls.css" class="ad-related">
+<!-- Freestar -->
+<script data-cfasync="false" type="text/javascript" class="ad-related">
+  var freestar = freestar || {};
+  freestar.queue = freestar.queue || [];
+  freestar.config = freestar.config || {};
+  freestar.config.enabled_slots = [];
+  freestar.initCallback = function () { (freestar.config.enabled_slots.length === 0) ? freestar.initCallbackCalled = false : freestar.newAdSlots(freestar.config.enabled_slots) }
+</script>
+<script src="https://a.pub.network/wow-professions-com/pubfig.min.js" data-cfasync="false" async class="ad-related"></script>  
+</head>
+<body><a href="https://www.wow-professions.com/cdn-cgi/content?id=j7G0sYLd6ffXID1znjGjv5cg.QtBBTBzNoBsN_Q9SPc-1792478304.6631682-1.2.1.1-CIh9WYWP_k_4GfpL1A91iJ2OzJiACzirTyCNxpWbhn2L6DgyPdGaGlweD6MYSZef" aria-hidden="true" rel="nofollow noopener" style="display: none !important; visibility: hidden !important"></a>
+    <!-- SVG Icon Sprite -->
+    <!-- Font Awesome Style SVG Icon Sprite -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  
+  <!-- Success/Check Circle (fa-check-circle) -->
+  <symbol id="icon-success" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
+  </symbol>
+
+  <!-- Simple Checkmark (fa-check) -->
+  <symbol id="icon-checkmark" viewBox="0 0 448 512">
+    <path fill="currentColor" d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
+  </symbol>
+
+  <!-- Error/X Circle (fa-times-circle) -->
+  <symbol id="icon-error" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
+  </symbol>
+
+  <!-- Simple X/Cross (fa-times) -->
+  <symbol id="icon-cross" viewBox="0 0 384 512">
+    <path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
+  </symbol>
+
+  <!-- Warning Triangle (fa-exclamation-triangle) -->
+  <symbol id="icon-warning" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480H40c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24V296c0 13.3 10.7 24 24 24s24-10.7 24-24V184c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
+  </symbol>
+
+  <!-- Loading Spinner (fa-spinner) -->
+  <symbol id="icon-loading" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M304 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm0 416a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM48 304a48 48 0 1 0 0-96 48 48 0 1 0 0 96zm464-48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM142.9 437A48 48 0 1 0 75 369.1 48 48 0 1 0 142.9 437zm0-294.2A48 48 0 1 0 75 75a48 48 0 1 0 67.9 67.9zM369.1 437A48 48 0 1 0 437 369.1 48 48 0 1 0 369.1 437z"/>
+  </symbol>
+
+  <!-- Star/Celebration (fa-star) -->
+  <symbol id="icon-celebration" viewBox="0 0 576 512">
+    <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
+  </symbol>
+
+</svg>
+    
+    <header class="navbar">
+  <div class="container">
+
+
+    <!-- Logo / Brand -->
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">
+        <img src="/assets/img/logo.svg" alt="" width="40" height="40">
+      </a>
+    </div>
+
+    <!-- Desktop Navigation -->
+    <nav class="desktop-nav">
+      <ul>
+        <li><a href="/midnight">Midnight</a></li>        
+        <li><a href="/forever">Forever</a></li>
+        <li><a href="/classic">Classic</a></li>
+        <li><a href="/tbc-classic">TBC</a></li>        
+        <li><a href="/mop">MoP</a></li>
+        <li><a href="/profession-leveling-guides">Profession Leveling</a></li>
+        <li><a href="/farming-guides">Farming</a></li>
+      </ul>
+    </nav>
+
+    <div class="navbar-widgets">
+      <!-- NEW: Go Ad-Free Button (Desktop)  -->
+      <a href="/support" class="go-ad-free-btn hide-for-supporters-global">Go Ad Free</a>
+<a href="/support" class="supporter-badge show-for-supporters-global" style="display: none;">✨ Supporter</a>
+
+      <!-- Feedback Desktop -->
+      <div class="feedback-container"><a href="/contact"><svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 5.25L3 6V18L3.75 18.75H20.25L21 18V6L20.25 5.25H3.75ZM4.5 7.6955V17.25H19.5V7.69525L11.9999 14.5136L4.5 7.6955ZM18.3099 6.75H5.68986L11.9999 12.4864L18.3099 6.75Z" fill="#fff"></path>
+          </svg><span class="feedback-label">Feedback</span></a></div>
+      <!-- Theme Switcher (Right) -->
+      <div class="theme-switcher" id="desktop-theme-switcher">
+        <button type="button" id="theme-toggle" class="theme-button" aria-haspopup="menu" aria-expanded="false">
+          <span class="theme-button-wrap">
+            <img id="theme-icon" src="/assets/img/theme-light.svg" alt="Theme Switcher" width="16" height="16">
+            <span class="theme-label">Theme</span>
+          </span>
+          <svg aria-hidden="true" class="" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 9.17a1 1 0 0 0-1.41 0L12 12.71 8.46 9.17a1 1 0 1 0-1.41 1.42l4.24 4.24a1.002 1.002 0 0 0 1.42 0L17 10.59a1.002 1.002 0 0 0 0-1.42Z"></path>
+          </svg>
+        </button>
+        <ul id="theme-menu" class="theme-dropdown hidden" aria-labelledby="theme-toggle">
+          <li><button type="button" class="theme-option" data-theme-option="system">
+              <span class="theme-option-wrap">
+                <img src="/assets/img/theme-os-default.svg" alt="Auto" width="16" height="16"> Auto
+              </span>
+            </button></li>
+          <li><button type="button" class="theme-option" data-theme-option="light">
+              <span class="theme-option-wrap">
+                <img src="/assets/img/theme-light.svg" alt="Light Mode" width="16" height="16"> Light
+              </span>
+            </button></li>
+          <li><button type="button" class="theme-option" data-theme-option="dark">
+              <span class="theme-option-wrap">
+                <img src="/assets/img/theme-dark.svg" alt="Dark Mode" width="16" height="16"> Dark
+              </span>
+            </button></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Search box -->
+    <div id="search" data-pagefind-v="1.5.2" data-pagefind-filter="version:Midnight">
+      <form class="sb" role="search" autocomplete="off" data-pagefind-filter="type:guide">
+        <svg class="sb-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input class="sb-input" type="search" placeholder="Search" aria-label="Search the guides" autocomplete="off" spellcheck="false" enterkeyhint="search">
+        <button type="button" class="sb-clear" aria-label="Clear search" hidden>&times;</button>
+      </form>
+      <div class="sb-panel" hidden>
+        <div class="sb-scroll">
+          <ol class="sb-list"></ol>
+          <div class="sb-foot"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-toggle" class="mobile-menu-button">
+      ☰
+    </button>
+
+    <!-- Mobile Navigation (Hidden by Default) -->
+    <nav id="mobile-nav" class="mobile-nav">
+      <ul>
+        <li><a href="/midnight">Midnight</a></li>        
+        <li><a href="/forever">Forever</a></li>
+        <li><a href="/classic">Classic</a></li>        
+        <li><a href="/tbc-classic">TBC</a></li>        
+        <li><a href="/mop">MoP</a></li>
+        <li><a href="/profession-leveling-guides">Profession Leveling</a></li>
+        <li><a href="/farming-guides">Farming</a></li>
+      </ul>
+      <!-- Mobile Theme Switcher -->
+      <div class="mobile-navbar-widgets">
+        <!-- Mobile Go Ad-Free Button  -->
+        <a href="/support" class="go-ad-free-btn hide-for-supporters-global">Go Ad Free</a>
+        <a href="/support" class="supporter-badge show-for-supporters-global" style="display: none;">✨ Supporter</a>
+
+        <!-- Mobile Feedback button  -->
+        <div class="feedback-container"><a href="/contact"><svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 5.25L3 6V18L3.75 18.75H20.25L21 18V6L20.25 5.25H3.75ZM4.5 7.6955V17.25H19.5V7.69525L11.9999 14.5136L4.5 7.6955ZM18.3099 6.75H5.68986L11.9999 12.4864L18.3099 6.75Z" fill="#fff"></path>
+            </svg>Feedback</a></div>
+        
+        <div class="theme-switcher" id="mobile-theme-switcher">
+          <button type="button" id="theme-toggle-mobile" class="theme-button" aria-haspopup="menu" aria-expanded="false">
+            <span class="theme-button-wrap">
+              <img id="theme-icon-mobile" src="/assets/img/theme-light.svg" alt="Theme Switcher" width="16" height="16">
+              Theme
+            </span>
+            <svg aria-hidden="true" class="" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17 9.17a1 1 0 0 0-1.41 0L12 12.71 8.46 9.17a1 1 0 1 0-1.41 1.42l4.24 4.24a1.002 1.002 0 0 0 1.42 0L17 10.59a1.002 1.002 0 0 0 0-1.42Z"></path>
+            </svg>
+          </button>
+          <ul id="theme-menu-mobile" class="theme-dropdown hidden" aria-labelledby="theme-toggle-mobile">
+            <li><button type="button" class="theme-option" data-theme-option="system">
+                <span class="theme-option-wrap">
+                  <img src="/assets/img/theme-os-default.svg" alt="Auto" width="16" height="16"> Auto
+                </span>
+              </button></li>
+            <li><button type="button" class="theme-option" data-theme-option="light">
+                <span class="theme-option-wrap">
+                  <img src="/assets/img/theme-light.svg" alt="Light Mode" width="16" height="16"> Light
+                </span>
+              </button></li>
+            <li><button type="button" class="theme-option" data-theme-option="dark">
+                <span class="theme-option-wrap">
+                  <img src="/assets/img/theme-dark.svg" alt="Dark Mode" width="16" height="16"> Dark
+                </span>
+              </button></li>
+          </ul>
+        </div>        
+      </div>
+    </nav>
+  </div>  
+</header>
+
+    
+
+<div class="rl-cbar">
+  <button type="button" class="rl-cbar-guides" data-rl-drawer aria-controls="rl-rail" aria-expanded="false"><svg class="rl-ico rl-ico-grid" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span>Guides</span></button>
+  <details class="rl-drop rl-cdrop " data-nav-area="contents">
+  <summary class="rl-cbtn">
+    <span class="rl-cbtn-ico"><svg class="rl-ico rl-ico-list" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg></span>
+    <span class="rl-cbtn-text"><span class="rl-cbtn-kicker">On this page</span>
+    <span class="rl-cbtn-current" data-rl-current>Jump to a section</span>
+    </span>
+    <svg class="rl-ico rl-ico-down" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="rl-panel">
+    <div class="rl-panel-head"><span>On this page</span><button type="button" class="rl-panel-close" aria-label="Close"><svg class="rl-ico rl-ico-close" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <ol class="rl-toc-list">
+  <li><a href="#changes" data-rl-target="changes"><span class="rl-toc-label">Midnight Leatherworking Changes</span></a></li>
+  <li><a href="#knowledge" data-rl-target="knowledge"><span class="rl-toc-label">Leatherworking Knowledge</span></a></li>
+  <li><a href="#treasures" data-rl-target="treasures"><span class="rl-toc-label">Knowledge Treasures</span></a></li>
+  <li><a href="#specializations" data-rl-target="specializations"><span class="rl-toc-label">Leatherworking Specializations</span></a></li>
+  <li><a href="#profession-equipment" data-rl-target="profession-equipment"><span class="rl-toc-label">Profession Equipment</span></a></li>
+  <li><a href="#renown-recipes" data-rl-target="renown-recipes"><span class="rl-toc-label">Renown Recipes</span></a></li>
+  <li><a href="#recipes" data-rl-target="recipes"><span class="rl-toc-label">Midnight Leatherworking Recipes</span></a></li>
+</ol>
+  </div>
+</details>
+</div>
+
+
+<aside class="rl-rail" id="rl-rail" aria-label="Professions" data-nav-area="quick_links" data-pagefind-ignore="all">
+  <div class="rl-inner">
+  <div class="rl-head">
+    
+    <a class="rl-version" href="/midnight" title="All Midnight guides">
+      <img src="/images/general/midnight-icon-128.webp" width="30" height="30" alt="">
+      <span class="rl-text"><b>Midnight</b></span>
+    </a>
+    
+    <button type="button" class="rl-collapse" data-rl-collapse aria-label="Collapse or expand the sidebar" title="Collapse or expand the sidebar"><svg class="rl-ico rl-ico-fold" width="18" height="18" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg></button>
+    <button type="button" class="rl-close" data-rl-drawer-close aria-label="Close"><svg class="rl-ico rl-ico-close" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    
+    <button type="button" class="rl-open" data-rl-collapse aria-label="Open the sidebar" title="Open the sidebar"><svg class="rl-ico rl-ico-list" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg></button>
+  </div>
+  <div class="rl-scroll"><div class="rl-rail-toc"><nav class="rl-toc" aria-label="On this page" data-nav-area="contents">
+  <p class="rl-label">On this page</p>
+  <ol class="rl-toc-list">
+  <li><a href="#changes" data-rl-target="changes"><span class="rl-toc-label">Midnight Leatherworking Changes</span></a></li>
+  <li><a href="#knowledge" data-rl-target="knowledge"><span class="rl-toc-label">Leatherworking Knowledge</span></a></li>
+  <li><a href="#treasures" data-rl-target="treasures"><span class="rl-toc-label">Knowledge Treasures</span></a></li>
+  <li><a href="#specializations" data-rl-target="specializations"><span class="rl-toc-label">Leatherworking Specializations</span></a></li>
+  <li><a href="#profession-equipment" data-rl-target="profession-equipment"><span class="rl-toc-label">Profession Equipment</span></a></li>
+  <li><a href="#renown-recipes" data-rl-target="renown-recipes"><span class="rl-toc-label">Renown Recipes</span></a></li>
+  <li><a href="#recipes" data-rl-target="recipes"><span class="rl-toc-label">Midnight Leatherworking Recipes</span></a></li>
+</ol>
+</nav></div>
+  <p class="rl-label rl-text">Professions</p>
+  <ul class="rl-list">
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Alchemy"><img src="/images/icons/professions/alchemy-m.png" width="20" height="20" alt=""><span class="rl-text">Alchemy</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-alchemy-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/alchemy-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/alchemy-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Blacksmithing"><img src="/images/icons/professions/blacksmithing-m.png" width="20" height="20" alt=""><span class="rl-text">Blacksmithing</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-blacksmithing-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/blacksmithing-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/blacksmithing-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Enchanting"><img src="/images/icons/professions/enchanting-m.png" width="20" height="20" alt=""><span class="rl-text">Enchanting</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-enchanting-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/enchanting-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/enchanting-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Engineering"><img src="/images/icons/professions/engineering-m.png" width="20" height="20" alt=""><span class="rl-text">Engineering</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-engineering-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/engineering-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/engineering-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Inscription"><img src="/images/icons/professions/inscription-m.png" width="20" height="20" alt=""><span class="rl-text">Inscription</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-inscription-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/inscription-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/inscription-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Jewelcrafting"><img src="/images/icons/professions/jewelcrafting-m.png" width="20" height="20" alt=""><span class="rl-text">Jewelcrafting</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-jewelcrafting-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/jewelcrafting-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/jewelcrafting-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup" open>
+    <summary class="rl-row is-current" title="Leatherworking"><img src="/images/icons/professions/leatherworking-m.png" width="20" height="20" alt=""><span class="rl-text">Leatherworking</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-leatherworking-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/leatherworking-guide" class="is-active" aria-current="page">Recipes &amp; Knowledge</a></li><li><a href="/midnight/leatherworking-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Tailoring"><img src="/images/icons/professions/tailoring-m.png" width="20" height="20" alt=""><span class="rl-text">Tailoring</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-tailoring-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/tailoring-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/tailoring-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Herbalism"><img src="/images/icons/professions/herbalism-m.png" width="20" height="20" alt=""><span class="rl-text">Herbalism</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-herbalism-leveling-guide">Leveling &amp; Routes</a></li><li><a href="/midnight/herbalism-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Mining"><img src="/images/icons/professions/mining-m.png" width="20" height="20" alt=""><span class="rl-text">Mining</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-mining-leveling-guide">Leveling &amp; Routes</a></li><li><a href="/midnight/mining-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <a class="rl-row" href="/guides/wow-skinning-leveling-guide" title="Skinning"><img src="/images/icons/professions/skinning-m.png" width="20" height="20" alt=""><span class="rl-text">Skinning</span></a></li>
+    <li>
+  <a class="rl-row" href="/guides/wow-cooking-leveling-guide" title="Cooking"><img src="/images/icons/professions/cooking-m.png" width="20" height="20" alt=""><span class="rl-text">Cooking</span></a></li>
+    <li>
+  <a class="rl-row" href="/guides/wow-fishing-leveling-guide" title="Fishing"><img src="/images/icons/professions/fishing-m.png" width="20" height="20" alt=""><span class="rl-text">Fishing</span></a></li>
+  </ul>
+  </div>
+</div>
+</aside>
+<div class="rl-scrim" data-rl-scrim></div>
+
+ 
+    <div class="wrapper">
+        
+
+<div class="grid-layout grid--rail">
+  <aside class="rl-tocol"><nav class="rl-toc" aria-label="On this page" data-nav-area="contents">
+  <p class="rl-label">On this page</p>
+  <ol class="rl-toc-list">
+  <li><a href="#changes" data-rl-target="changes"><span class="rl-toc-label">Midnight Leatherworking Changes</span></a></li>
+  <li><a href="#knowledge" data-rl-target="knowledge"><span class="rl-toc-label">Leatherworking Knowledge</span></a></li>
+  <li><a href="#treasures" data-rl-target="treasures"><span class="rl-toc-label">Knowledge Treasures</span></a></li>
+  <li><a href="#specializations" data-rl-target="specializations"><span class="rl-toc-label">Leatherworking Specializations</span></a></li>
+  <li><a href="#profession-equipment" data-rl-target="profession-equipment"><span class="rl-toc-label">Profession Equipment</span></a></li>
+  <li><a href="#renown-recipes" data-rl-target="renown-recipes"><span class="rl-toc-label">Renown Recipes</span></a></li>
+  <li><a href="#recipes" data-rl-target="recipes"><span class="rl-toc-label">Midnight Leatherworking Recipes</span></a></li>
+</ol>
+</nav></aside>
+
+ 
+        <main class="content" data-pagefind-body>
+            
+  
+  <h1 data-pagefind-weight="10" data-pagefind-meta="guide_title">Midnight Leatherworking Guide: Recipes &amp; Knowledge Points</h1>
+  <article>
+    <p>This guide covers all of Midnight Leatherworking. You'll find every weekly and one-time Knowledge source, profession equipment, renown-gated recipes, and full recipe lists for leather and mail armor, embellishments, leg armors, drums, reagents, and House Decor.</p>
+<p>If you need help leveling Leatherworking from 1 to 100, check out my leveling guide:</p>
+<p class="text-align-center">
+    <a href="/guides/wow-leatherworking-leveling-guide" class="gblock">
+        Midnight Leatherworking Leveling Guide
+    </a>
+</p>
+<h2 class="line-header" id="changes">Midnight Leatherworking Changes</h2>
+<p>If you already played The War Within, here's what changed. Most of the system is the same, so you won't have trouble adapting.</p>
+<ul class="spaced-list">
+    <li><b>Artisan Leatherworker's Moxie</b> - The BoP currency <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=210814"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color3.jpg">Artisan's Acuity</a> that you got from earning profession Knowledge in The War Within has been changed to a profession-specific currency, <a rel="nofollow noopener noreferrer" class="white" target="_blank" href="https://www.wowhead.com/currency=3263"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color2.jpg">Artisan Leatherworker's Moxie</a>. You can now only use it for Leatherworking-specific recipes.</li>
+    <li><b>No More Bronze Quality Reagents</b> - Bronze-quality reagents and consumables have been removed in Midnight. All reagents and consumables now only have two quality levels: Silver and Gold. This means you will always get at least a Silver-quality item, and you can use your Concentration right away to craft Gold-quality items. Weapons, armor, and profession equipment still have 5 ranks.</li>
+    <li><b>Epic Profession Gear</b> - New Epic-quality profession gear is available. They give the same Skill as Rare gear, but have higher secondary stats like Resourcefulness, Multicraft, and Ingenuity.</li>
+    <li><b>Fewer Crafting Reagents</b> - In The War Within, you needed multiple elemental leather types as crafting reagents. Midnight simplifies this down to one leather type, so your material list is much shorter.</li>
+</ul>
+<h2 class="line-header" id="knowledge">Leatherworking Knowledge in Midnight</h2>
+<h3>One-Time Sources</h3>
+<p>These are one-time sources of Leatherworking Knowledge Points. Once you collect them, they are gone forever on that character.</p>
+<ul class="guide-list">
+    <li><b>Renown Book</b> - <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=250922"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_specialization_professionbook_leatherworking_orig.jpg">Whisper of the Loa: Leatherworking</a> gives 10 Knowledge Points. Sold by <a href="/midnight/npc/magovu">Magovu</a> in Zul'Aman for 75 <a rel="nofollow noopener noreferrer" class="white" target="_blank" href="https://www.wowhead.com/currency=3263"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color2.jpg">Artisan Leatherworker's Moxie</a>. Requires <b>Renown 6 with Amani Tribe</b>.</li>
+    <li><b>Treasures</b> - There are 8 Leatherworking treasures scattered across the Midnight zones. Each one gives 3 Knowledge Points, for a total of 24 extra points. See the <a href="#treasures">treasure locations</a> below.</li>
+</ul>
+<h3>Weekly Sources</h3>
+<p>In Midnight, there are four weekly sources of profession Knowledge, giving you ~19 Knowledge Points per week. But this is only an estimate, because Patron Orders require crafting specific items at high quality, so your actual weekly total will be lower if you don't have the recipe or can't hit the quality target.</p>
+<div class="table-container">
+<table class="tbl-desc">
+    <thead>
+        <tr>
+            <th>Source</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Patron Crafting Orders (~12 KP)</b></td>
+            <td>You earn the majority of your weekly Knowledge Points by completing Patron Crafting Orders. You will receive <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=246333"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_nullstone_cosmicvoid.jpg">Glimmer of Midnight Leatherworking Knowledge</a> for completing some of them, but not all of them will reward you with Knowledge Points.</td>
+        </tr>
+        <tr>
+            <td><b>Weekly Quest (2 KP)</b></td>
+            <td>Your profession trainer will offer a weekly quest that asks you to complete 3 Crafting Orders. This rewards a <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=263459"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_profession_book_leatherworking.jpg">Thalassian Leatherworker's Journal</a> worth 2 Knowledge Points and resets every week. If you don't see the quest, you first need to complete the <a rel="nofollow noopener noreferrer"  target="_blank" href="https://www.wowhead.com/quest=93723"><img  align="absmiddle" src="/images/icons/quest_start.gif" width="15" height="15">Crafters Needed</a> questline from <a rel="nofollow noopener noreferrer"  target="_blank" href="https://www.wowhead.com/npc=243283">Captain Flaresworn</a> to unlock it.</td>
+        </tr>
+        <tr>
+            <td><b>Weekly Drops (4 KP)</b></td>
+            <td>Each week, you can loot 1 of each of the following items from treasures scattered around the new zones: <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=259201"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_skinning_craftedoptionalreagent_leatherworkdye_uprez_water.jpg">Thalassian Mana Oil</a> and <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=259200"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_holiday_tow_spicepotion01.jpg">Amani Tanning Oil</a>.</td>
+        </tr>
+        <tr>
+            <td><b>Inscription Treatise (1 KP)</b></td>
+            <td>To get a <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=245758"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_profession_book_leatherworking.jpg">Thalassian Treatise on Leatherworking</a>, you need to submit a Public Crafting Order since they are bind-on-pickup (BoP). Treatises are Warbound, so if you have an alt with Inscription, you can craft them and send them to your main.</td>
+        </tr>
+        <tr>
+            <td><b>Darkmoon Faire (3 KP / month)</b></td>
+            <td>Once a month, the Darkmoon Faire comes to town and you can complete a quick <a href="/wowguides/darkmoon-faire-profession-quests">profession quest</a> for +3 Knowledge Points and +2 Profession Skill. It's not a weekly source, but don't skip it. The Faire starts on the Sunday before the first Monday of each month.</td>
+        </tr>
+        <tr>
+            <td><b>Catch-up System</b></td>
+            <td>If you fall behind or start late, you will receive <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=246332"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cosmicvoid_orb.jpg">Flicker of Midnight Leatherworking Knowledge</a> from orders until you are caught up, so don't worry if you miss a week, you aren't permanently behind.</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="treasures">Midnight Leatherworking Treasures</h2>
+<p>Each of the 8 Leatherworking treasures gives 3 Knowledge Points (24 total). Click a zone tab to see treasure locations with map pins and TomTom waypoints.</p>
+<details class="details-simple">
+<summary><h4>TomTom Waypoints & Treasure Check Macro</h4></summary>
+<div class="details-content">
+<h4>TomTom Waypoints</h4>
+<div class="code-copy">
+<div class="code-header">Copy all, then type <code>/ttpaste</code> in-game</div>
+<button class="btn-copy" data-clipboard-text="/way #2393 44.8, 56.2 Artisan's Considered Order&#10;/way #2536 45.4, 45.5 Bundle of Tanner's Trinkets&#10;/way #2437 33.1, 78.9 Amani Leatherworker's Tool&#10;/way #2437 30.8, 84.0 Prestigiously Racked Hide&#10;/way #2405 34.7, 57.0 Ethereal Leatherworking Knife&#10;/way #2413 51.7, 51.3 Haranir Leatherworking Mallet&#10;/way #2413 36.1, 25.2 Haranir Leatherworking Knife&#10;/way #2444 53.7, 51.7 Patterns: Beyond the Void"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+<pre>/way #2393 44.8, 56.2 Artisan's Considered Order
+/way #2536 45.4, 45.5 Bundle of Tanner's Trinkets
+/way #2437 33.1, 78.9 Amani Leatherworker's Tool
+/way #2437 30.8, 84.0 Prestigiously Racked Hide
+/way #2405 34.7, 57.0 Ethereal Leatherworking Knife
+/way #2413 51.7, 51.3 Haranir Leatherworking Mallet
+/way #2413 36.1, 25.2 Haranir Leatherworking Knife
+/way #2444 53.7, 51.7 Patterns: Beyond the Void</pre>
+</div>
+<h4>Treasure Check Macro</h4>
+<div class="code-copy">
+<div class="code-header">Paste into chat - <code>true</code> = collected</div>
+<button class="btn-copy" data-clipboard-text='/run local f,p=C_QuestLog.IsQuestFlaggedCompleted,print p("Artisan&#39;s:",f(89096)) p("Bundle:",f(89092)) p("Amani:",f(89089)) p("Prestigiously:",f(89091)) p("Ethereal:",f(89090)) p("Haranir M:",f(89094)) p("Haranir K:",f(89095)) p("Patterns:",f(89093))'><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+<div class="code-wrap">/run local f,p=C_QuestLog.IsQuestFlaggedCompleted,print p("Artisan's:",f(89096)) p("Bundle:",f(89092)) p("Amani:",f(89089)) p("Prestigiously:",f(89091)) p("Ethereal:",f(89090)) p("Haranir M:",f(89094)) p("Haranir K:",f(89095)) p("Patterns:",f(89093))</div>
+</div>
+</div>
+</details>
+<h3 class="text-align-center">Treasure locations by zone</h3>
+<div class="tab-container">
+  <div class="tabs spread-buttons">
+    <button class="tab-button active" data-tab="tab-silvermoon">Silvermoon City <span class="tab-count">1</span></button>
+    <button class="tab-button" data-tab="tab-zulaman">Zul'Aman <span class="tab-count">3</span></button>
+    <button class="tab-button" data-tab="tab-harandar">Harandar <span class="tab-count">2</span></button>
+    <button class="tab-button" data-tab="tab-voidstorm">Voidstorm <span class="tab-count">2</span></button>
+  </div>
+  <div class="tab-content active" id="tab-silvermoon">
+    <p>Silvermoon City has 1 treasure.</p>
+<h4>Artisan's Considered Order</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Silvermoon City</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2393 44.8 56.2 Artisan's Considered Order">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2393;local x=0.448;local y=0.562;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2393" data-coords="44.8, 56.2" data-title="Artisan's Considered Order" data-map-img="/images/maps/normal/silvermoon-city.webp" data-zone-name="Silvermoon City">
+<div class="map-zone">Silvermoon City</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/silvermoon-city.webp');">
+<div class="map-pin" style="left: 44.8%; top: 56.2%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Artisan's Considered Order</span>
+</div>
+<div class="media-content">
+<img  class="lightbox" alt="Artisan's Considered Order" src="/images/midnight/leatherworking-treasure-artisans-considered-order.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+  <div class="tab-content" id="tab-zulaman">
+    <p>Zul'Aman has 3 treasures.</p>
+<h4>1. Bundle of Tanner's Trinkets</h4>
+<div class="alert-box notice">This treasure is in Atal'Aman and may be phased. You might need to progress further in the campaign before it appears.</div>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Zul'Aman, Atal'Aman</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2536 45.4 45.5 Bundle of Tanner's Trinkets">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2536;local x=0.454;local y=0.455;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2536" data-coords="45.4, 45.5" data-title="Bundle of Tanner's Trinkets" data-map-img="/images/maps/normal/atalaman.webp" data-zone-name="Zul'Aman, Atal'Aman">
+<div class="map-zone">Zul'Aman, Atal'Aman</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/atalaman.webp');">
+<div class="map-pin" style="left: 45.4%; top: 45.5%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Bundle of Tanner's Trinkets</span>
+</div>
+<div class="media-content">
+<img  class="lightbox" alt="Bundle of Tanner's Trinkets" src="/images/midnight/leatherworking-treasure-bundle-of-tanners-trinkets.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>2. Amani Leatherworker's Tool</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Zul'Aman</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2437 33.1 78.9 Amani Leatherworker's Tool">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2437;local x=0.331;local y=0.789;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2437" data-coords="33.1, 78.9" data-title="Amani Leatherworker's Tool" data-map-img="/images/maps/normal/zulaman.webp" data-zone-name="Zul'Aman">
+<div class="map-zone">Zul'Aman</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/zulaman.webp');">
+<div class="map-pin" style="left: 33.1%; top: 78.9%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Amani Leatherworker's Tool</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Amani Leatherworker's Tool" src="/images/midnight/leatherworking-treasure-amani-leatherworkers-tool.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>3. Prestigiously Racked Hide</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Zul'Aman</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2437 30.8 84.0 Prestigiously Racked Hide">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2437;local x=0.308;local y=0.840;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2437" data-coords="30.8, 84.0" data-title="Prestigiously Racked Hide" data-map-img="/images/maps/normal/zulaman.webp" data-zone-name="Zul'Aman">
+<div class="map-zone">Zul'Aman</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/zulaman.webp');">
+<div class="map-pin" style="left: 30.8%; top: 84.0%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Prestigiously Racked Hide</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Prestigiously Racked Hide" src="/images/midnight/leatherworking-treasure-prestigiously-racked-hide.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+  <div class="tab-content" id="tab-harandar">
+    <p>Harandar has 2 treasures.</p>
+<h4>1. Haranir Leatherworking Mallet</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Harandar</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2413 51.7 51.3 Haranir Leatherworking Mallet">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2413;local x=0.517;local y=0.513;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2413" data-coords="51.7, 51.3" data-title="Haranir Leatherworking Mallet" data-map-img="/images/maps/normal/harandar.webp" data-zone-name="Harandar">
+<div class="map-zone">Harandar</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/harandar.webp');">
+<div class="map-pin" style="left: 51.7%; top: 51.3%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Haranir Leatherworking Mallet</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Haranir Leatherworking Mallet" src="/images/midnight/leatherworking-treasure-haranir-leatherworking-mallet.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>2. Haranir Leatherworking Knife</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Harandar</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2413 36.1 25.2 Haranir Leatherworking Knife">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2413;local x=0.361;local y=0.252;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2413" data-coords="36.1, 25.2" data-title="Haranir Leatherworking Knife" data-map-img="/images/maps/normal/harandar.webp" data-zone-name="Harandar">
+<div class="map-zone">Harandar</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/harandar.webp');">
+<div class="map-pin" style="left: 36.1%; top: 25.2%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Haranir Leatherworking Knife</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Haranir Leatherworking Knife" src="/images/midnight/leatherworking-treasure-haranir-leatherworking-knife.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+  <div class="tab-content" id="tab-voidstorm">
+    <p>Voidstorm has 2 treasures.</p>
+<h4>1. Ethereal Leatherworking Knife</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Voidstorm</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2405 34.7 57.0 Ethereal Leatherworking Knife">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2405;local x=0.347;local y=0.570;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2405" data-coords="34.7, 57.0" data-title="Ethereal Leatherworking Knife" data-map-img="/images/maps/normal/voidstorm.webp" data-zone-name="Voidstorm">
+<div class="map-zone">Voidstorm</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/voidstorm.webp');">
+<div class="map-pin" style="left: 34.7%; top: 57.0%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Ethereal Leatherworking Knife</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Ethereal Leatherworking Knife" src="/images/midnight/leatherworking-treasure-ethereal-leatherworking-knife.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>2. Patterns: Beyond the Void</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Voidstorm, Slayer's Rise</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2444 53.7 51.7 Patterns: Beyond the Void">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2444;local x=0.537;local y=0.517;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2444" data-coords="53.7, 51.7" data-title="Patterns: Beyond the Void" data-map-img="/images/maps/normal/slayers-rise.webp" data-zone-name="Voidstorm, Slayer's Rise">
+<div class="map-zone">Voidstorm, Slayer's Rise</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/slayers-rise.webp');">
+<div class="map-pin" style="left: 53.7%; top: 51.7%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Patterns: Beyond the Void</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Patterns: Beyond the Void" src="/images/midnight/leatherworking-treasure-patterns-beyond-the-void.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+</div>
+<h2 class="line-header" id="specializations">Leatherworking Specializations</h2>
+<p>There are four specialization trees available. You will unlock access to them at Leatherworking skill levels 25, 50, 60, and 75.</p>
+<ul class="guide-list">
+    <li><b>Lasting Leather</b> - Leather armor recipes.</li>
+    <li><b>Safeguarding Scales</b> - Mail armor recipes.</li>
+    <li><b>Flawless Fortes</b> - Armor kits, profession gear for other crafters, and optional reagents.</li>
+    <li><b>Learned Leatherworker</b> - Crafting stats.</li>
+</ul>
+<p>I have a separate guide that walks through the best builds for each playstyle with step-by-step Knowledge Point allocation.</p>
+<p class="text-align-center">
+    <a href="/midnight/leatherworking-specialization-guide-and-builds" class="gblock">        
+        Midnight Leatherworking Specialization Guide & Best Builds
+    </a>  
+</p>
+<h2 class="line-header" id="profession-equipment">Profession Equipment</h2>
+<p><b>Epic profession gear is new in Midnight.</b> In The War Within, professions only had Green and Rare gear. Epic gear gives the same Skill as Rare, but has higher secondary stats like Resourcefulness, Multicraft, and Ingenuity.</p>
+<h3>Profession Gear for Leatherworkers</h3>
+<p>Leatherworkers can craft their own chest accessory, but you will need to get the knife and the toolset from a Blacksmith.</p>
+<div class="table-container wrap">
+<table class="tbl-minimal">
+    <thead>
+        <tr>
+            <th>Slot</th>
+             <th>Crafted By</th>
+            <th>Green Quality</th>
+            <th>Blue Quality</th>
+            <th>Epic Quality</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Accessory</td>
+             <td>Leatherworking</td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237563"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_leatherworking_b_01.jpg">Hideworker's Cover</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237564"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_leatherworking_b_01.jpg">Sin'dorei Leathershaper's Smock</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237565"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_leatherworking_b_01.jpg">Thalassian Hideshaper's Regalia</a></td>
+        </tr>
+         <tr>
+            <td>Accessory</td>
+             <td>Blacksmithing</td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1229612"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_blacksmithing_leatherworkerstoolkit_green.jpg">Thalassian Leatherworker's Toolset</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1229604"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_blacksmithing_leatherworkerstoolkit_blue.jpg">Sun-Blessed Leatherworker's Toolset</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1264645"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_blacksmithing_leatherworkerstoolkit_purple.jpg">Sunforged Leatherworker's Toolset</a></td>
+        </tr>
+         <tr>
+            <td>Tool</td>
+             <td>Blacksmithing</td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1229607"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_knife_1h_leatherbloodelf_b_01.jpg">Thalassian Leatherworker's Knife</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1229599"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_knife_1h_leatherbloodelf_b_01.jpg">Sun-Blessed Leatherworker's Knife</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1262899"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_knife_1h_leatherbloodelf_b_01.jpg">Sunforged Leatherworker's Knife</a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h3>Craftable Profession Equipment</h3>
+<p>Leatherworkers can craft profession equipment for Alchemy, Blacksmithing, Engineering, Herbalism, Jewelcrafting, Leatherworking, and Skinning.</p>
+<h4>Green Recipes</h4>
+<p>Green quality profession equipment is not soulbound, so you can craft and sell them on the Auction House. You learn these recipes from the profession trainer.</p> 
+<h4>Blue and Purple Recipes</h4>
+<p>Recipes for the Blue and Epic quality equipment are sold by <a href="/midnight/npc/zaralda">Zaralda</a> in Silvermoon City for 150 <a rel="nofollow noopener noreferrer" class="white" target="_blank" href="https://www.wowhead.com/currency=3263"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color2.jpg">Artisan Leatherworker's Moxie</a> each. Blue items are now BoE, so you can sell them on the Auction House. Epic items are still Soulbound, so you must use the Crafting Order system to craft them for other players.</p>
+<p><b>Skill bonus:</b> Both Epic and Blue profession gear provide the <b>same Skill bonus</b>. The Epic versions only offer higher secondary stats.</p>
+<div class="table-container wrap">
+<table class="tbl-minimal">
+    <thead>
+        <tr>
+            <th>Profession</th>
+            <th>Green Quality</th>
+            <th>Blue Quality</th>
+            <th>Epic Quality</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Alchemy</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237548"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_helm_alchemy_b_01.jpg">Chemist's Cap</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237549"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_helm_alchemy_b_01.jpg">Sin'dorei Alchemist's Hat</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237550"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_helm_alchemy_b_01.jpg">Thalassian Alchemist's Mixcap</a></td>
+        </tr>
+        <tr>
+            <td><strong>Blacksmithing</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237551"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_blacksmithing_b_01_brown.jpg">Apprentice Smith's Apron</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237552"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_blacksmithing_b_01_black.jpg">Sin'dorei Forgemaster's Cover</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237553"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_blacksmithing_b_01_black.jpg">Thalassian Ironbender's Regalia</a></td>
+        </tr>
+        <tr>
+            <td><strong>Engineering</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237554"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_engineering_b_01_orange.jpg">Tinker's Handguard</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237555"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_engineering_b_01_orange.jpg">Sin'dorei Engineer's Gloves</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237556"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_engineering_b_01_orange.jpg">Thalassian Scrapmaster's Gauntlets</a></td>
+        </tr>
+        <tr>
+            <td><strong>Herbalism</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237557"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cape_special_herbalism_b_01.jpg">Eversong Botanist's Satchel</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237558"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cape_special_herbalism_b_01.jpg">Silvermoon Herbalist's Backpack</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237559"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cape_special_herbalism_b_01.jpg">Thalassian Herbtender's Cradle</a></td>
+        </tr>
+        <tr>
+            <td><strong>Jewelcrafting</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237560"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_jewelcrafting_b_01.jpg">Apprentice Jeweler's Apron</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237561"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_jewelcrafting_b_01.jpg">Sin'dorei Jeweler's Cover</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237562"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_jewelcrafting_b_01.jpg">Thalassian Gemshaper's Grand Cover</a></td>
+        </tr>
+        <tr>
+            <td><strong>Leatherworking</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237563"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_leatherworking_b_01.jpg">Hideworker's Cover</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237564"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_leatherworking_b_01.jpg">Sin'dorei Leathershaper's Smock</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237565"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_armor_leatherworking_b_01.jpg">Thalassian Hideshaper's Regalia</a></td>
+        </tr>
+        <tr>
+            <td><strong>Skinning (Head)</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237569"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_skinning_a_01.jpg">Skinner's Cap</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237570"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_skinning_a_01.jpg">Eversong Hunter's Headcover</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237571"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_skinning_a_01.jpg">Thalassian Wildseeker's Stridercap</a></td>
+        </tr>
+        <tr>
+            <td><strong>Skinning (Back)</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237566"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cape_special_skinning_c_01.jpg">Skinner's Backpack</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237567"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cape_special_skinning_c_01.jpg">Sin'dorei Hunter's Pack</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237568"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cape_special_skinning_c_01.jpg">Thalassian Wildseeker's Workbag</a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="renown-recipes">Renown Recipes</h2>
+<p>Some Leatherworking recipes are sold by Renown vendors in each zone. You need to reach <b>Renown Rank 5</b> with the corresponding faction before you can buy them.</p>
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Recipe</th>
+            <th>Description</th>
+            <th>Faction</th>
+            <th>Vendor</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237544"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_amani_armor_kit.jpg">Forest Hunter's Armor Kit</a></td>
+            <td>+Crit armor kit</td>
+            <td>Amani Tribe (Rank 5)</td>
+            <td><a href="/midnight/npc/magovu">Magovu</a></td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237498"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_leather_questbloodelf_b_01.jpg">World Tree Rootwraps</a></td>
+            <td>Epic leather boots</td>
+            <td>Hara'ti (Rank 5)</td>
+            <td><a href="/midnight/npc/naynar">Naynar</a></td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246940"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7549657.jpg">Simple Haranir Table</a></td>
+            <td>House Decor</td>
+            <td>Hara'ti (Rank 5)</td>
+            <td><a href="/midnight/npc/naynar">Naynar</a></td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237545"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_thalassian_amor_kit.jpg">Blood Knight's Armor Kit</a></td>
+            <td>+Vers armor kit</td>
+            <td>Silvermoon Court (Rank 5)</td>
+            <td><a href="/midnight/npc/caeris-fairdawn">Caeris Fairdawn</a></td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237486"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_leather_questbloodelf_b_01.jpg">Row Walker's Deflectors</a></td>
+            <td>Epic leather bracers</td>
+            <td>Silvermoon Court (Rank 5)</td>
+            <td><a href="/midnight/npc/caeris-fairdawn">Caeris Fairdawn</a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="recipes">Midnight Leatherworking Recipes</h2>
+<p>Here is the full list of new armor sets available in Midnight. Most of the Rare gear is learned from your trainer and is great for leveling. The high-end Epic pieces are locked behind Specializations, so you'll need to spend your Knowledge Points wisely to unlock the specific slot you want to craft.</p>
+<div class="tab-container">
+  <div class="tabs">
+    <button class="tab-button active" data-tab="lw-leather">Leather Armor</button>
+    <button class="tab-button" data-tab="lw-mail">Mail Armor</button>
+    <button class="tab-button" data-tab="lw-embellishments">Embellishments</button>
+    <button class="tab-button" data-tab="lw-consumables">Consumables & Reagents</button>
+    <button class="tab-button" data-tab="lw-decor">House Decor</button>
+  </div>
+  <div class="tab-content active" id="lw-leather">
+<div class="tab-container inner-tabs">
+<div class="tabs">
+<button class="tab-button active" data-tab="leather-rare">Rare Gear</button>
+<button class="tab-button" data-tab="leather-epic">Epic Gear</button>
+<button class="tab-button" data-tab="leather-pvp">PvP Gear</button>
+</div>
+<div class="tab-content active" id="leather-rare">
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+<thead>
+<tr>
+<th>Recipe</th>
+<th>Slot</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237502"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_leather_questbloodelf_b_01.jpg">Smuggler's Reinforced Hood</a></td>
+                    <td>Head</td>
+                    <td>Trainer (50)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237504"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_shoulder_leather_questbloodelf_b_01.jpg">Smuggler's Reinforced Shoulderguards</a></td>
+                    <td>Shoulder</td>
+                    <td>Trainer (40)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237499"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_leather_questbloodelf_b_01.jpg">Smuggler's Leather Tunic</a></td>
+                    <td>Chest</td>
+                    <td>Trainer (10)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237506"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_leather_questbloodelf_b_01.jpg">Smuggler's Leather Wristbands</a></td>
+                    <td>Wrist</td>
+                    <td>Trainer (1)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237501"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_leather_questbloodelf_b_01.jpg">Smuggler's Reinforced Gloves</a></td>
+                    <td>Hands</td>
+                    <td>Trainer (25)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237505"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_leather_questbloodelf_b_01.jpg">Smuggler's Reinforced Binding</a></td>
+                    <td>Waist</td>
+                    <td>Trainer (20)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237503"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_pant_leather_questbloodelf_b_01.jpg">Smuggler's Reinforced Pants</a></td>
+                    <td>Legs</td>
+                    <td>Trainer (45)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237500"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_leather_questbloodelf_b_01.jpg">Smuggler's Leather Footpads</a></td>
+                    <td>Feet</td>
+                    <td>Trainer (5)</td></tr>
+            </tbody>
+        </table>
+    </div>
+      </div>
+      <div class="tab-content" id="leather-epic">
+        <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Slot</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237510"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Cover</a></td>
+                    <td>Head</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237512"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_shoulder_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Mantle</a></td>
+                    <td>Shoulder</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237507"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Coat</a></td>
+                    <td>Chest</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237514"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Deflectors</a></td>
+                    <td>Wrist</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237509"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Handwraps</a></td>
+                    <td>Hands</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237513"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Utility Belt</a></td>
+                    <td>Waist</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237511"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_pant_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Leggings</a></td>
+                    <td>Legs</td>
+                    <td>Spec: Lasting Leather</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237508"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_leather_questbloodelf_b_01.jpg">Silvermoon Agent's Sneakers</a></td>
+                    <td>Feet</td>
+                    <td>Spec: Lasting Leather</td></tr>
+            </tbody>
+        </table>
+    </div>
+      </div>
+      <div class="tab-content" id="leather-pvp">
+        <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Slot</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237493"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Mask</a></td>
+                    <td>Head</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237495"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_shoulder_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Shoulderpads</a></td>
+                    <td>Shoulder</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237491"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Chestpiece</a></td>
+                    <td>Chest</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237497"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Wristwraps</a></td>
+                    <td>Wrist</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237492"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Gloves</a></td>
+                    <td>Hands</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237496"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Belt</a></td>
+                    <td>Waist</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237494"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_pant_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Trousers</a></td>
+                    <td>Legs</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237490"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_leather_questbloodelf_b_01.jpg">Thalassian Competitor's Leather Boots</a></td>
+                    <td>Feet</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+            </tbody>
+        </table>
+    </div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-content" id="lw-mail">
+<div class="tab-container inner-tabs">
+<div class="tabs">
+<button class="tab-button active" data-tab="mail-rare">Rare Gear</button>
+<button class="tab-button" data-tab="mail-epic">Epic Gear</button>
+<button class="tab-button" data-tab="mail-pvp">PvP Gear</button>
+</div>
+<div class="tab-content active" id="mail-rare">
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+<thead>
+<tr>
+<th>Recipe</th>
+<th>Slot</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237531"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_mail_questbloodelf_b_01.jpg">Scout's Polished Skullcap</a></td>
+                    <td>Head</td>
+                    <td>Trainer (50)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237533"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_shoulder_mail_questbloodelf_b_01.jpg">Scout's Polished Spaulders</a></td>
+                    <td>Shoulder</td>
+                    <td>Trainer (40)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237528"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_mail_questbloodelf_b_01.jpg">Scout's Scaled Vest</a></td>
+                    <td>Chest</td>
+                    <td>Trainer (10)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237535"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_mail_questbloodelf_b_01.jpg">Scout's Scaled Bracers</a></td>
+                    <td>Wrist</td>
+                    <td>Trainer (1)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237530"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_mail_questbloodelf_b_01.jpg">Scout's Polished Gauntlets</a></td>
+                    <td>Hands</td>
+                    <td>Trainer (25)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237534"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_mail_questbloodelf_b_01.jpg">Scout's Polished Wrap</a></td>
+                    <td>Waist</td>
+                    <td>Trainer (20)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237532"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_pant_mail_questbloodelf_b_01.jpg">Scout's Polished Legguards</a></td>
+                    <td>Legs</td>
+                    <td>Trainer (45)</td></tr>
+<tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237529"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_mail_questbloodelf_b_01.jpg">Scout's Scaled Boots</a></td>
+                    <td>Feet</td>
+                    <td>Trainer (5)</td></tr>
+            </tbody>
+        </table>
+    </div>
+      </div>
+      <div class="tab-content" id="mail-epic">
+        <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Slot</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237539"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_mail_questbloodelf_b_01.jpg">Farstrider's Unwavering Visage</a></td>
+                    <td>Head</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237541"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_shoulder_mail_questbloodelf_b_01.jpg">Farstrider's Brilliant Plumes</a></td>
+                    <td>Shoulder</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237536"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_mail_questbloodelf_b_01.jpg">Farstrider's Scouting Vest</a></td>
+                    <td>Chest</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237543"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_mail_questbloodelf_b_01.jpg">Farstrider's Plated Bracers</a></td>
+                    <td>Wrist</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237538"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_mail_questbloodelf_b_01.jpg">Farstrider's Sharpened Claws</a></td>
+                    <td>Hands</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237542"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_mail_questbloodelf_b_01.jpg">Farstrider's Trophy Belt</a></td>
+                    <td>Waist</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237540"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_pant_mail_questbloodelf_b_01.jpg">Farstrider's Reinforced Faulds</a></td>
+                    <td>Legs</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+<tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237537"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_mail_questbloodelf_b_01.jpg">Farstrider's Razor Talons</a></td>
+                    <td>Feet</td>
+                    <td>Spec: Safeguarding Scales</td></tr>
+            </tbody>
+        </table>
+    </div>
+      </div>
+      <div class="tab-content" id="mail-pvp">
+        <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Slot</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237523"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Cowl</a></td>
+                    <td>Head</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237525"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_shoulder_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Epaulets</a></td>
+                    <td>Shoulder</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237520"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Tunic</a></td>
+                    <td>Chest</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237527"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Cuffs</a></td>
+                    <td>Wrist</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237522"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Grips</a></td>
+                    <td>Hands</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237526"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Girdle</a></td>
+                    <td>Waist</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237524"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_pant_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Leggings</a></td>
+                    <td>Legs</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+<tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237521"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_mail_questbloodelf_b_01.jpg">Thalassian Competitor's Chain Stompers</a></td>
+                    <td>Feet</td>
+                    <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td></tr>
+            </tbody>
+        </table>
+    </div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-content" id="lw-embellishments">
+<p>Embellished gear comes with powerful unique effects, but remember you can only equip two at a time. You won't learn these recipes from your specialization tree. Instead, you have to find them as drops or buy them from vendors.</p>
+<div class="table-container">
+    <table class="tbl-minimal tbl-center">
+        <thead>
+            <tr>
+                <th>Recipe</th>
+                <th>Source</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237489"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_leather_questbloodelf_b_01.jpg">Hexwoven Strand</a></td>
+                <td>Drop: Rak'tul (Maisara Caverns)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237486"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_leather_questbloodelf_b_01.jpg">Row Walker's Deflectors</a></td>
+                <td>Vendor: <a href="/midnight/npc/caeris-fairdawn">Caeris Fairdawn</a> (Eversong Woods)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237487"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_leather_questbloodelf_b_01.jpg">Row Walker's Insurance</a></td>
+                <td>Drop: Lithiel Cinderfury (Murder Row)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237488"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_leather_questbloodelf_b_01.jpg">Row Walker's Swiftgrips</a></td>
+                <td>Drop: Heavy Trunk (Delves)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237498"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_leather_questbloodelf_b_01.jpg">World Tree Rootwraps</a></td>
+                <td>Vendor: <a href="/midnight/npc/naynar">Naynar</a> (Harandar)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237516"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_bracer_mail_questbloodelf_b_01.jpg">Axe-Flingin' Bands</a></td>
+                <td>Drop: Heavy Trunk (Delves)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237515"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_glove_mail_questbloodelf_b_01.jpg">Ranger-General's Grips</a></td>
+                <td>Drop: Restless Heart (Windrunner Spire)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237519"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_belt_mail_questbloodelf_b_01.jpg">World Tender's Barkclasp</a></td>
+                <td>Drop: Chimaerus (The Dreamrift)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237518"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_boot_mail_questbloodelf_b_01.jpg">World Tender's Rootslippers</a></td>
+                <td>Drop: Heavy Trunk (Delves)</td>
+            </tr>
+            <tr>
+                <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237517"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_chest_mail_questbloodelf_b_01.jpg">World Tender's Trunkplate</a></td>
+                <td>Drop: Ziekket (The Blinding Vale)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+  </div>
+  <div class="tab-content" id="lw-consumables">
+<div class="table-container">
+    <table class="tbl-minimal tbl-center">
+        <thead>
+            <tr>
+                <th>Recipe</th>
+                <th>Source</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="sub-header"><td colspan="2">Leg Armors & Drums</td></tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237545"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_thalassian_amor_kit.jpg">Blood Knight's Armor Kit</a> (Agi/Str + Armor)</td>
+                <td>Spec: Flawless Fortes</td>
+            </tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237544"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_amani_armor_kit.jpg">Forest Hunter's Armor Kit</a> (Agi/Str + Stamina)</td>
+                <td>Vendor: <a href="/midnight/npc/magovu">Magovu</a> (Zul'Aman)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237546"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_standart_armor_kit.jpg">Thalassian Scout Armor Kit</a> (Cheaper for leveling)</td>
+                <td>Trainer (10)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237547"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_leather_drums_green_purple.jpg">Void-touched Drums</a> (15% Haste to party/raid)</td>
+                <td>Trainer (50)</td>
+            </tr>
+            <tr class="sub-header"><td colspan="2">Reagents & Optional Reagents</td></tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237577"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_jewelry_necklace_139.jpg">Blessed Pango Charm</a></td>
+                <td>Quest: The Medicine Loa's Shrine</td>
+            </tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237579"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_armor_banding_brown.jpg">Devouring Banding</a></td>
+                <td>Spec: Flawless Fortes</td>
+            </tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237578"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_armor_banding_green.jpg">Primal Spore Binding</a></td>
+                <td>Drop: Ziekket (The Blinding Vale)</td>
+            </tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237573"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_combo_hide_magical_lightbloom.jpg">Infused Scalewoven Hide</a></td>
+                <td>Trainer (25)</td>
+            </tr>
+            <tr>
+                <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237572"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_combo_hide_purple.jpg">Scalewoven Hide</a></td>
+                <td>Trainer (25)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237575"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_weapon_wraps_red.jpg">Silvermoon Weapon Wrap</a></td>
+                <td>Trainer (25)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237574"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_leatherworking_armor_banding_red.jpg">Sin'dorei Armor Banding</a></td>
+                <td>Trainer (25)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+  </div>
+  <div class="tab-content" id="lw-decor">
+<p>Player Housing is huge in Midnight, and Leatherworkers can craft a bunch of furniture for it. You can make rugs, beds, and other leather-themed items. These are all cosmetic and BoE, so you can sell them on the Auction House.</p>
+<div class="table-container">
+    <table class="tbl-minimal tbl-center">
+        <thead>
+            <tr>
+                <th>Recipe</th>
+                <th>Source</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246937"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487086.jpg">Embossed Sin'dorei Fur Rug</a></td>
+                <td>Trainer (80)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246938"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7416535.jpg">Leather-Bound Haranir Wall Shelf</a></td>
+                <td>Trainer (80)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246939"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7543050.jpg">Haranir Canopy Bed</a></td>
+                <td>Drop: Harandar Treasures</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246943"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7506622.jpg">Plush Haranir Leather Pillow</a></td>
+                <td>Drop: Heavy Trunk (Delves)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246940"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7549657.jpg">Simple Haranir Table</a></td>
+                <td>Vendor: <a href="/midnight/npc/naynar">Naynar</a> (Harandar)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246941"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487089.jpg">Stitched Haranir Rug</a></td>
+                <td>Vendor: <a href="/midnight/npc/zaralda">Zaralda</a> (Silvermoon City)</td>
+            </tr>
+            <tr>
+                <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246942"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7416595.jpg">Sturdy Haranir Chair</a></td>
+                <td>Vendor: <a href="/midnight/npc/zaralda">Zaralda</a> (Silvermoon City)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+  </div>
+</div>
+
+  </article>
+
+        </main>
+        <aside class="sidebar-right">
+            <aside class="sticky-ad ad-related">
+                <div class="ad-slot">
+                    <!-- Tag ID: wowprofessions_medrec_right -->
+
+                    <div align="center" data-freestar-ad="__300x250" id="wowprofessions_medrec_right">
+                        <script data-cfasync="false" type="text/javascript">
+                          freestar.config.enabled_slots.push({ placementName: "wowprofessions_medrec_right", slotId: "wowprofessions_medrec_right" });
+                        </script>
+                      </div>
+                </div>
+                <div class="ad-slot second-ad">
+                    <!-- Tag ID: wowprofessions_medrec_right_2 -->
+
+                    <div align="center" data-freestar-ad="__300x250" id="wowprofessions_medrec_right_2">
+                        <script data-cfasync="false" type="text/javascript">
+                          freestar.config.enabled_slots.push({ placementName: "wowprofessions_medrec_right_2", slotId: "wowprofessions_medrec_right_2" });
+                        </script>
+                      </div>                      
+                </div>
+            </aside>
+        </aside>
+    </div>
+    
+    <div class="leaderboard-ad ad-related">
+        <div class="leader-ad-slot">
+            <!-- Tag ID: wowprofessions_leaderboard_btf -->
+            <div align="center" data-freestar-ad="__320x100 __970x90" id="wowprofessions_leaderboard_btf">
+                <script data-cfasync="false" type="text/javascript">
+                  freestar.config.enabled_slots.push({ placementName: "wowprofessions_leaderboard_btf", slotId: "wowprofessions_leaderboard_btf" });
+                </script>
+              </div>
+        </div>
+    </div>
+    
+    <footer>
+  <div class="flex-container" style="justify-content: center; flex-direction: column;">
+    <div class="footer-links"><a href="/news">News</a><a href="/contact">Contact</a><a href="/privacy-policy">Privacy Policy</a><a href="/disclaimer">Disclaimer</a></div><span>&copy; 2026 WoW-Professions.com</span>
+  </div>
+</footer>
+
+<!-- Map Modal -->
+<div id="map-modal" class="map-modal" aria-hidden="true">
+  <div class="map-modal-overlay"></div>
+  <div class="map-modal-container">
+    <div class="map-modal-header">
+      <span id="map-modal-title" class="map-modal-title"></span>
+      <button class="map-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="map-modal-actions">
+      <button id="map-modal-tomtom" class="btn-waypoint">TomTom</button>
+      <button id="map-modal-ingame" class="btn-waypoint">In-Game Pin</button>
+    </div>
+    <div class="map-modal-body">
+      <div class="map-viewport">
+        <div id="map-image-container" class="map-image">
+          <div id="map-pin" class="map-pin" data-pulse></div>
+        </div>
+      </div>
+      <div id="map-screenshot" class="map-screenshot">
+        <img id="map-screenshot-img" src="" alt="">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Lightbox -->
+<div id="lightbox" class="lightbox-modal" aria-hidden="true">
+  <div class="lightbox-overlay"></div>
+  <div class="lightbox-container">
+    <div class="lightbox-header">
+      <span id="lightbox-title" class="lightbox-title"></span>
+      <button class="lightbox-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="lightbox-body">
+      <img id="lightbox-image" src="" alt="">
+    </div>
+  </div>
+</div>    
+<!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7b64878bef804239928fdc05ff3a5600"}'></script><!-- Cloudflare Pages Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"7dc11e5b295a412b81d135dffc00683e","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

@@ -31,11 +31,31 @@ It combines:
 ### Option 2: Manual install (ZIP)
 1. Download the addon ZIP.
 2. Extract it.
-3. Move the folder into:
+3. Move all six addon folders into:
    `World of Warcraft/_retail_/Interface/AddOns/`
-4. Confirm the folder name is:
-   `WoW-General-Gold-Tracker`
-5. Launch WoW (or type `/reload` in-game).
+4. Confirm these folders are beside each other:
+   - `General-Gold-Tracker`
+   - `General-Gold-Tracker_Rares`
+   - `General-Gold-Tracker_Instances`
+   - `General-Gold-Tracker_Drops`
+   - `General-Gold-Tracker_Materials`
+   - `General-Gold-Tracker_Farms`
+5. Fully exit and restart WoW after adding these folders so it discovers the
+   data addons. `/reload` is sufficient for later file updates once all six
+   folders have been discovered.
+
+### Option 3: Development checkout
+
+With the repository at `Interface/AddOns/General-Gold-Tracker`, run this in
+PowerShell from the repository root:
+
+```powershell
+.\tools\install_catalog_modules.ps1
+```
+
+This links the five bundled catalogs into the adjacent addon folders so local
+data edits stay in sync. Fully exit and restart WoW after the first installation.
+Missing catalog folders prevent Explorer from displaying their data.
 
 ---
 

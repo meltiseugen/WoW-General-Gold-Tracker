@@ -460,10 +460,9 @@ local function BuildMaterialFarmingPin(item, spot, coord, mapID)
         targetName = coord.targetName or spot.targetName,
         targetType = coord.targetType or spot.targetType,
         farmAction = spot.farmAction,
-        -- A sequence of pins is a rendered route only for raw herbs and ore.
-        -- Other materials can retain every mapped point without a misleading
-        -- line joining unrelated spawn locations.
-        isRoute = IsRouteMaterial(item),
+        -- Raw herbs and ore render routes by default. Other materials require
+        -- explicit opt-in on both the item and spot (for example seed loops).
+        isRoute = IsRouteMaterial(item) or (item.isRoute == true and spot.isRoute == true),
         routeID = spot.id,
         routeType = spot.routeType,
         density = spot.density,

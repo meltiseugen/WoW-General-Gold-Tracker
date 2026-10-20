@@ -5,8 +5,8 @@ local function C(x, y, label)
     return { x = x, y = y, label = label }
 end
 
--- Spirit of Harmony is intentionally pending under the raw-material rule:
--- it is created from Motes of Harmony and is Bind on Pickup.
+-- Retail Motes and Spirits of Harmony are tradeable. The Spirit conversion and
+-- component metadata are registered by Mists/Miscellaneous.lua and Crafting.lua.
 
 Register({
     itemID = 89112,
@@ -14,12 +14,14 @@ Register({
     expansion = "mists",
     professions = { "alchemy", "blacksmithing", "engineering", "inscription", "jewelcrafting", "leatherworking", "tailoring" },
     category = "Elemental",
+    isRoute = false,
+    auctionable = true,
     sourceUrls = {
         "https://www.wowhead.com/item=89112/mote-of-harmony",
         "https://www.wowhead.com/item=74837/raw-turtle-meat",
         "https://www.wow-professions.com/farming/windwool-cloth-farming",
     },
-    summary = "Bind-on-pickup Pandaria reagent fragment from dense MoP mob farms, Songbell Seeds, and normal farming side drops.",
+    summary = "Tradeable Retail Pandaria reagent fragment from dense mob farms, Songbell Seeds, and normal farming side drops. Combine ten into a tradeable Spirit of Harmony.",
     spots = {
         {
             id = "mists-mote-harmony-dread-wastes-horrid-march-ikthik",
@@ -38,7 +40,7 @@ Register({
             tips = {
                 "Use the same five-pack Dread Wastes route as Windwool Cloth farming.",
                 "Klaxxi combat buffs and Potion of Luck can add value while clearing the packs.",
-                "Because Motes are bind-on-pickup, farm on the character that needs the crafted Spirit of Harmony.",
+                "Retail Motes and Spirits of Harmony can be traded; combine ten Motes per Spirit and compare the two Auction House markets.",
             },
             coords = {
                 C(0.681, 0.490, "Horrid March start pull"),

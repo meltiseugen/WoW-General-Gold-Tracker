@@ -30,6 +30,11 @@ NS.ClassicHousing = {
 }
 
 for _, recipe in ipairs(NS.ClassicHousing.recipes) do
+    recipe.isRoute = false
+    local output = NS.MaterialFarmingSpots.items[recipe.outputItemID]
+    if output then
+        output.itemName = recipe.outputName
+    end
     for _, reagent in ipairs(recipe.reagents) do
         local item = NS.MaterialFarmingSpots.items[reagent.itemID]
         if item then

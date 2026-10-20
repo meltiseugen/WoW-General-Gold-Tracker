@@ -1040,6 +1040,117 @@ local function GetObservedDropLocationGroupLabel(row)
     return groupLabel ~= "" and groupLabel or "Unknown location"
 end
 
+local function GetObservedDropContinentLabel(mapID, cache)
+    local currentMapID = tonumber(mapID)
+    if not currentMapID or not C_Map or type(C_Map.GetMapInfo) ~= "function" then
+        return nil
+    end
+    if cache[currentMapID] ~= nil then
+        return cache[currentMapID] or nil
+    end
+
+    local visited = {}
+    local fallbackLabel
+    local continentType = Enum and Enum.UIMapType and Enum.UIMapType.Continent or 2
+    while currentMapID and currentMapID > 0 and not visited[currentMapID] do
+        visited[currentMapID] = true
+        local ok, info = pcall(C_Map.GetMapInfo, currentMapID)
+        if not ok or type(info) ~= "table" then
+            break
+        end
+        if type(info.name) == "string" and info.name ~= "" then
+            if info.mapType == continentType then
+                cache[tonumber(mapID)] = info.name
+                return info.name
+            end
+            -- Detached zones such as Darkmoon Island retain their own label.
+            if tonumber(info.mapType) and info.mapType > continentType then
+                fallbackLabel = info.name
+            end
+        end
+        currentMapID = tonumber(info.parentMapID)
+    end
+    cache[tonumber(mapID)] = fallbackLabel or false
+    return fallbackLabel
+end
+
+local function GetCatalogPetContinentLabel(item, farm, cache)
+    -- Catalog locationID values are area IDs, not UI map IDs. Use the exact
+    -- researched farm's maps, preferring the exterior entrance for raid pets.
+    for _, option in ipairs(farm and farm.mapOptions or {}) do
+        if option.mapRole == "entrance" then
+            local label = GetObservedDropContinentLabel(option.mapID, cache)
+            if label then
+                return label
+            end
+        end
+    end
+    for _, option in ipairs(farm and farm.mapOptions or {}) do
+        local label = GetObservedDropContinentLabel(option.mapID, cache)
+        if label then
+            return label
+        end
+    end
+    return GetObservedDropContinentLabel(item.mapID, cache) or "Unknown continent"
+end
+
+function GoldTracker:BuildObservedDropsDisplayRows(rows)
+    local frame = self.observedDropsFrame
+    if not frame or not IsCatalogPetsSource(frame.dropSourceID) or not self:IsCollapsedLocationHeadersEnabled() then
+        return rows or {}
+    end
+
+    local continents = {}
+    local byKey = {}
+    for _, row in ipairs(rows or {}) do
+        local label = row.continentLabel or "Unknown continent"
+        local key = string.lower(label)
+        local group = byKey[key]
+        if not group then
+            group = { key = key, label = label, rows = {} }
+            byKey[key] = group
+            continents[#continents + 1] = group
+        end
+        group.rows[#group.rows + 1] = row
+    end
+    table.sort(continents, function(left, right) return left.key < right.key end)
+
+    local displayRows = {}
+    for _, continent in ipairs(continents) do
+        local key = "continent:" .. continent.key
+        local collapsed = not frame.collapsedContinentGroups or frame.collapsedContinentGroups[key] ~= false
+        displayRows[#displayRows + 1] = {
+            isLocationGroupHeader = true,
+            isContinentGroupHeader = true,
+            locationGroupKey = key,
+            locationGroupLabel = continent.label,
+            itemCount = #continent.rows,
+            collapsed = collapsed,
+        }
+        if not collapsed then
+            local collapsedLocations = {}
+            for _, row in ipairs(continent.rows) do
+                local locationKey = string.lower(GetObservedDropLocationGroupLabel(row))
+                collapsedLocations[locationKey] = frame.collapsedLocationGroups
+                    and frame.collapsedLocationGroups[key .. ":" .. locationKey]
+            end
+            local locationRows = self:BuildLocationGroupedDisplayRows(
+                continent.rows,
+                GetObservedDropLocationGroupLabel,
+                collapsedLocations,
+                true
+            )
+            for _, row in ipairs(locationRows) do
+                if row.isLocationGroupHeader then
+                    row.locationGroupKey = key .. ":" .. row.locationGroupKey
+                end
+                displayRows[#displayRows + 1] = row
+            end
+        end
+    end
+    return displayRows
+end
+
 local function SetHeaderColumn(button, listPanel, leftOffset, width)
     if not button or not listPanel then
         return
@@ -1300,6 +1411,7 @@ local function AddKnownDropRow(addon, rows, item, source)
         expansionID = tostring(source.expansionID or "unknown"),
         expansionLabel = source.expansionLabel or "Unknown",
         locationLabel = source.locationLabel or "Unknown",
+        continentLabel = source.continentLabel,
         sourceText = source.sourceText or "ATT",
         seenCount = 0,
         quantity = tonumber(item.quantity) or tonumber(source.quantity) or 0,
@@ -1405,6 +1517,13 @@ end
 
 local function AddCatalogDropRows(addon, rows, dropSourceID, expansionFilterID, minimumValue)
     local catalogRows = GetCatalogDropRows(dropSourceID)
+    local petFarmsByRecordID = {}
+    local continentCache = {}
+    if IsCatalogPetsSource(dropSourceID) then
+        for _, farm in ipairs(NS.PetFarmData and NS.PetFarmData.farms or {}) do
+            petFarmsByRecordID[farm.sourceRecordID] = farm
+        end
+    end
     for _, item in ipairs(catalogRows or {}) do
         local expansionID = tostring(item.contentID or "unknown")
         if expansionFilterID == EXPANSION_ALL_ID or expansionFilterID == expansionID then
@@ -1414,6 +1533,8 @@ local function AddCatalogDropRows(addon, rows, dropSourceID, expansionFilterID, 
                 expansionID = expansionID,
                 expansionLabel = item.expansionLabel or GetATTExpansionLabel(expansionID),
                 locationLabel = item.locationLabel or item.farmName or "Unknown",
+                continentLabel = IsCatalogPetsSource(dropSourceID)
+                    and GetCatalogPetContinentLabel(item, petFarmsByRecordID[item.recordID], continentCache) or nil,
                 sourceText = "Farm: " .. tostring(item.farmName or item.farmID or "Unknown farm"),
                 farmingSourceType = dropSourceID,
                 minimumValue = minimumValue,
@@ -3128,9 +3249,10 @@ function GoldTracker:GetObservedDropsWindowRow(index)
     BindObservedResultsMouseWheel(itemTooltipTarget, frame)
     row:SetScript("OnClick", function(self, button)
         if self.isLocationGroupHeader then
-            frame.collapsedLocationGroups = frame.collapsedLocationGroups or {}
+            local groupsField = self.isContinentGroupHeader and "collapsedContinentGroups" or "collapsedLocationGroups"
+            frame[groupsField] = frame[groupsField] or {}
             GoldTracker:ToggleLocationGroupCollapsed(
-                frame.collapsedLocationGroups,
+                frame[groupsField],
                 self.locationGroupKey,
                 self.locationGroupCollapsed
             )
@@ -3179,12 +3301,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
     SortRows(rows, frame.sortKey, frame.sortAscending, self:GetTableSortCriteria(frame, "sortKey", "sortAscending", SORT_KEYS))
 
     local showLocationHeaders = IsCatalogPetsSource(frame.dropSourceID) and self:IsCollapsedLocationHeadersEnabled()
-    local displayRows = self:BuildLocationGroupedDisplayRows(
-        rows,
-        GetObservedDropLocationGroupLabel,
-        frame.collapsedLocationGroups,
-        showLocationHeaders
-    )
+    local displayRows = self:BuildObservedDropsDisplayRows(rows)
 
     local showAllRows = IsCatalogPetsSource(frame.dropSourceID)
     local pageSize = showAllRows and math.max(1, #displayRows) or ROWS_PER_PAGE
@@ -3204,9 +3321,13 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         local row = self:GetObservedDropsWindowRow(visibleIndex)
         if row then
             row.isLocationGroupHeader = result.isLocationGroupHeader == true
+            row.isContinentGroupHeader = result.isContinentGroupHeader == true
             row.locationGroupKey = result.locationGroupKey
             row.locationGroupCollapsed = result.collapsed == true
             if row.locationGroupText then
+                row.locationGroupText:ClearAllPoints()
+                row.locationGroupText:SetPoint("LEFT", row, "LEFT", row.isContinentGroupHeader and 10 or 26, 0)
+                row.locationGroupText:SetPoint("RIGHT", row, "RIGHT", -10, 0)
                 row.locationGroupText:SetShown(row.isLocationGroupHeader)
             end
             if row.itemTooltipTarget then
@@ -3243,7 +3364,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
                 ))
                 row.locationGroupText:SetTextColor(1.0, 0.82, 0.18)
                 if row.background then
-                    row.background:SetColorTexture(1.0, 0.82, 0.18, 0.10)
+                    row.background:SetColorTexture(1.0, 0.82, 0.18, row.isContinentGroupHeader and 0.18 or 0.10)
                 end
                 if row.divider then
                     row.divider:SetShown(true)
@@ -3373,13 +3494,23 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         end
         local rangeSummary = string.format("Showing %d-%d of %d", shownFrom, shownTo, #rows)
         if showLocationHeaders then
+            local continents = {}
+            local locations = {}
+            local continentCount = 0
             local locationCount = 0
-            for _, displayRow in ipairs(displayRows) do
-                if displayRow.isLocationGroupHeader then
+            for _, result in ipairs(rows) do
+                local continentKey = string.lower(result.continentLabel or "Unknown continent")
+                local locationKey = continentKey .. ":" .. string.lower(GetObservedDropLocationGroupLabel(result))
+                if not continents[continentKey] then
+                    continents[continentKey] = true
+                    continentCount = continentCount + 1
+                end
+                if not locations[locationKey] then
+                    locations[locationKey] = true
                     locationCount = locationCount + 1
                 end
             end
-            rangeSummary = string.format("%d items in %d locations", #rows, locationCount)
+            rangeSummary = string.format("%d items in %d continents / %d locations", #rows, continentCount, locationCount)
         end
         frame.metaText:SetText(string.format(
             "%s | %s | %s | Total selected value %s",
@@ -3470,6 +3601,7 @@ function GoldTracker:CreateObservedDropsWindow()
     ApplyObservedDropsDefaultSort(frame, frame.dropSourceID)
     frame.currentPage = 1
     frame.collapsedLocationGroups = {}
+    frame.collapsedContinentGroups = {}
 
     local chrome = Theme:ApplyWindowChrome(frame, "Drops")
     Theme:RegisterSpecialFrame("GoldTrackerObservedDropsFrame")
@@ -3488,7 +3620,7 @@ function GoldTracker:CreateObservedDropsWindow()
     end)
     local locationGroupsLabel = locationGroupsControl:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     locationGroupsLabel:SetPoint("LEFT", locationGroupsCheckbox, "RIGHT", 2, 1)
-    locationGroupsLabel:SetText("Collapsed location headers")
+    locationGroupsLabel:SetText("Collapsed group headers")
     locationGroupsControl:Hide()
     frame.locationGroupsControl = locationGroupsControl
     frame.locationGroupsCheckbox = locationGroupsCheckbox

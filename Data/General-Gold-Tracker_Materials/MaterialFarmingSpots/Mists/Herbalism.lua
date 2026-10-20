@@ -296,16 +296,345 @@ local GOLDEN_LOTUS_ROUTES = {
     },
 }
 
+-- Decoded from the 16 supplied Retail Routes reconstructions, preserving point order.
+-- These are control points, not guaranteed herb spawns or in-game-tested optimized loops.
+local function RouteCoords(label, packedCoords)
+    local coords = {}
+    for index, packed in ipairs(packedCoords) do
+        local x = math.floor(packed / 10000)
+        local y = packed % 10000
+        coords[index] = C(x / 10000, y / 10000, string.format("%s pin %d", label, index))
+    end
+    return coords
+end
+
+local function HerbRoute(id, sortOrder, mapID, mapName, location, packedCoords, tips, sourceUrls)
+    return {
+        id = id,
+        sortOrder = sortOrder,
+        mapID = mapID,
+        mapName = mapName,
+        location = location,
+        routeType = "herbalism-loop",
+        source = "Supplied Retail Routes reconstruction with route-specific research references",
+        sourceUrls = sourceUrls,
+        dropDifficulty = "Reconstructed route control points, not guaranteed herb spawns. Not tested in WoW; check node density and quest phasing.",
+        tips = tips,
+        coords = RouteCoords(location, packedCoords),
+        confidence = "medium",
+        isRoute = true,
+    }
+end
+
+local SUPPLIED_HERB_ROUTES = {
+    [72234] = {
+        HerbRoute(
+            "mists-green-tea-leaf-the-jade-forest-supplied-main", 1,
+            371, "The Jade Forest", "1. Main - Tian Monastery and Dawn’s Blossom northern loop",
+            { 30002100, 35001400, 45001300, 57001500, 59002200, 68002600, 64003200, 57003700, 66004300, 54004200, 43003900, 32003400 },
+            {
+                "Follow the grassy edges north of Dawn's Blossom and around Tian Monastery rather than cutting through buildings.",
+                "Prioritize tight elevation bands; skip barren cliff faces even when the line crosses them.",
+                "Use this low-friction loop for consistent Green Tea Leaf pickup, then check the nearby parallel hillside.",
+            },
+            {
+                "https://www.wow-professions.com/farming/green-tea-leaf-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-green-tea-leaf-valley-of-the-four-winds-supplied-alternative", 2,
+            376, "Valley of the Four Winds", "2. Alternative - Paoquan Hollow to The Heartland hill sweep",
+            { 15003400, 21002800, 32002800, 43003100, 53003600, 57004200, 49004500, 38004700, 26004400, 18004100 },
+            {
+                "Start beside Paoquan Hollow and circle through the Heartland's cultivated green slopes.",
+                "Favor open grassy hills and terrace margins over village interiors or heavily used roads.",
+                "Switch to the main Jade route if this longer mixed-herb sweep yields too many non-target nodes.",
+            },
+            {
+                "https://www.wow-professions.com/farming/green-tea-leaf-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+    [72237] = {
+        HerbRoute(
+            "mists-rain-poppy-the-jade-forest-supplied-main", 1,
+            371, "The Jade Forest", "1. Main - Central Jade river and Serpent’s Heart banks",
+            { 48004400, 56004800, 62005100, 67005700, 70006400, 64006800, 57006800, 51006100, 49005400 },
+            {
+                "Track stream and river margins around the Serpent's Heart rather than flying over inland hills.",
+                "Pick Rain Poppy at bends, pools and near tributary banks; many straight river stretches have no nodes.",
+                "Recheck spawn phasing at the Serpent's Heart; its environment changes with quest progression.",
+            },
+            {
+                "https://www.wow-professions.com/farming/rain-poppy-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-rain-poppy-the-jade-forest-supplied-alternative", 2,
+            371, "The Jade Forest", "2. Alternative - Southern lakes Pearlfin and Moonwater branch",
+            { 55006800, 63007200, 71007100, 79007800, 80008400, 72008800, 62008500, 52007900 },
+            {
+                "Inspect the southern Jade Forest's ponds around Pearlfin and toward Moonwater Retreat.",
+                "Horde characters should avoid Alliance guards near Pearl Lake or bypass that shore segment.",
+                "This is a lower-density scouting fallback: abandon dry stretches quickly if node tracking stays empty.",
+            },
+            {
+                "https://www.wow-professions.com/farming/rain-poppy-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+    [72235] = {
+        HerbRoute(
+            "mists-silkweed-valley-of-the-four-winds-supplied-main", 1,
+            376, "Valley of the Four Winds", "1. Main - Pools of Purity wetlands and east channels",
+            { 55002400, 62002200, 70002500, 76003200, 81004100, 76004900, 66004800, 59003800, 54003200 },
+            {
+                "Follow the Pools of Purity around 60,27, then the neighboring channels toward Mudmug's Place.",
+                "Stay close to water and low damp ground; the marked circuit includes transitions between pools.",
+                "Use a flying mount to cut out empty upland crossings and shorten the loop on subsequent laps.",
+            },
+            {
+                "https://www.wow-professions.com/farming/silkweed-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-silkweed-valley-of-the-four-winds-supplied-alternative", 2,
+            376, "Valley of the Four Winds", "2. Alternative - Yan-Zhe southern riverside and Silken Fields",
+            { 38006300, 49006300, 61005700, 72005900, 81005500, 88006000, 77006900, 65007100, 52007200, 40007000 },
+            {
+                "Circle the Silken Fields around 63,57 and sweep the southern river corridors.",
+                "This covers a different wetland belt from Pools of Purity and often mixes Green Tea Leaf into the run.",
+                "Near the Krasarang border, do not cross zones expecting the same Retail route/map ID to continue.",
+            },
+            {
+                "https://www.wow-professions.com/farming/silkweed-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+    [79010] = {
+        HerbRoute(
+            "mists-snow-lily-kun-lai-summit-supplied-main", 1,
+            379, "Kun-Lai Summit", "1. Main - Peak of Serenity and Winter’s Blossom high slopes",
+            { 32005400, 37004600, 43003800, 47002700, 51004200, 59003800, 66003200, 70004000, 61004800, 49005200, 38005800 },
+            {
+                "Work the snowy ridges and the approaches to Winter's Blossom, then climb toward Peak of Serenity.",
+                "Watch different elevations for Snow Lily; flying saves time over the steep ridges.",
+                "Snowy caves may have additional nodes, but are not included in the flight loop unless you detour on foot.",
+            },
+            {
+                "https://www.wow-professions.com/farming/snow-lily-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-snow-lily-kun-lai-summit-supplied-alternative", 2,
+            379, "Kun-Lai Summit", "2. Alternative - Kota Basecamp to Burlap Trail southern slopes",
+            { 31006600, 39006400, 49006200, 61006000, 68006300, 68007000, 58007100, 47007300, 35007500 },
+            {
+                "Use the lower snowline from Kota Basecamp toward Burlap Trail as a less-common scouting option.",
+                "Hug accessible slopes and ravine edges rather than repeatedly ascending sheer cliff faces.",
+                "If the lower belt dries up, use the main route's higher ridges; node density may be lower here.",
+            },
+            {
+                "https://www.wow-professions.com/farming/snow-lily-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+    [79011] = {
+        HerbRoute(
+            "mists-fools-cap-dread-wastes-supplied-main", 1,
+            422, "Dread Wastes", "1. Main - Briny Muck and Lake of Stars mud banks",
+            { 28006100, 35005400, 43005300, 52005800, 61005800, 69006000, 74006600, 69007300, 60007600, 50007200, 41007600, 33007000 },
+            {
+                "Concentrate on muddy ground in the Briny Muck and the shallows surrounding Lake of Stars.",
+                "Pick Sha-Touched Herb when it is safely accessible: it can give Fool's Cap in addition to Desecrated Herb.",
+                "Avoid wide dry interior detours; repeat the wet belt if the loop takes longer than the respawn cycle.",
+            },
+            {
+                "https://www.wowhead.com/object=214510/sha-touched-herb",
+                "https://www.wow-professions.com/farming/fools-cap-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-fools-cap-townlong-steppes-supplied-alternative", 2,
+            388, "Townlong Steppes", "2. Alternative - Sparse western marsh and shoreline test loop",
+            { 28004300, 36003900, 45004300, 50005100, 47005900, 37006300, 28005500 },
+            {
+                "Scout muddy pockets and shoreline edges in western Townlong Steppes.",
+                "Fool's Cap is sparse here; this is an experimental fallback, not a verified high-yield route.",
+                "If tracking reveals no nodes after a lap, use the Dread Wastes main route rather than persist.",
+            },
+            {
+                "https://www.wow-professions.com/farming/fools-cap-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+    [72238] = {
+        HerbRoute(
+            "mists-golden-lotus-the-jade-forest-supplied-main", 1,
+            371, "The Jade Forest", "1. Main - High turnover Green Tea Leaf replacement loop",
+            { 29001900, 42001300, 59001700, 70003000, 68004300, 60004800, 48004700, 36003900, 30002900 },
+            {
+                "Clear every Pandaria herb in this dense Jade circuit; Golden Lotus can occupy rare herb-node spawns.",
+                "Check open grassy patches as well as the usual Green Tea Leaf locations.",
+                "Golden Lotus has no guaranteed spawn in a fixed point on this route; measure expected return over several laps.",
+            },
+            {
+                "https://www.wowhead.com/object=209354/golden-lotus",
+                "https://www.wow-professions.com/farming/green-tea-leaf-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-golden-lotus-valley-of-the-four-winds-supplied-alternative-1", 2,
+            376, "Valley of the Four Winds", "2. Alternative 1 - All-herb multiloop for rare node replacement",
+            { 18002800, 32002200, 48002100, 70002800, 88004200, 83006100, 62007300, 43007100, 25005900, 20004500 },
+            {
+                "Collect both Green Tea Leaf and Silkweed while sweeping the Valley's grass and water edges.",
+                "Mixing habitats creates more chances to encounter rare Golden Lotus nodes or secondary loot.",
+                "For less travel overhead, shorten this wide route around whichever half currently has visible herbs.",
+            },
+            {
+                "https://www.wowhead.com/object=209354/golden-lotus",
+                "https://www.wow-professions.com/farming/green-tea-leaf-farming",
+                "https://www.wow-professions.com/farming/silkweed-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-golden-lotus-dread-wastes-supplied-alternative-2", 3,
+            422, "Dread Wastes", "3. Alternative 2 - Sha-Touched Herb and Fool’s Cap lottery circuit",
+            { 29003100, 45002900, 59003700, 73004400, 84005800, 74007200, 55007500, 37006400, 27004900 },
+            {
+                "Harvest Fool's Cap and Sha-Touched Herb along the corrupted Dread Wastes belts.",
+                "Golden Lotus is a possible rare outcome; expect extended periods with none.",
+                "Use the route primarily when Fool's Cap/Desecrated Herb sales justify the additional farming time.",
+            },
+            {
+                "https://www.wowhead.com/object=209354/golden-lotus",
+                "https://www.wow-professions.com/farming/fools-cap-farming",
+                "https://www.wowhead.com/object=214510/sha-touched-herb",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+    [89639] = {
+        HerbRoute(
+            "mists-desecrated-herb-dread-wastes-supplied-main", 1,
+            422, "Dread Wastes", "1. Main - Sha-corrupted middle and northwest circuit",
+            { 31002900, 44003000, 57003600, 68004400, 62005300, 48005700, 34004800, 29003700 },
+            {
+                "Look specifically for Sha-Touched Herb in corrupted, black-and-white landscape pockets.",
+                "Regular Fool's Cap nodes are not the direct source of Desecrated Herb; gather the Sha nodes.",
+                "Skip individual nodes that are surrounded by multiple mobs if dismount/recovery costs outweigh the pickup.",
+            },
+            {
+                "https://www.wowhead.com/object=214510/sha-touched-herb",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-desecrated-herb-valley-of-the-four-winds-supplied-alternative-1", 2,
+            376, "Valley of the Four Winds", "2. Alternative 1 - Stoneplow Sha spillover pocket short loop",
+            { 13004400, 19004300, 24004700, 27005500, 23006100, 16005900, 12005200 },
+            {
+                "Run a short loop around the Stoneplow Fields Sha corruption instead of covering the whole Valley.",
+                "Historic player reports mention fast Sha-Touched respawns here, but that is not verified for current Retail.",
+                "If quest progression changes the Sha landscape, check node visibility before committing to a long session.",
+            },
+            {
+                "https://www.wowhead.com/object=214510/sha-touched-herb",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+        HerbRoute(
+            "mists-desecrated-herb-kun-lai-summit-supplied-alternative-2", 3,
+            379, "Kun-Lai Summit", "3. Alternative 2 - Localized Sha-tainted pocket scout sweep",
+            { 33004900, 40004500, 45004200, 49004900, 46005600, 36005600 },
+            {
+                "Check smaller Sha-corrupted pockets in Kun-Lai rather than circling the entire mountain range.",
+                "A short targeted loop can be practical only when Sha-Touched Herb nodes are visible.",
+                "Treat it as exploratory: switch back to Dread Wastes if repeated passes are empty.",
+            },
+            {
+                "https://www.wowhead.com/object=214510/sha-touched-herb",
+                "https://xscarlife-gaming.com/farming/retail/",
+                "https://github.com/CallanWIT/Routes-Import-Export/blob/master/RoutesImportExport.lua",
+                "https://github.com/WoWUIDev/Ace3/blob/master/AceSerializer-3.0/AceSerializer-3.0.lua",
+            }
+        ),
+    },
+}
+
 local function RegisterHerb(itemID, itemName, spots, summary)
+    local routes = {}
+    local sourceUrls = { ItemUrl(itemID) }
+    local seenSources = { [sourceUrls[1]] = true }
+    -- Supplied main/alternative routes come first; keep existing researched options.
+    for _, spot in ipairs(SUPPLIED_HERB_ROUTES[itemID] or {}) do
+        routes[#routes + 1] = spot
+    end
+    for _, spot in ipairs(spots) do
+        spot.isRoute = true
+        routes[#routes + 1] = spot
+    end
+    for _, spot in ipairs(routes) do
+        for _, url in ipairs(spot.sourceUrls or {}) do
+            if not seenSources[url] then
+                seenSources[url] = true
+                sourceUrls[#sourceUrls + 1] = url
+            end
+        end
+    end
     Register({
         itemID = itemID,
         itemName = itemName,
         expansion = "mists",
         professions = { "herbalism", "alchemy", "inscription" },
         category = "Herb",
-        sourceUrls = { ItemUrl(itemID), "https://www.wow-professions.com/farming/green-tea-leaf-farming" },
+        isRoute = true,
+        sourceUrls = sourceUrls,
         summary = summary,
-        spots = spots,
+        spots = routes,
     })
 end
 
@@ -315,3 +644,5 @@ RegisterHerb(72237, "Rain Poppy", { JADE_FOREST_HERB_ROUTE }, "Waterline Pandari
 RegisterHerb(79010, "Snow Lily", { SNOW_LILY_ROUTE }, "Mountain Pandaria herb best targeted in Kun-Lai Summit.")
 RegisterHerb(79011, "Fool's Cap", { FOOLS_CAP_ROUTE, FOOLS_CAP_WINDWARD_ROUTE }, "Muddy-water Pandaria herb best targeted in Dread Wastes, with Windward Isle as a compact comment-backed backup.")
 RegisterHerb(72238, "Golden Lotus", GOLDEN_LOTUS_ROUTES, "Rare MoP herb side gather from high-volume Pandaria herb routes.")
+
+RegisterHerb(89639, "Desecrated Herb", {}, "Gather Sha-Touched Herb in corrupted Pandaria areas for Desecrated Herb; it is a loot result, not a dedicated herb node.")

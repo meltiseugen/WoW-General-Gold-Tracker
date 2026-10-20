@@ -61,6 +61,21 @@
         "MapCanvasDataProviderMixin",
         "OpenWorldMap",
         "ToggleWorldMap",
-        "MapCanvasPinMixin"
+        "MapCanvasPinMixin",
+        "BattlePetTooltip",
+        "BattlePetToolTip_ShowLink",
+        "ToggleDropDownMenu",
+        "INSCRIPTION",
+        "ARMOR",
+        "MOUNTS",
+        "GLYPHS",
+        "SPECIAL",
+        "BACK",
+        "ACHIEVEMENTS",
+        "AZSUNA",
+        "ORGRIMMAR",
+        "HIGHMOUNTAIN",
+        "REWARDS",
+        "ALL_CLASSES"
     ]
 }

@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="en" class="has-rail">
+<head>
+  <!-- InMobi Choice. Consent Manager Tag v3.0 (for TCF 2.2) -->
+<script id="inmobi-consent-script" class="ad-related">
+  (function() {
+    var host = window.location.hostname;
+    var element = document.createElement('script');
+    var firstScript = document.getElementsByTagName('script')[0];
+    var url = 'https://cmp.inmobi.com'
+      .concat('/choice/', 'R49-_XfAAzJmS', '/', host, '/choice.js?tag_version=V3');
+    var uspTries = 0;
+    var uspTriesLimit = 3;
+    element.async = true;
+    element.type = 'text/javascript';
+    element.src = url;
+  
+    firstScript.parentNode.insertBefore(element, firstScript);
+  
+    function makeStub() {
+      var TCF_LOCATOR_NAME = '__tcfapiLocator';
+      var queue = [];
+      var win = window;
+      var cmpFrame;
+  
+      function addFrame() {
+        var doc = win.document;
+        var otherCMP = !!(win.frames[TCF_LOCATOR_NAME]);
+  
+        if (!otherCMP) {
+          if (doc.body) {
+            var iframe = doc.createElement('iframe');
+  
+            iframe.style.cssText = 'display:none';
+            iframe.name = TCF_LOCATOR_NAME;
+            doc.body.appendChild(iframe);
+          } else {
+            setTimeout(addFrame, 5);
+          }
+        }
+        return !otherCMP;
+      }
+  
+      function tcfAPIHandler() {
+        var gdprApplies;
+        var args = arguments;
+  
+        if (!args.length) {
+          return queue;
+        } else if (args[0] === 'setGdprApplies') {
+          if (
+            args.length > 3 &&
+            args[2] === 2 &&
+            typeof args[3] === 'boolean'
+          ) {
+            gdprApplies = args[3];
+            if (typeof args[2] === 'function') {
+              args[2]('set', true);
+            }
+          }
+        } else if (args[0] === 'ping') {
+          var retr = {
+            gdprApplies: gdprApplies,
+            cmpLoaded: false,
+            cmpStatus: 'stub'
+          };
+  
+          if (typeof args[2] === 'function') {
+            args[2](retr);
+          }
+        } else {
+          if(args[0] === 'init' && typeof args[3] === 'object') {
+            args[3] = Object.assign(args[3], { tag_version: 'V3' });
+          }
+          queue.push(args);
+        }
+      }
+  
+      function postMessageEventHandler(event) {
+        var msgIsString = typeof event.data === 'string';
+        var json = {};
+  
+        try {
+          if (msgIsString) {
+            json = JSON.parse(event.data);
+          } else {
+            json = event.data;
+          }
+        } catch (ignore) {}
+  
+        var payload = json.__tcfapiCall;
+  
+        if (payload) {
+          window.__tcfapi(
+            payload.command,
+            payload.version,
+            function(retValue, success) {
+              var returnMsg = {
+                __tcfapiReturn: {
+                  returnValue: retValue,
+                  success: success,
+                  callId: payload.callId
+                }
+              };
+              if (msgIsString) {
+                returnMsg = JSON.stringify(returnMsg);
+              }
+              if (event && event.source && event.source.postMessage) {
+                event.source.postMessage(returnMsg, '*');
+              }
+            },
+            payload.parameter
+          );
+        }
+      }
+  
+      while (win) {
+        try {
+          if (win.frames[TCF_LOCATOR_NAME]) {
+            cmpFrame = win;
+            break;
+          }
+        } catch (ignore) {}
+  
+        if (win === window.top) {
+          break;
+        }
+        win = win.parent;
+      }
+      if (!cmpFrame) {
+        addFrame();
+        win.__tcfapi = tcfAPIHandler;
+        win.addEventListener('message', postMessageEventHandler, false);
+      }
+    };
+  
+    makeStub();
+  
+    function makeGppStub() {
+      const CMP_ID = 10;
+      const SUPPORTED_APIS = [
+        '2:tcfeuv2',
+        '6:uspv1',
+        '7:usnatv1',
+        '8:usca',
+        '9:usvav1',
+        '10:uscov1',
+        '11:usutv1',
+        '12:usctv1'
+      ];
+  
+      window.__gpp_addFrame = function (n) {
+        if (!window.frames[n]) {
+          if (document.body) {
+            var i = document.createElement("iframe");
+            i.style.cssText = "display:none";
+            i.name = n;
+            document.body.appendChild(i);
+          } else {
+            window.setTimeout(window.__gpp_addFrame, 10, n);
+          }
+        }
+      };
+      window.__gpp_stub = function () {
+        var b = arguments;
+        __gpp.queue = __gpp.queue || [];
+        __gpp.events = __gpp.events || [];
+  
+        if (!b.length || (b.length == 1 && b[0] == "queue")) {
+          return __gpp.queue;
+        }
+  
+        if (b.length == 1 && b[0] == "events") {
+          return __gpp.events;
+        }
+  
+        var cmd = b[0];
+        var clb = b.length > 1 ? b[1] : null;
+        var par = b.length > 2 ? b[2] : null;
+        if (cmd === "ping") {
+          clb(
+            {
+              gppVersion: "1.1", // must be “Version.Subversion”, current: “1.1”
+              cmpStatus: "stub", // possible values: stub, loading, loaded, error
+              cmpDisplayStatus: "hidden", // possible values: hidden, visible, disabled
+              signalStatus: "not ready", // possible values: not ready, ready
+              supportedAPIs: SUPPORTED_APIS, // list of supported APIs
+              cmpId: CMP_ID, // IAB assigned CMP ID, may be 0 during stub/loading
+              sectionList: [],
+              applicableSections: [-1],
+              gppString: "",
+              parsedSections: {},
+            },
+            true
+          );
+        } else if (cmd === "addEventListener") {
+          if (!("lastId" in __gpp)) {
+            __gpp.lastId = 0;
+          }
+          __gpp.lastId++;
+          var lnr = __gpp.lastId;
+          __gpp.events.push({
+            id: lnr,
+            callback: clb,
+            parameter: par,
+          });
+          clb(
+            {
+              eventName: "listenerRegistered",
+              listenerId: lnr, // Registered ID of the listener
+              data: true, // positive signal
+              pingData: {
+                gppVersion: "1.1", // must be “Version.Subversion”, current: “1.1”
+                cmpStatus: "stub", // possible values: stub, loading, loaded, error
+                cmpDisplayStatus: "hidden", // possible values: hidden, visible, disabled
+                signalStatus: "not ready", // possible values: not ready, ready
+                supportedAPIs: SUPPORTED_APIS, // list of supported APIs
+                cmpId: CMP_ID, // list of supported APIs
+                sectionList: [],
+                applicableSections: [-1],
+                gppString: "",
+                parsedSections: {},
+              },
+            },
+            true
+          );
+        } else if (cmd === "removeEventListener") {
+          var success = false;
+          for (var i = 0; i < __gpp.events.length; i++) {
+            if (__gpp.events[i].id == par) {
+              __gpp.events.splice(i, 1);
+              success = true;
+              break;
+            }
+          }
+          clb(
+            {
+              eventName: "listenerRemoved",
+              listenerId: par, // Registered ID of the listener
+              data: success, // status info
+              pingData: {
+                gppVersion: "1.1", // must be “Version.Subversion”, current: “1.1”
+                cmpStatus: "stub", // possible values: stub, loading, loaded, error
+                cmpDisplayStatus: "hidden", // possible values: hidden, visible, disabled
+                signalStatus: "not ready", // possible values: not ready, ready
+                supportedAPIs: SUPPORTED_APIS, // list of supported APIs
+                cmpId: CMP_ID, // CMP ID
+                sectionList: [],
+                applicableSections: [-1],
+                gppString: "",
+                parsedSections: {},
+              },
+            },
+            true
+          );
+        } else if (cmd === "hasSection") {
+          clb(false, true);
+        } else if (cmd === "getSection" || cmd === "getField") {
+          clb(null, true);
+        }
+        //queue all other commands
+        else {
+          __gpp.queue.push([].slice.apply(b));
+        }
+      };
+      window.__gpp_msghandler = function (event) {
+        var msgIsString = typeof event.data === "string";
+        try {
+          var json = msgIsString ? JSON.parse(event.data) : event.data;
+        } catch (e) {
+          var json = null;
+        }
+        if (typeof json === "object" && json !== null && "__gppCall" in json) {
+          var i = json.__gppCall;
+          window.__gpp(
+            i.command,
+            function (retValue, success) {
+              var returnMsg = {
+                __gppReturn: {
+                  returnValue: retValue,
+                  success: success,
+                  callId: i.callId,
+                },
+              };
+              event.source.postMessage(msgIsString ? JSON.stringify(returnMsg) : returnMsg, "*");
+            },
+            "parameter" in i ? i.parameter : null,
+            "version" in i ? i.version : "1.1"
+          );
+        }
+      };
+      if (!("__gpp" in window) || typeof window.__gpp !== "function") {
+        window.__gpp = window.__gpp_stub;
+        window.addEventListener("message", window.__gpp_msghandler, false);
+        window.__gpp_addFrame("__gppLocator");
+      }
+    };
+  
+    makeGppStub();
+  
+    var uspStubFunction = function() {
+      var arg = arguments;
+      if (typeof window.__uspapi !== uspStubFunction) {
+        setTimeout(function() {
+          if (typeof window.__uspapi !== 'undefined') {
+            window.__uspapi.apply(window.__uspapi, arg);
+          }
+        }, 500);
+      }
+    };
+  
+    var checkIfUspIsReady = function() {
+      uspTries++;
+      if (window.__uspapi === uspStubFunction && uspTries < uspTriesLimit) {
+        console.warn('USP is not accessible');
+      } else {
+        clearInterval(uspInterval);
+      }
+    };
+  
+    if (typeof window.__uspapi === 'undefined') {
+      window.__uspapi = uspStubFunction;
+      var uspInterval = setInterval(checkIfUspIsReady, 6000);
+    }
+  })();
+  </script>
+  <!-- End InMobi Choice. Consent Manager Tag v3.0 (for TCF 2.2) -->
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WCX9MQDXGQ" class="ad-related"></script>
+<script class="ad-related">
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-WCX9MQDXGQ');
+</script>
+<!-- Meta Tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Midnight Jewelcrafting guide with all Knowledge Points, specializations, and full recipe lists for gems, jewelry, profession tools, and PvP crafts.">
+<meta property="og:title" content="Midnight Jewelcrafting Guide: Recipes &amp; Knowledge Points">
+<meta property="og:description" content="Midnight Jewelcrafting guide with all Knowledge Points, specializations, and full recipe lists for gems, jewelry, profession tools, and PvP crafts.">
+<meta property="og:image" content="https://www.wow-professions.com/assets/img/share-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.wow-professions.com/midnight/jewelcrafting-guide">
+<!-- Favicons -->
+
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/img/favicon.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png"><!-- 180×180 -->
+<title>Midnight Jewelcrafting Guide: Recipes &amp; Knowledge Points</title>
+<script type="text/javascript" src="//wow.zamimg.com/widgets/power.js" async></script>
+<!-- Styles and JS -->
+
+<script>
+  (function() {
+    var savedTheme = localStorage.getItem("theme");
+    if (savedTheme && savedTheme !== "system") {
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+    // The guide rail (rail.njk) is icons only when the reader folded it, at any width from 768 px (rail.js keeps this
+    // in step on resize). Set before the first paint, so the page never jumps.
+    var root = document.documentElement;
+    if (root.classList.contains("has-rail") && !root.classList.contains("rl-norail")) {
+      var w = window.innerWidth, pref = false;
+      try { pref = localStorage.getItem("rail") === "collapsed"; } catch (e) {}
+      if (pref && w >= 768) root.classList.add("rl-collapsed");
+    }
+  })();
+</script>
+<link rel="stylesheet" href="/assets/styles-29f9d3ef.css">
+<script defer src="/assets/scripts-33921ee0.js"></script>
+<script defer src="/assets/js/session-manager.js"></script>
+<!-- Wowhead tooltips -->
+<script>var whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
+<!-- Freestar preconnect start -->
+<link rel="preconnect" href="https://a.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://b.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://c.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://d.pub.network/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://c.amazon-adsystem.com" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://s.amazon-adsystem.com" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://btloader.com/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://api.btloader.com/" crossorigin class="ad-related" />
+<link rel="preconnect" href="https://cdn.confiant-integrations.net" crossorigin class="ad-related" />
+<!-- Freestar preconnect end -->
+<link rel="stylesheet" href="https://a.pub.network/wow-professions-com/cls.css" class="ad-related">
+<!-- Freestar -->
+<script data-cfasync="false" type="text/javascript" class="ad-related">
+  var freestar = freestar || {};
+  freestar.queue = freestar.queue || [];
+  freestar.config = freestar.config || {};
+  freestar.config.enabled_slots = [];
+  freestar.initCallback = function () { (freestar.config.enabled_slots.length === 0) ? freestar.initCallbackCalled = false : freestar.newAdSlots(freestar.config.enabled_slots) }
+</script>
+<script src="https://a.pub.network/wow-professions-com/pubfig.min.js" data-cfasync="false" async class="ad-related"></script>  
+</head>
+<body><a href="https://www.wow-professions.com/cdn-cgi/content?id=1m5GYhY1r1d12CQj2iv2pPFg.GCf7yDTFbo5WcVwkQc-1792478304.442088-1.2.1.1-Pm2J2XcryyExySaMA9HJ0B.qynTIrXxeZ7NOcV8pKuVHUZi_iVDjN7Gq4.Up46dC" aria-hidden="true" rel="nofollow noopener" style="display: none !important; visibility: hidden !important"></a>
+    <!-- SVG Icon Sprite -->
+    <!-- Font Awesome Style SVG Icon Sprite -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  
+  <!-- Success/Check Circle (fa-check-circle) -->
+  <symbol id="icon-success" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
+  </symbol>
+
+  <!-- Simple Checkmark (fa-check) -->
+  <symbol id="icon-checkmark" viewBox="0 0 448 512">
+    <path fill="currentColor" d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
+  </symbol>
+
+  <!-- Error/X Circle (fa-times-circle) -->
+  <symbol id="icon-error" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
+  </symbol>
+
+  <!-- Simple X/Cross (fa-times) -->
+  <symbol id="icon-cross" viewBox="0 0 384 512">
+    <path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
+  </symbol>
+
+  <!-- Warning Triangle (fa-exclamation-triangle) -->
+  <symbol id="icon-warning" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480H40c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24V296c0 13.3 10.7 24 24 24s24-10.7 24-24V184c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
+  </symbol>
+
+  <!-- Loading Spinner (fa-spinner) -->
+  <symbol id="icon-loading" viewBox="0 0 512 512">
+    <path fill="currentColor" d="M304 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm0 416a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM48 304a48 48 0 1 0 0-96 48 48 0 1 0 0 96zm464-48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM142.9 437A48 48 0 1 0 75 369.1 48 48 0 1 0 142.9 437zm0-294.2A48 48 0 1 0 75 75a48 48 0 1 0 67.9 67.9zM369.1 437A48 48 0 1 0 437 369.1 48 48 0 1 0 369.1 437z"/>
+  </symbol>
+
+  <!-- Star/Celebration (fa-star) -->
+  <symbol id="icon-celebration" viewBox="0 0 576 512">
+    <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
+  </symbol>
+
+</svg>
+    
+    <header class="navbar">
+  <div class="container">
+
+
+    <!-- Logo / Brand -->
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">
+        <img src="/assets/img/logo.svg" alt="" width="40" height="40">
+      </a>
+    </div>
+
+    <!-- Desktop Navigation -->
+    <nav class="desktop-nav">
+      <ul>
+        <li><a href="/midnight">Midnight</a></li>        
+        <li><a href="/forever">Forever</a></li>
+        <li><a href="/classic">Classic</a></li>
+        <li><a href="/tbc-classic">TBC</a></li>        
+        <li><a href="/mop">MoP</a></li>
+        <li><a href="/profession-leveling-guides">Profession Leveling</a></li>
+        <li><a href="/farming-guides">Farming</a></li>
+      </ul>
+    </nav>
+
+    <div class="navbar-widgets">
+      <!-- NEW: Go Ad-Free Button (Desktop)  -->
+      <a href="/support" class="go-ad-free-btn hide-for-supporters-global">Go Ad Free</a>
+<a href="/support" class="supporter-badge show-for-supporters-global" style="display: none;">✨ Supporter</a>
+
+      <!-- Feedback Desktop -->
+      <div class="feedback-container"><a href="/contact"><svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 5.25L3 6V18L3.75 18.75H20.25L21 18V6L20.25 5.25H3.75ZM4.5 7.6955V17.25H19.5V7.69525L11.9999 14.5136L4.5 7.6955ZM18.3099 6.75H5.68986L11.9999 12.4864L18.3099 6.75Z" fill="#fff"></path>
+          </svg><span class="feedback-label">Feedback</span></a></div>
+      <!-- Theme Switcher (Right) -->
+      <div class="theme-switcher" id="desktop-theme-switcher">
+        <button type="button" id="theme-toggle" class="theme-button" aria-haspopup="menu" aria-expanded="false">
+          <span class="theme-button-wrap">
+            <img id="theme-icon" src="/assets/img/theme-light.svg" alt="Theme Switcher" width="16" height="16">
+            <span class="theme-label">Theme</span>
+          </span>
+          <svg aria-hidden="true" class="" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 9.17a1 1 0 0 0-1.41 0L12 12.71 8.46 9.17a1 1 0 1 0-1.41 1.42l4.24 4.24a1.002 1.002 0 0 0 1.42 0L17 10.59a1.002 1.002 0 0 0 0-1.42Z"></path>
+          </svg>
+        </button>
+        <ul id="theme-menu" class="theme-dropdown hidden" aria-labelledby="theme-toggle">
+          <li><button type="button" class="theme-option" data-theme-option="system">
+              <span class="theme-option-wrap">
+                <img src="/assets/img/theme-os-default.svg" alt="Auto" width="16" height="16"> Auto
+              </span>
+            </button></li>
+          <li><button type="button" class="theme-option" data-theme-option="light">
+              <span class="theme-option-wrap">
+                <img src="/assets/img/theme-light.svg" alt="Light Mode" width="16" height="16"> Light
+              </span>
+            </button></li>
+          <li><button type="button" class="theme-option" data-theme-option="dark">
+              <span class="theme-option-wrap">
+                <img src="/assets/img/theme-dark.svg" alt="Dark Mode" width="16" height="16"> Dark
+              </span>
+            </button></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Search box -->
+    <div id="search" data-pagefind-v="1.5.2" data-pagefind-filter="version:Midnight">
+      <form class="sb" role="search" autocomplete="off" data-pagefind-filter="type:guide">
+        <svg class="sb-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input class="sb-input" type="search" placeholder="Search" aria-label="Search the guides" autocomplete="off" spellcheck="false" enterkeyhint="search">
+        <button type="button" class="sb-clear" aria-label="Clear search" hidden>&times;</button>
+      </form>
+      <div class="sb-panel" hidden>
+        <div class="sb-scroll">
+          <ol class="sb-list"></ol>
+          <div class="sb-foot"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-toggle" class="mobile-menu-button">
+      ☰
+    </button>
+
+    <!-- Mobile Navigation (Hidden by Default) -->
+    <nav id="mobile-nav" class="mobile-nav">
+      <ul>
+        <li><a href="/midnight">Midnight</a></li>        
+        <li><a href="/forever">Forever</a></li>
+        <li><a href="/classic">Classic</a></li>        
+        <li><a href="/tbc-classic">TBC</a></li>        
+        <li><a href="/mop">MoP</a></li>
+        <li><a href="/profession-leveling-guides">Profession Leveling</a></li>
+        <li><a href="/farming-guides">Farming</a></li>
+      </ul>
+      <!-- Mobile Theme Switcher -->
+      <div class="mobile-navbar-widgets">
+        <!-- Mobile Go Ad-Free Button  -->
+        <a href="/support" class="go-ad-free-btn hide-for-supporters-global">Go Ad Free</a>
+        <a href="/support" class="supporter-badge show-for-supporters-global" style="display: none;">✨ Supporter</a>
+
+        <!-- Mobile Feedback button  -->
+        <div class="feedback-container"><a href="/contact"><svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 5.25L3 6V18L3.75 18.75H20.25L21 18V6L20.25 5.25H3.75ZM4.5 7.6955V17.25H19.5V7.69525L11.9999 14.5136L4.5 7.6955ZM18.3099 6.75H5.68986L11.9999 12.4864L18.3099 6.75Z" fill="#fff"></path>
+            </svg>Feedback</a></div>
+        
+        <div class="theme-switcher" id="mobile-theme-switcher">
+          <button type="button" id="theme-toggle-mobile" class="theme-button" aria-haspopup="menu" aria-expanded="false">
+            <span class="theme-button-wrap">
+              <img id="theme-icon-mobile" src="/assets/img/theme-light.svg" alt="Theme Switcher" width="16" height="16">
+              Theme
+            </span>
+            <svg aria-hidden="true" class="" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17 9.17a1 1 0 0 0-1.41 0L12 12.71 8.46 9.17a1 1 0 1 0-1.41 1.42l4.24 4.24a1.002 1.002 0 0 0 1.42 0L17 10.59a1.002 1.002 0 0 0 0-1.42Z"></path>
+            </svg>
+          </button>
+          <ul id="theme-menu-mobile" class="theme-dropdown hidden" aria-labelledby="theme-toggle-mobile">
+            <li><button type="button" class="theme-option" data-theme-option="system">
+                <span class="theme-option-wrap">
+                  <img src="/assets/img/theme-os-default.svg" alt="Auto" width="16" height="16"> Auto
+                </span>
+              </button></li>
+            <li><button type="button" class="theme-option" data-theme-option="light">
+                <span class="theme-option-wrap">
+                  <img src="/assets/img/theme-light.svg" alt="Light Mode" width="16" height="16"> Light
+                </span>
+              </button></li>
+            <li><button type="button" class="theme-option" data-theme-option="dark">
+                <span class="theme-option-wrap">
+                  <img src="/assets/img/theme-dark.svg" alt="Dark Mode" width="16" height="16"> Dark
+                </span>
+              </button></li>
+          </ul>
+        </div>        
+      </div>
+    </nav>
+  </div>  
+</header>
+
+    
+
+<div class="rl-cbar">
+  <button type="button" class="rl-cbar-guides" data-rl-drawer aria-controls="rl-rail" aria-expanded="false"><svg class="rl-ico rl-ico-grid" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span>Guides</span></button>
+  <details class="rl-drop rl-cdrop " data-nav-area="contents">
+  <summary class="rl-cbtn">
+    <span class="rl-cbtn-ico"><svg class="rl-ico rl-ico-list" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg></span>
+    <span class="rl-cbtn-text"><span class="rl-cbtn-kicker">On this page</span>
+    <span class="rl-cbtn-current" data-rl-current>Jump to a section</span>
+    </span>
+    <svg class="rl-ico rl-ico-down" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="rl-panel">
+    <div class="rl-panel-head"><span>On this page</span><button type="button" class="rl-panel-close" aria-label="Close"><svg class="rl-ico rl-ico-close" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <ol class="rl-toc-list">
+  <li><a href="#changes" data-rl-target="changes"><span class="rl-toc-label">Midnight Jewelcrafting Changes</span></a></li>
+  <li><a href="#knowledge" data-rl-target="knowledge"><span class="rl-toc-label">Jewelcrafting Knowledge</span></a></li>
+  <li><a href="#treasures" data-rl-target="treasures"><span class="rl-toc-label">Knowledge Treasures</span></a></li>
+  <li><a href="#specializations" data-rl-target="specializations"><span class="rl-toc-label">Jewelcrafting Specializations</span></a></li>
+  <li><a href="#prospecting" data-rl-target="prospecting"><span class="rl-toc-label">Prospecting &amp; Crushing</span></a></li>
+  <li><a href="#profession-equipment" data-rl-target="profession-equipment"><span class="rl-toc-label">Profession Equipment</span></a></li>
+  <li><a href="#renown-recipes" data-rl-target="renown-recipes"><span class="rl-toc-label">Renown Recipes</span></a></li>
+  <li><a href="#recipes" data-rl-target="recipes"><span class="rl-toc-label">Midnight Jewelcrafting Recipes</span></a></li>
+</ol>
+  </div>
+</details>
+</div>
+
+
+<aside class="rl-rail" id="rl-rail" aria-label="Professions" data-nav-area="quick_links" data-pagefind-ignore="all">
+  <div class="rl-inner">
+  <div class="rl-head">
+    
+    <a class="rl-version" href="/midnight" title="All Midnight guides">
+      <img src="/images/general/midnight-icon-128.webp" width="30" height="30" alt="">
+      <span class="rl-text"><b>Midnight</b></span>
+    </a>
+    
+    <button type="button" class="rl-collapse" data-rl-collapse aria-label="Collapse or expand the sidebar" title="Collapse or expand the sidebar"><svg class="rl-ico rl-ico-fold" width="18" height="18" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg></button>
+    <button type="button" class="rl-close" data-rl-drawer-close aria-label="Close"><svg class="rl-ico rl-ico-close" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    
+    <button type="button" class="rl-open" data-rl-collapse aria-label="Open the sidebar" title="Open the sidebar"><svg class="rl-ico rl-ico-list" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg></button>
+  </div>
+  <div class="rl-scroll"><div class="rl-rail-toc"><nav class="rl-toc" aria-label="On this page" data-nav-area="contents">
+  <p class="rl-label">On this page</p>
+  <ol class="rl-toc-list">
+  <li><a href="#changes" data-rl-target="changes"><span class="rl-toc-label">Midnight Jewelcrafting Changes</span></a></li>
+  <li><a href="#knowledge" data-rl-target="knowledge"><span class="rl-toc-label">Jewelcrafting Knowledge</span></a></li>
+  <li><a href="#treasures" data-rl-target="treasures"><span class="rl-toc-label">Knowledge Treasures</span></a></li>
+  <li><a href="#specializations" data-rl-target="specializations"><span class="rl-toc-label">Jewelcrafting Specializations</span></a></li>
+  <li><a href="#prospecting" data-rl-target="prospecting"><span class="rl-toc-label">Prospecting &amp; Crushing</span></a></li>
+  <li><a href="#profession-equipment" data-rl-target="profession-equipment"><span class="rl-toc-label">Profession Equipment</span></a></li>
+  <li><a href="#renown-recipes" data-rl-target="renown-recipes"><span class="rl-toc-label">Renown Recipes</span></a></li>
+  <li><a href="#recipes" data-rl-target="recipes"><span class="rl-toc-label">Midnight Jewelcrafting Recipes</span></a></li>
+</ol>
+</nav></div>
+  <p class="rl-label rl-text">Professions</p>
+  <ul class="rl-list">
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Alchemy"><img src="/images/icons/professions/alchemy-m.png" width="20" height="20" alt=""><span class="rl-text">Alchemy</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-alchemy-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/alchemy-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/alchemy-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Blacksmithing"><img src="/images/icons/professions/blacksmithing-m.png" width="20" height="20" alt=""><span class="rl-text">Blacksmithing</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-blacksmithing-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/blacksmithing-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/blacksmithing-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Enchanting"><img src="/images/icons/professions/enchanting-m.png" width="20" height="20" alt=""><span class="rl-text">Enchanting</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-enchanting-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/enchanting-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/enchanting-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Engineering"><img src="/images/icons/professions/engineering-m.png" width="20" height="20" alt=""><span class="rl-text">Engineering</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-engineering-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/engineering-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/engineering-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Inscription"><img src="/images/icons/professions/inscription-m.png" width="20" height="20" alt=""><span class="rl-text">Inscription</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-inscription-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/inscription-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/inscription-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup" open>
+    <summary class="rl-row is-current" title="Jewelcrafting"><img src="/images/icons/professions/jewelcrafting-m.png" width="20" height="20" alt=""><span class="rl-text">Jewelcrafting</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-jewelcrafting-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/jewelcrafting-guide" class="is-active" aria-current="page">Recipes &amp; Knowledge</a></li><li><a href="/midnight/jewelcrafting-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Leatherworking"><img src="/images/icons/professions/leatherworking-m.png" width="20" height="20" alt=""><span class="rl-text">Leatherworking</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-leatherworking-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/leatherworking-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/leatherworking-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Tailoring"><img src="/images/icons/professions/tailoring-m.png" width="20" height="20" alt=""><span class="rl-text">Tailoring</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-tailoring-leveling-guide">Leveling 1-100</a></li><li><a href="/midnight/tailoring-guide">Recipes &amp; Knowledge</a></li><li><a href="/midnight/tailoring-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Herbalism"><img src="/images/icons/professions/herbalism-m.png" width="20" height="20" alt=""><span class="rl-text">Herbalism</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-herbalism-leveling-guide">Leveling &amp; Routes</a></li><li><a href="/midnight/herbalism-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <details class="rl-rgroup">
+    <summary class="rl-row" title="Mining"><img src="/images/icons/professions/mining-m.png" width="20" height="20" alt=""><span class="rl-text">Mining</span><svg class="rl-ico rl-ico-right" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></summary>
+    <ul class="rl-sub"><li><a href="/guides/wow-mining-leveling-guide">Leveling &amp; Routes</a></li><li><a href="/midnight/mining-specialization-guide-and-builds">Specializations</a></li>
+    </ul>
+  </details></li>
+    <li>
+  <a class="rl-row" href="/guides/wow-skinning-leveling-guide" title="Skinning"><img src="/images/icons/professions/skinning-m.png" width="20" height="20" alt=""><span class="rl-text">Skinning</span></a></li>
+    <li>
+  <a class="rl-row" href="/guides/wow-cooking-leveling-guide" title="Cooking"><img src="/images/icons/professions/cooking-m.png" width="20" height="20" alt=""><span class="rl-text">Cooking</span></a></li>
+    <li>
+  <a class="rl-row" href="/guides/wow-fishing-leveling-guide" title="Fishing"><img src="/images/icons/professions/fishing-m.png" width="20" height="20" alt=""><span class="rl-text">Fishing</span></a></li>
+  </ul>
+  </div>
+</div>
+</aside>
+<div class="rl-scrim" data-rl-scrim></div>
+
+ 
+    <div class="wrapper">
+        
+
+<div class="grid-layout grid--rail">
+  <aside class="rl-tocol"><nav class="rl-toc" aria-label="On this page" data-nav-area="contents">
+  <p class="rl-label">On this page</p>
+  <ol class="rl-toc-list">
+  <li><a href="#changes" data-rl-target="changes"><span class="rl-toc-label">Midnight Jewelcrafting Changes</span></a></li>
+  <li><a href="#knowledge" data-rl-target="knowledge"><span class="rl-toc-label">Jewelcrafting Knowledge</span></a></li>
+  <li><a href="#treasures" data-rl-target="treasures"><span class="rl-toc-label">Knowledge Treasures</span></a></li>
+  <li><a href="#specializations" data-rl-target="specializations"><span class="rl-toc-label">Jewelcrafting Specializations</span></a></li>
+  <li><a href="#prospecting" data-rl-target="prospecting"><span class="rl-toc-label">Prospecting &amp; Crushing</span></a></li>
+  <li><a href="#profession-equipment" data-rl-target="profession-equipment"><span class="rl-toc-label">Profession Equipment</span></a></li>
+  <li><a href="#renown-recipes" data-rl-target="renown-recipes"><span class="rl-toc-label">Renown Recipes</span></a></li>
+  <li><a href="#recipes" data-rl-target="recipes"><span class="rl-toc-label">Midnight Jewelcrafting Recipes</span></a></li>
+</ol>
+</nav></aside>
+
+ 
+        <main class="content" data-pagefind-body>
+            
+  
+  <h1 data-pagefind-weight="10" data-pagefind-meta="guide_title">Midnight Jewelcrafting Guide: Recipes &amp; Knowledge Points</h1>
+  <article>
+    <p>This guide covers all of Midnight Jewelcrafting. You'll find every weekly and one-time Knowledge source, profession equipment, renown-gated recipes, and full recipe lists for gems, jewelry, profession tools, PvP crafts, reagents, and house decor.</p>
+<p>If you need help leveling Jewelcrafting from 1 to 100, check out my leveling guide:</p>
+<p class="text-align-center">
+    <a href="/guides/wow-jewelcrafting-leveling-guide" class="gblock">
+        Midnight Jewelcrafting Leveling Guide
+    </a>
+</p>
+<h2 class="line-header" id="changes">Midnight Jewelcrafting Changes</h2>
+<p>Most of the Jewelcrafting system is the same as in The War Within. Only a few things have changed, so if you understood Jewelcrafting there, you will have no trouble adapting to Midnight.</p>
+<ul class="spaced-list">
+    <li><b>Quality Changes</b> - Gems and reagents now only have two quality levels (Silver and Gold) instead of three.</li>
+    <li><b>Raw Gems Have Quality</b> - All raw uncut gems now have quality (Silver and Gold) unlike in The War Within where they had none. Eversong Diamonds are the exception and remain quality-less.</li>
+    <li><b>Artisan Jewelcrafter's Moxie</b> - The BoP currency <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=210814"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color3.jpg">Artisan's Acuity</a> that you got from earning profession Knowledge in The War Within has been changed to a profession-specific currency, <a rel="nofollow noopener noreferrer" class="white" target="_blank" href="https://www.wowhead.com/currency=3262"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color2.jpg">Artisan Jewelcrafter's Moxie</a>. You can now only use it for Jewelcrafting-specific recipes.</li>
+    <li><b>Epic Profession Gear</b> - Epic-quality profession gear has been added. They provide the same skill bonus as Rare gear but come with higher secondary stats (Resourcefulness, Multicraft, etc.).</li>
+    <li><b>Vials Lost a Crafted Tier</b> - In The War Within, vendors sold bronze-quality vials so crafters could profit from selling silver and gold. With bronze quality gone, vendors now sell silver, so only gold-quality vials are worth crafting.</li>
+    <li><b>No Extra Socket Consumable</b> - There is no item that adds sockets to gear in Midnight (apart from the Great Vault). Players rely on sockets naturally dropping on their gear, so cut gem demand will be lower than in The War Within where you could add sockets to all your jewelry.</li>
+</ul>
+<h2 class="line-header" id="knowledge">Jewelcrafting Knowledge in Midnight</h2>
+<h3>One-Time Sources</h3>
+<p>These are one-time sources of Jewelcrafting Knowledge Points. Once you collect them, they are gone forever on that character.</p>
+<ul class="guide-list">
+    <li><b>Renown Book</b> - <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=257599"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_offhand_sunwell_d_01.jpg">Skill Issue: Jewelcrafting</a> gives 10 Knowledge Points. Sold by <a href="/midnight/npc/caeris-fairdawn">Caeris Fairdawn</a> in Eversong Woods for 75 <a rel="nofollow noopener noreferrer" class="white" target="_blank" href="https://www.wowhead.com/currency=3262"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_10_gearcraft_artisansmettle_color2.jpg">Artisan Jewelcrafter's Moxie</a>. Requires <b>Renown 6 with Silvermoon Court</b>.</li>
+    <li><b>Treasures</b> - There are 8 Jewelcrafting treasures scattered across the Midnight zones. Each one gives 3 Knowledge Points, for a total of 24 extra points. See the <a href="#treasures">treasure locations</a> below.</li>
+</ul>
+<h3>Weekly Sources</h3>
+<p>In Midnight, there are four weekly sources of profession Knowledge, giving you around 20 Knowledge Points per week. Patron Crafting Orders are your main source, supplemented by treasure drops, a weekly quest, and an Inscription treatise.</p>
+<div class="table-container">
+<table class="tbl-desc">
+    <thead>
+        <tr>
+            <th>Source</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>Patron Crafting Orders (~12 KP)</b></td>
+            <td>Patron orders are the main source of Knowledge Points. You will receive multiple orders throughout the week. Some of them will reward you with <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=246331"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_nullstone_cosmicvoid.jpg">Glimmer of Midnight Jewelcrafting Knowledge</a>, but not all orders give Knowledge Points.</td>
+        </tr>
+        <tr>
+            <td><b>Weekly Quest (3 KP)</b></td>
+            <td>Your profession trainer will offer a weekly quest that asks you to complete 3 Crafting Orders. This rewards a <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=263458"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_profession_book_jewelcrafting.jpg">Thalassian Jewelcrafter's Notebook</a> worth 3 Knowledge Points and resets every week. If you don't see the quest, you first need to complete the <a rel="nofollow noopener noreferrer"  target="_blank" href="https://www.wowhead.com/quest=93723"><img  align="absmiddle" src="/images/icons/quest_start.gif" width="15" height="15">Crafters Needed</a> questline from <a rel="nofollow noopener noreferrer"  target="_blank" href="https://www.wowhead.com/npc=243283">Captain Flaresworn</a> to unlock it.</td>
+        </tr>
+        <tr>
+            <td><b>Weekly Drops (4 KP)</b></td>
+            <td>Each week, you can loot 1 of each of the following items from treasures scattered around the new zones: <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=259198"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_gem_sapphire_03.jpg">Void-Touched Eversong Diamond Fragments</a> and <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=259199"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_ore_blackrock_nugget.jpg">Harandar Stone Sample</a>.</td>
+        </tr>
+        <tr>
+            <td><b>Inscription Treatise (1 KP)</b></td>
+            <td>To get a <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=245760"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_profession_book_jewelcrafting.jpg">Thalassian Treatise on Jewelcrafting</a>, you need to submit a Public Crafting Order since they are bind-on-pickup (BoP). Treatises are Warbound, so if you have an alt with Inscription, you can craft them and send them to your main.</td>
+        </tr>
+        <tr>
+            <td><b>Darkmoon Faire (3 KP / month)</b></td>
+            <td>Once a month, the Darkmoon Faire comes to town and you can complete a quick <a href="/wowguides/darkmoon-faire-profession-quests">profession quest</a> for +3 Knowledge Points and +2 Profession Skill. It's not a weekly source, but don't skip it. The Faire starts on the Sunday before the first Monday of each month.</td>
+        </tr>
+        <tr>
+            <td><b>Catch-up System</b></td>
+            <td>If you fall behind or start late, you will receive <a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=246330"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_cosmicvoid_orb.jpg">Flicker of Midnight Jewelcrafting Knowledge</a> from Patron orders instead of Glimmers. These only drop when you're behind, so don't worry if you start late.</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="treasures">Jewelcrafting Knowledge Treasures</h2>
+<p>There are 8 Jewelcrafting treasures in Midnight, giving 24 Knowledge Points in total (3 KP each). They are located in Silvermoon City, Eversong Woods, and Voidstorm.</p>
+<details class="details-simple">
+<summary><h4>TomTom Waypoints & Treasure Check Macro</h4></summary>
+<div class="details-content">
+<h4>TomTom Waypoints</h4>
+<div class="code-copy">
+<div class="code-header">Copy all, then type <code>/ttpaste</code> in-game</div>
+<button class="btn-copy" data-clipboard-text="/way #2393 50.6, 56.6 Sin'dorei Masterwork Chisel&#10;/way #2393 55.4, 48.0 Vintage Soul Gem&#10;/way #2395 56.6, 40.9 Poorly Rounded Vial&#10;/way #2395 39.6, 38.9 Sin'dorei Gem Faceters&#10;/way #2444 30.5, 69.1 Speculative Voidstorm Crystal&#10;/way #2444 54.2, 51.2 Ethereal Gem Pliers&#10;/way #2444 62.7, 53.4 Shattered Glass&#10;/way #2393 28.6, 46.5 Dual-Function Magnifiers"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+<pre>/way #2393 50.6, 56.6 Sin'dorei Masterwork Chisel
+/way #2393 55.4, 48.0 Vintage Soul Gem
+/way #2395 56.6, 40.9 Poorly Rounded Vial
+/way #2395 39.6, 38.9 Sin'dorei Gem Faceters
+/way #2444 30.5, 69.1 Speculative Voidstorm Crystal
+/way #2444 54.2, 51.2 Ethereal Gem Pliers
+/way #2444 62.7, 53.4 Shattered Glass
+/way #2393 28.6, 46.5 Dual-Function Magnifiers</pre>
+</div>
+<h4>Treasure Check Macro</h4>
+<div class="code-copy">
+<div class="code-header">Paste into chat - <code>true</code> = collected</div>
+<button class="btn-copy" data-clipboard-text='/run local f,p=C_QuestLog.IsQuestFlaggedCompleted,print p("Sin&#39;dorei M:",f(89122)) p("Vintage:",f(89127)) p("Poorly:",f(89125)) p("Sin&#39;dorei G:",f(89129)) p("Speculative:",f(89123)) p("Ethereal:",f(89128)) p("Shattered:",f(89126)) p("Dual-F:",f(89124))'><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+<div class="code-wrap">/run local f,p=C_QuestLog.IsQuestFlaggedCompleted,print p("Sin'dorei M:",f(89122)) p("Vintage:",f(89127)) p("Poorly:",f(89125)) p("Sin'dorei G:",f(89129)) p("Speculative:",f(89123)) p("Ethereal:",f(89128)) p("Shattered:",f(89126)) p("Dual-F:",f(89124))</div>
+</div>
+</div>
+</details>
+<h3 class="text-align-center">Treasure locations by zone</h3>
+<div class="tab-container">
+  <div class="tabs spread-buttons">
+    <button class="tab-button active" data-tab="tab-silvermoon">Silvermoon City <span class="tab-count">3</span></button>
+    <button class="tab-button" data-tab="tab-eversong">Eversong Woods <span class="tab-count">2</span></button>
+    <button class="tab-button" data-tab="tab-voidstorm">Voidstorm <span class="tab-count">3</span></button>
+  </div>
+  <div class="tab-content active" id="tab-silvermoon">
+    <p>Silvermoon City has 3 treasures.</p>
+<h4>1. Sin'dorei Masterwork Chisel</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Silvermoon City</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2393 50.6 56.6 Sin'dorei Masterwork Chisel">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2393;local x=0.506;local y=0.566;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2393" data-coords="50.6, 56.6" data-title="Sin'dorei Masterwork Chisel" data-map-img="/images/maps/normal/silvermoon-city.webp" data-zone-name="Silvermoon City">
+<div class="map-zone">Silvermoon City</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/silvermoon-city.webp');">
+<div class="map-pin" style="left: 50.6%; top: 56.6%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Sin'dorei Masterwork Chisel</span>
+</div>
+<div class="media-content">
+<img  class="lightbox" alt="Sin'dorei Masterwork Chisel" src="/images/midnight/jc-sin-dorei-masterwork-chisel.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>2. Vintage Soul Gem</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Silvermoon City</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2393 55.4 48.0 Vintage Soul Gem">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2393;local x=0.554;local y=0.480;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2393" data-coords="55.4, 48.0" data-title="Vintage Soul Gem" data-map-img="/images/maps/normal/silvermoon-city.webp" data-zone-name="Silvermoon City">
+<div class="map-zone">Silvermoon City</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/silvermoon-city.webp');">
+<div class="map-pin" style="left: 55.4%; top: 48.0%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Vintage Soul Gem</span>
+</div>
+<div class="media-content">
+<img  class="lightbox" alt="Vintage Soul Gem" src="/images/midnight/jc-vintage-soul-gem.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>3. Dual-Function Magnifiers</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Silvermoon City</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2393 28.6 46.5 Dual-Function Magnifiers">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2393;local x=0.286;local y=0.465;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2393" data-coords="28.6, 46.5" data-title="Dual-Function Magnifiers" data-map-img="/images/maps/normal/silvermoon-city.webp" data-zone-name="Silvermoon City">
+<div class="map-zone">Silvermoon City</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/silvermoon-city.webp');">
+<div class="map-pin" style="left: 28.6%; top: 46.5%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Dual-Function Magnifiers</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Dual-Function Magnifiers" src="/images/midnight/jc-dual-function-magnifiers.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+  <div class="tab-content" id="tab-eversong">
+    <p>Eversong Woods has 2 treasures.</p>
+<h4>1. Poorly Rounded Vial</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Eversong Woods</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2395 56.6 40.9 Poorly Rounded Vial">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2395;local x=0.566;local y=0.409;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2395" data-coords="56.6, 40.9" data-title="Poorly Rounded Vial" data-map-img="/images/maps/normal/eversong-woods.webp" data-zone-name="Eversong Woods">
+<div class="map-zone">Eversong Woods</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/eversong-woods.webp');">
+<div class="map-pin" style="left: 56.6%; top: 40.9%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Poorly Rounded Vial</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Poorly Rounded Vial" src="/images/midnight/jc-poorly-rounded-vial.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>2. Sin'dorei Gem Faceters</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Eversong Woods</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2395 39.6 38.9 Sin'dorei Gem Faceters">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2395;local x=0.396;local y=0.389;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2395" data-coords="39.6, 38.9" data-title="Sin'dorei Gem Faceters" data-map-img="/images/maps/normal/eversong-woods.webp" data-zone-name="Eversong Woods">
+<div class="map-zone">Eversong Woods</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/eversong-woods.webp');">
+<div class="map-pin" style="left: 39.6%; top: 38.9%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Sin'dorei Gem Faceters</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Sin'dorei Gem Faceters" src="/images/midnight/jc-sin-dorei-gem-faceters.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+  <div class="tab-content" id="tab-voidstorm">
+    <p>Voidstorm has 3 treasures.</p>
+<h4>1. Speculative Voidstorm Crystal</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Voidstorm, Slayer's Rise</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2444 30.5 69.1 Speculative Voidstorm Crystal">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2444;local x=0.305;local y=0.691;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2444" data-coords="30.5, 69.1" data-title="Speculative Voidstorm Crystal" data-map-img="/images/maps/normal/slayers-rise.webp" data-zone-name="Voidstorm, Slayer's Rise">
+<div class="map-zone">Voidstorm, Slayer's Rise</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/slayers-rise.webp');">
+<div class="map-pin" style="left: 30.5%; top: 69.1%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Speculative Voidstorm Crystal</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Speculative Voidstorm Crystal" src="/images/midnight/jc-speculative-voidstorm-crystal.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>2. Ethereal Gem Pliers</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Voidstorm, Slayer's Rise</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2444 54.2 51.2 Ethereal Gem Pliers">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2444;local x=0.542;local y=0.512;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2444" data-coords="54.2, 51.2" data-title="Ethereal Gem Pliers" data-map-img="/images/maps/normal/slayers-rise.webp" data-zone-name="Voidstorm, Slayer's Rise">
+<div class="map-zone">Voidstorm, Slayer's Rise</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/slayers-rise.webp');">
+<div class="map-pin" style="left: 54.2%; top: 51.2%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Ethereal Gem Pliers</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Ethereal Gem Pliers" src="/images/midnight/jc-ethereal-gem-pliers.webp" width="1002" height="668">
+</div>
+</div>
+</div><h4>3. Shattered Glass</h4>
+<div class="npc-media">
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Voidstorm, Slayer's Rise</span>
+<div class="waypoint-actions">
+<button class="btn-waypoint" data-clipboard-text="/way #2444 62.7 53.4 Shattered Glass">TomTom</button>
+<button class="btn-waypoint" data-clipboard-text="/run local m=2444;local x=0.627;local y=0.534;C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(m,x,y));C_SuperTrack.SetSuperTrackedUserWaypoint(true)">In-Game Pin</button>
+</div>
+</div>
+<div class="media-content">
+<div class="map-embed" data-zone="2444" data-coords="62.7, 53.4" data-title="Shattered Glass" data-map-img="/images/maps/normal/slayers-rise.webp" data-zone-name="Voidstorm, Slayer's Rise">
+<div class="map-zone">Voidstorm, Slayer's Rise</div>
+<div class="map-image" style="background-image: url('/images/maps/normal/slayers-rise.webp');">
+<div class="map-pin" style="left: 62.7%; top: 53.4%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="media-card">
+<div class="media-header">
+<span class="media-title">Shattered Glass</span>
+</div>
+<div class="media-content">
+<img loading="lazy"  class="lightbox" alt="Shattered Glass" src="/images/midnight/jc-shattered-glass.webp" width="1002" height="668">
+</div>
+</div>
+</div>  </div>
+</div>
+<h2 class="line-header" id="specializations">Jewelcrafting Specializations</h2>
+<p>There are four specialization trees, unlocked at skill levels 25, 50, 60, and 75. Pick based on what you want to craft and sell.</p>
+<ul class="minimal-list">
+    <li><b>Glamorous Gems</b> - Gem cuts and Prisms, one sub-spec per color.</li>
+    <li><b>Alluring Accessories</b> - Epic rings, necklaces, and profession accessories for JC, Enchanting, and Inscription.</li>
+    <li><b>Proficient Processor</b> - Reagents, plus Prospecting and Crushing improvements.</li>
+    <li><b>Thoughtful Throughput</b> - Crafting stats.</li>
+</ul>
+<p class="text-align-center">
+    <a href="/midnight/jewelcrafting-specialization-guide-and-builds" class="gblock">        
+        Midnight Jewelcrafting Specialization Guide & Best Builds
+    </a>  
+</p>
+<h2 class="line-header" id="prospecting">Prospecting & Crushing</h2>
+<p>Prospecting and Crushing are Jewelcrafting's two raw material processing abilities, both learned from the trainer early on. Prospecting breaks down 5 ore into gems and reagents, while Crushing turns uncut gems into <a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242620"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_gem_dust_red.jpg">Glimmering Gemdust</a>. The <b>Proficient Processor</b> specialization tree improves both activities through dedicated sub-specs.</p>
+<h3>Crushing</h3>
+<p>Crushing turns uncut gems into <a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242620"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_gem_dust_red.jpg">Glimmering Gemdust</a>, which is used in many Jewelcrafting recipes. Both uncommon and rare gems have the same Gemdust yield, roughly ~0.67 per crush (with talents). Since uncommon gems are not used in many crafts, they will likely be cheaper on the Auction House, making them the more cost-effective choice for Crushing.</p>
+<h3>Prospecting</h3>
+<p>Every prospect yields <a class="white" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242788"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_stone_reagent_raw_purple.jpg">Duskshrouded Stone</a> and <a class="white" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242786"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_glass_reagent_raw_blue.jpg">Crystalline Glass</a> as guaranteed reagents. On top of that, each ore type drops specific gems. <a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242608"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_uncut.jpg">Eversong Diamonds</a> <b>do not drop by default</b>, you need to invest in the Proficient Processor tree where each ore has a dedicated node (Copper Consumer, Tin-vestigator, Silver Scrapper, Thorium Thresher) that unlocks the chance of finding them.</p>
+<div class="table-container">
+<table class="tbl-data">
+    <thead>
+        <tr>
+            <th>Ore</th>
+            <th>Uncommon Gems</th>
+            <th>Rare Gems</th>
+            <th>Epic Gem</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><a rel="nofollow noopener noreferrer" class="white" target="_blank" href="https://www.wowhead.com/item=237359"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_ore_refulgentcopper.jpg">Refulgent Copper</a></td>
+            <td><ul class="nostyle">
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242553"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_red.jpg">Sanguine Garnet</a> ~8%</li>
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242554"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_blue.jpg">Amani Lapis</a> ~8%</li>
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242607"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_green.jpg">Harandar Peridot</a> ~8%</li>
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242606"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_purple.jpg">Tenebrous Amethyst</a> ~8%</li>
+</ul></td>
+            <td>None</td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242608"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_uncut.jpg">Eversong Diamond</a> ~2.5%</td>
+        </tr>
+        <tr>
+            <td><a rel="nofollow noopener noreferrer" class="zold" target="_blank" href="https://www.wowhead.com/item=237362"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_ore_umbraltin.jpg">Umbral Tin</a></td>
+            <td><ul class="nostyle">
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242607"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_green.jpg">Harandar Peridot</a> ~12%</li>
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242606"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_purple.jpg">Tenebrous Amethyst</a> ~12%</li>
+</ul></td>
+            <td><ul class="nostyle">
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242610"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_green.jpg">Flawless Harandar Peridot</a> ~12%</li>
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242611"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_purple.jpg">Flawless Tenebrous Amethyst</a> ~12%</li>
+</ul></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242608"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_uncut.jpg">Eversong Diamond</a> ~4.5%</td>
+        </tr>
+        <tr>
+            <td><a rel="nofollow noopener noreferrer" class="zold" target="_blank" href="https://www.wowhead.com/item=237364"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_ore_brilliantsilver.jpg">Brilliant Silver</a></td>
+            <td><ul class="nostyle">
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242553"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_red.jpg">Sanguine Garnet</a> ~12%</li>
+<li><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242554"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_uncut_blue.jpg">Amani Lapis</a> ~12%</li>
+</ul></td>
+            <td><ul class="nostyle">
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242613"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_red.jpg">Flawless Sanguine Garnet</a> ~12%</li>
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242612"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_blue.jpg">Flawless Amani Lapis</a> ~12%</li>
+</ul></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242608"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_uncut.jpg">Eversong Diamond</a> ~4.5%</td>
+        </tr>
+        <tr>
+            <td><a rel="nofollow noopener noreferrer" class="rare" target="_blank" href="https://www.wowhead.com/item=237366"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_mining_dazzlingthorium-.jpg">Dazzling Thorium</a></td>
+            <td>None</td>
+            <td><ul class="nostyle">
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242613"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_red.jpg">Flawless Sanguine Garnet</a> ~15%</li>
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242612"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_blue.jpg">Flawless Amani Lapis</a> ~15%</li>
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242610"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_green.jpg">Flawless Harandar Peridot</a> ~15%</li>
+<li><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242611"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_purple.jpg">Flawless Tenebrous Amethyst</a> ~15%</li>
+</ul></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242608"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_uncut.jpg">Eversong Diamond</a> ~22%</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="profession-equipment">Profession Equipment</h2>
+<p><b>Epic profession gear is new in Midnight.</b> In The War Within, professions only had Green and Rare gear. Epic gear gives the same Skill as Rare, but has higher secondary stats like Resourcefulness, Multicraft, and Ingenuity.</p>
+<h3>Profession Gear for Jewelcrafters</h3>
+<p>Jewelcrafters craft their own Loupes (accessory). Your <b>Tool</b> comes from Engineering, and the second <b>Accessory</b> (Cover) comes from Leatherworking.</p>
+<div class="table-container wrap">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Slot</th>
+            <th>Crafted By</th>
+            <th>Green Quality</th>
+            <th>Blue Quality</th>
+            <th>Epic Quality</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Tool</td>
+            <td>Engineering</td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1229898"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_1h_jewelclampbloodelf_b_01.jpg">Farstrider Clampers</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1229905"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_1h_jewelclampbloodelf_b_01.jpg">Sin'dorei Clampers</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1264528"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_1h_jewelclampbloodelf_b_01.jpg">Giga-Gem Grippers</a></td>
+        </tr>
+        <tr>
+            <td>Accessory</td>
+            <td>Jewelcrafting</td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230492"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_jewelersspecs_b_01.jpg">Silvermoon Loupes</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230496"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_jewelersspecs_b_01.jpg">Sin'dorei Jeweler's Loupes</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1242461"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_jewelersspecs_b_01.jpg">Mage-Eye Precision Loupes</a></td>
+        </tr>
+        <tr>
+            <td>Accessory</td>
+            <td>Leatherworking</td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237560"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_jewelcrafting_b_01.jpg">Apprentice Jeweler's Apron</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237561"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_jewelcrafting_b_01.jpg">Sin'dorei Jeweler's Cover</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1237562"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_tabard_jewelcrafting_b_01.jpg">Thalassian Gemshaper's Grand Cover</a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h3>Craftable Profession Equipment</h3>
+<p>Jewelcrafters craft profession accessories for <b>Inscription</b> and <b>Enchanting</b>.</p>
+<div class="table-container wrap">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Profession</th>
+            <th>Green Quality</th>
+            <th>Blue Quality</th>
+            <th>Epic Quality</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Inscription</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230493"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_inscription_magnifyingglass_blue.jpg">Fantastic Font Focuser</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230497"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_inscription_magnifyingglass_yellow.jpg">Improved Right-Handed Magnifying Glass</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1242462"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_inscription_magnifyingglass_red.jpg">Thalassian Scribe's Crystalline Lens</a></td>
+        </tr>
+        <tr>
+            <td><strong>Inscription</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230494"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_scribesspecs_b_01_gold.jpg">Bold Biographer's Bifocals</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230498"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_scribesspecs_b_01_silver.jpg">Sin'dorei Scribe's Spectacles</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1242463"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_helm_armor_scribesspecs_b_01_silver.jpg">Flawless Text Scrutinizers</a></td>
+        </tr>
+        <tr>
+            <td><strong>Enchanting</strong></td>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230491"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_offhand_1h_questbloodelf_b_01.jpg">Silvermoon Focusing Shard</a></td>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230495"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_offhand_1h_questbloodelf_b_01.jpg">Sin'dorei Enchanter's Crystal</a></td>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1242464"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_offhand_1h_questbloodelf_b_01.jpg">Attuned Thalassian Rune-Prism</a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="renown-recipes">Renown Recipes</h2>
+<p>Jewelcrafting has a couple of epic rings and a House Decor recipe locked behind faction Renown. You need <b>Renown Rank 5</b> with each faction. The two rings are the important ones here since they are crafted epic gear.</p>
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Recipe</th>
+            <th>Description</th>
+            <th>Faction</th>
+            <th>Vendor</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230479"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring3_silver.jpg">Loa Worshiper's Band</a></td>
+            <td>Epic ring</td>
+            <td>Amani Tribe (Rank 5)</td>
+            <td><a href="/midnight/npc/magovu">Magovu</a></td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230487"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring1_gold.jpg">Signet of Azerothian Blessings</a></td>
+            <td>Epic ring</td>
+            <td>Hara'ti (Rank 5)</td>
+            <td><a href="/midnight/npc/naynar">Naynar</a></td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246891"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487070.jpg">Bejeweled Sin'dorei Lyre</a></td>
+            <td>House Decor</td>
+            <td>Silvermoon Court (Rank 5)</td>
+            <td><a href="/midnight/npc/caeris-fairdawn">Caeris Fairdawn</a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<h2 class="line-header" id="recipes">Midnight Jewelcrafting Recipes</h2>
+<div class="tab-container">
+  <div class="tabs">
+    <button class="tab-button active" data-tab="jc-gems">Gems</button>
+    <button class="tab-button" data-tab="jc-jewelry">Jewelry</button>
+    <button class="tab-button" data-tab="jc-pvp">PvP Items</button>
+    <button class="tab-button" data-tab="jc-reagents">Reagents & Prisms</button>
+    <button class="tab-button" data-tab="jc-decor">House Decor</button>
+  </div>
+  <div class="tab-content active" id="jc-gems">
+<p>Gems are the core of Jewelcrafting. There are four gem colors in Midnight, each with a primary stat: Garnet (red, Critical Strike), Amethyst (purple, Mastery), Lapis (blue, Versatility), and Peridot (green, Haste). Every color has one pure single-stat gem and three hybrid dual-stat gems. Each cut has an uncommon version and a rare Flawless upgrade with higher stat values. Eversong Diamonds are epic meta gems that grant Primary Stat plus a special effect.</p>
+<div class="tab-container inner-tabs">
+  <div class="tabs">
+    <button class="tab-button active" data-tab="tab-garnet">Garnets</button>
+    <button class="tab-button" data-tab="tab-amethyst">Amethysts</button>
+    <button class="tab-button" data-tab="tab-lapis">Lapis</button>
+    <button class="tab-button" data-tab="tab-peridot">Peridots</button>
+    <button class="tab-button" data-tab="tab-diamond">Diamonds</button>
+  </div>
+  <div class="tab-content active" id="tab-garnet">
+    <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Stats</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230463"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_fire_red.jpg">Deadly Garnet</a></td>
+                    <td>Critical Strike</td>
+                    <td>Trainer (10)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230467"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_fire_red.jpg">Flawless Deadly Garnet</a></td>
+                    <td>Critical Strike</td>
+                    <td>Trainer (50)</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230462"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_nature_red.jpg">Quick Garnet</a></td>
+                    <td>Critical Strike & Haste</td>
+                    <td>Trainer (20)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230466"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_nature_red.jpg">Flawless Quick Garnet</a></td>
+                    <td>Critical Strike & Haste</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230464"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_void_red.jpg">Masterful Garnet</a></td>
+                    <td>Critical Strike & Mastery</td>
+                    <td>Trainer (25)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230468"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_void_red.jpg">Flawless Masterful Garnet</a></td>
+                    <td>Critical Strike & Mastery</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230465"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_frost_red.jpg">Versatile Garnet</a></td>
+                    <td>Critical Strike & Versatility</td>
+                    <td>Trainer (30)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230469"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_frost_red.jpg">Flawless Versatile Garnet</a></td>
+                    <td>Critical Strike & Versatility</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-amethyst">
+    <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Stats</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230456"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_void_purple.jpg">Masterful Amethyst</a></td>
+                    <td>Mastery</td>
+                    <td>Trainer (10)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230460"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_void_purple.jpg">Flawless Masterful Amethyst</a></td>
+                    <td>Mastery</td>
+                    <td>Trainer (50)</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230455"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_fire_purple.jpg">Deadly Amethyst</a></td>
+                    <td>Mastery & Critical Strike</td>
+                    <td>Trainer (20)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230459"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_fire_purple.jpg">Flawless Deadly Amethyst</a></td>
+                    <td>Mastery & Critical Strike</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230454"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_nature_purple.jpg">Quick Amethyst</a></td>
+                    <td>Mastery & Haste</td>
+                    <td>Trainer (25)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230458"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_nature_purple.jpg">Flawless Quick Amethyst</a></td>
+                    <td>Mastery & Haste</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230457"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_frost_purple.jpg">Versatile Amethyst</a></td>
+                    <td>Mastery & Versatility</td>
+                    <td>Trainer (30)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230461"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_frost_purple.jpg">Flawless Versatile Amethyst</a></td>
+                    <td>Mastery & Versatility</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-lapis">
+    <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Stats</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230449"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_frost_blue.jpg">Versatile Lapis</a></td>
+                    <td>Versatility</td>
+                    <td>Trainer (10)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230453"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_frost_blue.jpg">Flawless Versatile Lapis</a></td>
+                    <td>Versatility</td>
+                    <td>Trainer (50)</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230447"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_fire_blue.jpg">Deadly Lapis</a></td>
+                    <td>Versatility & Critical Strike</td>
+                    <td>Trainer (15)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230451"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_fire_blue.jpg">Flawless Deadly Lapis</a></td>
+                    <td>Versatility & Critical Strike</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230448"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_void_blue.jpg">Masterful Lapis</a></td>
+                    <td>Versatility & Mastery</td>
+                    <td>Trainer (20)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230452"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_void_blue.jpg">Flawless Masterful Lapis</a></td>
+                    <td>Versatility & Mastery</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230446"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_nature_blue.jpg">Quick Lapis</a></td>
+                    <td>Versatility & Haste</td>
+                    <td>Trainer (25)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230450"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_nature_blue.jpg">Flawless Quick Lapis</a></td>
+                    <td>Versatility & Haste</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-peridot">
+    <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Stats</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230437"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_nature_green.jpg">Quick Peridot</a></td>
+                    <td>Haste</td>
+                    <td>Trainer (10)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230442"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_nature_green.jpg">Flawless Quick Peridot</a></td>
+                    <td>Haste</td>
+                    <td>Trainer (50)</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230439"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_fire_green.jpg">Deadly Peridot</a></td>
+                    <td>Haste & Critical Strike</td>
+                    <td>Trainer (15)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230443"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_fire_green.jpg">Flawless Deadly Peridot</a></td>
+                    <td>Haste & Critical Strike</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230440"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_void_green.jpg">Masterful Peridot</a></td>
+                    <td>Haste & Mastery</td>
+                    <td>Trainer (20)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230444"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_void_green.jpg">Flawless Masterful Peridot</a></td>
+                    <td>Haste & Mastery</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+                <tr>
+                    <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230441"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_uncommon_gem_cut_frost_green.jpg">Versatile Peridot</a></td>
+                    <td>Haste & Versatility</td>
+                    <td>Trainer (25)</td>
+                </tr>
+                <tr>
+                    <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230445"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_cut_frost_green.jpg">Flawless Versatile Peridot</a></td>
+                    <td>Haste & Versatility</td>
+                    <td>Spec: Glamorous Gems</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-diamond">
+    <p>Meta gems require an Eversong Diamond to craft and go into meta sockets. All four recipes drop from Midnight dungeons.</p>
+    <div class="table-container">
+        <table class="tbl-minimal tbl-center">
+            <thead>
+                <tr>
+                    <th>Recipe</th>
+                    <th>Effect</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230473"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_cut_green.jpg">Indecipherable Eversong Diamond</a></td>
+                    <td>Primary Stat</td>
+                    <td>Drop: Midnight Dungeons</td>
+                </tr>
+                <tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230470"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_cut_orange.jpg">Powerful Eversong Diamond</a></td>
+                    <td>Primary Stat, +Crit effectiveness per unique gem color</td>
+                    <td>Drop: Midnight Dungeons</td>
+                </tr>
+                <tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230472"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_cut_pink.jpg">Stoic Eversong Diamond</a></td>
+                    <td>Primary Stat, Armor</td>
+                    <td>Drop: Midnight Dungeons</td>
+                </tr>
+                <tr>
+                    <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230471"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_epic_gem_cut_blue.jpg">Telluric Eversong Diamond</a></td>
+                    <td>Primary Stat, Max Mana per unique gem color</td>
+                    <td>Drop: Midnight Dungeons</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+</div>
+  </div>
+  <div class="tab-content" id="jc-jewelry">
+<p>Rings and necklaces are always in high demand. The Epic versions are best-in-slot and come from vendors and world drops.</p>
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Recipe</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="sub-header"><td colspan="2">Rings</td></tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230489"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring2_gold.jpg">Gleaming Copper Band</a></td>
+            <td>Trainer (20)</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230479"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring3_silver.jpg">Loa Worshiper's Band</a></td>
+            <td>Vendor: <a href="/midnight/npc/magovu">Magovu</a> (Zul'Aman)</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230485"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring4_gold.jpg">Masterwork Sin'dorei Band</a></td>
+            <td>Spec: Alluring Accessories</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230487"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring1_gold.jpg">Signet of Azerothian Blessings</a></td>
+            <td>Vendor: <a href="/midnight/npc/naynar">Naynar</a> (Harandar)</td>
+        </tr>
+        <tr class="sub-header"><td colspan="2">Necklaces</td></tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230486"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_necklace2_gold.jpg">Masterwork Sin'dorei Amulet</a></td>
+            <td>Spec: Alluring Accessories</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230490"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_necklace1_silver.jpg">Nocturnal Charm</a></td>
+            <td>Trainer (30)</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230488"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_necklace1_gold.jpg">Thalassian Phoenix Torque</a></td>
+            <td>Drop: Belo'ren (Isle of Quel'Danas)</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1251983"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_necklace3_silver.jpg">Voidstone Shielding Array</a></td>
+            <td>Drop: Charonus (Voidscar Arena)</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+  </div>
+  <div class="tab-content" id="jc-pvp">
+<p>PvP gems and jewelry purchased from <a href="/midnight/npc/mirvedon">Mirvedon</a> in Silvermoon City using Honor. The Heliotrope gems are Epic-quality PvP gems with unique combat effects. The necklace and ring are entry-level PvP jewelry.</p>
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Recipe</th>
+            <th>Description</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230501"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_epicgem_01.jpg">Cognitive Heliotrope</a></td>
+            <td>+Primary Stat, opponent's failed interrupt grants Precognition</td>
+            <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230500"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_epicgem_uncut_01.jpg">Determined Heliotrope</a></td>
+            <td>+Primary Stat, getting snared increases damage of your next attack</td>
+            <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td>
+        </tr>
+        <tr>
+            <td><a class="epic" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230502"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_cutgemsuperior6.jpg">Enduring Heliotrope</a></td>
+            <td>+Primary Stat, +Damage Reduction when affected by Crowd Control</td>
+            <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230504"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_necklace2_silver.jpg">Thalassian Competitor's Amulet</a></td>
+            <td>PvP Necklace</td>
+            <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230503"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_ring1_silver.jpg">Thalassian Competitor's Signet</a></td>
+            <td>PvP Ring</td>
+            <td>Vendor: <a href="/midnight/npc/mirvedon">Mirvedon</a> (Silvermoon City)</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+  </div>
+  <div class="tab-content" id="jc-reagents">
+<p>Reagents are the intermediate materials you need for crafting gems, jewelry, and profession accessories.</p>
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Recipe</th>
+            <th>Description</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="sub-header"><td colspan="3">Reagents</td></tr>
+        <tr>
+            <td><a class="white" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230476"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_alchemy_lightpotion_basic.jpg">Sunglass Vial</a></td>
+            <td>Crafting Reagent</td>
+            <td>Trainer (5)</td>
+        </tr>        
+        <tr>
+            <td><a class="white" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230475"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_glass_reagent_refined_blue.jpg">Sin'dorei Lens</a></td>
+            <td>Crafting Reagent</td>
+            <td>Trainer (10)</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230474"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_combined_gem_reagent_multicoloured.jpg">Kaleidoscopic Prism</a></td>
+            <td>Crafting Reagent</td>
+            <td>Trainer (40)</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230477"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/item_cutmetagem.jpg">Prismatic Focusing Iris</a></td>
+            <td>Optional Reagent</td>
+            <td>Drop: Lothraxion (Nexus-Point Xenas)</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230478"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_jewelry_ring_77.jpg">Stabilizing Gemstone Bandolier</a></td>
+            <td>Optional Reagent</td>
+            <td>Drop: Heavy Trunk (Delves)</td>
+        </tr>
+        <tr class="sub-header"><td colspan="3">Gem Prisms</td></tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230484"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_uncutgemnormal3.jpg">Sanguine Garnet Prism</a></td>
+            <td>4-6x <a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242613"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_red.jpg">Flawless Sanguine Garnet</a></td>
+            <td>Glamorous Gems - Glorious Garnet (15)</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230483"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_uncutgemnormal4.jpg">Tenebrous Amethyst Prism</a></td>
+            <td>4-6x <a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242611"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_purple.jpg">Flawless Tenebrous Amethyst</a></td>
+            <td>Glamorous Gems - Austere Amethyst (15)</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230482"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_uncutgemnormal2.jpg">Amani Lapis Prism</a></td>
+            <td>4-6x <a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242612"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_blue.jpg">Flawless Amani Lapis</a></td>
+            <td>Glamorous Gems - Lustrous Lapis (15)</td>
+        </tr>
+        <tr>
+            <td><a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1230481"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_misc_uncutgemnormal1.jpg">Harandar Peridot Prism</a></td>
+            <td>4-6x <a class="rare" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/item=242610"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/inv_12_profession_jewelcrafting_rare_gem_uncut_green.jpg">Flawless Harandar Peridot</a></td>
+            <td>Glamorous Gems - Powerful Peridot (15)</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+  </div>
+  <div class="tab-content" id="jc-decor">
+<p>Jewelcrafting can craft decorative items for player housing. These come from trainers, vendors, world drops, and Delve chests.</p>
+<div class="table-container">
+<table class="tbl-minimal tbl-center">
+    <thead>
+        <tr>
+            <th>Recipe</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246891"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487070.jpg">Bejeweled Sin'dorei Lyre</a></td>
+            <td>Vendor: <a href="/midnight/npc/caeris-fairdawn">Caeris Fairdawn</a> (Eversong Woods)</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246895"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487080.jpg">Brilliant Phoenix Harp</a></td>
+            <td>Trainer (80)</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246893"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487083.jpg">Replica Haranir Mural</a></td>
+            <td>Drop: Heavy Trunk (Delves)</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246892"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7424037.jpg">Resplendent Highborne Statue</a></td>
+            <td>Drop: Eversong Treasures</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246894"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487077.jpg">Shining Sin'dorei Hourglass</a></td>
+            <td>Treasure: Challenger's Cache</td>
+        </tr>
+        <tr>
+            <td><a class="zold" target="_blank" rel="nofollow noopener noreferrer" href="https://www.wowhead.com/spell=1246889"><img align="absmiddle" class="icon" src="https://wow.zamimg.com/images/wow/icons/small/7487049.jpg">Tenebrous Ren'dorei Armillary</a></td>
+            <td>Trainer (80)</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+  </div>
+</div>
+
+  </article>
+
+        </main>
+        <aside class="sidebar-right">
+            <aside class="sticky-ad ad-related">
+                <div class="ad-slot">
+                    <!-- Tag ID: wowprofessions_medrec_right -->
+
+                    <div align="center" data-freestar-ad="__300x250" id="wowprofessions_medrec_right">
+                        <script data-cfasync="false" type="text/javascript">
+                          freestar.config.enabled_slots.push({ placementName: "wowprofessions_medrec_right", slotId: "wowprofessions_medrec_right" });
+                        </script>
+                      </div>
+                </div>
+                <div class="ad-slot second-ad">
+                    <!-- Tag ID: wowprofessions_medrec_right_2 -->
+
+                    <div align="center" data-freestar-ad="__300x250" id="wowprofessions_medrec_right_2">
+                        <script data-cfasync="false" type="text/javascript">
+                          freestar.config.enabled_slots.push({ placementName: "wowprofessions_medrec_right_2", slotId: "wowprofessions_medrec_right_2" });
+                        </script>
+                      </div>                      
+                </div>
+            </aside>
+        </aside>
+    </div>
+    
+    <div class="leaderboard-ad ad-related">
+        <div class="leader-ad-slot">
+            <!-- Tag ID: wowprofessions_leaderboard_btf -->
+            <div align="center" data-freestar-ad="__320x100 __970x90" id="wowprofessions_leaderboard_btf">
+                <script data-cfasync="false" type="text/javascript">
+                  freestar.config.enabled_slots.push({ placementName: "wowprofessions_leaderboard_btf", slotId: "wowprofessions_leaderboard_btf" });
+                </script>
+              </div>
+        </div>
+    </div>
+    
+    <footer>
+  <div class="flex-container" style="justify-content: center; flex-direction: column;">
+    <div class="footer-links"><a href="/news">News</a><a href="/contact">Contact</a><a href="/privacy-policy">Privacy Policy</a><a href="/disclaimer">Disclaimer</a></div><span>&copy; 2026 WoW-Professions.com</span>
+  </div>
+</footer>
+
+<!-- Map Modal -->
+<div id="map-modal" class="map-modal" aria-hidden="true">
+  <div class="map-modal-overlay"></div>
+  <div class="map-modal-container">
+    <div class="map-modal-header">
+      <span id="map-modal-title" class="map-modal-title"></span>
+      <button class="map-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="map-modal-actions">
+      <button id="map-modal-tomtom" class="btn-waypoint">TomTom</button>
+      <button id="map-modal-ingame" class="btn-waypoint">In-Game Pin</button>
+    </div>
+    <div class="map-modal-body">
+      <div class="map-viewport">
+        <div id="map-image-container" class="map-image">
+          <div id="map-pin" class="map-pin" data-pulse></div>
+        </div>
+      </div>
+      <div id="map-screenshot" class="map-screenshot">
+        <img id="map-screenshot-img" src="" alt="">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Lightbox -->
+<div id="lightbox" class="lightbox-modal" aria-hidden="true">
+  <div class="lightbox-overlay"></div>
+  <div class="lightbox-container">
+    <div class="lightbox-header">
+      <span id="lightbox-title" class="lightbox-title"></span>
+      <button class="lightbox-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="lightbox-body">
+      <img id="lightbox-image" src="" alt="">
+    </div>
+  </div>
+</div>    
+<!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7b64878bef804239928fdc05ff3a5600"}'></script><!-- Cloudflare Pages Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"7dc11e5b295a412b81d135dffc00683e","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

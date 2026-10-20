@@ -1,5 +1,3 @@
 # General Gold Tracker Backlog
 
 ### Next:
-
-- CONTINUE WITH MATERIALS REFINEMENT - NEXT IS CATA EXPANSION

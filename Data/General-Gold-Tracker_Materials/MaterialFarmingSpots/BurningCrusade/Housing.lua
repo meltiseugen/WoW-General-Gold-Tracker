@@ -185,6 +185,11 @@ NS.BurningCrusadeHousing = {
 }
 
 for _, recipe in ipairs(NS.BurningCrusadeHousing.recipes) do
+    recipe.isRoute = false
+    local output = NS.MaterialFarmingSpots.items[recipe.outputItemID]
+    if output then
+        output.itemName = recipe.outputName
+    end
     for _, reagent in ipairs(recipe.reagents) do
         local item = NS.MaterialFarmingSpots.items[reagent.itemID]
         if item then

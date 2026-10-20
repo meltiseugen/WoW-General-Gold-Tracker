@@ -736,6 +736,120 @@ describe("UI/ObservedDropsWindow row snapshots", function()
         end
     end)
 
+    it("resolves pet continents from researched maps and exterior raid entrances", function()
+        local addon, item_links, item_names = build_addon()
+        addon.observedDropsFrame.dropSourceID = "catalog-pets"
+        addon = load_window(addon, item_links, item_names, {
+            PetFarmData = {
+                rows = {
+                    { recordID = "outdoor", itemID = 1001, locationID = 357, locationLabel = "Feralas" },
+                    { recordID = "raid", itemID = 1002, locationLabel = "Blackwing Lair" },
+                    { recordID = "detached", itemID = 1003, mapID = 407, locationLabel = "Darkmoon Island" },
+                    { recordID = "missing", itemID = 1001, locationLabel = "Unmapped" },
+                    { recordID = "cycle", itemID = 1001, mapID = 900, locationLabel = "Cycle" },
+                },
+                farms = {
+                    { sourceRecordID = "outdoor", mapOptions = { { mapID = 69 } } },
+                    { sourceRecordID = "raid", mapOptions = {
+                        { mapID = 287, mapRole = "boss" },
+                        { mapID = 36, mapRole = "entrance" },
+                    } },
+                },
+            },
+        })
+        local maps = {
+            [69] = { name = "Feralas", mapType = 3, parentMapID = 12 },
+            [12] = { name = "Kalimdor", mapType = 2, parentMapID = 947 },
+            [36] = { name = "Burning Steppes", mapType = 3, parentMapID = 13 },
+            [13] = { name = "Eastern Kingdoms", mapType = 2, parentMapID = 947 },
+            [287] = { name = "Blackwing Lair", mapType = 4, parentMapID = 0 },
+            [407] = { name = "Darkmoon Island", mapType = 3, parentMapID = 947 },
+            [947] = { name = "Azeroth", mapType = 1, parentMapID = 0 },
+            [900] = { parentMapID = 901 },
+            [901] = { parentMapID = 900 },
+        }
+        local rows = loader.with_globals({ C_Map = { GetMapInfo = function(mapID)
+            assert.is_not.equals(357, mapID, "area IDs must not be used as UI map IDs")
+            return maps[mapID]
+        end } }, function()
+            return addon:BuildObservedDropsRows()
+        end)
+        local byRecordID = {}
+        for _, row in ipairs(rows) do byRecordID[row.observedDropKey] = row end
+
+        assert.equals(5, #rows)
+        assert.equals("Kalimdor", byRecordID.outdoor.continentLabel)
+        assert.equals("Eastern Kingdoms", byRecordID.raid.continentLabel)
+        assert.equals("Darkmoon Island", byRecordID.detached.continentLabel)
+        assert.equals("Unknown continent", byRecordID.missing.continentLabel)
+        assert.equals("Unknown continent", byRecordID.cycle.continentLabel)
+    end)
+
+    it("nests collapsed pet locations under continents and preserves child state when a continent closes", function()
+        local addon, item_links, item_names = build_addon()
+        addon = load_window(addon, item_links, item_names)
+        local frame = addon.observedDropsFrame
+        frame.dropSourceID = "catalog-pets"
+        local rows = {
+            { itemID = 1, continentLabel = "Eastern Kingdoms", locationLabel = "Badlands 10.0,20.0" },
+            { itemID = 2, continentLabel = "Eastern Kingdoms", locationLabel = "Badlands 30.0,40.0" },
+            { itemID = 3, continentLabel = "Kalimdor", locationLabel = "Feralas" },
+            { itemID = 4, continentLabel = "Kalimdor", locationLabel = "Winterspring" },
+        }
+
+        local display = addon:BuildObservedDropsDisplayRows(rows)
+        assert.equals(2, #display)
+        assert.is_true(display[1].isContinentGroupHeader)
+        assert.equals("Eastern Kingdoms", display[1].locationGroupLabel)
+        assert.equals(2, display[1].itemCount)
+        assert.equals("Kalimdor", display[2].locationGroupLabel)
+
+        frame.collapsedContinentGroups = { ["continent:eastern kingdoms"] = false }
+        display = addon:BuildObservedDropsDisplayRows(rows)
+        assert.equals(3, #display)
+        assert.equals("Badlands", display[2].locationGroupLabel)
+        assert.equals(2, display[2].itemCount)
+        assert.is_true(display[2].collapsed)
+        assert.is_nil(display[2].isContinentGroupHeader)
+
+        frame.collapsedLocationGroups = { [display[2].locationGroupKey] = false }
+        display = addon:BuildObservedDropsDisplayRows(rows)
+        assert.equals(5, #display)
+        assert.equals(rows[1], display[3])
+        assert.equals(rows[2], display[4])
+        assert.equals("Kalimdor", display[5].locationGroupLabel)
+
+        addon:ToggleLocationGroupCollapsed(frame.collapsedContinentGroups, display[1].locationGroupKey, false)
+        assert.equals(2, #addon:BuildObservedDropsDisplayRows(rows))
+        addon:ToggleLocationGroupCollapsed(frame.collapsedContinentGroups, display[1].locationGroupKey, true)
+        assert.equals(5, #addon:BuildObservedDropsDisplayRows(rows))
+    end)
+
+    it("keeps pet location states independent between continents and retains the flat-list option", function()
+        local addon, item_links, item_names = build_addon()
+        addon = load_window(addon, item_links, item_names)
+        local frame = addon.observedDropsFrame
+        frame.dropSourceID = "catalog-pets"
+        frame.collapsedContinentGroups = { ["continent:kalimdor"] = false, ["continent:northrend"] = false }
+        frame.collapsedLocationGroups = { ["continent:kalimdor:shared location"] = false }
+        local rows = {
+            { itemID = 1, continentLabel = "Kalimdor", locationLabel = "Shared Location" },
+            { itemID = 2, continentLabel = "Northrend", locationLabel = "Shared Location" },
+        }
+
+        local display = addon:BuildObservedDropsDisplayRows(rows)
+        assert.equals(5, #display)
+        assert.equals(rows[1], display[3])
+        assert.is_true(display[5].collapsed)
+        assert.is_not.equals(display[2].locationGroupKey, display[5].locationGroupKey)
+
+        addon:SetCollapsedLocationHeadersEnabled(false)
+        assert.equals(rows, addon:BuildObservedDropsDisplayRows(rows))
+        addon:SetCollapsedLocationHeadersEnabled(true)
+        frame.dropSourceID = "catalog-mounts"
+        assert.equals(rows, addon:BuildObservedDropsDisplayRows(rows))
+    end)
+
     it("exposes Catalog pets as an always-visible Drops source with pet identity retained", function()
         local addon, item_links, item_names = build_addon()
         addon = load_window(addon, item_links, item_names, {

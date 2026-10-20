@@ -93,6 +93,7 @@ end
 local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shared.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Crafting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocations.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsElementals.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/NpcLocationsSkinning.lua",
@@ -115,6 +116,8 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Tailoring.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Fishing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Crafting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Classic/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Alchemy.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Cooking.lua",
@@ -126,6 +129,7 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Skinning.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Tailoring.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Crafting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BurningCrusade/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Enchanting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Engineering.lua",
@@ -138,6 +142,7 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Tailoring.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Reagents.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Crafting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Wrath/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Alchemy.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Cooking.lua",
@@ -148,6 +153,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Skinning.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Cataclysm/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Alchemy.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Cooking.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Enchanting.lua",
@@ -158,6 +166,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Skinning.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Tailoring.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Alchemy.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Cooking.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Enchanting.lua",
@@ -166,6 +177,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Skinning.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Warlords/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Cooking.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Enchanting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Fishing.lua",
@@ -175,6 +189,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Reagents.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Skinning.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Legion/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Herbalism.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Jewelcrafting.lua",
@@ -184,6 +201,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Enchanting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Fishing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/BattleForAzeroth/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Herbalism.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Jewelcrafting.lua",
@@ -193,6 +213,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Enchanting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Fishing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Tailoring.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Herbalism.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Jewelcrafting.lua",
@@ -203,6 +226,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Tailoring.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Elemental.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Herbalism.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Jewelcrafting.lua",
@@ -211,6 +237,9 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Enchanting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Fishing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Reagents.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/WarWithin/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Mining.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Herbalism.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Skinning.lua",
@@ -220,7 +249,11 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Cooking.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Jewelcrafting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Engineering.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Miscellaneous.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Crafting.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/CatalogGathering.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Finalize.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Finalize.lua",
 }
 
@@ -431,7 +464,11 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             assert.is_true(#item.sourceUrls > 0)
             assert_non_empty_string(item.summary)
             assert.is_table(item.spots)
-            assert.is_true(#item.spots > 0)
+            if item.acquisitionType == "crafting" or item.acquisitionType == "processing" then
+                assert.is_false(item.isRoute)
+            else
+                assert.is_true(#item.spots > 0)
+            end
         end
     end)
 
@@ -524,12 +561,45 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_table(spots.items[2770])
         assert.equals("Copper Ore", spots.items[2770].itemName)
         assert.equals("researched", spots.items[2770].researchStatus)
-        assert.is_nil(spots.items[2840])
-        assert.is_table(spots.missingItems[2840])
-        assert.equals("missing", spots.missingItems[2840].researchStatus)
+        assert.is_table(spots.items[2840])
+        assert.equals("crafting", spots.items[2840].acquisitionType)
+        assert.equals(0, #spots.items[2840].spots)
+        assert.is_nil(spots.items[3857])
+        assert.is_table(spots.missingItems[3857])
+        assert.equals("missing", spots.missingItems[3857].researchStatus)
         assert.equals("curated-only", spots.coverage.mode)
         assert.is_true(spots.coverage.researched > 0)
         assert.is_true(spots.coverage.missing > 0)
+    end)
+
+    it("loads legacy crafting records with component data and keeps housing links usable", function()
+        local spots, ns = load_material_farming_spots(true)
+        local legacy = { classic = true, burningCrusade = true, wrath = true }
+        for _, recipe in ipairs(ns.FarmingItems.items) do
+            if legacy[recipe.expansion] and type(recipe.components) == "table" and #recipe.components > 0 then
+                local item = spots.items[recipe.itemID]
+                local message = "legacy composition " .. tostring(recipe.itemID)
+                assert.is_table(item, message)
+                assert.same(recipe.components, item.components, message)
+                assert.is_false(item.isRoute, message)
+                assert.is_true(#item.sourceUrls > 0, message)
+                for _, spot in ipairs(item.spots) do
+                    assert.is_false(spot.isRoute, message)
+                end
+            end
+        end
+
+        -- Copper Bar is crafted; it must not acquire a made-up world-map location.
+        assert.equals("crafting", spots.items[2840].acquisitionType)
+        assert.equals(0, #spots.items[2840].spots)
+        assert.equals("Apothecary's Worktable", spots.items[257100].itemName)
+        assert.is_true(#spots.items[11371].housingUses > 0)
+
+        -- Splitting specialty data out of Reagents must retain existing farms.
+        assert.equals("Larval Acid", spots.items[18512].itemName)
+        assert.is_true(#spots.items[18512].spots[1].coords > 0)
+        assert.is_false(spots.items[18512].isRoute)
+        assert.is_true(#spots.items[6474].spots[1].tips > 0)
     end)
 
     it("keeps Midnight researched farming data coordinate-backed and retail-safe", function()
@@ -687,7 +757,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.equals("wind-scales-shadowmoon-eclipsion-dragonhawks", wind_scale_options[2].id)
     end)
 
-    it("includes researched Classic farming data while leaving composed-only Classic materials pending", function()
+    it("includes Classic farming and crafting data while leaving vendor-only supplies pending", function()
         local spots = load_material_farming_spots(true)
         local researched_classic_ids = {
             765, 774, 783, 785, 818, 1206, 1210, 1529, 1705, 2318,
@@ -700,8 +770,8 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             12799, 12800, 12803, 12808, 13463, 13464, 13465, 13466, 13467,
             13468, 14047, 14256, 16202, 16203, 18562, 22202, 22203, 2449,
         }
-        local composed_or_vendor_classic_ids = {
-            2840, 2841, 2842, 2996, 2997, 3575, 3576, 3577, 3857, 3859,
+        local composed_classic_ids = {
+            2840, 2841, 2842, 2996, 2997, 3575, 3576, 3577, 3859,
             3860, 4305, 4339, 6037, 11371, 12359, 14048,
         }
 
@@ -712,12 +782,15 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             assert.is_nil(spots.missingItems[item_id], message)
         end
 
-        for _, item_id in ipairs(composed_or_vendor_classic_ids) do
-            local message = "composed/vendor-only Classic item should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
+        for _, item_id in ipairs(composed_classic_ids) do
+            local message = "missing Classic crafting entry: " .. tostring(item_id)
+            assert.is_table(spots.items[item_id], message)
+            assert.is_table(spots.items[item_id].components, message)
+            assert.is_false(spots.items[item_id].isRoute, message)
+            assert.is_nil(spots.missingItems[item_id], message)
         end
+        assert.is_nil(spots.items[3857])
+        assert.is_table(spots.missingItems[3857])
     end)
 
     it("keeps every researched Classic spot anchored by coordinates", function()
@@ -1044,7 +1117,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("includes researched Wrath farming data while leaving catalog-only Wrath materials pending", function()
+    it("includes Wrath farming and crafting data while leaving unresearched sources pending", function()
         local spots = load_material_farming_spots(true)
         local researched_wrath_ids = {
             33470, 33568, 34052, 34054, 34055, 34057, 34736, 36781, 36782, 36783, 36784, 36901, 36903, 36904,
@@ -1057,9 +1130,9 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         }
         local composed_wrath_ids = {
             33447, 35622, 35623, 35624, 35625, 35627, 36860, 36913, 36916, 36919,
-            36922, 36925, 36928, 36931, 36934, 37663, 38425, 39343, 39681, 39682,
+            36922, 36925, 36928, 36931, 36934, 37663, 38425, 39681, 39682,
             39683, 40077, 41163, 41285, 41334,
-            41510, 41511, 41593, 41594, 41595, 42225, 43109, 43126, 43127,
+            41510, 41511, 41593, 41594, 41595, 43126, 43127,
         }
 
         for _, item_id in ipairs(researched_wrath_ids) do
@@ -1070,7 +1143,15 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
 
         for _, item_id in ipairs(composed_wrath_ids) do
-            local message = "catalog-only Wrath item should stay pending: " .. tostring(item_id)
+            local message = "missing Wrath crafting entry: " .. tostring(item_id)
+            assert.is_table(spots.items[item_id], message)
+            assert.is_table(spots.items[item_id].components, message)
+            assert.is_false(spots.items[item_id].isRoute, message)
+            assert.is_nil(spots.missingItems[item_id], message)
+        end
+
+        for _, item_id in ipairs({ 39343, 42225, 43109 }) do
+            local message = "unresearched Wrath source should stay pending: " .. tostring(item_id)
             assert.is_nil(spots.items[item_id], message)
             assert.is_table(spots.missingItems[item_id], message)
             assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
@@ -1191,7 +1272,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_true(item_has_coord(spots.items[36906], 0.4780, 0.4310))
     end)
 
-    it("includes researched Cataclysm farming data while leaving composed-only Cataclysm materials pending", function()
+    it("includes researched Cataclysm farming data and composed-material sources", function()
         local spots = load_material_farming_spots(true)
         local researched_cataclysm_ids = {
             52177, 52178, 52179, 52180, 52181, 52182, 52183, 52185, 52190, 52191,
@@ -1201,9 +1282,8 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             53067, 53068, 53069, 53070, 53071, 53072, 62778, 62779, 62780, 62781,
             62782, 62783, 62784, 62785, 62791,
         }
-        local composed_cataclysm_ids = {
-            52186, 53643,
-        }
+        researched_cataclysm_ids[#researched_cataclysm_ids + 1] = 52186
+        researched_cataclysm_ids[#researched_cataclysm_ids + 1] = 53643
 
         for _, item_id in ipairs(researched_cataclysm_ids) do
             local message = "missing researched Cataclysm farming entry: " .. tostring(item_id)
@@ -1212,12 +1292,82 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             assert.is_nil(spots.missingItems[item_id], message)
         end
 
-        for _, item_id in ipairs(composed_cataclysm_ids) do
-            local message = "composed-only Cataclysm item should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
+    end)
+
+    it("connects Cataclysm specialty farms, crafting chains, and housing without gathering-route lines", function()
+        local data, ns = load_material_farming_spots(true)
+        local items = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            assert.is_nil(items[item.itemID], "duplicate catalog item " .. tostring(item.itemID))
+            items[item.itemID] = item
         end
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        for _, item_id in ipairs({ 52340, 52078, 69237, 71998, 52555, 52720, 52722, 71805, 71810 }) do
+            local item = data.items[item_id]
+            assert.is_table(item)
+            assert.is_false(item.isRoute)
+            assert.is_true(item.auctionable)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            assert.is_true(#options > 0)
+            for _, option in ipairs(options) do
+                for _, pin in ipairs(option.pins) do
+                    assert.is_false(pin.isRoute)
+                    assert.is_true(#pin.sourceUrls > 0)
+                    assert.is_true(#pin.tips > 0)
+                end
+            end
+        end
+
+        local craft_count = 0
+        local professions = {}
+        local vendor_ids = { [3371] = true, [39354] = true, [38426] = true, [52188] = true, [65892] = true, [65893] = true }
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "cataclysm" and item.components then
+                craft_count = craft_count + 1
+                professions[item.professions[1]] = true
+                assert.is_false(item.isRoute)
+                assert.is_false(data.items[item.itemID].isRoute)
+                assert.is_number(item.recipeSpellID)
+                assert.is_true(item.outputQuantity > 0)
+                assert_non_empty_string(item.recipeSourceLabel)
+                for _, component in ipairs(item.components) do
+                    assert.is_table(items[component.itemID], "uncatalogued input " .. tostring(component.itemID))
+                    assert.is_nil(vendor_ids[component.itemID], "vendor input entered the farmable chain")
+                end
+            end
+        end
+        assert.is_true(craft_count >= 300)
+        for _, profession in ipairs({ "alchemy", "blacksmithing", "enchanting", "engineering", "inscription", "jewelcrafting", "leatherworking", "tailoring", "cooking" }) do
+            assert.is_true(professions[profession], "missing craft profession " .. profession)
+        end
+        assert.equals(2, items[56850].outputQuantity)
+        assert.equals(3, items[60224].outputQuantity)
+        assert.is_false(items[54440].auctionable)
+        assert.is_false(items[251764].auctionable)
+        assert.is_nil(items[67495], "bound stomach is not an Auction House product")
+        assert.equals(20, #ns.CataclysmHousing.recipes)
+        for _, recipe in ipairs(ns.CataclysmHousing.recipes) do
+            assert.is_false(recipe.isRoute)
+            assert.is_true(items[recipe.outputItemID].auctionable)
+            assert.equals(items[recipe.outputItemID].components, recipe.reagents)
+            for _, reagent in ipairs(recipe.reagents) do
+                assert.is_table(data.items[reagent.itemID].housingUses)
+            end
+        end
+        for _, item_id in ipairs({ 53038, 52983 }) do
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            -- Bundled catalog options can follow the three explicit imported variants.
+            assert.is_true(#options >= 3)
+            for index = 1, 3 do
+                assert.equals(index, options[index].sortOrder)
+                assert.is_true(options[index].pins[1].isRoute)
+            end
+        end
+        assert.is_true(data.items[53038].isRoute)
+        assert.is_true(data.items[52983].isRoute)
     end)
 
     it("keeps every researched Cataclysm spot anchored by coordinates", function()
@@ -1244,8 +1394,15 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("keeps Cataclysm farming sources retail-first for Wowhead pages", function()
+    it("keeps Cataclysm farming sources retail-first except for supplied historical herb research", function()
         local spots = load_material_farming_spots(true)
+        -- Preserve the exact historical research supplied with the Retail route reconstructions.
+        local supplied_herb_research_urls = {
+            ["https://www.wowhead.com/cata/guide/professions/cinderbloom-herb-farming-guide"] = true,
+            ["https://www.wowhead.com/cata/guide/professions/stormvine-herb-farming-guide"] = true,
+            ["https://www.wowhead.com/cata/guide/professions/whiptail-herb-farming-guide"] = true,
+            ["https://www.wowhead.com/cata/object=202752/whiptail"] = true,
+        }
         local blocked_patterns = {
             "wowhead%.com/cata",
             "wowhead%.com/classic",
@@ -1254,6 +1411,9 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
 
         local function assert_retail_wowhead_url(url, context)
             assert_non_empty_string(url)
+            if supplied_herb_research_urls[url] then
+                return
+            end
             local lower_url = url:lower()
             for _, pattern in ipairs(blocked_patterns) do
                 assert.is_nil(lower_url:find(pattern), context .. " used Classic/Cata Wowhead URL: " .. url)
@@ -1284,8 +1444,8 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_true(item_has_coord(spots.items[62780], 0.580, 0.380))
         assert.is_true(item_has_coord(spots.items[62782], 0.526, 0.794))
         assert.is_true(item_has_coord(spots.items[52979], 0.526, 0.794))
-        assert.is_true(item_has_coord(spots.items[53038], 0.356, 0.698))
-        assert.is_true(item_has_coord(spots.items[52185], 0.172, 0.567))
+        assert.is_true(item_has_coord(spots.items[53038], 0.2154, 0.3201))
+        assert.is_true(item_has_coord(spots.items[52185], 0.4458, 0.1990))
         assert.is_true(item_has_coord(spots.items[52177], 0.356, 0.698))
         assert.is_true(item_has_coord(spots.items[52190], 0.172, 0.567))
 
@@ -1298,7 +1458,318 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_true(prospecting_route_found)
     end)
 
-    it("includes researched Mists farming data while leaving composed-only Mists materials pending", function()
+    it("includes broad Mists crafting coverage with farmable components and explicit non-route flags", function()
+        local data, ns = load_material_farming_spots(true)
+        local counts = {}
+        local recipes, bound_inputs = 0, 0
+        local vendor_only = { [3371] = true, [39354] = true, [52188] = true, [83092] = true, [259894] = true }
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "mists" and item.recipeSpellID then
+                recipes = recipes + 1
+                assert.is_false(item.isRoute)
+                assert.is_table(item.components)
+                assert.is_true(#item.components > 0)
+                assert.is_number(item.outputQuantity)
+                assert.is_true(item.outputQuantity > 0)
+                assert_non_empty_string(item.recipeSourceLabel)
+                local details = data.items[item.itemID]
+                assert.is_table(details)
+                assert.is_false(details.isRoute)
+                assert.same(item.components, details.components)
+                assert.equals(item.recipeSpellID, details.recipeSpellID)
+                assert.equals(item.auctionable, details.auctionable)
+                counts[item.professions[#item.professions]] = true
+                if item.auctionable == false then
+                    bound_inputs = bound_inputs + 1
+                    assert.equals("Bound Crafting Input", item.tag)
+                end
+                for _, component in ipairs(item.components) do
+                    assert.is_nil(vendor_only[component.itemID])
+                    assert.is_true(component.quantity > 0)
+                end
+            end
+        end
+        assert.equals(927, recipes)
+        assert.equals(7, bound_inputs)
+        for _, profession in ipairs({ "alchemy", "blacksmithing", "cooking", "enchanting", "engineering", "inscription", "jewelcrafting", "leatherworking", "tailoring" }) do
+            assert.is_true(counts[profession], profession)
+        end
+    end)
+
+    it("keeps additional Pandaria specialty targets auctionable with source pins and no route lines", function()
+        local data, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+        end
+        for _, item_id in ipairs({ 86592, 94288, 85506, 94573, 94574, 94595, 94932, 94933, 94934, 94935, 90900, 90902, 105718 }) do
+            local item = assert(data.items[item_id])
+            assert.is_true(catalog[item_id].auctionable)
+            assert.is_true(item.auctionable)
+            assert.is_false(item.isRoute)
+            assert.is_true(#item.sourceUrls > 0)
+            for _, spot in ipairs(item.spots) do
+                assert.is_false(spot.isRoute)
+                assert_non_empty_string(spot.density)
+                assert_non_empty_string(spot.farmAction)
+                assert.is_true(#spot.tips > 0)
+                assert.is_true(#spot.coords > 0)
+                for _, coord in ipairs(spot.coords) do
+                    assert.is_true(coord.x > 0 and coord.x < 1)
+                    assert.is_true(coord.y > 0 and coord.y < 1)
+                end
+            end
+        end
+        for _, item_id in ipairs({ 79246, 102537, 102538 }) do
+            assert.is_false(catalog[item_id].auctionable)
+            assert.equals("Perishable Crafting Input", catalog[item_id].tag)
+        end
+        -- Vendor-only strawberries and bound source containers are not sale rows.
+        for _, item_id in ipairs({ 102539, 102540, 87217, 94295, 80277 }) do
+            assert.is_nil(catalog[item_id])
+        end
+    end)
+
+    it("models Pandaria cards and Perfect gems as chance outputs and complete decks as exact sets", function()
+        local data, ns = load_material_farming_spots(true)
+        local catalog = {}
+        local chance_outputs = 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+            if item.expansion == "mists" and item.randomOutput then
+                chance_outputs = chance_outputs + 1
+                assert.is_true(item.auctionable)
+                assert.is_false(item.isRoute)
+                assert.is_number(item.sourceSpellID)
+                assert.is_nil(item.components)
+                assert.is_nil(item.recipeSpellID)
+                assert.is_true(data.items[item.itemID].randomOutput)
+            end
+        end
+        assert.equals(101, chance_outputs)
+        for _, deck in ipairs({ { 79323, 79283 }, { 79324, 79291 }, { 79325, 79299 }, { 79326, 79307 } }) do
+            local item = catalog[deck[1]]
+            assert.equals(8, #item.components)
+            for index, component in ipairs(item.components) do
+                assert.equals(deck[2] + index - 1, component.itemID)
+                assert.equals(1, component.quantity)
+                assert.is_true(catalog[component.itemID].randomOutput)
+            end
+        end
+        for _, recipe in ipairs({ { 79327, 79323 }, { 79328, 79323 }, { 79329, 79324 }, { 79330, 79325 }, { 79331, 79326 } }) do
+            assert.equals("quest-exchange", catalog[recipe[1]].recipeSource)
+            assert.same({ { itemID = recipe[2], quantity = 1 } }, catalog[recipe[1]].components)
+        end
+        for _, item_id in ipairs({ 101630, 101661, 101662 }) do
+            assert.equals(5, catalog[item_id].outputQuantity)
+        end
+        assert.same({ { itemID = 74849, quantity = 50 } }, catalog[75038].components)
+        assert.same({ { itemID = 85506, quantity = 1 } }, catalog[85501].components)
+        assert.same({ { itemID = 102541, quantity = 1 } }, catalog[101745].components)
+    end)
+
+    it("keeps Mists component chains resolvable and acyclic", function()
+        local _, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+        end
+        local function visit(item_id, active)
+            assert.is_nil(active[item_id], "component cycle at " .. tostring(item_id))
+            local item = catalog[item_id]
+            assert.is_table(item, "missing component " .. tostring(item_id))
+            active[item_id] = true
+            for _, component in ipairs(item.components or {}) do
+                visit(component.itemID, active)
+            end
+            active[item_id] = nil
+        end
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "mists" or item.mistsSupport then
+                visit(item.itemID, {})
+            end
+        end
+    end)
+
+    it("distinguishes tradeable Mists specialty products from bound and perishable support", function()
+        local data, ns = load_material_farming_spots(true)
+        for _, item_id in ipairs({ 89112, 76061, 80433, 94289, 102218, 74252, 79868, 79869, 95373, 76734, 90407, 102541, 102542, 102543 }) do
+            assert.is_true(data.items[item_id].auctionable, tostring(item_id))
+            assert.is_false(data.items[item_id].isRoute, tostring(item_id))
+            assert_non_empty_string(data.items[item_id].sourceUrls[1])
+        end
+        for _, item_id in ipairs({ 251763, 82447, 94111, 94113, 98617, 98619, 98717, 79250, 102536 }) do
+            assert.is_false(data.items[item_id].auctionable, tostring(item_id))
+            assert.is_false(data.items[item_id].isRoute, tostring(item_id))
+        end
+        assert.same({ { itemID = 89112, quantity = 10 } }, data.items[76061].components)
+        assert.same({ { itemID = 90407, quantity = 10 } }, data.items[76734].components)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+        for _, item_id in ipairs({ 80433, 94289, 102218, 74840, 102542, 251763 }) do
+            for _, option in ipairs(ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)) do
+                for _, pin in ipairs(option.pins) do
+                    assert.is_false(pin.isRoute)
+                    assert.is_true(#pin.tips > 0)
+                    assert.is_true(#pin.sourceUrls > 0)
+                end
+            end
+        end
+        for _, item_id in ipairs({ 79868, 79869, 95373 }) do
+            assert.equals(0, #data.items[item_id].spots)
+        end
+        assert.is_nil(data.items[88496]) -- Bound fishing crate is guidance, not an AH product.
+    end)
+
+    it("links all Mists housing recipes to their verified farmable materials", function()
+        local data, ns = load_material_farming_spots(true)
+        assert.equals(21, #ns.MistsHousing.recipes)
+        local kit
+        for _, recipe in ipairs(ns.MistsHousing.recipes) do
+            assert.is_false(recipe.isRoute)
+            local output = data.items[recipe.outputItemID]
+            assert.is_true(output.auctionable)
+            assert.is_false(output.isRoute)
+            assert.same(output.components, recipe.reagents)
+            for _, reagent in ipairs(recipe.reagents) do
+                local found = false
+                for _, usage in ipairs(data.items[reagent.itemID].housingUses or {}) do
+                    if usage.outputItemID == recipe.outputItemID and usage.quantity == reagent.quantity then
+                        found = true
+                    end
+                end
+                assert.is_true(found, tostring(reagent.itemID))
+            end
+            if recipe.outputItemID == 258214 then kit = recipe end
+        end
+        assert.is_table(kit)
+        assert.same({ { itemID = 251763, quantity = 10 }, { itemID = 72234, quantity = 8 }, { itemID = 76098, quantity = 4 }, { itemID = 72238, quantity = 2 } }, kit.reagents)
+    end)
+
+    it("exposes all supplied Mists ore loops with ordered map options, research, and shared Trillium sources", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        -- Main/alternative order: map, point count, first x/y, route-specific tip count.
+        local expected_routes = {
+            [72092] = { { 376, 20, 0.14, 0.34, 5 }, { 371, 18, 0.32, 0.24, 4 }, { 388, 9, 0.67, 0.52, 4 } },
+            [72093] = { { 388, 18, 0.29, 0.50, 5 }, { 422, 16, 0.40, 0.27, 5 }, { 422, 7, 0.27, 0.71, 5 } },
+            [72094] = { { 422, 17, 0.54, 0.17, 5 }, { 379, 15, 0.32, 0.58, 5 }, { 388, 10, 0.66, 0.49, 4 } },
+            [72103] = { { 379, 17, 0.37, 0.56, 5 }, { 422, 13, 0.43, 0.24, 4 }, { 388, 11, 0.67, 0.49, 5 } },
+        }
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+        end
+
+        local route_count = 0
+        for item_id, expected in pairs(expected_routes) do
+            local item = data.items[item_id]
+            assert.is_table(item)
+            assert.is_true(item.isRoute)
+            assert.is_true(catalog[item_id].isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            local seen_ids = {}
+            for order, route in ipairs(expected) do
+                local spot, option = item.spots[order], options[order]
+                assert.matches("-supplied-", spot.id, 1, true)
+                assert.is_nil(seen_ids[spot.id])
+                seen_ids[spot.id] = true
+                assert.equals(order, spot.sortOrder)
+                assert.equals(spot.id, option.id)
+                assert.equals(route[1], option.mapID)
+                assert.equals(route[2], #option.pins)
+                assert.equals(route[3], option.pins[1].x)
+                assert.equals(route[4], option.pins[1].y)
+                assert.equals(1, option.spotCount)
+                assert.is_true(spot.isRoute)
+                assert.equals("medium", spot.confidence)
+                assert.matches("Not tested in WoW", spot.dropDifficulty, 1, true)
+                local is_trillium = item_id == 72094 or item_id == 72103
+                assert.equals(route[5] + 5 + (is_trillium and 1 or 0), #spot.tips)
+                assert.matches("Mist-Piercing Goggles", table.concat(spot.tips, " "), 1, true)
+                assert.matches("Snakeroot Seeds", table.concat(spot.tips, " "), 1, true)
+                assert.is_true(#spot.sourceUrls >= 6)
+                if is_trillium then
+                    assert.equals("Trillium Vein", spot.targetName)
+                    assert.matches("both Black and White Trillium Ore", spot.farmAction, 1, true)
+                end
+                for _, pin in ipairs(option.pins) do
+                    assert.is_true(pin.isRoute)
+                    assert.equals(spot.id, pin.routeID)
+                    assert.equals(spot.targetName, pin.targetName)
+                    assert.equals(spot.farmAction, pin.farmAction)
+                    assert.same(spot.tips, pin.tips)
+                    assert.same(spot.sourceUrls, pin.sourceUrls)
+                end
+                route_count = route_count + 1
+            end
+        end
+        assert.equals(12, route_count)
+    end)
+
+    it("exposes all supplied Mists herb loops as separate ordered map routes with tips and sources", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        -- Each row is one supplied route in main/alternative order: map, pins, first x/y.
+        local expected_routes = {
+            [72234] = { { 371, 12, 0.30, 0.21 }, { 376, 10, 0.15, 0.34 } },
+            [72237] = { { 371, 9, 0.48, 0.44 }, { 371, 8, 0.55, 0.68 } },
+            [72235] = { { 376, 9, 0.55, 0.24 }, { 376, 10, 0.38, 0.63 } },
+            [79010] = { { 379, 11, 0.32, 0.54 }, { 379, 9, 0.31, 0.66 } },
+            [79011] = { { 422, 12, 0.28, 0.61 }, { 388, 7, 0.28, 0.43 } },
+            [72238] = { { 371, 9, 0.29, 0.19 }, { 376, 10, 0.18, 0.28 }, { 422, 9, 0.29, 0.31 } },
+            [89639] = { { 422, 8, 0.31, 0.29 }, { 376, 7, 0.13, 0.44 }, { 379, 6, 0.33, 0.49 } },
+        }
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+        end
+
+        local supplied_count = 0
+        for item_id, expected in pairs(expected_routes) do
+            local item = data.items[item_id]
+            assert.is_table(item)
+            assert.is_nil(data.missingItems[item_id])
+            assert.is_true(item.isRoute)
+            assert.is_true(catalog[item_id].isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            for order, route in ipairs(expected) do
+                local spot = item.spots[order]
+                local option = options[order]
+                assert.matches("-supplied-", spot.id, 1, true)
+                assert.equals(order, spot.sortOrder)
+                assert.equals(spot.id, option.id)
+                assert.equals(route[1], option.mapID)
+                assert.equals(route[2], #option.pins)
+                assert.equals(route[3], option.pins[1].x)
+                assert.equals(route[4], option.pins[1].y)
+                assert.equals(1, option.spotCount)
+                assert.is_true(spot.isRoute)
+                assert.equals("medium", spot.confidence)
+                assert.matches("Not tested in WoW", spot.dropDifficulty, 1, true)
+                assert.equals(3, #spot.tips)
+                assert.is_true(#spot.sourceUrls >= 4)
+                for _, pin in ipairs(option.pins) do
+                    assert.is_true(pin.isRoute)
+                    assert.equals(spot.id, pin.routeID)
+                    assert.same(spot.tips, pin.tips)
+                    assert.same(spot.sourceUrls, pin.sourceUrls)
+                end
+                supplied_count = supplied_count + 1
+            end
+        end
+        assert.equals(16, supplied_count)
+        assert.matches("Sha-Touched Herb", data.items[89639].summary, 1, true)
+    end)
+
+    it("includes researched Mists farming and composed material data", function()
         local spots = load_material_farming_spots(true)
         local researched_mists_ids = {
             72092, 72093, 72094, 72103, 72120, 72162, 72163, 72234, 72235, 72237,
@@ -1306,8 +1777,6 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             74839, 74856, 74857, 74859, 74860, 74861, 74863, 74864, 74865, 74866,
             75014, 76130, 76131, 76133, 76134, 76135, 76136, 76137, 76138, 76139,
             76140, 76141, 76142, 79010, 79011, 79101, 83064, 89112, 92426,
-        }
-        local composed_mists_ids = {
             76061, 82441,
         }
 
@@ -1318,12 +1787,6 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             assert.is_nil(spots.missingItems[item_id], message)
         end
 
-        for _, item_id in ipairs(composed_mists_ids) do
-            local message = "composed-only Mists item should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
-        end
     end)
 
     it("keeps Mists farming sources retail-safe for Wowhead pages", function()
@@ -1408,7 +1871,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_true(prospecting_route_found)
     end)
 
-    it("includes researched Warlords farming data while leaving sorcerous byproducts pending", function()
+    it("includes researched Warlords farms and non-map profession byproducts", function()
         local spots = load_material_farming_spots(true)
         local researched_warlords_ids = {
             109118, 109119, 109991, 109992, 115508, 109124, 109125, 109126, 109127, 109128,
@@ -1429,10 +1892,12 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
 
         for _, item_id in ipairs(byproduct_warlords_ids) do
-            local message = "sorcerous Warlords byproduct should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
+            local message = "missing researched Sorcerous byproduct: " .. tostring(item_id)
+            assert.is_table(spots.items[item_id], message)
+            assert.is_nil(spots.missingItems[item_id], message)
+            assert.equals("researched", spots.items[item_id].researchStatus, message)
+            assert.is_false(spots.items[item_id].isRoute, message)
+            assert.equals(0, #spots.items[item_id].spots, message)
         end
     end)
 
@@ -1493,6 +1958,135 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                     end
                 end
             end
+        end
+    end)
+
+    it("keeps Legion saleable craft chains complete, non-route, and free of purchased supplies", function()
+        local data, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        local excluded = {
+            [3371] = true, [39354] = true, [38682] = true,
+            [124436] = true, [127037] = true, [127681] = true,
+            [136629] = true, [136630] = true, [136631] = true, [136632] = true,
+            [136633] = true, [136636] = true, [136637] = true, [136638] = true,
+            [146659] = true, [9312] = true, [9313] = true, [9318] = true,
+            [133588] = true, [133589] = true, [133590] = true,
+            [133591] = true, [133592] = true, [133593] = true,
+        }
+        local function check_chain(item_id, visiting)
+            assert.is_nil(visiting[item_id], "component cycle: " .. tostring(item_id))
+            assert.is_nil(excluded[item_id], "purchased supply in composition: " .. tostring(item_id))
+            local item = catalog[item_id]
+            assert.is_table(item, "missing component: " .. tostring(item_id))
+            visiting[item_id] = true
+            for _, component in ipairs(item.components or {}) do
+                assert.is_true(component.quantity > 0)
+                check_chain(component.itemID, visiting)
+            end
+            visiting[item_id] = nil
+        end
+        local count, professions = 0, {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "legion" and item.components then
+                count = count + 1
+                professions[item.professions[1]] = true
+                assert.is_true(item.auctionable)
+                assert.is_false(item.isRoute)
+                assert.is_false(data.items[item.itemID].isRoute)
+                assert.is_true(item.outputQuantity > 0)
+                assert.same(item.components, data.items[item.itemID].components)
+                assert_non_empty_string(item.recipeSourceLabel)
+                check_chain(item.itemID, {})
+            end
+        end
+        assert.is_true(count >= 381)
+        for _, profession in ipairs({ "alchemy", "blacksmithing", "cooking", "enchanting", "engineering",
+            "inscription", "jewelcrafting", "leatherworking", "tailoring" }) do
+            assert.is_true(professions[profession], profession)
+        end
+        for _, item_id in ipairs({ 124124, 151568, 251767, 140781, 140782, 140783, 140784, 140785,
+            146710, 146711, 146712, 146713, 146714 }) do
+            assert.is_false(catalog[item_id].auctionable)
+            assert.is_false(data.items[item_id].auctionable)
+            assert.is_false(data.items[item_id].isRoute)
+        end
+    end)
+
+    it("keeps Legion random cards separate from deterministic eight-card trinket assemblies", function()
+        local data, ns = load_material_farming_spots(true)
+        local cards = 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "legion" and item.randomOutput and item.sourceSpellID == 191659 then
+                cards = cards + 1
+                assert.is_true(item.auctionable)
+                assert.is_nil(item.components)
+                assert.is_nil(data.items[item.itemID].components)
+                assert.is_false(data.items[item.itemID].isRoute)
+            end
+        end
+        assert.equals(32, cards)
+        assert.is_nil(data.items[128712])
+        for _, item_id in ipairs({ 128705, 128709, 128710, 128711 }) do
+            local item = data.items[item_id]
+            assert.equals(8, #item.components)
+            assert.equals(1, item.outputQuantity)
+            for _, component in ipairs(item.components) do
+                assert.equals(1, component.quantity)
+                assert.is_true(data.items[component.itemID].randomOutput)
+            end
+        end
+    end)
+
+    it("links current Legion housing compositions to bound lumber and farmable materials", function()
+        local data, ns = load_material_farming_spots(true)
+        assert.equals(23, #ns.LegionHousing.recipes)
+        assert.is_false(data.items[251767].auctionable)
+        local function amount(item_id, reagent_id)
+            for _, reagent in ipairs(data.items[item_id].components) do
+                if reagent.itemID == reagent_id then return reagent.quantity end
+            end
+        end
+        assert.equals(18, amount(247916, 251767))
+        assert.equals(4, amount(247916, 127004))
+        assert.equals(3, amount(257400, 124116))
+        assert.equals(10, amount(142332, 142335))
+        assert.equals(10, data.items[132516].outputQuantity)
+        for _, recipe in ipairs(ns.LegionHousing.recipes) do
+            assert.is_false(recipe.isRoute)
+            for _, reagent in ipairs(recipe.reagents) do
+                local linked = false
+                for _, use in ipairs(data.items[reagent.itemID].housingUses or {}) do
+                    if use.outputItemID == recipe.outputItemID then linked = true end
+                end
+                assert.is_true(linked, tostring(recipe.outputItemID))
+            end
+        end
+        -- Announced future additions have no verified current recipe in this pass.
+        assert.is_nil(data.items[282158])
+    end)
+
+    it("maps Legion specialty catches and drops without changing herb or ore route lines", function()
+        local data, ns = load_material_farming_spots(true)
+        assert(loadfile("UI/CraftingFarmingWindow.lua"))("General-Gold-Tracker", ns)
+        for _, item_id in ipairs({ 133701, 133702, 133703, 133704, 133705, 133707, 133708,
+            133709, 133710, 133711, 133712, 133713, 133714, 133715, 133716, 133717,
+            133719, 133720, 133721, 133722, 133723, 133724, 133795, 142335, 142336, 139786, 139890 }) do
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            assert.is_true(#options > 0, tostring(item_id))
+            assert.is_true(data.items[item_id].auctionable)
+            for _, option in ipairs(options) do
+                assert.equals(1, option.spotCount)
+                for _, pin in ipairs(option.pins) do
+                    assert.is_false(pin.isRoute)
+                    assert.is_true(#pin.tips > 0)
+                    assert.is_true(#pin.sourceUrls > 0)
+                end
+            end
+        end
+        for _, item_id in ipairs({ 124101, 123918, 123919, 151564, 128304 }) do
+            assert.is_true(data.items[item_id].isRoute)
+            assert.is_true(ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)[1].pins[1].isRoute)
         end
     end)
 
@@ -1642,6 +2236,137 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
+    it("keeps all 18 supplied Shadowlands herb routes as separate ordered map options", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+        end
+        -- Per herb: supplied route count and expected map IDs in dropdown order.
+        local expected = {
+            [169701] = { 1533, 1533, 1565 },
+            [168586] = { 1533, 1533 },
+            [168589] = { 1536, 1536, 1536 },
+            [170554] = { 1565, 1565 },
+            [168583] = { 1525, 1525, 1525, 1525 },
+            [171315] = { 1543, 1961 },
+            [187699] = { 1970, 1970 },
+        }
+        local routeCount, pointCount, tipCount = 0, 0, 0
+        for itemID, mapIDs in pairs(expected) do
+            local item = data.items[itemID]
+            assert.is_true(item.isRoute)
+            assert.is_true(catalog[itemID].isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            local suppliedCount = 0
+            for index, option in ipairs(options) do
+                local spot = find_spot(item, option.id)
+                if option.id:match("%-supplied$") then
+                    assert.is_true(spot.isRoute)
+                    suppliedCount = suppliedCount + 1
+                    routeCount = routeCount + 1
+                    pointCount = pointCount + #option.pins
+                    tipCount = tipCount + #spot.tips
+                    assert.equals(index, spot.sortOrder)
+                    assert.equals(mapIDs[index], option.mapID)
+                    assert.equals(1, option.spotCount)
+                    assert.equals(#spot.coords, #option.pins)
+                    assert.is_false(spot.inGameTested)
+                    assert.equals("low", spot.confidence)
+                    assert.is_true(#spot.tips >= 3)
+                    assert.is_true(#spot.sourceUrls >= 3)
+                    for _, pin in ipairs(option.pins) do
+                        assert.is_true(pin.isRoute)
+                        assert.same(spot.tips, pin.tips)
+                        assert.same(spot.sourceUrls, pin.sourceUrls)
+                    end
+                else
+                    assert.is_true(index > #mapIDs)
+                end
+            end
+            assert.equals(#mapIDs, suppliedCount, tostring(itemID))
+        end
+        assert.equals(18, routeCount)
+        assert.equals(266, pointCount)
+        assert.equals(65, tipCount)
+    end)
+
+    it("keeps all 15 supplied Shadowlands mining routes and their provenance in map options", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+        end
+        -- map ID, vertex count, and attachment provenance in recommended order.
+        local expected = {
+            [171828] = { {1533, 39, "published"}, {1525, 68, "published"} },
+            [171829] = { {1533, 39, "published"}, {1533, 125, "published"} },
+            [171830] = { {1536, 52, "published"}, {1536, 45, "published"} },
+            [171831] = { {1565, 27, "published"}, {1565, 125, "repaired"} },
+            [171832] = { {1525, 68, "published"}, {1525, 14, "published"} },
+            [171833] = { {1543, 45, "published"}, {1970, 9, "derived"}, {1536, 8, "published"} },
+            [187700] = { {1970, 19, "derived"}, {1970, 9, "derived"} },
+        }
+        local routeCount, pointCount, tipCount = 0, 0, 0
+        for itemID, routes in pairs(expected) do
+            local item = data.items[itemID]
+            assert.is_true(item.isRoute)
+            assert.is_true(catalog[itemID].isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            local suppliedCount = 0
+            for index, option in ipairs(options) do
+                if option.id:match("%-supplied$") then
+                    suppliedCount = suppliedCount + 1
+                    local spot = find_spot(item, option.id)
+                    local route = routes[index]
+                    assert.is_table(route, option.id)
+                    assert.equals(index, option.sortOrder)
+                    assert.equals(route[1], option.mapID)
+                    assert.equals(route[2], #option.pins)
+                    assert.equals(route[3], spot.sourceStatus)
+                    assert.equals(1, option.spotCount)
+                    assert.is_true(spot.isRoute)
+                    assert.is_false(spot.inGameTested)
+                    assert.is_true(option.label:find(spot.sourceStatus, 1, true) ~= nil)
+                    assert.is_true(#spot.tips >= 4)
+                    assert.is_true(#spot.sourceUrls >= 2)
+                    if spot.sourceStatus == "repaired" then
+                        assert.is_true(spot.repairNotes:find("2022", 1, true) ~= nil)
+                        assert.is_true(spot.repairNotes:find("1565", 1, true) ~= nil)
+                    end
+                    for _, pin in ipairs(option.pins) do
+                        assert.is_true(pin.isRoute)
+                        assert.same(spot.tips, pin.tips)
+                        assert.same(spot.sourceUrls, pin.sourceUrls)
+                        assert.equals(spot.dropDifficulty, pin.dropDifficulty)
+                    end
+                    routeCount = routeCount + 1
+                    pointCount = pointCount + #option.pins
+                    tipCount = tipCount + #spot.tips
+                else
+                    assert.is_true(index > #routes)
+                end
+            end
+            assert.equals(#routes, suppliedCount, tostring(itemID))
+        end
+        assert.equals(15, routeCount)
+        assert.equals(692, pointCount)
+        assert.equals(72, tipCount)
+        for _, itemID in ipairs({171840, 171841}) do
+            assert.is_false(data.items[itemID].isRoute)
+            for _, option in ipairs(ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)) do
+                assert.is_false(option.pins[1].isRoute)
+                assert.is_nil(option.id:match("%-supplied$"))
+            end
+        end
+    end)
+
     it("keeps every researched Shadowlands spot anchored by coordinates", function()
         local spots = load_material_farming_spots(true)
 
@@ -1706,6 +2431,114 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
+    it("includes Dragonflight specialty sale products and explicitly bound crafting inputs", function()
+        local data, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        for _, itemID in ipairs({ 193252, 193253, 193254, 193256, 193258, 193259, 205413,
+            210456, 204092, 198395, 198397, 199344, 200061, 203419, 198614,
+            201400, 201401, 201403, 201406, 192615, 192636, 192658, 204464, 208212, 204460 }) do
+            assert.is_true(catalog[itemID].auctionable, tostring(itemID))
+            assert.is_false(catalog[itemID].isRoute)
+            assert.is_false(data.items[itemID].isRoute)
+            assert.is_true(#data.items[itemID].sourceUrls > 0)
+        end
+        for _, itemID in ipairs({ 251773, 193362, 193919, 193920, 193921, 203398, 203399,
+            203400, 203401, 203402, 203403, 203404, 203405, 203406 }) do
+            assert.is_false(catalog[itemID].auctionable, tostring(itemID))
+            assert.is_true(catalog[itemID].supportOnly)
+            assert.is_false(data.items[itemID].isRoute)
+        end
+        assert.is_nil(catalog[197749])
+        assert.is_nil(data.items[197749])
+        assert.equals(2, catalog[193210].qualityRank)
+        assert.equals(3, catalog[193211].qualityRank)
+        assert.equals(1, catalog[193222].qualityRank)
+        assert.equals(3, catalog[193224].qualityRank)
+    end)
+
+    it("keeps Dragonflight composed recipes source-sized, acyclic and free of vendor-only inputs", function()
+        local data, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        local vendor = { [159] = true, [190452] = true, [192095] = true, [192833] = true,
+            [194683] = true, [194691] = true, [194784] = true, [197749] = true, [197750] = true,
+            [197751] = true, [197752] = true, [197753] = true, [198487] = true, [198615] = true,
+            [200860] = true, [200953] = true, [201584] = true, [201832] = true, [204634] = true,
+            [259894] = true, [284249] = true }
+        local function visit(itemID, seen)
+            assert.is_nil(seen[itemID], "component cycle: " .. itemID)
+            assert.is_nil(vendor[itemID], "vendor-only input: " .. itemID)
+            assert.is_table(catalog[itemID], "missing input: " .. itemID)
+            local nextSeen = {}
+            for key, value in pairs(seen) do nextSeen[key] = value end
+            nextSeen[itemID] = true
+            for _, component in ipairs(catalog[itemID].components or {}) do
+                assert.is_true(component.quantity > 0)
+                visit(component.itemID, nextSeen)
+            end
+        end
+        local composed = 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "dragonflight" and item.components then
+                composed = composed + 1
+                assert.is_false(item.isRoute)
+                assert.is_true(item.outputQuantity > 0)
+                assert_non_empty_string(item.recipeSourceLabel)
+                assert.equals(item.recipeSpellID, data.items[item.itemID].recipeSpellID)
+                visit(item.itemID, {})
+            end
+        end
+        assert.equals(1186, composed)
+        assert.equals(2, catalog[191318].outputQuantity)
+        assert.equals(5, catalog[191387].outputQuantity)
+        assert.equals(1, catalog[194017].outputQuantity)
+        assert.equals(1, catalog[204463].outputQuantity)
+        assert.equals(300, catalog[204463].components[1].quantity)
+        assert.equals(50, catalog[204463].components[2].quantity)
+        assert.is_true(catalog[204463].recipeSourceLabel:find("1 day recharge", 1, true) ~= nil)
+        assert.equals(10, catalog[190316].components[1].quantity)
+        for _, itemID in ipairs({ 198086, 198087, 198088, 198089 }) do
+            assert.equals(8, #catalog[itemID].components)
+        end
+        for _, itemID in ipairs({ 198397, 198614, 194785, 194791, 198412, 193368 }) do
+            assert.is_true(catalog[itemID].randomOutput)
+            assert.is_nil(catalog[itemID].components)
+        end
+    end)
+
+    it("links all Dragonflight housing crafts and renders specialty farms as unconnected pins", function()
+        local data, ns = load_material_farming_spots(true)
+        assert(loadfile("UI/CraftingFarmingWindow.lua"))("General-Gold-Tracker", ns)
+        assert.equals(25, #ns.DragonflightHousing.recipes)
+        for _, recipe in ipairs(ns.DragonflightHousing.recipes) do
+            assert.is_false(recipe.isRoute)
+            for _, reagent in ipairs(recipe.reagents) do
+                local found = false
+                for _, use in ipairs(data.items[reagent.itemID].housingUses or {}) do
+                    if use.outputItemID == recipe.outputItemID and use.quantity == reagent.quantity then found = true end
+                end
+                assert.is_true(found, tostring(recipe.outputItemID))
+            end
+        end
+        for _, itemID in ipairs({ 205413, 210456, 204092, 193252, 193253, 198395, 198397,
+            199344, 200061, 203419, 192615, 192636, 192658 }) do
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            assert.is_true(#options > 0, tostring(itemID))
+            for _, option in ipairs(options) do
+                for _, pin in ipairs(option.pins) do
+                    assert.is_false(pin.isRoute)
+                    assert.is_true(#pin.tips > 0)
+                    assert.is_true(#pin.sourceUrls > 0)
+                end
+            end
+        end
+        assert.is_true(data.items[190394].isRoute)
+        assert.is_true(data.items[191460].isRoute)
+        assert.is_true(ns.GoldTracker:BuildMaterialFarmingMapOptions(190394)[1].pins[1].isRoute)
+        assert.is_true(ns.GoldTracker:BuildMaterialFarmingMapOptions(191460)[1].pins[1].isRoute)
+    end)
+
     it("includes researched Dragonflight farming data from strict coordinate-backed research", function()
         local spots = load_material_farming_spots(true)
         local researched_dragonflight_ids = {
@@ -1717,7 +2550,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             193210, 193213, 193214, 193215, 193216, 193217, 193218, 193223,
             193251, 193255, 193922, 194123, 194124, 194545, 194730, 194966,
             194967, 194968, 194969, 194970, 197741, 197742, 197744, 197745,
-            197746, 197747, 197748, 197749, 200113, 200224, 201399, 201404,
+            197746, 197747, 197748, 200113, 200224, 201399, 201404,
             201405, 201883, 201991,
         }
 
@@ -1793,7 +2626,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("includes researched War Within farming data while leaving crafted alloys pending", function()
+    it("includes researched War Within materials and composed alloys without vendor-only supplies", function()
         local spots = load_material_farming_spots(true)
         local researched_warwithin_ids = {
             210796, 210797, 210798, 210799, 210800, 210801, 210802, 210803,
@@ -1802,16 +2635,16 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             210939, 212495, 212498, 212505, 212508, 212511, 212664, 212665,
             212666, 212667, 212670, 212672, 212673, 212674, 212675, 212676,
             213197, 213398, 213399, 213610, 213613, 218336, 218337, 219946,
-            219947, 219948, 219949, 219950, 219951, 219952, 219953, 219954,
+            219947, 219948, 219949, 219950, 219951, 219952, 219954, 219955,
             220134, 220135, 220136, 220137, 220138, 220139, 220141, 220142,
             220143, 220144, 220145, 220146, 220147, 220148, 220149, 220150,
-            220151, 220152, 220153, 221758, 222533, 224824, 224826, 226202,
+            220151, 220152, 220153, 221758, 222533, 224824, 224826,
             228231,
         }
         local crafted_alloy_ids = {
             222417, 222420, 222423, 222428,
         }
-        local pending_research_ids = {
+        local specialty_research_ids = {
             221757, 223512, 225565, 225566, 225567, 225568, 225569, 225911,
             225912,
         }
@@ -1824,18 +2657,17 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
 
         for _, item_id in ipairs(crafted_alloy_ids) do
-            local message = "crafted-only War Within alloy should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
+            assert.is_table(spots.items[item_id])
+            assert.is_table(spots.items[item_id].components)
+            assert.is_false(spots.items[item_id].isRoute)
+            assert.is_nil(spots.missingItems[item_id])
         end
-
-        for _, item_id in ipairs(pending_research_ids) do
-            local message = "unresearched War Within item should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
+        for _, item_id in ipairs(specialty_research_ids) do
+            assert.is_table(spots.items[item_id])
+            assert.is_nil(spots.missingItems[item_id])
         end
+        assert.is_nil(spots.items[226202])
+        assert.is_nil(spots.items[219953])
     end)
 
     it("keeps every researched War Within spot anchored by coordinates", function()
@@ -1902,7 +2734,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("includes researched Burning Crusade data while leaving composed-only BC materials pending", function()
+    it("includes Burning Crusade farming and crafting data", function()
         local spots = load_material_farming_spots(true)
         local researched_bc_ids = {
             21877, 21881, 21929, 22445, 22446, 22447, 22448, 22449, 22450, 22572,
@@ -1929,10 +2761,11 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
 
         for _, item_id in ipairs(composed_bc_ids) do
-            local message = "composed-only Burning Crusade material should stay pending: " .. tostring(item_id)
-            assert.is_nil(spots.items[item_id], message)
-            assert.is_table(spots.missingItems[item_id], message)
-            assert.equals("missing", spots.missingItems[item_id].researchStatus, message)
+            local message = "missing Burning Crusade crafting entry: " .. tostring(item_id)
+            assert.is_table(spots.items[item_id], message)
+            assert.is_table(spots.items[item_id].components, message)
+            assert.is_false(spots.items[item_id].isRoute, message)
+            assert.is_nil(spots.missingItems[item_id], message)
         end
     end)
 
@@ -1981,7 +2814,8 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             end
         end
 
-        assert.equals(40, composedCount)
+        -- Current Mists glyphs also require the newly researched Outland Ethereal Ink.
+        assert.equals(41, composedCount)
 
         local expectedRecipeComponents = {
             [20816] = { { 2840, 2 } },
@@ -1997,6 +2831,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             [31079] = { { 24243, 4 }, { 22452, 1 } },
             [32423] = { { 21885, 1 }, { 23781, 2 }, { 21877, 2 } },
             [35128] = { { 23449, 3 }, { 23573, 1 } },
+            [43124] = { { 39342, 2 } },
         }
 
         for itemID, expectedComponents in pairs(expectedRecipeComponents) do
@@ -2013,6 +2848,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.equals(10, itemsByID[32423].outputQuantity)
         assert.equals("world-drop", itemsByID[35128].recipeSource)
         assert.equals("Sunwell Plateau world-drop recipe", itemsByID[35128].recipeSourceLabel)
+        assert.is_true(itemsByID[43124].mistsSupport)
     end)
 
     it("keeps every researched Burning Crusade spot anchored by coordinates", function()
@@ -2841,6 +3677,49 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
+    it("keeps all 19 supplied Legion herbalism candidates as separate rendered route options", function()
+        local data, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+
+        local expected_counts = {
+            [124101] = 2, [124102] = 2, [124103] = 2, [124104] = 2,
+            [124105] = 2, [124106] = 3, [151565] = 3, [128304] = 3,
+        }
+        for item_id, expected_count in pairs(expected_counts) do
+            local item = data.items[item_id]
+            assert.is_true(item.isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(item_id)
+            local supplied_count = 0
+            for _, option in ipairs(options) do
+                if option.id:match("%-supplied$") then
+                    supplied_count = supplied_count + 1
+                    local spot = find_spot(item, option.id)
+                    assert.is_true(spot.isRoute)
+                    assert.is_false(spot.inGameTested)
+                    assert.equals("low", spot.confidence)
+                    assert.equals(1, option.spotCount)
+                    assert.equals(spot.mapID, option.mapID)
+                    assert.equals(#spot.coords, #option.pins)
+                    assert.equals(3, #spot.tips)
+                    assert.is_true(#spot.sourceUrls > 0)
+                    for _, pin in ipairs(option.pins) do
+                        assert.is_true(pin.isRoute)
+                        assert.same(spot.tips, pin.tips)
+                        assert.same(spot.sourceUrls, pin.sourceUrls)
+                    end
+                end
+            end
+            assert.equals(expected_count, supplied_count, tostring(item_id))
+        end
+
+        -- Shared legacy herb spots do not opt ordinary plantable seeds into lines.
+        for _, option in ipairs(ns.GoldTracker:BuildMaterialFarmingMapOptions(129284)) do
+            assert.is_false(option.pins[1].isRoute)
+        end
+    end)
+
     it("includes sampled Legion route coordinates from retail route import strings", function()
         local spots = load_material_farming_spots()
 
@@ -3042,14 +3921,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
             end
         end
 
-        local echoing_flux_vendor_found = false
-        for _, spot in ipairs(data.items[226202].spots) do
-            for _, coord in ipairs(spot.coords or {}) do
-                if coord.x == 0.488 and coord.y == 0.626 then
-                    echoing_flux_vendor_found = true
-                end
-            end
-        end
+        assert.is_nil(data.items[226202]) -- Purchased-only supply is excluded.
 
         local luredrop_pin_found = item_has_coord(data.items[210799], 0.341, 0.157)
         local null_lotus_route_found = item_has_coord(data.items[213197], 0.187, 0.580)
@@ -3066,7 +3938,6 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_true(blessing_blossom_pin_found)
         assert.is_true(gloom_chitin_comment_found)
         assert.is_true(profaned_tinderbox_chest_found)
-        assert.is_true(echoing_flux_vendor_found)
         assert.is_true(luredrop_pin_found)
         assert.is_true(null_lotus_route_found)
         assert.is_true(thunderous_hide_route_found)
@@ -3155,8 +4026,8 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                 for _, pin in ipairs(option.pins or {}) do
                     if pin.isRoute then
                         assert.is_true(
-                            item.category == "Herb" or item.category == "Ore",
-                            "only herb and ore material maps may render routes: " .. tostring(item.itemID)
+                            item.category == "Herb" or item.category == "Ore" or item.isRoute == true,
+                            "non-herb/ore material routes require explicit opt-in: " .. tostring(item.itemID)
                         )
                     end
                 end
@@ -3493,5 +4364,470 @@ describe("Data/FarmLocationOverrides", function()
             end
         end
         assert.equals(37, aliases)
+    end)
+end)
+
+describe("Draenor specialty materials and profession crafts", function()
+    it("resolves nested farmable components without cycles or vendor supplies", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        local vendor = { [3371] = true, [4470] = true, [39354] = true, [38682] = true,
+            [183955] = true, [259894] = true, [117454] = true, [115352] = true }
+        local visiting, visited = {}, {}
+        local function visit(id)
+            if visited[id] then return end
+            assert.is_nil(visiting[id], "Draenor component cycle at " .. id)
+            visiting[id] = true
+            local item = catalog[id]
+            assert.is_table(item)
+            for _, component in ipairs(item.components or {}) do
+                assert.is_nil(vendor[component.itemID], "Vendor-only component " .. component.itemID)
+                assert.is_true(component.quantity > 0)
+                visit(component.itemID)
+            end
+            visiting[id], visited[id] = nil, true
+        end
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "warlords" and item.components then
+                visit(item.itemID)
+                assert.is_false(item.isRoute)
+                assert.is_false(research.items[item.itemID].isRoute)
+            end
+        end
+        assert.is_true(catalog[108996].auctionable) -- Current Alchemical Catalyst binding.
+        for _, id in ipairs({ 120945, 251766, 111556, 111366, 112377, 115524, 108257, 110611 }) do
+            assert.is_false(catalog[id].auctionable)
+            assert.is_false(research.items[id].auctionable)
+        end
+        for _, id in ipairs({ 108738, 117491, 113216, 115363, 111821, 141644, 112270 }) do
+            assert.is_nil(catalog[id]) -- Bound products or non-item random-result placeholders.
+        end
+    end)
+
+    it("keeps specialty source pins separate from gathering routes and within their maps", function()
+        local research, ns = load_material_farming_spots(true)
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "warlords" and item.itemName then
+                assert.is_false(item.isRoute)
+                local source = research.items[item.itemID]
+                assert.is_table(source)
+                assert.is_false(source.isRoute)
+                assert.is_true(#source.sourceUrls > 0)
+                for _, spot in ipairs(source.spots or {}) do
+                    assert.is_false(spot.isRoute)
+                    assert.is_true(#spot.tips > 0)
+                    assert.is_true(#spot.sourceUrls > 0)
+                end
+            end
+        end
+        assert.equals(525, research.items[108739].spots[1].mapID)
+        assert.equals(534, research.items[128499].spots[1].mapID)
+        for _, id in ipairs({ 111658, 111665, 111672, 110292 }) do
+            for _, spot in ipairs(research.items[id].spots) do
+                assert.equals(542, spot.mapID)
+                assert.equals("Spires of Arak", spot.mapName)
+            end
+        end
+        assert.equals(0, #research.items[251766].spots) -- Housing trees move.
+        assert.equals(0, #research.items[109585].spots) -- Active dig sites rotate.
+        assert.matches("once%-per%-character", research.items[108739].spots[1].tips[3])
+    end)
+
+    it("uses current housing inputs and states variable batch yields", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        assert.equals(22, #ns.WarlordsHousing.recipes)
+        local plushie = catalog[284238]
+        assert.same({ { itemID = 251766, quantity = 5 }, { itemID = 111557, quantity = 6 },
+            { itemID = 114931, quantity = 2 }, { itemID = 113588, quantity = 1 } }, plushie.components)
+        assert.equals(8, catalog[111556].outputQuantity)
+        assert.is_true(catalog[111556].variableOutput)
+        assert.equals(4, catalog[111431].outputQuantity)
+        assert.is_true(catalog[111431].variableOutput)
+        assert.equals(111449, catalog[245428].components[3].itemID) -- Platter -> Barbecue -> cooked meals -> meat/fish.
+        assert.is_true(#catalog[111449].components > 0)
+        assert.is_true(#research.items[251766].housingUses > 0)
+    end)
+
+    it("keeps random Darkmoon cards distinct from deterministic deck assembly", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog, cards = {}, 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+            if item.expansion == "warlords" and item.tag == "Darkmoon Card" then
+                cards = cards + 1
+                assert.is_true(item.randomOutput)
+                assert.is_nil(item.components)
+                assert.equals(163294, research.items[item.itemID].sourceSpellID)
+            end
+        end
+        assert.equals(32, cards)
+        for _, pair in ipairs({ { 112303, 112319 }, { 112304, 112320 }, { 112305, 112317 }, { 112306, 112318 } }) do
+            assert.equals(8, #catalog[pair[1]].components)
+            assert.same({ { itemID = pair[1], quantity = 1 } }, catalog[pair[2]].components)
+        end
+        assert.equals(10, catalog[113355].outputQuantity) -- Card of Omens is a separate crafted batch.
+    end)
+
+    it("keeps BfA specialty products and composed recipes separate from bound and purchased supplies", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        local excluded = { [3371] = true, [11291] = true, [18567] = true, [39354] = true,
+            [38682] = true, [113509] = true, [158186] = true, [158205] = true,
+            [159959] = true, [160059] = true, [160298] = true, [160398] = true,
+            [160399] = true, [160400] = true, [160502] = true, [160705] = true,
+            [160709] = true, [160710] = true, [160712] = true, [161131] = true,
+            [163203] = true, [163569] = true, [177062] = true, [259894] = true }
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        local function check_chain(itemID, visiting)
+            assert.is_nil(visiting[itemID], "cycle at " .. itemID)
+            assert.is_nil(excluded[itemID], "purchased/conjured supply in component graph: " .. itemID)
+            assert.is_table(catalog[itemID], "missing component: " .. itemID)
+            visiting[itemID] = true
+            for _, component in ipairs(catalog[itemID].components or {}) do
+                assert.is_true(component.quantity > 0)
+                check_chain(component.itemID, visiting)
+            end
+            visiting[itemID] = nil
+        end
+        local composed = 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "battleForAzeroth" and item.tag ~= "Herb" and item.tag ~= "Ore" then
+                assert.is_false(item.isRoute)
+                assert.is_false(research.items[item.itemID].isRoute)
+                if item.components then
+                    composed = composed + 1
+                    assert.is_true(item.outputQuantity > 0)
+                    check_chain(item.itemID, {})
+                end
+            end
+        end
+        assert.is_true(composed >= 600)
+        for _, itemID in ipairs({ 163782, 167738, 168215, 168216, 168217,
+            168822, 168825, 168828, 154989, 154990, 163131, 163573, 163574, 163575, 163576 }) do
+            assert.is_true(catalog[itemID].auctionable)
+        end
+        for _, itemID in ipairs({ 152668, 162460, 162461, 165703, 165948, 167562,
+            161129, 161132, 161136, 161137, 166846, 166970, 169610, 251768 }) do
+            assert.is_false(catalog[itemID].auctionable)
+            assert.is_false(research.items[itemID].auctionable)
+        end
+        assert.is_nil(catalog[161131]) -- Purchased reactor is disclosed, not added as a farmable item.
+        assert.equals(1, catalog[162460].outputQuantity)
+        assert.equals(1, catalog[162461].outputQuantity)
+        assert.equals(1, catalog[168412].outputQuantity)
+        assert.equals(250, catalog[169610].components[1].quantity)
+    end)
+
+    it("connects current BfA housing recipes to nested farmable components and their material uses", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        assert.equals(22, #ns.BattleForAzerothHousing.recipes)
+        for _, recipe in ipairs(ns.BattleForAzerothHousing.recipes) do
+            assert.is_false(recipe.isRoute)
+            assert.is_true(catalog[recipe.outputItemID].auctionable)
+            for _, component in ipairs(recipe.reagents) do
+                local linked = false
+                for _, use in ipairs(research.items[component.itemID].housingUses or {}) do
+                    if use.outputItemID == recipe.outputItemID and use.quantity == component.quantity then linked = true end
+                end
+                assert.is_true(linked)
+            end
+        end
+        assert.equals(3, catalog[257046].components[1].quantity) -- Current Boralus Bottle Lamp lumber cost.
+        assert.equals(6, catalog[257047].components[1].quantity) -- Current Zandalari Bottle Shipment lumber cost.
+        assert.equals(1, catalog[257047].components[2].quantity) -- Anchor Weed, with purchased vials omitted.
+        assert.equals(154886, catalog[245484].components[3].itemID) -- Platter expands into Spiced Snapper.
+        assert.is_true(#catalog[154886].components > 0)
+        assert.same({ { itemID = 154722, quantity = 1 } }, catalog[152542].components)
+        assert.same({ { itemID = 152577, quantity = 1 }, { itemID = 152576, quantity = 1 } }, catalog[158378].components)
+    end)
+
+    it("keeps Shadowlands sale products and composed recipes separate from bound and vendor supplies", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        local excluded = {
+            [159] = true, [10290] = true, [38682] = true, [172056] = true,
+            [172057] = true, [172058] = true, [172059] = true, [173060] = true,
+            [173168] = true, [175886] = true, [177062] = true, [178786] = true,
+            [178787] = true, [180732] = true, [180733] = true, [183950] = true,
+            [183951] = true, [183952] = true, [183953] = true, [183954] = true,
+            [187812] = true, [259894] = true, [171280] = true,
+        }
+        local function check_chain(itemID, visiting)
+            assert.is_nil(visiting[itemID], "recipe cycle: " .. itemID)
+            assert.is_nil(excluded[itemID], "vendor/conjured supply in farmable inputs: " .. itemID)
+            assert.is_table(catalog[itemID], "missing component: " .. itemID)
+            visiting[itemID] = true
+            for _, component in ipairs(catalog[itemID].components or {}) do
+                assert.is_true(component.quantity > 0)
+                check_chain(component.itemID, visiting)
+            end
+            visiting[itemID] = nil
+        end
+        local composed = 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "shadowlands" and item.tag ~= "Herb" and item.tag ~= "Ore" then
+                assert.is_false(item.isRoute)
+                assert.is_false(research.items[item.itemID].isRoute)
+                if item.components then
+                    composed = composed + 1
+                    assert.is_true(item.outputQuantity > 0)
+                    check_chain(item.itemID, {})
+                end
+            end
+        end
+        assert.equals(347, composed)
+        for _, itemID in ipairs({ 186017, 187633, 187634, 187635, 187636,
+            189145, 189146, 189147, 189148, 189149, 189150, 189151,
+            189152, 189153, 189154, 189155, 189156, 190388, 181468, 187712 }) do
+            assert.is_true(catalog[itemID].auctionable)
+        end
+        assert.is_false(catalog[251772].auctionable)
+        assert.is_false(research.items[251772].auctionable)
+        assert.same({ { itemID = 172094, quantity = 10 } }, catalog[172097].components)
+        assert.same({ { itemID = 172089, quantity = 10 } }, catalog[172096].components)
+        assert.same({ "skinning", "leatherworking" }, catalog[172097].professions)
+        assert.equals(3, catalog[172230].outputQuantity)
+        assert.equals(3, catalog[172231].outputQuantity)
+        assert.equals(2, catalog[171428].outputQuantity)
+        assert.equals(307611, catalog[171428].recipeSpellID) -- Blacksmithing alternative avoids the Alchemy cooldown.
+    end)
+
+    it("connects 23 current Shadowlands housing crafts to nested materials and labeled lumber", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        assert.equals(23, #ns.ShadowlandsHousing.recipes)
+        for _, recipe in ipairs(ns.ShadowlandsHousing.recipes) do
+            assert.is_false(recipe.isRoute)
+            assert.is_true(catalog[recipe.outputItemID].auctionable)
+            for _, component in ipairs(recipe.reagents) do
+                local linked = false
+                for _, use in ipairs(research.items[component.itemID].housingUses or {}) do
+                    if use.outputItemID == recipe.outputItemID and use.quantity == component.quantity then linked = true end
+                end
+                assert.is_true(linked)
+            end
+        end
+        assert.same({ { itemID = 251772, quantity = 5 }, { itemID = 171289, quantity = 3 },
+            { itemID = 173202, quantity = 2 } }, catalog[257051].components)
+        assert.is_true(catalog[257051].recipeSourceLabel:find("Sealing Wax x6", 1, true) ~= nil)
+        assert.equals(172049, catalog[246705].components[3].itemID)
+        assert.is_true(#catalog[172049].components > 0)
+        assert.equals(172437, catalog[257048].components[2].itemID)
+        assert.is_true(#catalog[172437].components > 0)
+        assert.is_true(#research.items[251772].housingUses > 0)
+        -- Source indexes contain these future-marked candidates, with no verified recipe.
+        for _, itemID in ipairs({ 282126, 283260, 283301, 284504, 284552, 188957 }) do
+            assert.is_nil(catalog[itemID])
+        end
+    end)
+
+    it("keeps Shadowlands random cards and specialty map pins separate from herb and ore routes", function()
+        local research, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+        local catalog, named, blank = {}, 0, 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+            if item.expansion == "shadowlands" and (item.tag == "Darkmoon Card" or item.tag == "Blank Darkmoon Card") then
+                if item.tag == "Darkmoon Card" then named = named + 1 else blank = blank + 1 end
+                assert.is_true(item.randomOutput)
+                assert.is_nil(item.components)
+                assert.equals(311441, research.items[item.itemID].sourceSpellID)
+            end
+        end
+        assert.equals(32, named)
+        assert.equals(4, blank)
+        for _, itemID in ipairs({ 173069, 173078, 173087, 173096 }) do assert.equals(8, #catalog[itemID].components) end
+        for _, itemID in ipairs({ 187633, 187634, 187635, 187636, 189145, 189146, 189147,
+            189149, 189150, 189151, 189152, 189153, 189154, 189155, 189156, 190388,
+            173038, 173039, 173040, 173041, 173042, 173043, 187712, 187662 }) do
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            assert.is_true(#options > 0, tostring(itemID))
+            for _, option in ipairs(options) do
+                for _, pin in ipairs(option.pins) do
+                    assert.is_false(pin.isRoute)
+                    assert.is_true(#pin.sourceUrls > 0)
+                    assert.is_true(#pin.tips > 0)
+                end
+            end
+        end
+        -- Nests and lumber are dynamic, with no fabricated fixed spawn pins.
+        assert.equals(0, #research.items[189148].spots)
+        assert.equals(0, #research.items[251772].spots)
+        for _, itemID in ipairs({ 171828, 171829, 171830, 171831, 171832, 171833, 187700,
+            169701, 168583, 168586, 168589, 170554, 171315, 187699 }) do
+            assert.is_true(catalog[itemID].isRoute)
+            for _, option in ipairs(ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)) do
+                for _, pin in ipairs(option.pins) do assert.is_true(pin.isRoute) end
+            end
+        end
+    end)
+
+    it("keeps BfA card randomness and specialty source pins distinct from herb and ore routes", function()
+        local research, ns = load_material_farming_spots(true)
+        local chunk, err = loadfile("UI/CraftingFarmingWindow.lua")
+        assert(chunk, err)
+        chunk("General-Gold-Tracker", ns)
+        local catalog, cards = {}, 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+            if item.expansion == "battleForAzeroth" and item.tag == "Darkmoon Card" then
+                cards = cards + 1
+                assert.is_true(item.randomOutput)
+                assert.is_nil(item.components)
+            end
+        end
+        assert.equals(32, cards)
+        assert.is_nil(catalog[153598]) -- Random creation placeholder is not a named sale product.
+        for _, itemID in ipairs({ 159125, 159126, 159127, 159128 }) do assert.equals(8, #catalog[itemID].components) end
+        assert.same({ { itemID = 158886, quantity = 1 }, { itemID = 158887, quantity = 1 } }, catalog[153594].components)
+        for _, itemID in ipairs({ 163782, 167738, 168215, 168822, 163131, 163573, 163574, 163575, 163576 }) do
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            assert.is_true(#options > 0)
+            for _, option in ipairs(options) do
+                for _, pin in ipairs(option.pins) do assert.is_false(pin.isRoute) end
+            end
+        end
+        assert.is_true(#research.items[168822].spots[1].coords > 40)
+        for _, itemID in ipairs({ 152505, 152512, 152579, 152513, 168185 }) do
+            assert.is_true(catalog[itemID].isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            for _, option in ipairs(options) do
+                for _, pin in ipairs(option.pins) do assert.is_true(pin.isRoute) end
+            end
+        end
+    end)
+
+    it("keeps War Within specialty products non-route and bound support distinct from AH goods", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog = {}
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+            if item.expansion == "warWithin" and item.tag ~= "Herb" and item.tag ~= "Ore" then
+                assert.is_false(item.isRoute)
+                local record = research.items[item.itemID]
+                if record then assert.is_false(record.isRoute) end
+            end
+        end
+        for _, itemID in ipairs({ 218338, 218339, 219013, 221754, 221756, 221757, 221763,
+            215236, 225911, 225912, 235845, 235846, 249218, 227774 }) do
+            assert.is_true(catalog[itemID].auctionable)
+            assert.is_false(research.items[itemID].isRoute)
+            assert.is_true(#research.items[itemID].sourceUrls > 0)
+        end
+        for _, itemID in ipairs({ 219150, 248012 }) do
+            assert.is_false(catalog[itemID].auctionable)
+            assert.is_true(catalog[itemID].supportOnly)
+            assert.is_false(research.items[itemID].auctionable)
+        end
+        for _, itemID in ipairs({ 226202, 224764, 228930, 227208, 218738, 219953 }) do
+            assert.is_nil(catalog[itemID])
+            assert.is_nil(research.items[itemID])
+        end
+        assert.equals(1, catalog[219952].qualityRank)
+        assert.equals(2, catalog[219954].qualityRank)
+        assert.equals(3, catalog[219955].qualityRank)
+        assert.matches("delve", research.items[221757].summary)
+    end)
+
+    it("resolves War Within composed recipes and all housing inputs without vendor-only supplies", function()
+        local research, ns = load_material_farming_spots(true)
+        local catalog, count, heraldryRecipes = {}, 0, 0
+        for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
+        local vendor = { [226202] = true, [224764] = true, [228930] = true,
+            [222695] = true, [222696] = true, [222697] = true, [222699] = true,
+            [222700] = true, [222701] = true, [226204] = true, [226205] = true,
+            [259894] = true, [212754] = true, [228414] = true, [228956] = true }
+        local function visit(itemID, parents)
+            assert.is_nil(parents[itemID], "cycle at " .. itemID)
+            assert.is_nil(vendor[itemID], "vendor-only ingredient " .. itemID)
+            assert.is_table(catalog[itemID])
+            assert.is_table(research.items[itemID])
+            parents[itemID] = true
+            for _, component in ipairs(catalog[itemID].components or {}) do
+                assert.is_true(component.quantity > 0)
+                visit(component.itemID, parents)
+            end
+            parents[itemID] = nil
+        end
+        for _, item in ipairs(ns.FarmingItems.items) do
+            if item.expansion == "warWithin" and item.components then
+                count = count + 1
+                assert.is_false(item.isRoute)
+                assert.is_true(item.outputQuantity > 0)
+                assert.is_number(item.recipeSpellID)
+                for _, component in ipairs(item.components) do
+                    if component.itemID == 210221 then
+                        heraldryRecipes = heraldryRecipes + 1
+                        assert.is_true(component.quantity >= 3)
+                    end
+                end
+                visit(item.itemID, {})
+            end
+        end
+        assert.equals(941, count)
+        assert.equals(58, heraldryRecipes)
+        assert.equals(24, #ns.WarWithinHousing.recipes)
+        for _, recipe in ipairs(ns.WarWithinHousing.recipes) do
+            assert.is_true(catalog[recipe.outputItemID].auctionable)
+            for _, component in ipairs(recipe.reagents) do
+                local found = false
+                for _, use in ipairs(research.items[component.itemID].housingUses or {}) do
+                    if use.outputItemID == recipe.outputItemID and use.quantity == component.quantity then found = true end
+                end
+                assert.is_true(found)
+            end
+        end
+    end)
+
+    it("keeps War Within random products and source pins separate from imported gathering routes", function()
+        local research, ns = load_material_farming_spots(true)
+        assert(loadfile("UI/CraftingFarmingWindow.lua"))("General-Gold-Tracker", ns)
+        local catalog, cards = {}, 0
+        for _, item in ipairs(ns.FarmingItems.items) do
+            catalog[item.itemID] = item
+            if item.expansion == "warWithin" and item.tag == "Darkmoon Card" then
+                cards = cards + 1
+                assert.is_true(item.randomOutput)
+                assert.is_nil(item.components)
+            end
+        end
+        assert.equals(32, cards)
+        for _, itemID in ipairs({ 219672, 222653, 222671, 222680 }) do assert.equals(8, #catalog[itemID].components) end
+        for _, itemID in ipairs({ 222789, 222792, 222795, 222741, 213219, 222612, 235845 }) do
+            assert.is_true(catalog[itemID].randomOutput)
+            assert.is_nil(catalog[itemID].components)
+        end
+        assert.is_true(item_has_coord(research.items[219013], 0.590, 0.510))
+        assert.is_true(item_has_coord(research.items[235846], 0.642, 0.107))
+        for _, itemID in ipairs({ 218338, 218339, 219013, 225911, 235845, 235846, 224828, 228236 }) do
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            assert.is_true(#options > 0)
+            for _, option in ipairs(options) do
+                for _, pin in ipairs(option.pins) do
+                    assert.is_false(pin.isRoute)
+                    assert.is_true(#pin.sourceUrls > 0)
+                    assert.is_true(#pin.tips > 0)
+                end
+            end
+        end
+        assert.equals(0, #research.items[248012].spots)
+        for _, itemID in ipairs({ 210796, 210799, 210802, 210805, 210808, 239690,
+            210930, 210933, 210936, 238201 }) do
+            assert.is_true(catalog[itemID].isRoute)
+            local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
+            assert.is_true(#options >= 2)
+            assert.equals(1, options[1].sortOrder)
+            assert.equals(2, options[2].sortOrder)
+            for _, pin in ipairs(options[1].pins) do assert.is_true(pin.isRoute) end
+        end
     end)
 end)

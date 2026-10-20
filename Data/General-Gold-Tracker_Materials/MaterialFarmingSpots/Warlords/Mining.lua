@@ -10,6 +10,7 @@ local function ItemUrl(itemID)
 end
 
 local AOA_ROUTE_SOURCE = "https://artisansofazeroth.com/zone-atlas/"
+local WOD_GATHERING_GUIDE = "https://www.wowhead.com/guide/professions/wod/gathering-professions-overview"
 
 local TALADOR_ORE_ROUTE = {
     id = "warlords-ore-talador-central-ridge-imported-route",
@@ -128,21 +129,253 @@ local DRAENOR_ORE_ROUTES = {
     TANAAN_ORE_ROUTE,
 }
 
+-- Decoded control points from the ten supplied Retail Routes candidate imports.
+-- These paths are untested navigation guides, not confirmed mining-node spawns.
+-- xScarlife's published exports are linked as references only; their geometry is not bundled here.
+local function RouteCoords(label, packedCoords)
+    local coords = {}
+    for index, packed in ipairs(packedCoords) do
+        local x = math.floor(packed / 10000)
+        local y = packed % 10000
+        coords[index] = C(x / 10000, y / 10000, string.format("%s pin %d", label, index))
+    end
+    return coords
+end
+
+local function OreRoute(id, sortOrder, mapID, mapName, location, packedCoords, tips, sourceUrls, experimental)
+    return {
+        id = id,
+        sortOrder = sortOrder,
+        mapID = mapID,
+        mapName = mapName,
+        location = location,
+        routeType = "mining-loop",
+        source = "User-supplied constructed Retail Routes candidate with route-specific farming-map references",
+        sourceUrls = sourceUrls,
+        dropDifficulty = "Constructed candidate path, not tested or benchmarked in WoW. Control points are not guaranteed mining spawns.",
+        tips = tips,
+        coords = RouteCoords(location, packedCoords),
+        confidence = experimental and "low" or "medium",
+        inGameTested = false,
+        experimental = experimental,
+        isRoute = true,
+    }
+end
+
+local SUPPLIED_ORE_ROUTES = {
+    [109118] = {
+        OreRoute(
+            "warlords-blackrock-ore-frostfire-ridge-supplied-main", 1,
+            525, "Frostfire Ridge", "1. Main - Bladespire Citadel / Stonefang Outpost loop",
+            { 17004200, 16004700, 18805300, 15405750, 17106700, 21406900, 21806100, 24005750, 31305690, 34806300, 37306270, 39505250, 42705000, 48204570, 49904970, 48405690, 43605330, 37004790, 31204990, 22905120, 19204550 },
+            {
+                "Follow the rocky slopes and ridges rather than the open snowfields; ore deposits are commonly associated with rocky terrain.",
+                "Check both regular and rich deposits.",
+                "The western portion is useful for repeated short farming sessions; shorten the eastern extension if it proves inefficient.",
+                "Use GatherMate2 to record actual node positions and refine the route after a few circuits.",
+            },
+            {
+                "https://www.wow-professions.com/farming/blackrock-ore-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                ItemUrl(109118),
+                WOD_GATHERING_GUIDE,
+            }, false
+        ),
+        OreRoute(
+            "warlords-blackrock-ore-talador-supplied-alternative-1", 2,
+            535, "Talador", "2. Alternative 1 - Tuurem / Fort Wrynn eastern ridge",
+            { 57602450, 58403280, 64703600, 68103300, 70204160, 73804960, 75506000, 81507330, 84707350, 84806250, 82405430, 78605130, 85304300, 84503920, 75604020, 77003240, 74802980, 81302250, 78501930, 69001870, 64102160, 61202650 },
+            {
+                "Search the uneven ground around the eastern ridge; avoid assuming every waypoint marks an exact deposit.",
+                "Watch for elevation differences near the winding path and cliffs.",
+                "Talador is a good fallback when Frostfire's common farming corridor is busy.",
+                "The longest southern extension should be evaluated separately for ore collected per minute.",
+            },
+            {
+                "https://www.wow-professions.com/farming/blackrock-ore-farming",
+                ItemUrl(109118),
+                WOD_GATHERING_GUIDE,
+            }, false
+        ),
+        OreRoute(
+            "warlords-blackrock-ore-shadowmoon-valley-supplied-alternative-2", 3,
+            539, "Shadowmoon Valley (Draenor)", "3. Alternative 2 - Anguish Fortress / Burial Fields",
+            { 40500630, 44300880, 46001720, 46002620, 44403520, 49604150, 59903900, 65304470, 65805780, 60006400, 56606950, 61007450, 59807840, 53007300, 50308180, 44108280, 42506700, 40605120, 31004310, 29503560, 34402910, 40003330, 41001950 },
+            {
+                "Begin near the central-western region and work toward the Burial Fields.",
+                "Check rocky outcrops on either side of the marked route.",
+                "Use this as an Alliance-friendly alternative when operating from Lunarfall.",
+                "Remove dead-end deviations if the associated nodes are consistently absent.",
+            },
+            {
+                "https://www.wow-professions.com/farming/blackrock-ore-farming",
+                ItemUrl(109118),
+                WOD_GATHERING_GUIDE,
+            }, false
+        ),
+        OreRoute(
+            "warlords-blackrock-ore-nagrand-supplied-alternative-3", 4,
+            550, "Nagrand (Draenor)", "4. Alternative 3 - Eastern and southern mining corridor (Experimental)",
+            { 51004700, 58004700, 65004500, 70004200, 75003600, 81003500, 88004200, 91005100, 86005900, 84006700, 78007300, 71007600, 65008100, 59007700, 53007300, 48006900, 45006000, 43005300 },
+            {
+                "Prioritize the eastern terrain and the southern highlands, where historical maps show dense clusters.",
+                "Detour toward visible rich deposits where terrain permits.",
+                "Watch for vertical separation between nodes on different elevations.",
+                "Benchmark this route against Frostfire. Its historical density makes it interesting, but does not establish its current Retail efficiency.",
+                "Experimental route based on historical deposit maps; benchmark several complete laps before relying on its current Retail yield.",
+            },
+            {
+                "https://almostgaming.com/wow-farming/ore/warlords-of-draenor-mining-guide-1-700",
+                "https://en.guiaswow.com/mineria/guia-de-mineria-de-draenor-1-700-actualizada-6-2.html",
+                ItemUrl(109118),
+                WOD_GATHERING_GUIDE,
+            }, true
+        ),
+        OreRoute(
+            "warlords-blackrock-ore-gorgrond-supplied-alternative-4", 5,
+            543, "Gorgrond", "5. Alternative 4 - Central and southern mineral clusters (Experimental)",
+            { 40004500, 46004100, 53003800, 60004300, 65005000, 63005700, 57006100, 52006800, 47007500, 44008600, 49009200, 54009000, 54008100, 59007500, 56006700, 51006000, 44005500, 40006100, 38006700, 36005700 },
+            {
+                "Sweep the central rocky terrain before turning toward the southern mining clusters.",
+                "Avoid unnecessary detours deep into the most densely vegetated sections.",
+                "Historical node density is promising, but the route is less well documented than Frostfire or Talador.",
+                "Treat the southernmost leg as optional if it produces low ore-per-minute returns.",
+                "Experimental route based on historical deposit maps; benchmark several complete laps before relying on its current Retail yield.",
+            },
+            {
+                "https://en.guiaswow.com/mineria/guia-de-mineria-de-draenor-1-700-actualizada-6-2.html",
+                ItemUrl(109118),
+                WOD_GATHERING_GUIDE,
+            }, true
+        ),
+    },
+    [109119] = {
+        OreRoute(
+            "warlords-true-iron-ore-frostfire-ridge-supplied-main", 1,
+            525, "Frostfire Ridge", "1. Main - Bladespire / Stonefang compact loop",
+            { 18704540, 21904010, 25904320, 29004710, 34004950, 38904510, 44604420, 48704860, 47105410, 42105250, 39905880, 35106170, 33005530, 27805510, 24406250, 22106610, 19206140, 16805700, 18805210 },
+            {
+                "Focus on the western and central rocky formations, where the route has its densest coverage.",
+                "Prioritize Rich True Iron Deposits when they appear, but collect Blackrock along the same circuit.",
+                "This variant is shorter than the Blackrock Frostfire draft, making it useful for comparing circuit times.",
+                "Skip extended detours away from the mountains if the minimap reveals no mining nodes.",
+            },
+            {
+                "https://www.wow-professions.com/farming/true-iron-ore-farming",
+                "https://xscarlife-gaming.com/farming/retail/",
+                ItemUrl(109119),
+                WOD_GATHERING_GUIDE,
+            }, false
+        ),
+        OreRoute(
+            "warlords-true-iron-ore-talador-supplied-alternative-1", 2,
+            535, "Talador", "2. Alternative 1 - Eastern Talador / Tuurem",
+            { 57602450, 58403280, 64703600, 68103300, 70204160, 73804960, 75506000, 81507330, 84707350, 84806250, 82405430, 78605130, 85304300, 84503920, 75604020, 77003240, 74802980, 81302250, 78501930, 69001870, 64102160, 61202650 },
+            {
+                "Work the elevated ridges around Tuurem instead of flying directly through settlements.",
+                "Search the outer slopes around the northern section, where the route bends near Fort Wrynn.",
+                "Both ore types occur in Talador, so mining every relevant node improves the yield of a combined farm.",
+                "This is a larger circuit; compare its yield against the shorter Frostfire variation before choosing a permanent route.",
+            },
+            {
+                "https://www.wow-professions.com/farming/true-iron-ore-farming",
+                ItemUrl(109119),
+                WOD_GATHERING_GUIDE,
+            }, false
+        ),
+        OreRoute(
+            "warlords-true-iron-ore-shadowmoon-valley-supplied-alternative-2", 3,
+            539, "Shadowmoon Valley (Draenor)", "3. Alternative 2 - Anguish Fortress / Shaz'gul",
+            { 40500630, 44300880, 46001720, 46002620, 44403520, 49604150, 59903900, 65304470, 65805780, 60006400, 56606950, 61007450, 59807840, 53007300, 50308180, 44108280, 42506700, 40605120, 31004310, 29503560, 34402910, 40003330, 41001950 },
+            {
+                "Begin around the central-western terrain and follow the ridges southward.",
+                "The loop is useful for Alliance players already operating in Shadowmoon Valley.",
+                "The area around the Burial Fields has several route turns; use these as opportunities to scan nearby rocks for deposits.",
+                "Use the route as a navigational guide, not an exact list of guaranteed mining spawn points.",
+            },
+            {
+                "https://www.wow-professions.com/farming/true-iron-ore-farming",
+                ItemUrl(109119),
+                WOD_GATHERING_GUIDE,
+            }, false
+        ),
+        OreRoute(
+            "warlords-true-iron-ore-nagrand-supplied-alternative-3", 4,
+            550, "Nagrand (Draenor)", "4. Alternative 3 - Eastern highlands and southern corridor (Experimental)",
+            { 51004700, 58004700, 65004500, 70004200, 75003600, 81003500, 88004200, 91005100, 86005900, 84006700, 78007300, 71007600, 65008100, 59007700, 53007300, 48006900, 45006000, 43005300 },
+            {
+                "Concentrate on the eastern mountains and southern plateau rather than covering the entire zone.",
+                "Look for Rich True Iron Deposits around the elevated terrain.",
+                "Take advantage of the same route to collect Blackrock Ore; the mining areas overlap.",
+                "This is one of the most promising experimental alternatives, but current deposits-per-hour performance still needs testing.",
+                "The supplied import has a malformed map field. This addon uses Draenor Nagrand map ID 550 from the route heading and preserves every supplied control point.",
+                "Experimental route based on historical deposit maps; benchmark several complete laps before relying on its current Retail yield.",
+            },
+            {
+                "https://almostgaming.com/wow-farming/ore/warlords-of-draenor-mining-guide-1-700",
+                "https://en.guiaswow.com/mineria/guia-de-mineria-de-draenor-1-700-actualizada-6-2.html",
+                ItemUrl(109119),
+                WOD_GATHERING_GUIDE,
+            }, true
+        ),
+        OreRoute(
+            "warlords-true-iron-ore-gorgrond-supplied-alternative-4", 5,
+            543, "Gorgrond", "5. Alternative 4 - Central highlands / southern Gorgrond (Experimental)",
+            { 40004500, 46004100, 53003800, 60004300, 65005000, 63005700, 57006100, 52006800, 47007500, 44008600, 49009200, 54009000, 54008100, 59007500, 56006700, 51006000, 44005500, 40006100, 38006700, 36005700 },
+            {
+                "Follow the ore-bearing rocky ridges of central Gorgrond instead of the main roads.",
+                "The southern portion may provide additional deposits, but the changing terrain makes navigation less straightforward.",
+                "Check Rich True Iron nodes whenever they appear.",
+                "Compare shorter central loops against the complete southern extension; a high number of historical nodes does not automatically translate to the highest hourly yield.",
+                "Experimental route based on historical deposit maps; benchmark several complete laps before relying on its current Retail yield.",
+            },
+            {
+                "https://en.guiaswow.com/mineria/guia-de-mineria-de-draenor-1-700-actualizada-6-2.html",
+                ItemUrl(109119),
+                WOD_GATHERING_GUIDE,
+            }, true
+        ),
+    },
+}
+
 local function RegisterMiningMaterial(itemID, itemName, category, summary)
+    local routes = {}
+    local sourceUrls = {
+        ItemUrl(itemID),
+        WOD_GATHERING_GUIDE,
+        "https://www.wow-professions.com/farming/true-iron-ore-farming",
+        AOA_ROUTE_SOURCE,
+    }
+    local seenSources = {}
+    for _, url in ipairs(sourceUrls) do
+        seenSources[url] = true
+    end
+    -- Keep each supplied variant separate and ordered before existing researched routes.
+    for _, spot in ipairs(SUPPLIED_ORE_ROUTES[itemID] or {}) do
+        routes[#routes + 1] = spot
+    end
+    for _, spot in ipairs(DRAENOR_ORE_ROUTES) do
+        spot.isRoute = true
+        routes[#routes + 1] = spot
+    end
+    for _, spot in ipairs(routes) do
+        for _, url in ipairs(spot.sourceUrls or {}) do
+            if not seenSources[url] then
+                seenSources[url] = true
+                sourceUrls[#sourceUrls + 1] = url
+            end
+        end
+    end
     Register({
         itemID = itemID,
         itemName = itemName,
         expansion = "warlords",
         professions = { "mining" },
         category = category,
-        sourceUrls = {
-            ItemUrl(itemID),
-            "https://www.wowhead.com/guide/professions/wod/gathering-professions-overview",
-            "https://www.wow-professions.com/farming/true-iron-ore-farming",
-            AOA_ROUTE_SOURCE,
-        },
+        isRoute = category == "Ore",
+        sourceUrls = sourceUrls,
         summary = summary,
-        spots = DRAENOR_ORE_ROUTES,
+        spots = routes,
     })
 end
 
