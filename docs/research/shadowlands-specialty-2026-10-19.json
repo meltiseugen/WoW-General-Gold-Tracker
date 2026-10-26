@@ -67,8 +67,7 @@
     "jewelcrafting.html": "https://www.wowhead.com/guide/shadowlands-jewelcrafting-profession",
     "korthia.html": "https://www.wowhead.com/guide/korthia-comprehensive-guide",
     "housing-blizzard.html": "https://worldofwarcraft.blizzard.com/en-us/news/24247147/professions-unpacked-craft-housing-decor-with-reagents-from-every-era",
-    "page-item-187712.html": "https://www.wowhead.com/item=187712",
-    "page-item-181468.html": "https://www.wowhead.com/item=181468"
+    "page-item-187712.html": "https://www.wowhead.com/item=187712"
   },
   "coverage": {
     "composed": [
@@ -3155,26 +3154,6 @@
     "page-item-187712.html": {
       "loadedComments": 0,
       "commentIDs": [],
-      "note": "Page-embedded comments and replies reviewed selectively for source, unlock and coordinate details; not a claim to have read every comment on every item."
-    },
-    "page-item-181468.html": {
-      "loadedComments": 14,
-      "commentIDs": [
-        3215358,
-        3254511,
-        3271957,
-        3274286,
-        3275670,
-        3284584,
-        3289673,
-        3290522,
-        3310588,
-        3310716,
-        5220759,
-        5234962,
-        5342832,
-        5362972
-      ],
       "note": "Page-embedded comments and replies reviewed selectively for source, unlock and coordinate details; not a claim to have read every comment on every item."
     }
   },
@@ -37011,7 +36990,7 @@
       "itemID": 187633,
       "name": "Bufonid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37050,7 +37029,7 @@
       "itemID": 187634,
       "name": "Ambystan Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37089,7 +37068,7 @@
       "itemID": 187635,
       "name": "Cervid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37133,7 +37112,7 @@
       "itemID": 187636,
       "name": "Aurelid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37173,7 +37152,7 @@
       "itemID": 189145,
       "name": "Helicid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37223,7 +37202,7 @@
       "itemID": 189146,
       "name": "Geomental Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37262,7 +37241,7 @@
       "itemID": 189147,
       "name": "Leporid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37301,7 +37280,7 @@
       "itemID": 189148,
       "name": "Poultrid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37324,7 +37303,7 @@
       "itemID": 189149,
       "name": "Proto Avian Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37368,7 +37347,7 @@
       "itemID": 189150,
       "name": "Raptora Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37408,7 +37387,7 @@
       "itemID": 189151,
       "name": "Scarabid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37447,7 +37426,7 @@
       "itemID": 189152,
       "name": "Tarachnid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37491,7 +37470,7 @@
       "itemID": 189153,
       "name": "Unformed Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37530,7 +37509,7 @@
       "itemID": 189154,
       "name": "Vespoid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37580,7 +37559,7 @@
       "itemID": 189155,
       "name": "Viperid Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37620,7 +37599,7 @@
       "itemID": 189156,
       "name": "Vombata Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37659,7 +37638,7 @@
       "itemID": 190388,
       "name": "Lupine Lattice",
       "professions": [
-        "miscellaneous"
+        "protoformLattices"
       ],
       "category": "Protoform Lattice",
       "auctionable": true,
@@ -37964,28 +37943,6 @@
       ],
       "spots": [],
       "acquisitionType": "fishing"
-    },
-    {
-      "itemID": 181468,
-      "name": "Veiled Augment Rune",
-      "professions": [
-        "miscellaneous"
-      ],
-      "category": "Augment Rune",
-      "auctionable": true,
-      "summary": "Tradeable Veiled Augment Rune from eligible Shadowlands covenant Adventure missions and reward sources.",
-      "tips": [
-        "Unlock and progress the covenant Adventure table, then check available missions for rune rewards.",
-        "Follower level, mission availability, anima cost and completion time limit this source; it is not a repeatable outdoor node farm.",
-        "Check current level restrictions and demand before farming; no historical sale value is treated as current."
-      ],
-      "sourceUrls": [
-        "https://www.wowhead.com/item=181468/veiled-augment-rune",
-        "https://www.wowhead.com/currency=1889/adventure-campaign-progress",
-        "https://www.reddit.com/r/woweconomy/comments/170ladv/"
-      ],
-      "spots": [],
-      "acquisitionType": "mission"
     },
     {
       "itemID": 251772,
@@ -38440,5 +38397,7 @@
     },
     "runner": "minimal Lua 5.5 fallback, not Busted",
     "liveWoW": "not performed"
-  }
+  },
+  "catalogExclusionsUpdated": "2026-10-23; removed products pruned from target/source arrays. Dated validation counts describe the earlier research run.",
+  "protoformCategoryUpdated": "2026-10-23: Protoform Lattices is a Shadowlands-scoped Materials browsing category."
 }

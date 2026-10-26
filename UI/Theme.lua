@@ -1,8 +1,8 @@
 local _, NS = ...
 
-local JanisTheme = _G.JanisTheme
+local JanisTheme = _G.GoldTrackerThemeLibrary
 if type(JanisTheme) ~= "table" or type(JanisTheme.New) ~= "function" then
-    error("General Gold Tracker requires JanisTheme-1.0. Check General-Gold-Tracker.toc load order.")
+    error("General Gold Tracker requires its bundled theme library. Check General-Gold-Tracker.toc load order.")
 end
 
 NS.JanisThemeClass = JanisTheme
@@ -693,11 +693,14 @@ function Theme:SetProgressBarProgress(frame, currentValue, maximumValue, complet
 
     local isComplete = completed == nil and current >= maximum or completed == true
     frame.progressComplete = isComplete
+    local isScanning = type(frame.scanState) == "table" and frame.scanState.cancelled ~= true
+        and frame.scanState.isScanning ~= false
+    local showProgress = isScanning and not isComplete
     local container = frame.progressBackdrop or frame.progressBar
     if container and type(container.SetShown) == "function" then
-        container:SetShown(not isComplete)
+        container:SetShown(showProgress)
     elseif container then
-        local visibilityMethod = isComplete and container.Hide or container.Show
+        local visibilityMethod = showProgress and container.Show or container.Hide
         if type(visibilityMethod) == "function" then
             visibilityMethod(container)
         end

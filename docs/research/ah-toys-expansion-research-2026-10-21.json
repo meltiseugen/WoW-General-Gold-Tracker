@@ -1,0 +1,2139 @@
+{
+  "researchedAt": "2026-10-21",
+  "scope": "Additional gameplay-acquired AH Toy Box items for Drops > Toys, Classic through Midnight",
+  "candidateTooltipCount": 34,
+  "newToyCount": 28,
+  "curatedToyCount": 36,
+  "mapOptionCount": 47,
+  "pinCount": 62,
+  "totalCuratedMapOptions": 55,
+  "totalCuratedPins": 78,
+  "expansionReview": [
+    {
+      "expansion": "Classic",
+      "representativeQuery": "Classic Burning Crusade toys auctionable Orb of Deception World Enlarger",
+      "added": 4,
+      "finding": "Four outputs: rare world drop, rare-schematic craft and two specialist transport devices.",
+      "sourceUrls": [
+        "https://warcraft.wiki.gg/wiki/Orb_of_Deception",
+        "https://warcraft.wiki.gg/wiki/Schematic%3A_World_Enlarger",
+        "https://www.wowhead.com/npc=14742/zap-farflinger"
+      ]
+    },
+    {
+      "expansion": "The Burning Crusade",
+      "representativeQuery": "Burning Crusade toys auctionable transporters Crashin Thrashin Robot schematic",
+      "added": 3,
+      "finding": "Three crafts. Use Outland skill requirements, not old combined Engineering 350.",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=21493/kablamm-farflinger",
+        "https://www.wowhead.com/item=23810/schematic-crashin-thrashin-robot"
+      ]
+    },
+    {
+      "expansion": "Wrath of the Lich King",
+      "representativeQuery": "Wrath toys crafted AH MOLL-E Wormhole Generator Northrend Timofey",
+      "added": 2,
+      "finding": "Two crafts from Northrend trainers. Rituals of the New Moon is an off-hand item, not a Toy Box toy.",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=56472/moll-e",
+        "https://www.wowhead.com/npc=28697/timofey-oshenko"
+      ]
+    },
+    {
+      "expansion": "Cataclysm",
+      "representativeQuery": "Cataclysm Gnomish Gravity Well Loot-A-Rang trainer retail engineering",
+      "added": 2,
+      "finding": "Two crafts with distinct crafting and use skill requirements. Gravity Well belongs to Cataclysm despite its low item ID.",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=95705/gnomish-gravity-well",
+        "https://www.wowhead.com/item=60854/loot-a-rang",
+        "https://warcraft.wiki.gg/wiki/Engineering_trainers"
+      ]
+    },
+    {
+      "expansion": "Mists of Pandaria",
+      "representativeQuery": "Wormhole Generator Pandaria Sally Fizzlefury recipe coordinates",
+      "added": 1,
+      "finding": "One crafted output. Trainer marker identifies acquisition, not the random teleport destination.",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=127132/wormhole-generator-pandaria",
+        "https://www.wowhead.com/npc=55143/sally-fizzlefury"
+      ]
+    },
+    {
+      "expansion": "Warlords of Draenor",
+      "representativeQuery": "Draenor Engineering World Shrinker Findle Wormhole Coin Many Faces",
+      "added": 4,
+      "finding": "Three crafts and one seasonal enemy drop. Non-toy consumables and bound Jewel of Hellfire omitted.",
+      "sourceUrls": [
+        "https://www.icy-veins.com/wow/garrison-engineering-works-guide",
+        "https://www.wowhead.com/spell=177054/secrets-of-draenor-engineering",
+        "https://www.icy-veins.com/forums/topic/33674-gold-making-coin-of-many-faces/"
+      ]
+    },
+    {
+      "expansion": "Legion",
+      "representativeQuery": "Legion toys crafted Blingtron Circuit Design Tutorial Leather Love Seat Wormhole Argus",
+      "added": 3,
+      "finding": "Three crafts; complete Short Circuit stops and all five Argus readings mapped. Shoe Shine Kit is bound.",
+      "sourceUrls": [
+        "https://www.wowhead.com/quest=40880/short-circuit",
+        "https://www.wowhead.com/quest=48065/extraterrestrial-exploration",
+        "https://www.wowhead.com/item=137935/pattern-leather-love-seat"
+      ]
+    },
+    {
+      "expansion": "Battle for Azeroth",
+      "representativeQuery": "Battle Azeroth Wormhole Generator Kul Tiras Zandalar Nazjatar trainers",
+      "added": 2,
+      "finding": "Two crafts; both faction trainers and the Nazjatar story unlock retained.",
+      "sourceUrls": [
+        "https://www.icy-veins.com/wow/patch-8-2-engineering-profession-changes",
+        "https://www.wowhead.com/item=168808/wormhole-generator-zandalar",
+        "https://www.wowhead.com/npc=154321/jada"
+      ]
+    },
+    {
+      "expansion": "Shadowlands",
+      "representativeQuery": "Shadowlands crafted toys auction house Wormhole Generator Dar Vattish",
+      "added": 1,
+      "finding": "One craft. Requires Honored Undying Army and skill 70 to learn its recipe, skill 1 to use the finished toy.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=183858/schematic-wormhole-generator-shadowlands",
+        "https://www.wow-professions.com/guides/shadowlands-engineering-guide"
+      ]
+    },
+    {
+      "expansion": "Dragonflight",
+      "representativeQuery": "Dragonflight toys crafted auction house Atomic Recalibrator Environmental Emulator Wyrmhole",
+      "added": 3,
+      "finding": "Three crafts. Novelties ranks retained; optional Wyrmhole transmitter and compass upgrades mapped separately.",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=382408/atomic-recalibrator",
+        "https://www.wowhead.com/spell=382369/environmental-emulator",
+        "https://www.wowhead.com/item=198156/wyrmhole-generator-dragon-isles"
+      ]
+    },
+    {
+      "expansion": "The War Within",
+      "representativeQuery": "War Within toys crafted Filmless Camera Wormhole Generator Khaz Algar",
+      "added": 2,
+      "finding": "Two crafts. Finished toys are separate from prototypes; discovery is not a guaranteed trainer purchase.",
+      "sourceUrls": [
+        "https://www.wowhead.com/guide/the-war-within/professions/engineering-overview",
+        "https://www.wowhead.com/item=221963/prototype-filmless-camera",
+        "https://www.wowhead.com/npc=219099/thermalseer-arhdas"
+      ]
+    },
+    {
+      "expansion": "Midnight",
+      "representativeQuery": "Midnight toys auction house crafted Wormhole Generator Quel Thalas Recycling",
+      "added": 1,
+      "finding": "One crafted toy. Recycling discovery and current Silvermoon map used.",
+      "sourceUrls": [
+        "https://www.wow-professions.com/midnight/engineering-guide",
+        "https://www.method.gg/guides/midnight-engineering-profession-guide",
+        "https://warcraft.wiki.gg/wiki/Wormhole_Generator%3A_Quel%27Thalas"
+      ]
+    }
+  ],
+  "bindingEvidence": "Current Retail item tooltip classification and binding, plus acquisition sources; no live player AH listings verified.",
+  "exclusions": [
+    {
+      "itemID": 5507,
+      "name": "Ornate Spyglass",
+      "reason": "Ornate Spyglass is a reusable item, but its current Retail tooltip is not a Toy Box toy.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=5507",
+        "https://nether.wowhead.com/tooltip/item/5507?dataEnv=1&locale=0"
+      ]
+    },
+    {
+      "itemID": 45854,
+      "name": "Rituals of the New Moon",
+      "reason": "Rituals of the New Moon is an equippable off-hand, not a Toy Box toy.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=45854",
+        "https://nether.wowhead.com/tooltip/item/45854?dataEnv=1&locale=0"
+      ]
+    },
+    {
+      "itemID": 111820,
+      "name": "Swapblaster",
+      "reason": "Swapblaster is a reusable item but not a Toy Box toy.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=111820",
+        "https://nether.wowhead.com/tooltip/item/111820?dataEnv=1&locale=0"
+      ]
+    },
+    {
+      "itemID": 112384,
+      "name": "Reflecting Prism",
+      "reason": "Reflecting Prism is a charged consumable, not a Toy Box toy.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=112384",
+        "https://nether.wowhead.com/tooltip/item/112384?dataEnv=1&locale=0"
+      ]
+    },
+    {
+      "itemID": 127668,
+      "name": "Jewel of Hellfire",
+      "reason": "Jewel of Hellfire is a toy but binds when picked up.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=127668",
+        "https://nether.wowhead.com/tooltip/item/127668?dataEnv=1&locale=0"
+      ]
+    },
+    {
+      "itemID": 129055,
+      "name": "Shoe Shine Kit",
+      "reason": "Shoe Shine Kit is a toy but binds when picked up.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=129055",
+        "https://nether.wowhead.com/tooltip/item/129055?dataEnv=1&locale=0"
+      ]
+    }
+  ],
+  "validation": {
+    "focusedLua51SpecsPassed": 41,
+    "lazyLoaderSpecsPassed": 5,
+    "manifests": 6,
+    "runtimeLuaFiles": 241,
+    "liveWoW": false,
+    "liveAuctionHouse": false
+  },
+  "toys": [
+    {
+      "itemName": "Orb of Deception",
+      "action": "Clear original Blackwing Lair and loot its enemies, including Nefarian, for a very rare Orb of Deception chance alongside other loot.",
+      "auctionable": true,
+      "expansionLabel": "Classic",
+      "acquisitionType": "world-drop",
+      "expansion": "classic",
+      "guideLabel": "Rare Classic world drop",
+      "repeatability": "Blackwing Lair uses a weekly raid lockout per character. Other original Classic world-drop sources may also award the toy.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://warcraft.wiki.gg/wiki/Orb_of_Deception",
+        "https://www.wowdb.com/items/1973-orb-of-deception",
+        "https://us.forums.blizzard.com/en/wow/t/orb-of-deception/371254",
+        "https://warcraft.wiki.gg/wiki/Blackwing_Lair",
+        "https://www.wowhead.com/item=1973",
+        "https://nether.wowhead.com/tooltip/item/1973?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 36,
+          "label": "Blackwing Lair access - original raid inside Blackrock Mountain",
+          "id": "ggt:toy:research:1973:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.263,
+              "x": 0.231,
+              "label": "Blackrock Mountain / Blackwing Lair access - Nefarian inside"
+            }
+          ],
+          "location": "Blackwing Lair access - original raid inside Blackrock Mountain",
+          "mapLabel": "Burning Steppes",
+          "isRoute": false,
+          "mapRole": "entrance"
+        }
+      ],
+      "itemID": 1973,
+      "tips": [
+        "The pin marks Blackrock Mountain access to Blackwing Lair, not an outdoor Nefarian spawn. Enter the original raid, not Blackwing Descent. Old Dire Maul arena-rare advice predates Cataclysm source changes.",
+        "Blackwing Lair uses a weekly raid lockout per character. Other original Classic world-drop sources may also award the toy.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Farm eligible original Classic content. Blackwing Lair is one documented raid source; this is not a guaranteed boss reward.",
+      "contentID": 1,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/1973?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "World Enlarger",
+      "action": "Farm the Weapon Technicians in the Manufactory for the schematic if needed, then craft the finished World Enlarger.",
+      "auctionable": true,
+      "expansionLabel": "Classic",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "classic",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://warcraft.wiki.gg/wiki/Schematic%3A_World_Enlarger",
+        "https://www.wowhead.com/item=18661/schematic-world-enlarger",
+        "https://wago.tools/db2/JournalInstanceEntrance/csv",
+        "https://www.wowhead.com/item=18660",
+        "https://nether.wowhead.com/tooltip/item/18660?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The map marks the original dungeon entrance. Inside, continue to the Manufactory; it is the schematic that drops, not the finished toy. Avoid the anniversary raid version.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Classic Engineering (1) and Gnomish Engineer. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Classic Engineering (1) and Gnomish Engineer",
+      "mapOptions": [
+        {
+          "mapID": 32,
+          "label": "Blackrock Depths - schematic from Weapon Technicians inside",
+          "id": "ggt:toy:research:18660:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.723785,
+              "x": 0.275518,
+              "label": "Original Blackrock Depths entrance inside Blackrock Mountain"
+            }
+          ],
+          "location": "Blackrock Depths - schematic from Weapon Technicians inside",
+          "mapLabel": "Searing Gorge",
+          "isRoute": false,
+          "mapRole": "entrance"
+        }
+      ],
+      "itemID": 18660,
+      "saleMethod": "unlearned-item",
+      "requirement": "Use a Gnomish engineer and learn Schematic: World Enlarger (Classic Engineering 260), dropped by Weapon Technicians in original Blackrock Depths.",
+      "contentID": 1,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/18660?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Dimensional Ripper - Everlook",
+      "action": "Learn the transport-device recipe from Zap Farflinger, then craft the finished toy for sale.",
+      "auctionable": true,
+      "expansionLabel": "Classic",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "classic",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=14742/zap-farflinger",
+        "https://www.wowhead.com/achievement=18855/portal-to-everywhere",
+        "https://www.wowhead.com/item=18984",
+        "https://nether.wowhead.com/tooltip/item/18984?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The pin is the named recipe trainer. Select the engineering dialogue; these recipes may not appear as a normal purchasable schematic. Classic specialization skill is distinct from the Outland skill line. Everlook's older 61,38 coordinate belongs to the pre-Cataclysm map.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Classic Engineering (260) and Goblin Engineer. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Classic Engineering (260) and Goblin Engineer",
+      "mapOptions": [
+        {
+          "mapID": 83,
+          "label": "Zap Farflinger - recipe dialogue",
+          "id": "ggt:toy:research:18984:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.498,
+              "x": 0.597,
+              "label": "Zap Farflinger - transport-pad trainer"
+            }
+          ],
+          "location": "Zap Farflinger - recipe dialogue",
+          "mapLabel": "Winterspring",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 18984,
+      "saleMethod": "unlearned-item",
+      "requirement": "Meet Classic Engineering (260) and Goblin Engineer and speak to Zap Farflinger by the transport pad to learn the recipe through the dialogue option.",
+      "contentID": 1,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/18984?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Ultrasafe Transporter: Gadgetzan",
+      "action": "Learn the transport-device recipe from Jhordy Lapforge, then craft the finished toy for sale.",
+      "auctionable": true,
+      "expansionLabel": "Classic",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "classic",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=23489/ultrasafe-transporter-gadgetzan",
+        "https://www.wowhead.com/achievement=18855/portal-to-everywhere",
+        "https://www.wowhead.com/item=18986",
+        "https://nether.wowhead.com/tooltip/item/18986?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The pin is the named recipe trainer. Select the engineering dialogue; these recipes may not appear as a normal purchasable schematic. Classic specialization skill is distinct from the Outland skill line. Everlook's older 61,38 coordinate belongs to the pre-Cataclysm map.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Classic Engineering (260) and Gnomish Engineer. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Classic Engineering (260) and Gnomish Engineer",
+      "mapOptions": [
+        {
+          "mapID": 71,
+          "label": "Jhordy Lapforge - recipe dialogue",
+          "id": "ggt:toy:research:18986:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.278,
+              "x": 0.522,
+              "label": "Jhordy Lapforge - transport-pad trainer"
+            }
+          ],
+          "location": "Jhordy Lapforge - recipe dialogue",
+          "mapLabel": "Tanaris",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 18986,
+      "saleMethod": "unlearned-item",
+      "requirement": "Meet Classic Engineering (260) and Gnomish Engineer and speak to Jhordy Lapforge by the transport pad to learn the recipe through the dialogue option.",
+      "contentID": 1,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/18986?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Dimensional Ripper - Area 52",
+      "action": "Learn the transport-device recipe from Kablamm Farflinger, then craft the finished toy for sale.",
+      "auctionable": true,
+      "expansionLabel": "The Burning Crusade",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "burningCrusade",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=21493/kablamm-farflinger",
+        "https://www.wowhead.com/achievement=18855/portal-to-everywhere",
+        "https://www.wowhead.com/item=30542",
+        "https://nether.wowhead.com/tooltip/item/30542?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The pin is the named recipe trainer. Select the engineering dialogue; these recipes may not appear as a normal purchasable schematic. Classic specialization skill is distinct from the Outland skill line. Everlook's older 61,38 coordinate belongs to the pre-Cataclysm map.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Outland Engineering (50) and Goblin Engineer. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Outland Engineering (50) and Goblin Engineer",
+      "mapOptions": [
+        {
+          "mapID": 109,
+          "label": "Kablamm Farflinger - recipe dialogue",
+          "id": "ggt:toy:research:30542:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.637,
+              "x": 0.3295,
+              "label": "Kablamm Farflinger - transport-pad trainer"
+            }
+          ],
+          "location": "Kablamm Farflinger - recipe dialogue",
+          "mapLabel": "Netherstorm",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 30542,
+      "saleMethod": "unlearned-item",
+      "requirement": "Meet Outland Engineering (50) and Goblin Engineer and speak to Kablamm Farflinger by the transport pad to learn the recipe through the dialogue option.",
+      "contentID": 2,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/30542?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Ultrasafe Transporter: Toshley's Station",
+      "action": "Learn the transport-device recipe from Smiles O'Byron, then craft the finished toy for sale.",
+      "auctionable": true,
+      "expansionLabel": "The Burning Crusade",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "burningCrusade",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=36955/ultrasafe-transporter-toshleys-station",
+        "https://www.wowhead.com/achievement=18855/portal-to-everywhere",
+        "https://www.wowhead.com/item=30544",
+        "https://nether.wowhead.com/tooltip/item/30544?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The pin is the named recipe trainer. Select the engineering dialogue; these recipes may not appear as a normal purchasable schematic. Classic specialization skill is distinct from the Outland skill line. Everlook's older 61,38 coordinate belongs to the pre-Cataclysm map.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Outland Engineering (50) and Gnomish Engineer. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Outland Engineering (50) and Gnomish Engineer",
+      "mapOptions": [
+        {
+          "mapID": 105,
+          "label": "Smiles O'Byron - recipe dialogue",
+          "id": "ggt:toy:research:30544:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.65,
+              "x": 0.6,
+              "label": "Smiles O'Byron - transport-pad trainer"
+            }
+          ],
+          "location": "Smiles O'Byron - recipe dialogue",
+          "mapLabel": "Blade's Edge Mountains",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 30544,
+      "saleMethod": "unlearned-item",
+      "requirement": "Meet Outland Engineering (50) and Gnomish Engineer and speak to Smiles O'Byron by the transport pad to learn the recipe through the dialogue option.",
+      "contentID": 2,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/30544?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Crashin' Thrashin' Robot",
+      "action": "Obtain the schematic, then craft the finished robot from an Adamantite Frame, two Fel Iron Casings, a Gold Power Core and two Handfuls of Fel Iron Bolts.",
+      "auctionable": true,
+      "expansionLabel": "The Burning Crusade",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "burningCrusade",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=23810/schematic-crashin-thrashin-robot",
+        "https://www.wowhead.com/guide/raid-entrances-of-the-burning-crusade-6076",
+        "https://www.wowhead.com/item=23767",
+        "https://nether.wowhead.com/tooltip/item/23767?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 104,
+          "label": "Black Temple - rare schematic source inside",
+          "id": "ggt:toy:research:23767:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.462,
+              "x": 0.71,
+              "label": "Black Temple entrance - schematic can drop from eligible enemies inside"
+            }
+          ],
+          "location": "Black Temple - rare schematic source inside",
+          "mapLabel": "Shadowmoon Valley (Outland)",
+          "isRoute": false,
+          "mapRole": "entrance"
+        }
+      ],
+      "itemID": 23767,
+      "tips": [
+        "Black Temple is a documented schematic source, including Shadowmoon Weapon Masters. The entrance pin is a recipe-farming option, not a direct finished-toy drop. The finished robot is a Toy Box toy; it is separate from the controller toys.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Schematic: Crashin' Thrashin' Robot with Outland Engineering (25). The schematic is a rare Burning Crusade world/instance drop and can also be traded.",
+      "contentID": 2,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/23767?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 24,
+      "itemName": "Wormhole Generator: Northrend",
+      "action": "Visit Like Clockwork in Northrend Dalaran, train the recipe and craft the finished toy.",
+      "auctionable": true,
+      "expansionLabel": "Wrath of the Lich King",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "wrath",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://warcraft.wiki.gg/wiki/Wormhole_Generator%3A_Northrend",
+        "https://www.wowhead.com/npc=28697/timofey-oshenko",
+        "https://www.wowhead.com/item=48933",
+        "https://nether.wowhead.com/tooltip/item/48933?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Northrend Engineering (40)",
+      "mapOptions": [
+        {
+          "mapID": 125,
+          "label": "Timofey Oshenko - Northrend recipe trainer",
+          "id": "ggt:toy:research:48933:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.25,
+              "x": 0.38,
+              "label": "Like Clockwork shop - Timofey Oshenko, ground level"
+            }
+          ],
+          "location": "Timofey Oshenko - Northrend recipe trainer",
+          "mapLabel": "Dalaran (Northrend)",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 48933,
+      "tips": [
+        "Use the Crystalsong Forest version of Dalaran (map 125). The similarly named Legion city and its trainers do not substitute for this recipe source.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Northrend Engineering (40) and level 24. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Level Northrend Engineering and learn the recipe from Timofey Oshenko in Northrend Dalaran. Check the current trainer's required crafting skill.",
+      "contentID": 3,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/48933?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "MOLL-E",
+      "action": "Visit Like Clockwork in Northrend Dalaran, train the recipe and craft the finished toy.",
+      "auctionable": true,
+      "expansionLabel": "Wrath of the Lich King",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "wrath",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=56472/moll-e",
+        "https://www.wowhead.com/npc=28697/timofey-oshenko",
+        "https://www.wowhead.com/item=40768",
+        "https://nether.wowhead.com/tooltip/item/40768?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Use the Crystalsong Forest version of Dalaran (map 125). The similarly named Legion city and its trainers do not substitute for this recipe source.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Northrend Engineering (50). Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Northrend Engineering (50)",
+      "mapOptions": [
+        {
+          "mapID": 125,
+          "label": "Timofey Oshenko - Northrend recipe trainer",
+          "id": "ggt:toy:research:40768:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.25,
+              "x": 0.38,
+              "label": "Like Clockwork shop - Timofey Oshenko, ground level"
+            }
+          ],
+          "location": "Timofey Oshenko - Northrend recipe trainer",
+          "mapLabel": "Dalaran (Northrend)",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 40768,
+      "saleMethod": "unlearned-item",
+      "requirement": "Level Northrend Engineering and learn the recipe from Timofey Oshenko in Northrend Dalaran. Check the current trainer's required crafting skill.",
+      "contentID": 3,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/40768?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Gnomish Gravity Well",
+      "action": "Visit your faction's Cataclysm Engineering trainer, learn the recipe and craft the finished toy.",
+      "auctionable": true,
+      "expansionLabel": "Cataclysm",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "cataclysm",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=95705/gnomish-gravity-well",
+        "https://warcraft.wiki.gg/wiki/Engineering_trainers",
+        "https://www.wowhead.com/item=40727",
+        "https://nether.wowhead.com/tooltip/item/40727?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Choose the trainer for your faction. Crafting and usage skill requirements can differ; the current expansion-specific tooltip takes precedence over old combined-skill guides. Gravity Well is a Cataclysm recipe despite its low item ID.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Cataclysm Engineering (50) and Gnomish Engineer. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Cataclysm Engineering (50) and Gnomish Engineer",
+      "mapOptions": [
+        {
+          "mapID": 84,
+          "label": "Alliance - Lilliam Sparkspindle",
+          "id": "ggt:toy:research:40727:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.315,
+              "x": 0.632,
+              "label": "Lilliam Sparkspindle - Dwarven District Engineering trainer"
+            }
+          ],
+          "location": "Alliance - Lilliam Sparkspindle",
+          "mapLabel": "Stormwind City",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 85,
+          "label": "Horde - Roxxik",
+          "id": "ggt:toy:research:40727:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.564,
+              "x": 0.568,
+              "label": "Roxxik - Nogg's Machine Shop in the Drag"
+            }
+          ],
+          "location": "Horde - Roxxik",
+          "mapLabel": "Orgrimmar",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 40727,
+      "saleMethod": "unlearned-item",
+      "requirement": "Train the recipe at Cataclysm Engineering (50) on a Gnomish engineer.",
+      "contentID": 4,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/40727?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Loot-A-Rang",
+      "action": "Visit your faction's Cataclysm Engineering trainer, learn the recipe and craft the finished toy.",
+      "auctionable": true,
+      "expansionLabel": "Cataclysm",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "cataclysm",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=60854/loot-a-rang",
+        "https://warcraft.wiki.gg/wiki/Engineering_trainers",
+        "https://www.wowhead.com/item=60854",
+        "https://nether.wowhead.com/tooltip/item/60854?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Choose the trainer for your faction. Crafting and usage skill requirements can differ; the current expansion-specific tooltip takes precedence over old combined-skill guides. Gravity Well is a Cataclysm recipe despite its low item ID.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Cataclysm Engineering (70). Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Cataclysm Engineering (70)",
+      "mapOptions": [
+        {
+          "mapID": 84,
+          "label": "Alliance - Lilliam Sparkspindle",
+          "id": "ggt:toy:research:60854:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.315,
+              "x": 0.632,
+              "label": "Lilliam Sparkspindle - Dwarven District Engineering trainer"
+            }
+          ],
+          "location": "Alliance - Lilliam Sparkspindle",
+          "mapLabel": "Stormwind City",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 85,
+          "label": "Horde - Roxxik",
+          "id": "ggt:toy:research:60854:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.564,
+              "x": 0.568,
+              "label": "Roxxik - Nogg's Machine Shop in the Drag"
+            }
+          ],
+          "location": "Horde - Roxxik",
+          "mapLabel": "Orgrimmar",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 60854,
+      "saleMethod": "unlearned-item",
+      "requirement": "Train the recipe at Cataclysm Engineering (40); the user needs Cataclysm Engineering (70).",
+      "contentID": 4,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/60854?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 29,
+      "itemName": "Wormhole Generator: Pandaria",
+      "action": "Visit Sally Fizzlefury at Nesingwary's Safari, learn the recipe, then craft the toy with 12 Trillium Bars and two Spirits of Harmony.",
+      "auctionable": true,
+      "expansionLabel": "Mists of Pandaria",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=127132/wormhole-generator-pandaria",
+        "https://www.wowhead.com/npc=55143/sally-fizzlefury",
+        "https://www.wowhead.com/item=87215",
+        "https://nether.wowhead.com/tooltip/item/87215?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Pandaria Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 376,
+          "label": "Sally Fizzlefury - recipe trainer",
+          "id": "ggt:toy:research:87215:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.8315,
+              "x": 0.1606,
+              "label": "Sally Fizzlefury - Nesingwary's Safari"
+            }
+          ],
+          "location": "Sally Fizzlefury - recipe trainer",
+          "mapLabel": "Valley of the Four Winds",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 87215,
+      "tips": [
+        "The marker is Sally's current documented trainer position. The device's destination is unpredictable; this is an acquisition map, not a promised landing location.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Pandaria Engineering (1) and level 29. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Train Pandaria Engineering and level it sufficiently to learn Wormhole Generator: Pandaria from an eligible trainer such as Sally Fizzlefury.",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/87215?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "World Shrinker",
+      "action": "Make the daily Secret if needed, buy and learn the schematic, then craft the finished toy using 50 Gearspring Parts.",
+      "auctionable": true,
+      "expansionLabel": "Warlords of Draenor",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "warlords",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Recipe currency and Gearspring production use daily profession systems. After unlocking, craft additional sale items when components are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=118481/schematic-world-shrinker",
+        "https://www.icy-veins.com/wow/garrison-engineering-works-guide",
+        "https://www.wowhead.com/spell=177054/secrets-of-draenor-engineering",
+        "https://www.wowhead.com/guide/world-events/holidays/hallows-end",
+        "https://www.wowhead.com/item=109183",
+        "https://nether.wowhead.com/tooltip/item/109183?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Draenor Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 624,
+          "label": "Horde - Nik Steelrings, recipe vendor",
+          "id": "ggt:toy:research:109183:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.3899,
+              "x": 0.7037,
+              "label": "Nik Steelrings - inside Gallywix's Garage"
+            }
+          ],
+          "location": "Horde - Nik Steelrings, recipe vendor",
+          "mapLabel": "Warspear",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 539,
+          "label": "Alliance - Lunarfall access, use Engineering Works vendor",
+          "id": "ggt:toy:research:109183:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.165,
+              "x": 0.29600000000000004,
+              "label": "Lunarfall access anchor - Zaren Hoffle is inside your Engineering Works"
+            }
+          ],
+          "location": "Alliance - Lunarfall access, use Engineering Works vendor",
+          "mapLabel": "Shadowmoon Valley (Draenor)",
+          "isRoute": false,
+          "mapRole": "access"
+        }
+      ],
+      "itemID": 109183,
+      "tips": [
+        "Alliance can use Zaren Hoffle in its own Engineering Works or Sean Catchpole in Stormshield. Horde can use Nik Steelrings in Warspear or Pozzlow in its Engineering Works. The Lunarfall marker is an access area, not an exact building position; garrison layouts vary. Findle's toy works only in Draenor.",
+        "Recipe currency and Gearspring production use daily profession systems. After unlocking, craft additional sale items when components are available.",
+        "Using the toy requires Draenor Engineering (1). Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Draenor Engineering and purchase the matching schematic for one Secret of Draenor Engineering from an Engineering Works or Ashran plans vendor.",
+      "contentID": 6,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/109183?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Findle's Loot-A-Rang",
+      "action": "Make the daily Secret if needed, buy and learn the schematic, then craft the finished toy using its Draenor Engineering components.",
+      "auctionable": true,
+      "expansionLabel": "Warlords of Draenor",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "warlords",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Recipe currency and Gearspring production use daily profession systems. After unlocking, craft additional sale items when components are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=118480/schematic-findles-loot-a-rang",
+        "https://www.icy-veins.com/wow/garrison-engineering-works-guide",
+        "https://www.wowhead.com/spell=177054/secrets-of-draenor-engineering",
+        "https://www.wowhead.com/guide/world-events/holidays/hallows-end",
+        "https://www.wowhead.com/item=109167",
+        "https://nether.wowhead.com/tooltip/item/109167?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 624,
+          "label": "Horde - Nik Steelrings, recipe vendor",
+          "id": "ggt:toy:research:109167:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.3899,
+              "x": 0.7037,
+              "label": "Nik Steelrings - inside Gallywix's Garage"
+            }
+          ],
+          "location": "Horde - Nik Steelrings, recipe vendor",
+          "mapLabel": "Warspear",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 539,
+          "label": "Alliance - Lunarfall access, use Engineering Works vendor",
+          "id": "ggt:toy:research:109167:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.165,
+              "x": 0.29600000000000004,
+              "label": "Lunarfall access anchor - Zaren Hoffle is inside your Engineering Works"
+            }
+          ],
+          "location": "Alliance - Lunarfall access, use Engineering Works vendor",
+          "mapLabel": "Shadowmoon Valley (Draenor)",
+          "isRoute": false,
+          "mapRole": "access"
+        }
+      ],
+      "itemID": 109167,
+      "tips": [
+        "Alliance can use Zaren Hoffle in its own Engineering Works or Sean Catchpole in Stormshield. Horde can use Nik Steelrings in Warspear or Pozzlow in its Engineering Works. The Lunarfall marker is an access area, not an exact building position; garrison layouts vary. Findle's toy works only in Draenor.",
+        "Recipe currency and Gearspring production use daily profession systems. After unlocking, craft additional sale items when components are available.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Draenor Engineering and purchase the matching schematic for one Secret of Draenor Engineering from an Engineering Works or Ashran plans vendor.",
+      "contentID": 6,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/109167?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 34,
+      "itemName": "Wormhole Centrifuge",
+      "action": "Make the daily Secret if needed, buy and learn the schematic, then craft the finished toy using its Draenor Engineering components.",
+      "auctionable": true,
+      "expansionLabel": "Warlords of Draenor",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "warlords",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Recipe currency and Gearspring production use daily profession systems. After unlocking, craft additional sale items when components are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://warcraft.wiki.gg/wiki/Wormhole_Centrifuge",
+        "https://www.icy-veins.com/wow/garrison-engineering-works-guide",
+        "https://www.wowhead.com/spell=177054/secrets-of-draenor-engineering",
+        "https://www.wowhead.com/guide/world-events/holidays/hallows-end",
+        "https://www.wowhead.com/item=112059",
+        "https://nether.wowhead.com/tooltip/item/112059?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Draenor Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 624,
+          "label": "Horde - Nik Steelrings, recipe vendor",
+          "id": "ggt:toy:research:112059:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.3899,
+              "x": 0.7037,
+              "label": "Nik Steelrings - inside Gallywix's Garage"
+            }
+          ],
+          "location": "Horde - Nik Steelrings, recipe vendor",
+          "mapLabel": "Warspear",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 539,
+          "label": "Alliance - Lunarfall access, use Engineering Works vendor",
+          "id": "ggt:toy:research:112059:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.165,
+              "x": 0.29600000000000004,
+              "label": "Lunarfall access anchor - Zaren Hoffle is inside your Engineering Works"
+            }
+          ],
+          "location": "Alliance - Lunarfall access, use Engineering Works vendor",
+          "mapLabel": "Shadowmoon Valley (Draenor)",
+          "isRoute": false,
+          "mapRole": "access"
+        }
+      ],
+      "itemID": 112059,
+      "tips": [
+        "Alliance can use Zaren Hoffle in its own Engineering Works or Sean Catchpole in Stormshield. Horde can use Nik Steelrings in Warspear or Pozzlow in its Engineering Works. The Lunarfall marker is an access area, not an exact building position; garrison layouts vary. Findle's toy works only in Draenor.",
+        "Recipe currency and Gearspring production use daily profession systems. After unlocking, craft additional sale items when components are available.",
+        "Using the toy requires Draenor Engineering (1) and level 34. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Draenor Engineering and purchase the matching schematic for one Secret of Draenor Engineering from an Engineering Works or Ashran plans vendor.",
+      "contentID": 6,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/112059?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Coin of Many Faces",
+      "action": "Kill and loot the seasonal Boneship skeleton enemies around the island for a Coin of Many Faces chance.",
+      "auctionable": true,
+      "expansionLabel": "Warlords of Draenor",
+      "acquisitionType": "holiday-drop",
+      "expansion": "warlords",
+      "guideLabel": "Hallow's End enemy farm",
+      "repeatability": "Repeated eligible enemy kills while the seasonal mobs are active; this is not a guaranteed daily-quest reward.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.icy-veins.com/forums/topic/33674-gold-making-coin-of-many-faces/",
+        "https://warcraft.wiki.gg/wiki/Culling_the_Crew",
+        "https://www.wowhead.com/item=128807",
+        "https://nether.wowhead.com/tooltip/item/128807?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 539,
+          "label": "Isle of Shadows - seasonal skeleton farming area",
+          "id": "ggt:toy:research:128807:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.83,
+              "x": 0.4,
+              "label": "Boneship skeleton area during Hallow's End"
+            }
+          ],
+          "location": "Isle of Shadows - seasonal skeleton farming area",
+          "mapLabel": "Shadowmoon Valley (Draenor)",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "itemID": 128807,
+      "tips": [
+        "The marker is a documented farming-area anchor, not one guaranteed toy spawn. Pick up nearby holiday dailies if useful, but do not confuse the daily reward with the random enemy drop.",
+        "Repeated eligible enemy kills while the seasonal mobs are active; this is not a guaranteed daily-quest reward.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "During Hallow's End, reach the Isle of Shadows in Draenor Shadowmoon Valley. Check the in-game calendar for current holiday dates.",
+      "contentID": 6,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/128807?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Leather Love Seat",
+      "action": "Buy and learn the pattern, then craft the finished toy from 50 Stonehide Leather and 10 Felhide.",
+      "auctionable": true,
+      "expansionLabel": "Legion",
+      "profession": "leatherworking",
+      "acquisitionType": "crafting",
+      "expansion": "legion",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=137935/pattern-leather-love-seat",
+        "https://warcraft.wiki.gg/wiki/Xur%27ios",
+        "https://www.wowhead.com/item=129956",
+        "https://nether.wowhead.com/tooltip/item/129956?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The recipe is in Xur'ios's fixed stock. Farm eligible Legion content for the Curious Coin; this is a recipe purchase followed by crafting, not a direct toy vendor purchase.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 627,
+          "label": "Xur'ios - Leather Love Seat pattern",
+          "id": "ggt:toy:research:129956:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.136,
+              "x": 0.488,
+              "label": "Xur'ios - beside the bank near Antonidas Memorial"
+            }
+          ],
+          "location": "Xur'ios - Leather Love Seat pattern",
+          "mapLabel": "Dalaran (Broken Isles)",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 129956,
+      "saleMethod": "unlearned-item",
+      "requirement": "Use Legion Leatherworking and buy Pattern: Leather Love Seat from Xur'ios for one Curious Coin. The pattern is bound; the finished toy is tradeable.",
+      "contentID": 7,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/129956?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Blingtron's Circuit Design Tutorial",
+      "action": "Complete Short Circuit in its marked order, borrowing Winkey's diving helmet before entering Gnopetto's underwater workshop. Learn the schematic from the journal, then craft the toy.",
+      "auctionable": true,
+      "expansionLabel": "Legion",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "legion",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/quest=40880/short-circuit",
+        "https://www.wowhead.com/guide/legion-engineering",
+        "https://www.wowhead.com/guide/the-ultimate-achievements-guide-professions-31332",
+        "https://www.wowhead.com/item=132518",
+        "https://nether.wowhead.com/tooltip/item/132518?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 627,
+          "label": "Quest start - Didi the Wrench",
+          "id": "ggt:toy:research:132518:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.2477,
+              "x": 0.3882,
+              "label": "Didi - progress Legion Engineering to Short Circuit"
+            }
+          ],
+          "location": "Quest start - Didi the Wrench",
+          "mapLabel": "Dalaran (Broken Isles)",
+          "isRoute": false,
+          "mapRole": "quest"
+        },
+        {
+          "mapID": 109,
+          "label": "Short Circuit step 1 - Rocket-Chief Fuselage",
+          "id": "ggt:toy:research:132518:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.644,
+              "x": 0.3268,
+              "label": "1. Rocket-Chief Fuselage in Area 52"
+            }
+          ],
+          "location": "Short Circuit step 1 - Rocket-Chief Fuselage",
+          "mapLabel": "Netherstorm",
+          "isRoute": false,
+          "mapRole": "quest"
+        },
+        {
+          "mapID": 120,
+          "label": "Short Circuit step 2 - Ricket",
+          "id": "ggt:toy:research:132518:map:3",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.8532,
+              "x": 0.4092,
+              "label": "2. Ricket in K3"
+            }
+          ],
+          "location": "Short Circuit step 2 - Ricket",
+          "mapLabel": "The Storm Peaks",
+          "isRoute": false,
+          "mapRole": "quest"
+        },
+        {
+          "mapID": 10,
+          "label": "Short Circuit step 3 - Chief Engineer Foote",
+          "id": "ggt:toy:research:132518:map:4",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.7467,
+              "x": 0.67,
+              "label": "3. Chief Engineer Foote - Broken Keel Tavern"
+            }
+          ],
+          "location": "Short Circuit step 3 - Chief Engineer Foote",
+          "mapLabel": "Northern Barrens",
+          "isRoute": false,
+          "mapRole": "quest"
+        },
+        {
+          "mapID": 71,
+          "label": "Short Circuit steps 4-6 - Gadgetzan, Winkey, underwater workshop",
+          "id": "ggt:toy:research:132518:map:5",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.28309999999999996,
+              "x": 0.5236999999999999,
+              "label": "4. Nixx Sprocketspring in Gadgetzan"
+            },
+            {
+              "y": 0.6354,
+              "x": 0.6504000000000001,
+              "label": "5. Winkey - borrow the diving helmet"
+            },
+            {
+              "y": 0.6844,
+              "x": 0.6955,
+              "label": "6. Gnopetto's underwater workshop - journal on the table"
+            }
+          ],
+          "location": "Short Circuit steps 4-6 - Gadgetzan, Winkey, underwater workshop",
+          "mapLabel": "Tanaris",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "itemID": 132518,
+      "tips": [
+        "The map options cover Didi and all six Short Circuit stops. These are quest/recipe locations. Once learned, the finished tutorial uses 50 Leystone Ore, 50 Felslate and five Infernal Brimstone. Buyers do not need Engineering for the minigame.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Progress the Legion Engineering questline until Didi offers Short Circuit; earlier profession quests and dungeon prerequisites must be completed first.",
+      "contentID": 7,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/132518?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 39,
+      "itemName": "Wormhole Generator: Argus",
+      "action": "Take the Ionized Geographical Recorder to all five survey areas in Krokuun and Eredath, return to Didi for the schematic, then craft the toy from 30 Empyrium, two Loose Triggers and two Primal Sargerite.",
+      "auctionable": true,
+      "expansionLabel": "Legion",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "legion",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/quest=48065/extraterrestrial-exploration",
+        "https://www.wowhead.com/quest=48069/the-wrench-calls",
+        "https://www.wowhead.com/spell=247744/wormhole-generator-argus",
+        "https://warcraft.wiki.gg/wiki/Didi_the_Wrench",
+        "https://www.wowhead.com/item=151652",
+        "https://nether.wowhead.com/tooltip/item/151652?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Legion Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 627,
+          "label": "Didi - quest start and schematic turn-in",
+          "id": "ggt:toy:research:151652:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.2477,
+              "x": 0.3882,
+              "label": "Didi the Wrench - Like Clockwork"
+            }
+          ],
+          "location": "Didi - quest start and schematic turn-in",
+          "mapLabel": "Dalaran (Broken Isles)",
+          "isRoute": false,
+          "mapRole": "quest"
+        },
+        {
+          "mapID": 830,
+          "label": "Extraterrestrial Exploration - three survey areas",
+          "id": "ggt:toy:research:151652:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.677,
+              "x": 0.6970000000000001,
+              "label": "Petrified Forest reading area"
+            },
+            {
+              "y": 0.25,
+              "x": 0.611,
+              "label": "Nath'raxas Hold reading area"
+            },
+            {
+              "y": 0.623,
+              "x": 0.32899999999999996,
+              "label": "Shattered Fields reading area"
+            }
+          ],
+          "location": "Extraterrestrial Exploration - three survey areas",
+          "mapLabel": "Krokuun",
+          "isRoute": false,
+          "mapRole": "quest"
+        },
+        {
+          "mapID": 882,
+          "label": "Extraterrestrial Exploration - two survey areas",
+          "id": "ggt:toy:research:151652:map:3",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.293,
+              "x": 0.5710000000000001,
+              "label": "Arinor Gardens reading area"
+            },
+            {
+              "y": 0.602,
+              "x": 0.439,
+              "label": "Oronaar Collapse reading area"
+            }
+          ],
+          "location": "Extraterrestrial Exploration - two survey areas",
+          "mapLabel": "Eredath",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "itemID": 151652,
+      "tips": [
+        "The five survey pins are documented quest areas; use the active quest markers to find the exact interaction range. Eredath is named Mac'Aree in older guides. These acquisition pins are not the wormhole's random landing positions.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Legion Engineering (1) and level 39. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Unlock Argus through The Sigil of Awakening, then The Wrench Calls and Didi's Extraterrestrial Exploration quest.",
+      "contentID": 7,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/151652?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 45,
+      "itemName": "Wormhole Generator: Kul Tiras",
+      "action": "Train the recipe from Instructor Alikana (Alliance) or Jada (Horde) in Nazjatar, then craft the finished generator.",
+      "auctionable": true,
+      "expansionLabel": "Battle for Azeroth",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.icy-veins.com/wow/patch-8-2-engineering-profession-changes",
+        "https://www.wowhead.com/npc=154321/jada",
+        "https://www.wowhead.com/item=168808/wormhole-generator-zandalar",
+        "https://www.wowhead.com/item=168807",
+        "https://nether.wowhead.com/tooltip/item/168807?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Kul Tiran or Zandalari Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 1355,
+          "label": "Alliance - Instructor Alikana in Mezzamere",
+          "id": "ggt:toy:research:168807:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.536,
+              "x": 0.38,
+              "label": "Instructor Alikana - unlock Mezzamere's profession trainers first"
+            }
+          ],
+          "location": "Alliance - Instructor Alikana in Mezzamere",
+          "mapLabel": "Nazjatar",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 1355,
+          "label": "Horde - Jada in Newhome",
+          "id": "ggt:toy:research:168807:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.615,
+              "x": 0.491,
+              "label": "Jada - Newhome profession trainer"
+            }
+          ],
+          "location": "Horde - Jada in Newhome",
+          "mapLabel": "Nazjatar",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 168807,
+      "tips": [
+        "Both trainers teach both generator recipes. Choose your own faction's base. The device has an Engineering use requirement but its destination does not impose a matching faction restriction.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Kul Tiran or Zandalari Engineering (1) and level 45. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Reach Battle for Azeroth Engineering (150) and unlock your faction's Nazjatar base profession trainer.",
+      "contentID": 8,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/168807?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 45,
+      "itemName": "Wormhole Generator: Zandalar",
+      "action": "Train the recipe from Instructor Alikana (Alliance) or Jada (Horde) in Nazjatar, then craft the finished generator.",
+      "auctionable": true,
+      "expansionLabel": "Battle for Azeroth",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.icy-veins.com/wow/patch-8-2-engineering-profession-changes",
+        "https://www.wowhead.com/npc=154321/jada",
+        "https://www.wowhead.com/item=168808/wormhole-generator-zandalar",
+        "https://www.wowhead.com/item=168808",
+        "https://nether.wowhead.com/tooltip/item/168808?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Kul Tiran or Zandalari Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 1355,
+          "label": "Alliance - Instructor Alikana in Mezzamere",
+          "id": "ggt:toy:research:168808:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.536,
+              "x": 0.38,
+              "label": "Instructor Alikana - unlock Mezzamere's profession trainers first"
+            }
+          ],
+          "location": "Alliance - Instructor Alikana in Mezzamere",
+          "mapLabel": "Nazjatar",
+          "isRoute": false,
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 1355,
+          "label": "Horde - Jada in Newhome",
+          "id": "ggt:toy:research:168808:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.615,
+              "x": 0.491,
+              "label": "Jada - Newhome profession trainer"
+            }
+          ],
+          "location": "Horde - Jada in Newhome",
+          "mapLabel": "Nazjatar",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 168808,
+      "tips": [
+        "Both trainers teach both generator recipes. Choose your own faction's base. The device has an Engineering use requirement but its destination does not impose a matching faction restriction.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Kul Tiran or Zandalari Engineering (1) and level 45. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Reach Battle for Azeroth Engineering (150) and unlock your faction's Nazjatar base profession trainer.",
+      "contentID": 8,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/168808?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Wormhole Generator: Shadowlands",
+      "action": "Buy the schematic from Dar Vattish in Oribos, learn it and craft the finished toy from its Shadowlands components.",
+      "auctionable": true,
+      "expansionLabel": "Shadowlands",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "shadowlands",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=183858/schematic-wormhole-generator-shadowlands",
+        "https://www.wow-professions.com/guides/shadowlands-engineering-guide",
+        "https://warcraft-secrets.com/guides/hidden-toys",
+        "https://www.wowhead.com/item=172924",
+        "https://nether.wowhead.com/tooltip/item/172924?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The map marks the schematic vendor, not a trainer recipe. Honored reputation and skill 70 apply to learning the recipe; buyers need only Shadowlands Engineering (1) to use the toy. Zone-specific destination unlocks are separate.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Shadowlands Engineering (1). Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Shadowlands Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 1670,
+          "label": "Dar Vattish - Honored Undying Army schematic",
+          "id": "ggt:toy:research:172924:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.7809999999999999,
+              "x": 0.478,
+              "label": "Dar Vattish - Ring of Fates, main level"
+            }
+          ],
+          "location": "Dar Vattish - Honored Undying Army schematic",
+          "mapLabel": "Oribos",
+          "isRoute": false,
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 172924,
+      "saleMethod": "unlearned-item",
+      "requirement": "Reach Shadowlands Engineering (70) and Honored with The Undying Army; buy Schematic: Wormhole Generator: Shadowlands from a faction quartermaster.",
+      "contentID": 9,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/172924?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Atomic Recalibrator",
+      "action": "Unlock the schematic in your profession tree and craft the toy at a Tinker's Workbench. The Valdrakken marker identifies the Engineering station area.",
+      "auctionable": true,
+      "expansionLabel": "Dragonflight",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "dragonflight",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=382408/atomic-recalibrator",
+        "https://www.wowhead.com/npc=185548/clinkyclick-shatterboom",
+        "https://www.wowhead.com/guide/dragonflight-toybox",
+        "https://www.wowhead.com/item=198173",
+        "https://nether.wowhead.com/tooltip/item/198173?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 2112,
+          "label": "Engineering station - craft after specialization unlock",
+          "id": "ggt:toy:research:198173:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.4874,
+              "x": 0.4227,
+              "label": "Clinkyclick Shatterboom / Engineering station area"
+            }
+          ],
+          "location": "Engineering station - craft after specialization unlock",
+          "mapLabel": "Valdrakken",
+          "isRoute": false,
+          "mapRole": "crafting"
+        }
+      ],
+      "itemID": 198173,
+      "tips": [
+        "The trainer helps you learn the profession but does not sell this specialization unlock. Atomic Recalibrator has a 12-hour use cooldown. Environmental Emulator needs Fiery and Earthen Souls among its reagents; use its complete recipe before committing materials.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Unlock Mechanical Mind and invest 10 points in its Novelties sub-specialization to learn the schematic; meet its displayed Dragon Isles Engineering crafting skill.",
+      "contentID": 10,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/198173?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Environmental Emulator",
+      "action": "Unlock the schematic in your profession tree and craft the toy at a Tinker's Workbench. The Valdrakken marker identifies the Engineering station area.",
+      "auctionable": true,
+      "expansionLabel": "Dragonflight",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "dragonflight",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=382369/environmental-emulator",
+        "https://www.wowhead.com/npc=185548/clinkyclick-shatterboom",
+        "https://www.wowhead.com/guide/dragonflight-toybox",
+        "https://www.wowhead.com/item=198206",
+        "https://nether.wowhead.com/tooltip/item/198206?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 2112,
+          "label": "Engineering station - craft after specialization unlock",
+          "id": "ggt:toy:research:198206:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.4874,
+              "x": 0.4227,
+              "label": "Clinkyclick Shatterboom / Engineering station area"
+            }
+          ],
+          "location": "Engineering station - craft after specialization unlock",
+          "mapLabel": "Valdrakken",
+          "isRoute": false,
+          "mapRole": "crafting"
+        }
+      ],
+      "itemID": 198206,
+      "tips": [
+        "The trainer helps you learn the profession but does not sell this specialization unlock. Atomic Recalibrator has a 12-hour use cooldown. Environmental Emulator needs Fiery and Earthen Souls among its reagents; use its complete recipe before committing materials.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Unlock Mechanical Mind and invest 25 points in its Novelties sub-specialization to learn the schematic; meet its displayed Dragon Isles Engineering crafting skill.",
+      "contentID": 10,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/198206?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Wyrmhole Generator: Dragon Isles",
+      "action": "Craft the generator at a Tinker's Workbench. Optional: after reaching Novelties (30), activate all three Signal Transmitters in each desired zone to unlock that destination.",
+      "auctionable": true,
+      "expansionLabel": "Dragonflight",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "dragonflight",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=198156/wyrmhole-generator-dragon-isles",
+        "https://www.wowhead.com/spell=382367/wyrmhole-generator-dragon-isles",
+        "https://www.wowhead.com/npc=185548/clinkyclick-shatterboom",
+        "https://www.wowhead.com/item=198156",
+        "https://nether.wowhead.com/tooltip/item/198156?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Only the Valdrakken crafting stop is needed to make the sale item. The other options are labelled optional user upgrades, not required crafting materials or toy drops. Transmitter unlocks are per character. The Zaralek compass is another optional destination upgrade; do not advertise them as unlocked by buying the item.",
+        "Repeatable crafts after learning the recipe; each sale item consumes its own materials.",
+        "Using the toy requires Dragon Isles Engineering (1). Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "useRequirement": "Dragon Isles Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 2112,
+          "label": "Crafting - Engineering station",
+          "id": "ggt:toy:research:198156:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.4874,
+              "x": 0.4227,
+              "label": "Engineering station area - craft after recipe unlock"
+            }
+          ],
+          "location": "Crafting - Engineering station",
+          "mapLabel": "Valdrakken",
+          "isRoute": false,
+          "mapRole": "crafting"
+        },
+        {
+          "mapID": 2022,
+          "label": "Optional destination upgrade - three Signal Transmitters",
+          "id": "ggt:toy:research:198156:map:2",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.4384,
+              "x": 0.23420000000000002,
+              "label": "Waking Shores transmitter 1"
+            },
+            {
+              "y": 0.255,
+              "x": 0.7462000000000001,
+              "label": "Waking Shores transmitter 2"
+            },
+            {
+              "y": 0.789,
+              "x": 0.622,
+              "label": "Waking Shores transmitter 3"
+            }
+          ],
+          "location": "Optional destination upgrade - three Signal Transmitters",
+          "mapLabel": "The Waking Shores",
+          "isRoute": false,
+          "mapRole": "upgrade"
+        },
+        {
+          "mapID": 2023,
+          "label": "Optional destination upgrade - three Signal Transmitters",
+          "id": "ggt:toy:research:198156:map:3",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.8495,
+              "x": 0.6768000000000001,
+              "label": "Ohn'ahran transmitter 1"
+            },
+            {
+              "y": 0.3567,
+              "x": 0.2802,
+              "label": "Ohn'ahran transmitter 2"
+            },
+            {
+              "y": 0.2889,
+              "x": 0.5687,
+              "label": "Ohn'ahran transmitter 3"
+            }
+          ],
+          "location": "Optional destination upgrade - three Signal Transmitters",
+          "mapLabel": "Ohn'ahran Plains",
+          "isRoute": false,
+          "mapRole": "upgrade"
+        },
+        {
+          "mapID": 2024,
+          "label": "Optional destination upgrade - three Signal Transmitters",
+          "id": "ggt:toy:research:198156:map:4",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.4788,
+              "x": 0.7105,
+              "label": "Azure Span transmitter 1"
+            },
+            {
+              "y": 0.6525,
+              "x": 0.4576,
+              "label": "Azure Span transmitter 2"
+            },
+            {
+              "y": 0.2645,
+              "x": 0.2756,
+              "label": "Azure Span transmitter 3"
+            }
+          ],
+          "location": "Optional destination upgrade - three Signal Transmitters",
+          "mapLabel": "The Azure Span",
+          "isRoute": false,
+          "mapRole": "upgrade"
+        },
+        {
+          "mapID": 2025,
+          "label": "Optional destination upgrade - three Signal Transmitters",
+          "id": "ggt:toy:research:198156:map:5",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.44299999999999995,
+              "x": 0.703,
+              "label": "Thaldraszus transmitter 1"
+            },
+            {
+              "y": 0.7709999999999999,
+              "x": 0.6367,
+              "label": "Thaldraszus transmitter 2"
+            },
+            {
+              "y": 0.5566,
+              "x": 0.5074000000000001,
+              "label": "Thaldraszus transmitter 3"
+            }
+          ],
+          "location": "Optional destination upgrade - three Signal Transmitters",
+          "mapLabel": "Thaldraszus",
+          "isRoute": false,
+          "mapRole": "upgrade"
+        },
+        {
+          "mapID": 2151,
+          "label": "Optional destination upgrade - three Signal Transmitters",
+          "id": "ggt:toy:research:198156:map:6",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.2618,
+              "x": 0.3182,
+              "label": "Forbidden Reach transmitter 1"
+            },
+            {
+              "y": 0.5111,
+              "x": 0.7803,
+              "label": "Forbidden Reach transmitter 2"
+            },
+            {
+              "y": 0.8181999999999999,
+              "x": 0.39990000000000003,
+              "label": "Forbidden Reach transmitter 3"
+            }
+          ],
+          "location": "Optional destination upgrade - three Signal Transmitters",
+          "mapLabel": "The Forbidden Reach",
+          "isRoute": false,
+          "mapRole": "upgrade"
+        },
+        {
+          "mapID": 2133,
+          "label": "Optional destination upgrade - Three-Dimensional Compass",
+          "id": "ggt:toy:research:198156:map:7",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.588,
+              "x": 0.37799999999999995,
+              "label": "Busted Wyrmhole Generator - optional compass, Engineering 25"
+            }
+          ],
+          "location": "Optional destination upgrade - Three-Dimensional Compass",
+          "mapLabel": "Zaralek Cavern",
+          "isRoute": false,
+          "mapRole": "upgrade"
+        }
+      ],
+      "itemID": 198156,
+      "saleMethod": "unlearned-item",
+      "requirement": "Unlock the recipe through the Dragon Isles Engineering Mechanical Mind specialization, then meet the recipe's crafting requirements.",
+      "contentID": 10,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/198156?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 68,
+      "itemName": "Wormhole Generator: Khaz Algar",
+      "action": "Use the Khaz Algar discovery system to learn the toy recipe, then craft the finished item at an Engineering workbench.",
+      "auctionable": true,
+      "expansionLabel": "The War Within",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "warWithin",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Discovery is random; there is no guaranteed number of scrap attempts. Once learned, repeat crafts while materials are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/guide/the-war-within/professions/engineering-overview",
+        "https://www.wowhead.com/npc=219099/thermalseer-arhdas",
+        "https://erenion-gaming.de/berufe-in-the-war-within-ingenieurskunst/",
+        "https://www.wowhead.com/item=221963/prototype-filmless-camera",
+        "https://www.wowhead.com/item=221966",
+        "https://nether.wowhead.com/tooltip/item/221966?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Khaz Algar Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 2339,
+          "label": "Engineering trainer / workbench - discover and craft recipe",
+          "id": "ggt:toy:research:221966:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.56,
+              "x": 0.49,
+              "label": "Thermalseer Arhdas - Engineering workbench area"
+            }
+          ],
+          "location": "Engineering trainer / workbench - discover and craft recipe",
+          "mapLabel": "Dornogal",
+          "isRoute": false,
+          "mapRole": "crafting"
+        }
+      ],
+      "itemID": 221966,
+      "tips": [
+        "The Dornogal pin marks Thermalseer Arhdas and the workbench area, not an NPC selling the finished toy or a guaranteed discovery. Prototype: Filmless Camera is a discovery step; item 221964 is the finished sale item.",
+        "Discovery is random; there is no guaranteed number of scrap attempts. Once learned, repeat crafts while materials are available.",
+        "Using the toy requires Khaz Algar Engineering (1) and level 68. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Khaz Algar Engineering and discover the recipe through its Inventing, prototype disassembly and Scour Through Scrap system.",
+      "contentID": 11,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/221966?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Filmless Camera",
+      "action": "Use the Khaz Algar discovery system to learn the toy recipe, then craft the finished item at an Engineering workbench.",
+      "auctionable": true,
+      "expansionLabel": "The War Within",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "warWithin",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Discovery is random; there is no guaranteed number of scrap attempts. Once learned, repeat crafts while materials are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/guide/the-war-within/professions/engineering-overview",
+        "https://www.wowhead.com/npc=219099/thermalseer-arhdas",
+        "https://erenion-gaming.de/berufe-in-the-war-within-ingenieurskunst/",
+        "https://www.wowhead.com/item=221963/prototype-filmless-camera",
+        "https://www.wowhead.com/item=221964",
+        "https://nether.wowhead.com/tooltip/item/221964?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "mapOptions": [
+        {
+          "mapID": 2339,
+          "label": "Engineering trainer / workbench - discover and craft recipe",
+          "id": "ggt:toy:research:221964:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.56,
+              "x": 0.49,
+              "label": "Thermalseer Arhdas - Engineering workbench area"
+            }
+          ],
+          "location": "Engineering trainer / workbench - discover and craft recipe",
+          "mapLabel": "Dornogal",
+          "isRoute": false,
+          "mapRole": "crafting"
+        }
+      ],
+      "itemID": 221964,
+      "tips": [
+        "The Dornogal pin marks Thermalseer Arhdas and the workbench area, not an NPC selling the finished toy or a guaranteed discovery. Prototype: Filmless Camera is a discovery step; item 221964 is the finished sale item.",
+        "Discovery is random; there is no guaranteed number of scrap attempts. Once learned, repeat crafts while materials are available.",
+        "The current finished-item tooltip has no profession-use requirement. Crafting prerequisites still apply to the maker.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Khaz Algar Engineering and discover the recipe through its Inventing, prototype disassembly and Scour Through Scrap system.",
+      "contentID": 11,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/221964?dataEnv=1&locale=0"
+    },
+    {
+      "minimumUseLevel": 78,
+      "itemName": "Wormhole Generator: Quel'Thalas",
+      "action": "Recycle eligible Midnight crafted reagents until the schematic is discovered, then craft the finished generator at a Tinker's Workbench using three Piles of Junk, a Song Gear and an Evercore.",
+      "auctionable": true,
+      "expansionLabel": "Midnight",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "midnight",
+      "guideLabel": "Crafted toy",
+      "repeatability": "Recipe discovery is random. Once unlocked, additional generators can be crafted while components are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wow-professions.com/midnight/engineering-guide",
+        "https://www.method.gg/guides/midnight-engineering-profession-guide",
+        "https://warcraft.wiki.gg/wiki/Wormhole_Generator%3A_Quel%27Thalas",
+        "https://www.wowhead.com/item=248485",
+        "https://nether.wowhead.com/tooltip/item/248485?dataEnv=1&locale=0"
+      ],
+      "saleMethod": "unlearned-item",
+      "useRequirement": "Midnight Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 2393,
+          "label": "Danwe / Engineering area - Recycling recipe discovery",
+          "id": "ggt:toy:research:248485:map:1",
+          "routeType": "farm-toy",
+          "density": "Named acquisition source or labelled access point",
+          "dropDifficulty": "Follow the recipe or source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "pins": [
+            {
+              "y": 0.5435,
+              "x": 0.4336,
+              "label": "Danwe - west side of the Bazaar, Midnight Silvermoon"
+            }
+          ],
+          "location": "Danwe / Engineering area - Recycling recipe discovery",
+          "mapLabel": "Silvermoon City (Midnight)",
+          "isRoute": false,
+          "mapRole": "crafting"
+        }
+      ],
+      "itemID": 248485,
+      "tips": [
+        "The pin is the current Midnight Silvermoon Engineering area, not old Silvermoon. Danwe teaches the profession; Recycling supplies the schematic. The item also requires level 78 to use. Do not confuse this discovery system with The War Within's Inventing loop.",
+        "Recipe discovery is random. Once unlocked, additional generators can be crafted while components are available.",
+        "Using the toy requires Midnight Engineering (1) and level 78. Check buyer eligibility; learning a toy and using it are separate requirements.",
+        "Keep the finished toy item unlearned to sell it. Adding it to the Toy Box does not create an item you can resell."
+      ],
+      "requirement": "Learn Midnight Engineering, invest 10 points in Recycling to enable recipe discovery, then discover the wormhole recipe through Recycling.",
+      "contentID": 12,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/248485?dataEnv=1&locale=0"
+    }
+  ]
+}

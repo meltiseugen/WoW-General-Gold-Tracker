@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-25",
+  "build": "12.1.5.70529",
+  "scope": "Drak'Tharon Keep at the Zul'Drak / Grizzly Hills boundary only.",
+  "composition": {
+    "foreground": "Complete Grizzly Hills castle and front gate (art 121)",
+    "background": "Zul'Drak stone walls and ground (art 126)",
+    "caption": "Complete Grizzly Hills name above the keep; duplicate lower lettering suppressed.",
+    "ground_patch": "Removed the obsolete lower caption patch that covered the front gate."
+  },
+  "composite": {
+    "name": "Drak'Tharon Keep",
+    "root_map": 113,
+    "front_art": 121,
+    "back_art": 126,
+    "feather": 2,
+    "outline": [
+      [
+        0.137,
+        0.202
+      ],
+      [
+        0.229,
+        0.202
+      ],
+      [
+        0.24,
+        0.236
+      ],
+      [
+        0.24,
+        0.312
+      ],
+      [
+        0.147,
+        0.312
+      ],
+      [
+        0.137,
+        0.28
+      ]
+    ]
+  },
+  "affected_root_rect": [
+    0.6097881781869845,
+    0.4967187480266583,
+    0.6489759495297482,
+    0.5369928405987311
+  ],
+  "code_sha256": {
+    "tools/generate_map_art_masks.py": "15d812b40d3087c14158c877e7d00dc1b1291059bb819439d260ac156ae2310c",
+    "tools/map_art_adjustments.json": "5ceb068045877b9693066f4ae783d16a21735ba8f6cadda372d0f4950cc8c013"
+  },
+  "changed_map_files": [
+    "UI/Maps/ArtMaskIndex.lua",
+    "UI/Maps/Media/ArtMasks/121.blp",
+    "UI/Maps/Media/ArtMasks/126.blp",
+    "UI/Maps/Media/CaptionRepairs/126-0.blp"
+  ],
+  "existing_map_files_byte_identical": 286,
+  "renderer_unchanged": true,
+  "validation": {
+    "python_map_tests": {
+      "passed": 51,
+      "failed": 0
+    },
+    "focused_lua51_harness": {
+      "passed": 115,
+      "failed": 0,
+      "native_busted": false
+    },
+    "lua51_syntax": {
+      "files": 9,
+      "passed": true
+    },
+    "manifest": {
+      "manifests": 8,
+      "runtime_lua_files": 278,
+      "passed": true
+    },
+    "before_after_zoom": 3,
+    "changed_pixels": 7224,
+    "changed_pixels_outside_local_scope": 0,
+    "preview_zoom_levels": [
+      1,
+      1.5,
+      2,
+      3,
+      3.4
+    ],
+    "native_wow": "Pending. Offline previews do not prove native WoW rendering."
+  }
+}

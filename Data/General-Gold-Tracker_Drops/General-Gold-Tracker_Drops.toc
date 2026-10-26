@@ -1,5 +1,8 @@
 ## Interface: 120001, 120000
 ## Title: General Gold Tracker - Drops
+## Category: Auction & Economy
+## Group: General-Gold-Tracker
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## Notes: On-demand Explorer data for General Gold Tracker.
 ## LoadOnDemand: 1
 ## Dependencies: General-Gold-Tracker
@@ -7,3 +10,5 @@
 
 Namespace.lua
 CatalogDrops.lua
+Recipes.lua
+Cosmetics.lua

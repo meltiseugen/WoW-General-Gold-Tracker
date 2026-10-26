@@ -1,0 +1,147 @@
+"""Generate GGT terrain facts from client metadata, without addon source inputs.
+
+Inputs: Wago's Map/WorldMapOverlay CSV exports and wowdev's community listfile.
+The generated strings expand only for a world map requested by the renderer.
+No game artwork is copied or distributed; FileDataIDs reference the client.
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import re
+import struct
+from collections import defaultdict
+from pathlib import Path
+
+TILE_PATH = re.compile(r"world/minimaps/([^/]+)/map(\d+)_(\d+)\.blp", re.I)
+
+
+def active_tiles(path: Path) -> dict[int, int]:
+    """Read Blizzard's row-major WDT MAIN/MAID records; export east/south keys."""
+    data, offset, chunks = path.read_bytes(), 0, {}
+    while offset + 8 <= len(data):
+        tag, size = data[offset:offset + 4][::-1], struct.unpack_from("<I", data, offset + 4)[0]
+        if offset + 8 + size > len(data):
+            raise ValueError(f"Truncated WDT chunk: {path}")
+        chunks[tag] = data[offset + 8:offset + 8 + size]
+        offset += 8 + size
+    if len(chunks.get(b"MAIN", b"")) != 4096 * 8 or len(chunks.get(b"MAID", b"")) != 4096 * 32:
+        raise ValueError(f"WDT lacks complete tile manifests: {path}")
+    result = {}
+    for index in range(4096):
+        flags = struct.unpack_from("<I", chunks[b"MAIN"], index * 8)[0]
+        fid = struct.unpack_from("<I", chunks[b"MAID"], index * 32 + 28)[0]
+        if flags & 1 and fid:
+            result[(index % 64) * 64 + index // 64] = fid
+    return result
+
+
+def revealed_overlays(overlays: list[dict], tiles_csv: Path) -> dict[int, str]:
+    """Store all painted exploration pieces independently of player discoveries."""
+    parts = defaultdict(list)
+    with tiles_csv.open(encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            if row["LayerIndex"] == "0" and int(row["FileDataID"]) > 0:
+                parts[int(row["WorldMapOverlayID"])].append((int(row["RowIndex"]), int(row["ColIndex"]), int(row["FileDataID"])))
+    by_art = defaultdict(list)
+    for row in sorted(overlays, key=lambda row: int(row["ID"])):
+        pieces = sorted(parts[int(row["ID"])])
+        if not pieces:
+            continue
+        header = ",".join(row[key] for key in ("TextureWidth", "TextureHeight", "OffsetX", "OffsetY"))
+        # Explicit columns/rows retain holes; a flat array would silently shift them.
+        packed = ",".join(f"{col}:{tile_row}:{fid}" for tile_row, col, fid in pieces)
+        by_art[int(row["UiMapArtID"])].append(header + "|" + packed)
+    return {art_id: ";".join(records) for art_id, records in by_art.items()}
+
+
+def generate(map_csv: Path, overlays_csv: Path, listfile: Path, build: str, output: Path, receipt: Path, wdt_dir: Path | None = None, art_csv: Path | None = None, overlay_tiles_csv: Path | None = None) -> dict:
+    with map_csv.open(encoding="utf-8-sig", newline="") as handle:
+        maps = [row for row in csv.DictReader(handle) if row["InstanceType"] == "0"]
+    directories = defaultdict(list)
+    for row in maps:
+        directories[row["Directory"].lower()].append(int(row["ID"]))
+    tiles = defaultdict(dict)
+    with listfile.open(encoding="utf-8-sig") as handle:
+        for line in handle:
+            fid, separator, path = line.strip().partition(";")
+            match = TILE_PATH.fullmatch(path) if separator else None
+            if not match or match[1].lower() not in directories:
+                continue
+            col, row = int(match[2]), int(match[3])
+            if not (0 <= col < 64 and 0 <= row < 64):
+                continue
+            for map_id in directories[match[1].lower()]:
+                key = col * 64 + row
+                if key in tiles[map_id] and tiles[map_id][key] != int(fid):
+                    raise ValueError(f"Ambiguous terrain tile: {map_id}/{col}/{row}")
+                tiles[map_id][key] = int(fid)
+    wdt_hashes = {}
+    if wdt_dir:
+        selected = {int(row["ID"]): row for row in maps if int(row["ID"]) in tiles}
+        for map_id, row in selected.items():
+            path = wdt_dir / f"{row['WdtFileDataID']}.wdt"
+            tiles[map_id] = active_tiles(path)
+            wdt_hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        tiles = {key: value for key, value in tiles.items() if value}
+    with overlays_csv.open(encoding="utf-8-sig", newline="") as handle:
+        overlay_rows = list(csv.DictReader(handle))
+        fog_art = sorted({int(row["UiMapArtID"]) for row in overlay_rows
+                          if int(row["TextureWidth"]) > 0 and int(row["TextureHeight"]) > 0})
+    revealed = revealed_overlays(overlay_rows, overlay_tiles_csv) if overlay_tiles_csv else {}
+    clear_art = []
+    if art_csv:
+        with art_csv.open(encoding="utf-8-sig", newline="") as handle:
+            clear_art = sorted({int(row["ID"]) for row in csv.DictReader(handle)} - set(fog_art))
+    lines = ["-- Generated by tools/generate_map_terrain.py. Client facts only; no addon source.",
+             f"-- Client build: {build}. Terrain textures remain in the game client.",
+             "-- Active terrain IDs verified against Blizzard WDT MAIN/MAID records." if wdt_dir else "-- Candidate index; run with --wdt-dir before shipping.",
+             "local shared = assert(_G.GeneralGoldTrackerCatalogNamespace)",
+             "shared.MapTerrainData = {", f'    build = "{build}",', "    fogArt = {"]
+    lines.extend("        " + " ".join(f"[{n}] = true," for n in fog_art[i:i+12]) for i in range(0, len(fog_art), 12))
+    lines += ["    },", "    clearArt = {"]
+    lines.extend("        " + " ".join(f"[{n}] = true," for n in clear_art[i:i+12]) for i in range(0, len(clear_art), 12))
+    lines += ["    },", "    revealedOverlays = {"]
+    for art_id, packed in sorted(revealed.items()):
+        lines.append(f'        [{art_id}] = "{packed}",')
+    lines += ["    },", "    tiles = {"]
+    for map_id, records in sorted(tiles.items()):
+        packed = ",".join(f"{key}:{fid}" for key, fid in sorted(records.items()))
+        lines.append(f'        [{map_id}] = "{packed}",')
+    lines += ["    },", "}", ""]
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines), encoding="utf-8", newline="\n")
+    report = {"build": build, "source_urls": [
+        f"https://wago.tools/db2/Map/csv?build={build}",
+        f"https://wago.tools/db2/WorldMapOverlay/csv?build={build}",
+        "https://github.com/wowdev/wow-listfile/releases/tag/202610232020"],
+        "inputs": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (map_csv, overlays_csv, listfile, *([art_csv] if art_csv else []), *([overlay_tiles_csv] if overlay_tiles_csv else []))},
+        "wdt_url_template": f"https://wago.tools/api/casc/{{WdtFileDataID}}?build={build}",
+        "wdt_sha256": wdt_hashes,
+        "maps": {str(k): len(v) for k, v in sorted(tiles.items())}, "tile_count": sum(map(len, tiles.values())),
+        "fog_art_count": len(fog_art), "clear_art_count": len(clear_art), "revealed_art_count": len(revealed), "output_bytes": output.stat().st_size}
+    if art_csv:
+        report["source_urls"].append(f"https://wago.tools/db2/UiMapArt/csv?build={build}")
+    if overlay_tiles_csv:
+        report["source_urls"].append(f"https://wago.tools/db2/WorldMapOverlayTile/csv?build={build}")
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--map-csv", type=Path, required=True)
+    parser.add_argument("--overlays-csv", type=Path, required=True)
+    parser.add_argument("--listfile", type=Path, required=True)
+    parser.add_argument("--build", required=True)
+    parser.add_argument("--wdt-dir", type=Path, help="Version-pinned WDTs from fetch_map_metadata.py; required for release data")
+    parser.add_argument("--art-csv", type=Path, help="Version-pinned UiMapArt.csv to identify maps whose base art is always visible")
+    parser.add_argument("--overlay-tiles-csv", type=Path, help="Version-pinned WorldMapOverlayTile.csv for fully revealed painted maps")
+    parser.add_argument("--output", type=Path, default=Path("Data/General-Gold-Tracker_MapData/TerrainIndex.lua"))
+    parser.add_argument("--receipt", type=Path, default=Path("docs/research/map-terrain-2026-10-24.json"))
+    args = parser.parse_args()
+    result = generate(args.map_csv, args.overlays_csv, args.listfile, args.build, args.output, args.receipt, args.wdt_dir, args.art_csv, args.overlay_tiles_csv)
+    print(f"Generated {len(result['maps'])} maps / {result['tile_count']} terrain tiles / {result['output_bytes']} bytes")

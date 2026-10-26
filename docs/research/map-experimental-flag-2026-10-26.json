@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-26",
+  "setting": "enableExperimentalMaps",
+  "default": false,
+  "options": "Experimental > Seamless maps",
+  "behavior": "Ordinary native paintings and recorded pins by default; opt in to stitched-zone transitions and close terrain. Pan/zoom/reset and all Alts hosts remain available. Style changes apply immediately, reset projection safely, release old assets and defer hidden maps until their next use.",
+  "checks": {
+    "lua51_harness_passes": 178,
+    "python_map_passes": 51,
+    "parsed_runtime_modules": 12,
+    "manifests": 8,
+    "runtime_lua_files": 278,
+    "map_media_unchanged": 280,
+    "northrend_enabled_comparison_byte_identical": true,
+    "audits": [
+      {
+        "file": ".local/interactive-map-preview/experimental-flag-continents-audit/audit.json",
+        "cases": 19,
+        "zoom_states": 133,
+        "max_regions": 2199
+      },
+      {
+        "file": ".local/interactive-map-preview/experimental-flag-global-audit/audit.json",
+        "cases": 11,
+        "zoom_states": 77,
+        "max_regions": 2194
+      }
+    ]
+  },
+  "changed_sources_sha256": {
+    "Core/Namespace.lua": "ff7f88b03906bd7d6e17778e3cf418f396ebb6ea191d1cd7bbb6f2f384d27a7c",
+    "UI/OptionsPages.lua": "1105e86ff831c0c81ec30fc2fb37a2ee6032977f61c5e9f029cab5c8a8a740a2",
+    "UI/Maps/MapSource.lua": "6c14926a3c0b894e7f8a8e3ca5716b1de217d58b8b4ea1bf5837cf66fa34826c",
+    "UI/Maps/MapRenderer.lua": "7f6ff94cbea97465fe8c589c0a519aac91b487ea8f3c71d9b08981236a67f63a",
+    "UI/Maps/InteractiveMap.lua": "f18bea68e65f918c1355f68c0dcd381d815e18435e89a57a9df5f1e47ee6c4b8",
+    "UI/AltsWindow.lua": "6142d336a33c7b80b8f5caf444a339f6ad19e7b253cdeb9cff2a7c8a646fc3c5",
+    "tests/helpers/map_ui.lua": "96f2aab19e2b56910db5c2fc1508963df3135219098f4a9e2c31dbafb0000d0d",
+    "tests/ui/interactive_map_spec.lua": "7dbc92fa6a729157e691a4a49e9ca1e32651ec035e0562bea43679b1b418531e",
+    "tests/ui/alts_window_spec.lua": "7f0ffa1461db7ef432eec637db2fa45356acd0298a11a958a0ef5fc4b74d437e",
+    "tests/core/namespace_spec.lua": "b7db6d0fe046608a871d3566b636df70286bfb3c684e77c5af191de1cae572b7",
+    "tests/ui/options_layout_spec.lua": "4ed0b53e938ad0d6d4ece67fad8e0a643e300e5176be5ebacc1848a698f6f2e1",
+    "tools/preview_interactive_map.py": "69c3e45438cc02fd48642ce0cdaad9a33a4f0a0ce40030b1724b503da897bf98",
+    "README.md": "761245812c7755f81c8921358c0c6072b4319f137b8128f3b97ad98cc09bd525"
+  },
+  "native_runtime_validation": "Pending; offline previews and harness checks do not prove native GPU behavior or performance."
+}

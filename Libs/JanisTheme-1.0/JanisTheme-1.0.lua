@@ -1,13 +1,13 @@
-local LIB_NAME = "JanisTheme-1.0"
-local LIB_VERSION = 2
+local LIB_NAME = "GoldTrackerThemeLibrary"
+local LIB_VERSION = 1
 
-if type(_G.JanisTheme) == "table"
-    and tonumber(_G.JanisTheme.version)
-    and _G.JanisTheme.version >= LIB_VERSION then
+if type(_G.GoldTrackerThemeLibrary) == "table"
+    and tonumber(_G.GoldTrackerThemeLibrary.version)
+    and _G.GoldTrackerThemeLibrary.version >= LIB_VERSION then
     return
 end
 
-local JanisTheme = type(_G.JanisTheme) == "table" and _G.JanisTheme or {}
+local JanisTheme = type(_G.GoldTrackerThemeLibrary) == "table" and _G.GoldTrackerThemeLibrary or {}
 JanisTheme.__index = JanisTheme
 JanisTheme.name = LIB_NAME
 JanisTheme.version = LIB_VERSION
@@ -104,6 +104,11 @@ function JanisTheme:New(options)
     local instance = {
         addon = options.addon,
         backdrop = options.backdrop or self.defaultBackdrop,
+        backdrops = options.backdrops or {},
+        buttonBackdrop = options.buttonBackdrop or options.backdrop or self.defaultBackdrop,
+        art = options.art or {},
+        key = options.key,
+        displayName = options.displayName,
         colors = options.colors or self.defaultColors,
         buttonPalettes = options.buttonPalettes or self.defaultButtonPalettes,
         assetRoot = options.assetRoot or self.defaultAssetRoot,
@@ -233,6 +238,29 @@ function JanisTheme:GetPalette(paletteKey)
     return self.buttonPalettes[paletteKey] or self.buttonPalettes.neutral
 end
 
+function JanisTheme:ApplyFontTreatment(fontRegion, fontFile)
+    if not fontRegion then
+        return fontRegion
+    end
+
+    local resolvedFont = fontFile or self.art.bodyFont
+    if resolvedFont and type(fontRegion.GetFont) == "function" and type(fontRegion.SetFont) == "function" then
+        local _, fontSize = fontRegion:GetFont()
+        fontRegion:SetFont(resolvedFont, tonumber(fontSize) or 12, "")
+    end
+
+    if self.art.disableFontShadow then
+        if type(fontRegion.SetShadowColor) == "function" then
+            fontRegion:SetShadowColor(0, 0, 0, 0)
+        end
+        if type(fontRegion.SetShadowOffset) == "function" then
+            fontRegion:SetShadowOffset(0, 0)
+        end
+    end
+
+    return fontRegion
+end
+
 function JanisTheme:ApplyBackdrop(frame, bg, border)
     if not frame or type(frame.SetBackdrop) ~= "function" then
         return
@@ -241,7 +269,8 @@ function JanisTheme:ApplyBackdrop(frame, bg, border)
     local resolvedBg = self:GetColor(bg)
     local resolvedBorder = self:GetColor(border)
 
-    frame:SetBackdrop(self.backdrop)
+    local backdrop = type(bg) == "string" and self.backdrops[bg] or nil
+    frame:SetBackdrop(backdrop or self.backdrop)
     if type(resolvedBg) == "table" then
         frame:SetBackdropColor(resolvedBg[1] or 0, resolvedBg[2] or 0, resolvedBg[3] or 0, resolvedBg[4] or 1)
     end
@@ -258,7 +287,189 @@ end
 function JanisTheme:CreatePanel(parent, bg, border)
     local panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     self:ApplyBackdrop(panel, bg, border)
+    if type(bg) == "string"
+        and self.art.panelFrame
+        and type(self.art.panelFrameKeys) == "table"
+        and self.art.panelFrameKeys[bg] then
+        self:CreateArtBorder(panel, self.art.panelFrame, {
+            width = self.art.panelFrameWidth or 16,
+            height = self.art.panelFrameHeight or 16,
+            overscan = self.art.panelFrameOverscan or 1,
+            sliceX = self.art.panelFrameSliceX or 0.08,
+            sliceY = self.art.panelFrameSliceY or 0.10,
+        })
+    end
     return panel
+end
+
+function JanisTheme:RefreshArtFrameLevel(frame)
+    if not frame then
+        return
+    end
+    local baseLevel = frame:GetFrameLevel() or 0
+    if frame.artBorder and frame.artBorder.SetFrameLevel then
+        frame.artBorder:SetFrameLevel(baseLevel + 15)
+    end
+    if frame.headerBar and frame.headerBar.SetFrameLevel then
+        frame.headerBar:SetFrameLevel(baseLevel + 20)
+    end
+    if frame.closeButton and frame.closeButton.SetFrameLevel then
+        frame.closeButton:SetFrameLevel(baseLevel + 21)
+    end
+end
+
+function JanisTheme:CreateArtBorder(parent, textureFile, options)
+    if not parent or type(textureFile) ~= "string" or textureFile == "" then
+        return nil
+    end
+    if parent.artBorder then
+        return parent.artBorder
+    end
+
+    options = type(options) == "table" and options or {}
+    local sliceX = options.sliceX or options.slice or 0.18
+    local sliceY = options.sliceY or options.slice or 0.18
+    local width = options.width or options.size or 32
+    local height = options.height or options.size or 32
+    local overscan = options.overscan or 3
+    local rightSlice = 1 - sliceX
+    local bottomSlice = 1 - sliceY
+    local overlay = CreateFrame("Frame", nil, parent)
+    overlay:SetPoint("TOPLEFT", parent, "TOPLEFT", -overscan, overscan)
+    overlay:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", overscan, -overscan)
+    overlay:EnableMouse(false)
+    parent.artBorder = overlay
+
+    local function createSlice(coords)
+        local texture = overlay:CreateTexture(nil, "OVERLAY", nil, 7)
+        texture:SetTexture(textureFile)
+        texture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+        return texture
+    end
+
+    local topLeft = createSlice({ 0, sliceX, 0, sliceY })
+    topLeft:SetPoint("TOPLEFT")
+    topLeft:SetSize(width, height)
+
+    local topRight = createSlice({ rightSlice, 1, 0, sliceY })
+    topRight:SetPoint("TOPRIGHT")
+    topRight:SetSize(width, height)
+
+    local bottomLeft = createSlice({ 0, sliceX, bottomSlice, 1 })
+    bottomLeft:SetPoint("BOTTOMLEFT")
+    bottomLeft:SetSize(width, height)
+
+    local bottomRight = createSlice({ rightSlice, 1, bottomSlice, 1 })
+    bottomRight:SetPoint("BOTTOMRIGHT")
+    bottomRight:SetSize(width, height)
+
+    local top = createSlice({ sliceX, rightSlice, 0, sliceY })
+    top:SetPoint("TOPLEFT", topLeft, "TOPRIGHT")
+    top:SetPoint("BOTTOMRIGHT", topRight, "BOTTOMLEFT")
+
+    local bottom = createSlice({ sliceX, rightSlice, bottomSlice, 1 })
+    bottom:SetPoint("TOPLEFT", bottomLeft, "TOPRIGHT")
+    bottom:SetPoint("BOTTOMRIGHT", bottomRight, "BOTTOMLEFT")
+
+    local left = createSlice({ 0, sliceX, sliceY, bottomSlice })
+    left:SetPoint("TOPLEFT", topLeft, "BOTTOMLEFT")
+    left:SetPoint("BOTTOMRIGHT", bottomLeft, "TOPRIGHT")
+
+    local right = createSlice({ rightSlice, 1, sliceY, bottomSlice })
+    right:SetPoint("TOPLEFT", topRight, "BOTTOMLEFT")
+    right:SetPoint("BOTTOMRIGHT", bottomRight, "TOPRIGHT")
+
+    overlay.slices = { topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right }
+    self:RefreshArtFrameLevel(parent)
+    return overlay
+end
+
+function JanisTheme:ApplySelectorArt(button, options)
+    if not button or not self.art.selector then
+        return button
+    end
+
+    options = type(options) == "table" and options or {}
+    if not button.selectorArtSlices then
+        local selectorSlice = self.art.selectorSlice or 0.14
+        local selectorCapSize = self.art.selectorCapSize or 16
+        local rightSlice = 1 - selectorSlice
+
+        local left = button:CreateTexture(nil, "BACKGROUND", nil, 7)
+        left:SetTexture(self.art.selector)
+        left:SetTexCoord(0, selectorSlice, 0, 1)
+        left:SetPoint("TOPLEFT", button, "TOPLEFT", -4, 3)
+        left:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", -4, -3)
+        left:SetWidth(selectorCapSize)
+
+        local right = button:CreateTexture(nil, "BACKGROUND", nil, 7)
+        right:SetTexture(self.art.selector)
+        right:SetTexCoord(rightSlice, 1, 0, 1)
+        right:SetPoint("TOPRIGHT", button, "TOPRIGHT", 4, 3)
+        right:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 4, -3)
+        right:SetWidth(selectorCapSize)
+
+        local center = button:CreateTexture(nil, "BACKGROUND", nil, 7)
+        center:SetTexture(self.art.selector)
+        center:SetTexCoord(selectorSlice, rightSlice, 0, 1)
+        center:SetPoint("TOPLEFT", left, "TOPRIGHT")
+        center:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
+
+        button.selectorArt = center
+        button.selectorArtSlices = { left, center, right }
+    end
+
+    if type(button.SetPalette) == "function" and self.buttonPalettes.selector then
+        button:SetPalette("selector")
+    end
+
+    if button.label then
+        button.label:ClearAllPoints()
+        if options.centered then
+            button.label:SetPoint("LEFT", button, "LEFT", 12, 0)
+            button.label:SetPoint("RIGHT", button, "RIGHT", -12, 0)
+            button.label:SetJustifyH("CENTER")
+        else
+            button.label:SetPoint("LEFT", button, "LEFT", 14, 0)
+            button.label:SetPoint("RIGHT", button, "RIGHT", options.arrow == false and -14 or -30, 0)
+            button.label:SetJustifyH("LEFT")
+        end
+    end
+
+    if options.arrow ~= false and not button.selectorArrow then
+        local arrow = CreateFrame("Frame", nil, button)
+        arrow:SetSize(14, 12)
+        arrow:SetPoint("RIGHT", button, "RIGHT", -8, 0)
+        local color = self:GetColor("selectionText", { 1, 1, 1, 1 })
+        local left = arrow:CreateTexture(nil, "OVERLAY")
+        left:SetColorTexture(color[1] or 1, color[2] or 1, color[3] or 1, color[4] or 1)
+        left:SetSize(8, 2)
+        left:SetPoint("CENTER", arrow, "CENTER", -3, 0)
+        left:SetRotation(math.rad(-42))
+        local right = arrow:CreateTexture(nil, "OVERLAY")
+        right:SetColorTexture(color[1] or 1, color[2] or 1, color[3] or 1, color[4] or 1)
+        right:SetSize(8, 2)
+        right:SetPoint("CENTER", arrow, "CENTER", 3, 0)
+        right:SetRotation(math.rad(42))
+        arrow.lines = { left, right }
+        button.selectorArrow = arrow
+    end
+
+    self:UpdateButtonVisual(button)
+    return button
+end
+
+function JanisTheme:ApplyPopupArt(frame)
+    if self.art.frame then
+        self:ApplyBackdrop(frame, "popupChrome", "transparent")
+        return self:CreateArtBorder(frame, self.art.frame, {
+            width = self.art.popupFrameWidth or 22,
+            height = self.art.popupFrameHeight or 22,
+            overscan = 3,
+            sliceX = self.art.frameSliceX or self.art.frameSlice or 0.18,
+            sliceY = self.art.frameSliceY or self.art.frameSlice or 0.18,
+        })
+    end
 end
 
 function JanisTheme:UpdateButtonVisual(button)
@@ -269,27 +480,39 @@ function JanisTheme:UpdateButtonVisual(button)
     local palette = button.palette or self:GetPalette("neutral")
     local bg = palette.bg
     local border = palette.border
+    local text = palette.text
     if button.isSelected then
         bg = palette.selectedBg or bg
         border = palette.selectedBorder or border
+        text = palette.selectedText or text
     elseif button.isPressed then
         bg = palette.pressedBg or bg
         border = palette.pressedBorder or border
+        text = palette.pressedText or text
     elseif button.isHovered then
         bg = palette.hoverBg or bg
         border = palette.hoverBorder or border
-    end
-
-    if button.forceTransparentBackdrop then
-        bg = { bg[1] or 0, bg[2] or 0, bg[3] or 0, 0 }
-        border = { border[1] or 1, border[2] or 1, border[3] or 1, 0 }
+        text = palette.hoverText or text
     end
 
     button:SetBackdropColor(bg[1] or 0, bg[2] or 0, bg[3] or 0, bg[4] or 1)
     button:SetBackdropBorderColor(border[1] or 1, border[2] or 1, border[3] or 1, border[4] or 1)
     if button.label then
-        local textColor = palette.text or { 1, 1, 1 }
+        local textColor = text or { 1, 1, 1 }
         button.label:SetTextColor(textColor[1] or 1, textColor[2] or 1, textColor[3] or 1)
+    end
+    if button.selectorArtSlices then
+        local red, green, blue, alpha
+        if button.isPressed then
+            red, green, blue, alpha = 0.72, 0.66, 0.58, 1
+        elseif button.isHovered or button.isSelected then
+            red, green, blue, alpha = 1, 1, 1, 1
+        else
+            red, green, blue, alpha = 0.90, 0.86, 0.80, 0.96
+        end
+        for _, selectorSlice in ipairs(button.selectorArtSlices) do
+            selectorSlice:SetVertexColor(red, green, blue, alpha)
+        end
     end
 end
 
@@ -298,9 +521,10 @@ function JanisTheme:CreateButton(parent, width, height, text, paletteKey)
     button:SetSize(width, height)
     button.theme = self
     button.palette = self:GetPalette(paletteKey)
-    button:SetBackdrop(self.backdrop)
+    button:SetBackdrop(self.buttonBackdrop)
 
     local label = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self:ApplyFontTreatment(label)
     label:SetPoint("CENTER", button, "CENTER", 0, 0)
     label:SetJustifyH("CENTER")
     button.label = label
@@ -325,7 +549,7 @@ function JanisTheme:CreateButton(parent, width, height, text, paletteKey)
         self.theme:UpdateButtonVisual(self)
         if type(self.tooltipText) == "string" and self.tooltipText ~= "" then
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(self.tooltipText)
+            GameTooltip:SetText(self.tooltipText, 1, 1, 1, 1, true)
             GameTooltip:Show()
         end
     end)
@@ -374,6 +598,30 @@ function JanisTheme:HideNativeChrome(frame)
     end
 end
 
+function JanisTheme:ApplyHeaderDecoration(frame, headerBar)
+    if self.art.headerDecoration then
+        local decorationSize = self.art.headerDecorationSize or 96
+        local decorationAlpha = self.art.headerDecorationAlpha or 0.55
+        local leftDecoration = headerBar:CreateTexture(nil, "ARTWORK", nil, 1)
+        leftDecoration:SetTexture(self.art.headerDecoration)
+        leftDecoration:SetSize(decorationSize, decorationSize)
+        leftDecoration:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", -4, -18)
+        leftDecoration:SetAlpha(decorationAlpha)
+        frame.headerDecoration = leftDecoration
+
+        if self.art.headerDecorationMirror then
+            local rightDecoration = headerBar:CreateTexture(nil, "ARTWORK", nil, 1)
+            rightDecoration:SetTexture(self.art.headerDecoration)
+            rightDecoration:SetTexCoord(1, 0, 1, 0)
+            rightDecoration:SetSize(decorationSize, decorationSize)
+            rightDecoration:SetPoint("TOPRIGHT", headerBar, "TOPRIGHT", 4, 18)
+            rightDecoration:SetAlpha(self.art.headerDecorationMirrorAlpha or (decorationAlpha * 0.30))
+            frame.headerDecorationMirror = rightDecoration
+        end
+    end
+
+end
+
 function JanisTheme:ApplyWindowChrome(frame, titleText, options)
     if not frame then
         return nil, nil
@@ -382,12 +630,18 @@ function JanisTheme:ApplyWindowChrome(frame, titleText, options)
     options = type(options) == "table" and options or {}
     self:HideNativeChrome(frame)
 
-    local chrome = self:CreatePanel(frame, options.chromeColor or "chrome", options.chromeBorder or "chromeBorder")
+    local chromeBorder = options.chromeBorder
+        or (self.art.frame and "transparent")
+        or "chromeBorder"
+    local chrome = self:CreatePanel(frame, options.chromeColor or "chrome", chromeBorder)
     chrome:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -6)
     chrome:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
     frame.chrome = chrome
 
-    local headerBar = self:CreatePanel(frame, options.headerColor or "header", options.headerBorder or "headerBorder")
+    local headerBorder = options.headerBorder
+        or (self.art.frame and "transparent")
+        or "headerBorder"
+    local headerBar = self:CreatePanel(frame, options.headerColor or "header", headerBorder)
     headerBar:SetPoint("TOPLEFT", chrome, "TOPLEFT", 0, 0)
     headerBar:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", 0, 0)
     headerBar:SetHeight(options.headerHeight or 42)
@@ -401,11 +655,17 @@ function JanisTheme:ApplyWindowChrome(frame, titleText, options)
     headerAccent:SetHeight(options.accentHeight or 2)
     frame.headerAccent = headerAccent
 
+    self:ApplyHeaderDecoration(frame, headerBar)
+
     local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", options.titleFont or "GameFontNormalLarge")
-    headerTitle:SetPoint("LEFT", headerBar, "LEFT", options.titleLeftOffset or 14, 0)
+    headerTitle:SetPoint("LEFT", headerBar, "LEFT", options.titleLeftOffset or self.art.titleLeftOffset or 14, 0)
     headerTitle:SetPoint("RIGHT", headerBar, "RIGHT", options.titleRightOffset or -52, 0)
     headerTitle:SetJustifyH("LEFT")
     headerTitle:SetText(titleText or "")
+    local titleColor = self:GetColor("titleText")
+    if type(titleColor) == "table" then
+        headerTitle:SetTextColor(titleColor[1] or 1, titleColor[2] or 1, titleColor[3] or 1, titleColor[4] or 1)
+    end
     frame.headerTitleText = headerTitle
 
     local closeButton = self:CreateButton(
@@ -413,7 +673,7 @@ function JanisTheme:ApplyWindowChrome(frame, titleText, options)
         options.closeWidth or 22,
         options.closeHeight or 22,
         options.closeText or "X",
-        "neutral"
+        "close"
     )
     closeButton:SetPoint("RIGHT", headerBar, "RIGHT", options.closeRightOffset or -10, 0)
     closeButton:SetScript("OnClick", function()
@@ -422,6 +682,20 @@ function JanisTheme:ApplyWindowChrome(frame, titleText, options)
     frame.closeButton = closeButton
     if type(options.closeButtonKey) == "string" and options.closeButtonKey ~= "" then
         frame[options.closeButtonKey] = closeButton
+    end
+
+    if self.art.titleFont and headerTitle.SetFont then
+        headerTitle:SetFont(self.art.titleFont, options.titleFontSize or 18, "")
+    end
+    self:ApplyFontTreatment(headerTitle, self.art.titleFont)
+    if self.art.frame then
+        self:CreateArtBorder(frame, self.art.frame, {
+            width = self.art.frameWidth or self.art.frameSize or 32,
+            height = self.art.frameHeight or self.art.frameSize or 32,
+            overscan = self.art.frameOverscan or 4,
+            sliceX = self.art.frameSliceX or self.art.frameSlice or 0.18,
+            sliceY = self.art.frameSliceY or self.art.frameSlice or 0.18,
+        })
     end
 
     return chrome, headerBar
@@ -462,4 +736,4 @@ function JanisTheme:BringToFront(frame, relativeFrame)
     end
 end
 
-_G.JanisTheme = JanisTheme
+_G.GoldTrackerThemeLibrary = JanisTheme

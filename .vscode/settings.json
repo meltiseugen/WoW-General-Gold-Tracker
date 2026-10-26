@@ -76,6 +76,13 @@
         "ORGRIMMAR",
         "HIGHMOUNTAIN",
         "REWARDS",
-        "ALL_CLASSES"
+        "ALL_CLASSES",
+        "RAID_CLASS_COLORS",
+        "STANDARD_TEXT_FONT",
+        "APIDocumentation",
+        "CreateTexturePool",
+        "TextureLoadingGroupMixin",
+        "PROFESSION_EQUIPMENT",
+        "ReloadUI"
     ]
 }

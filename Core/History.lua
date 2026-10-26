@@ -60,6 +60,7 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             lootSourceIsAoe = entry.lootSourceIsAoe == true,
             lootSourceText = entry.lootSourceText,
             isCraftingReagent = entry.isCraftingReagent == true,
+            observedDropRecorded = entry.observedDropRecorded == true or nil,
         }
     end
     return copied
@@ -1132,7 +1133,7 @@ end
 
 function GoldTracker:ResumeHistorySession(sessionID)
     if not self:IsResumeHistorySessionEnabled() then
-        self:Print("Resuming from history is disabled in options.")
+        self:Print("Resuming from history is disabled in options.", "warnings")
         return false
     end
 
@@ -1141,7 +1142,7 @@ function GoldTracker:ResumeHistorySession(sessionID)
         return false
     end
     if historySession.recordType == "farm" or historySession.isFarm == true then
-        self:Print("Farm history rows cannot be resumed as loot sessions.")
+        self:Print("Farm history rows cannot be resumed as loot sessions.", "warnings")
         return false
     end
 
@@ -1281,9 +1282,9 @@ function GoldTracker:ResumeHistorySession(sessionID)
     end
 
     if wasActive then
-        self:Print("Merged selected history session into the active session.")
+        self:Print("Merged selected history session into the active session.", "history")
     else
-        self:Print("Loaded selected history session as the active session.")
+        self:Print("Loaded selected history session as the active session.", "history")
     end
 
     return true

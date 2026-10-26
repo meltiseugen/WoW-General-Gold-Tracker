@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -265,7 +268,7 @@ function GoldTracker:CreateDiagnosisWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerDiagnosisFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerDiagnosisFrame", UIParent)
     frame:SetSize(620, 500)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
     frame:SetFrameStrata("DIALOG")
@@ -416,7 +419,7 @@ end
 
 function GoldTracker:OpenDiagnosisWindow()
     if not self:IsDiagnosticsPanelEnabled() then
-        self:Print("Diagnosis is disabled. Enable it in Options > Experimental.")
+        self:Print("Diagnosis is disabled. Enable it in Options > Advanced.", "warnings")
         return
     end
 
@@ -435,7 +438,7 @@ end
 function GoldTracker:OpenHistoryDiagnosisWindow(sessionID)
     local session = self:GetHistorySessionByID(sessionID)
     if not session or type(session.diagnosisSnapshot) ~= "table" then
-        self:Print("No diagnosis data was saved for that session.")
+        self:Print("No diagnosis data was saved for that session.", "warnings")
         return
     end
 

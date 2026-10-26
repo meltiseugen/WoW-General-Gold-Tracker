@@ -53,7 +53,6 @@ local KUL_TIRAS_COASTAL_ROUTE = {
     tips = {
         "Kul Tiras coastal water is the practical target for Lane Snapper and Frenzied Fangtooth.",
         "Check pools while circling the east and south coasts.",
-        "Great Sea Ray can also come from BFA sea and ocean waters as a low-chance bonus.",
     },
     coords = {
         C(0.742, 0.224, "Northeast Tiragarde coast"),

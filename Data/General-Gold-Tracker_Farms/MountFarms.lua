@@ -1,7 +1,7 @@
 local _, NS = ...
 
 -- Curated Retail mount-farm research for Drops > Mounts.
--- Coordinates are normalized UI-map coordinates. Research reviewed 2026-10-02.
+-- Coordinates are normalized UI-map coordinates. Acquisition additions reviewed 2026-10-21.
 
 local farms = {
     {
@@ -97,7 +97,7 @@ local farms = {
         },
         details = {
             "The marked point is the center of the NPC's small coordinate cluster around 13-15, 50-52.",
-            "The drop is bind on pickup but is awarded to each eligible looter, so there is no need to compete with party members.",
+            "Keep the unbound mount item unlearned to sell it on the Auction House. Eligible party members can receive their own loot.",
         },
         sourceUrls = {
             { siteName = "Wowhead comments", url = "https://www.wowhead.com/item=116794/garn-nighthowl" },
@@ -492,6 +492,58 @@ local farms = {
     },
 }
 
+local rows, seenItems = {}, {}
+local rawRows = NS.CatalogDropsData and NS.CatalogDropsData.categories and NS.CatalogDropsData.categories.mounts
+for _, row in ipairs(rawRows or {}) do
+    rows[#rows + 1] = row
+    seenItems[row.itemID] = true
+end
+
+for _, research in ipairs(NS.MountAcquisitionResearch or {}) do
+    local farmID = "ggt:mount:item:" .. research.itemID
+    local recordID = "mounts:Research:" .. research.itemID
+    local mapIDs, mapNames, seenMaps, sources = {}, {}, {}, {}
+    for index, option in ipairs(research.mapOptions) do
+        option.id = farmID .. ":map:" .. index
+        if not seenMaps[option.mapID] then
+            mapIDs[#mapIDs + 1] = option.mapID
+            mapNames[#mapNames + 1] = option.mapLabel
+            seenMaps[option.mapID] = true
+        end
+    end
+    for _, url in ipairs(research.sourceUrls) do
+        sources[#sources + 1] = { siteName = "Acquisition research", url = url }
+    end
+    farms[#farms + 1] = {
+        id = farmID, sourceRecordID = recordID,
+        sourceType = "curated", sourceDataset = "GGTMountFarmData",
+        sourceCategory = "mounts", sourcePath = "Drops > Mounts", activity = "mount",
+        name = research.itemName, primaryItemID = research.itemID,
+        expansion = research.expansion, acquisitionType = research.acquisitionType,
+        auctionable = research.auctionable, saleMethod = research.saleMethod,
+        profession = research.profession, faction = research.faction,
+        useRequirement = research.useRequirement, researchedAt = research.researchedAt,
+        routeCount = #research.mapOptions, mapIDs = mapIDs, mapNames = mapNames, targets = {},
+        summary = research.action,
+        guide = { label = research.guideLabel, requirement = research.requirement,
+            action = research.action, tips = research.tips },
+        details = { research.requirement, research.repeatability },
+        sourceUrls = sources, mapOptions = research.mapOptions,
+    }
+    if not seenItems[research.itemID] then
+        rows[#rows + 1] = {
+            recordID = recordID, farmID = farmID, farmName = research.itemName,
+            itemID = research.itemID, itemName = research.itemName,
+            itemLink = string.format("|Hitem:%d::::::::|h[%s]|h", research.itemID, research.itemName),
+            quantity = 1, contentID = research.contentID,
+            expansion = research.expansion, expansionLabel = research.expansionLabel,
+            mapID = research.mapOptions[1].mapID, locationLabel = research.mapOptions[1].mapLabel,
+            auctionable = research.auctionable, saleMethod = research.saleMethod,
+        }
+        seenItems[research.itemID] = true
+    end
+end
+
 local catalog = NS.FarmCatalog
 if type(catalog) ~= "table" then
     catalog = {
@@ -534,6 +586,7 @@ for _, farm in ipairs(farms) do
         catalog.farms[position] = farm
         catalog.byID[farm.id] = position
         AddIndex("byItemID", farm.primaryItemID, position)
+        AddIndex("byRecordID", farm.sourceRecordID, position)
         AddIndex("byActivity", farm.activity, position)
         AddIndex("byExpansion", farm.expansion, position)
         AddIndex("bySourceCategory", farm.sourceCategory, position)
@@ -552,7 +605,9 @@ catalog.uniqueItemCount = (tonumber(catalog.uniqueItemCount) or 0) + uniqueItems
 catalog.sourceCounts.curatedMounts = #farms
 
 NS.MountFarmData = {
-    dataVersion = 1,
-    researchedAt = "2026-10-03",
+    dataVersion = 2,
+    researchedAt = "2026-10-21",
+    baseResearchedAt = "2026-10-03",
+    rows = rows,
     farms = farms,
 }

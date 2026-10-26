@@ -1,0 +1,510 @@
+{
+  "retrievedAt": "2026-10-23",
+  "scope": "54 missing-map items and two live processing spells; public Retail dataEnv=1, locale=0",
+  "receipts": [
+    {
+      "kind": "item",
+      "id": 243578,
+      "name": "Aetherlume",
+      "url": "https://nether.wowhead.com/tooltip/item/243578?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.271858+00:00",
+      "sha256": "c707d694448f9a721a0d1510ee4e3668c3d6dc0a19e9cec16bdfb5f24fa43994",
+      "rawCache": ".local/midnight-map-sources/item-243578.json"
+    },
+    {
+      "kind": "item",
+      "id": 243579,
+      "name": "Aetherlume",
+      "url": "https://nether.wowhead.com/tooltip/item/243579?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.263728+00:00",
+      "sha256": "c707d694448f9a721a0d1510ee4e3668c3d6dc0a19e9cec16bdfb5f24fa43994",
+      "rawCache": ".local/midnight-map-sources/item-243579.json"
+    },
+    {
+      "kind": "item",
+      "id": 266102,
+      "name": "Ambiguous Rock",
+      "url": "https://nether.wowhead.com/tooltip/item/266102?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.221247+00:00",
+      "sha256": "005117e0c0aa958bd895bf0b30a4270ac84034b472e953378b38573e0387341b",
+      "rawCache": ".local/midnight-map-sources/item-266102.json"
+    },
+    {
+      "kind": "item",
+      "id": 238494,
+      "name": "Another's Treasure",
+      "url": "https://nether.wowhead.com/tooltip/item/238494?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.218651+00:00",
+      "sha256": "3d83e3563ab6795d0a9124d39fc3ee9e2b261b0d8b088522c5d1d950ea174f9f",
+      "rawCache": ".local/midnight-map-sources/item-238494.json"
+    },
+    {
+      "kind": "item",
+      "id": 245803,
+      "name": "Argentleaf Pigment",
+      "url": "https://nether.wowhead.com/tooltip/item/245803?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.272185+00:00",
+      "sha256": "b8102f275491c075068cd9a1bf961135fcfc4e4111e64b8946175ed114a127c6",
+      "rawCache": ".local/midnight-map-sources/item-245803.json"
+    },
+    {
+      "kind": "item",
+      "id": 274593,
+      "name": "Blightswarmer",
+      "url": "https://nether.wowhead.com/tooltip/item/274593?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.316390+00:00",
+      "sha256": "4b3d76f39050136142189439682673cc2f48a2078014ad930edc7961a73b9849",
+      "rawCache": ".local/midnight-map-sources/item-274593.json"
+    },
+    {
+      "kind": "item",
+      "id": 274591,
+      "name": "Coiled Stargorger",
+      "url": "https://nether.wowhead.com/tooltip/item/274591?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.293154+00:00",
+      "sha256": "2467a6c490b0f8741980acf1054af56e22f66efb8e8b17f2cf9ae9fcbf102e65",
+      "rawCache": ".local/midnight-map-sources/item-274591.json"
+    },
+    {
+      "kind": "item",
+      "id": 274781,
+      "name": "Cursebound Globe",
+      "url": "https://nether.wowhead.com/tooltip/item/274781?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.163312+00:00",
+      "sha256": "4be6fa22cb071d2610cbcb4a24400b0d9d81745c8a330215224ea02a31bfad71",
+      "rawCache": ".local/midnight-map-sources/item-274781.json"
+    },
+    {
+      "kind": "item",
+      "id": 238489,
+      "name": "Definitely Not a Rock",
+      "url": "https://nether.wowhead.com/tooltip/item/238489?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.317591+00:00",
+      "sha256": "664a8ff369552207966b068f7467781780efa44c8f0d93ee2eb32e1cb0acaf12",
+      "rawCache": ".local/midnight-map-sources/item-238489.json"
+    },
+    {
+      "kind": "item",
+      "id": 275695,
+      "name": "Design: Piercing Amani Lapis",
+      "url": "https://nether.wowhead.com/tooltip/item/275695?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.394431+00:00",
+      "sha256": "fceb698c1d4804390f8a2a46e0508bd12a2fea99d4f3879b5f065763d3a26d7e",
+      "rawCache": ".local/midnight-map-sources/item-275695.json"
+    },
+    {
+      "kind": "item",
+      "id": 274592,
+      "name": "Dirty Darter",
+      "url": "https://nether.wowhead.com/tooltip/item/274592?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.460185+00:00",
+      "sha256": "9f9771e8a642c64b908ee20cdfae5b18287ce82eead4dc73ca32078aa7221ad5",
+      "rawCache": ".local/midnight-map-sources/item-274592.json"
+    },
+    {
+      "kind": "item",
+      "id": 242788,
+      "name": "Dusk-Shrouded Stone",
+      "url": "https://nether.wowhead.com/tooltip/item/242788?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.330676+00:00",
+      "sha256": "e9cd2db084a5c65cdf719dc05a5a9604eebd5e6629705c9c271125c6e23bde76",
+      "rawCache": ".local/midnight-map-sources/item-242788.json"
+    },
+    {
+      "kind": "item",
+      "id": 243581,
+      "name": "Evercore",
+      "url": "https://nether.wowhead.com/tooltip/item/243581?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.467746+00:00",
+      "sha256": "475e6acf60fe63db0fcf18dbb66c184ebb18cecad4b51a00c11a0119f975a7c6",
+      "rawCache": ".local/midnight-map-sources/item-243581.json"
+    },
+    {
+      "kind": "item",
+      "id": 243582,
+      "name": "Evercore",
+      "url": "https://nether.wowhead.com/tooltip/item/243582?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.463283+00:00",
+      "sha256": "475e6acf60fe63db0fcf18dbb66c184ebb18cecad4b51a00c11a0119f975a7c6",
+      "rawCache": ".local/midnight-map-sources/item-243582.json"
+    },
+    {
+      "kind": "item",
+      "id": 242608,
+      "name": "Eversong Diamond",
+      "url": "https://nether.wowhead.com/tooltip/item/242608?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.373883+00:00",
+      "sha256": "dcb0f16003173b9ccb647b12801be76d89e62e20f1333d75c68b08bda56779dd",
+      "rawCache": ".local/midnight-map-sources/item-242608.json"
+    },
+    {
+      "kind": "item",
+      "id": 242610,
+      "name": "Flawless Harandar Peridot",
+      "url": "https://nether.wowhead.com/tooltip/item/242610?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.410561+00:00",
+      "sha256": "8e1350e96e0f9f78f4368f5cbba7b4c673397b9f8f054cdc0e68493f62a918bd",
+      "rawCache": ".local/midnight-map-sources/item-242610.json"
+    },
+    {
+      "kind": "item",
+      "id": 242613,
+      "name": "Flawless Sanguine Garnet",
+      "url": "https://nether.wowhead.com/tooltip/item/242613?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.411479+00:00",
+      "sha256": "48e708f15b8e530ab344f1e121209b6a08c53b8540132eae99d87ee5565bbf6c",
+      "rawCache": ".local/midnight-map-sources/item-242613.json"
+    },
+    {
+      "kind": "item",
+      "id": 242611,
+      "name": "Flawless Tenebrous Amethyst",
+      "url": "https://nether.wowhead.com/tooltip/item/242611?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.409405+00:00",
+      "sha256": "82fcaa3c29ef1017efee7894f654abc25bcc579c1590f5b8bffa2533a8274f48",
+      "rawCache": ".local/midnight-map-sources/item-242611.json"
+    },
+    {
+      "kind": "item",
+      "id": 256559,
+      "name": "Galactic Combatant's Heraldry",
+      "url": "https://nether.wowhead.com/tooltip/item/256559?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.555587+00:00",
+      "sha256": "9f5edbbcc918ab2fd846584fb532abce20accf836c7a53e7804936691e0203ca",
+      "rawCache": ".local/midnight-map-sources/item-256559.json"
+    },
+    {
+      "kind": "item",
+      "id": 279093,
+      "name": "Giggling Skull",
+      "url": "https://nether.wowhead.com/tooltip/item/279093?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.580258+00:00",
+      "sha256": "ddfddbecc181f3471eebc2a423790e3e785fcb1c4f9c4aeaf0bdbd25dd1e2d62",
+      "rawCache": ".local/midnight-map-sources/item-279093.json"
+    },
+    {
+      "kind": "item",
+      "id": 242620,
+      "name": "Glimmering Gemdust",
+      "url": "https://nether.wowhead.com/tooltip/item/242620?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.477755+00:00",
+      "sha256": "5981fa797c1a199bdc2a8a6329d1173150ae1bb447f03add7b526d603e78ea15",
+      "rawCache": ".local/midnight-map-sources/item-242620.json"
+    },
+    {
+      "kind": "item",
+      "id": 279094,
+      "name": "Grotesque Sturgeon",
+      "url": "https://nether.wowhead.com/tooltip/item/279094?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.594443+00:00",
+      "sha256": "d1ca2d1a24234bb2289fd541a52f0271693a6a293cd51c2a40ab12103e46ebde",
+      "rawCache": ".local/midnight-map-sources/item-279094.json"
+    },
+    {
+      "kind": "item",
+      "id": 253307,
+      "name": "Infused Heliotrope",
+      "url": "https://nether.wowhead.com/tooltip/item/253307?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.581241+00:00",
+      "sha256": "bb2877071d7ac5d8aa89c8e44256d2c0115b5ca2254db246449e83492ac0beab",
+      "rawCache": ".local/midnight-map-sources/item-253307.json"
+    },
+    {
+      "kind": "item",
+      "id": 279106,
+      "name": "Loathsome Anglerfish",
+      "url": "https://nether.wowhead.com/tooltip/item/279106?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.654668+00:00",
+      "sha256": "c6db53e0ace08236f18238b49c2c658bcd3e05190578ffa19364dba56df44761",
+      "rawCache": ".local/midnight-map-sources/item-279106.json"
+    },
+    {
+      "kind": "item",
+      "id": 245867,
+      "name": "Mana Lily Pigment",
+      "url": "https://nether.wowhead.com/tooltip/item/245867?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.650666+00:00",
+      "sha256": "70dcd2b33c6dd4f24a80912030bedee1c7979ac0c31734c7905fa50e24dead53",
+      "rawCache": ".local/midnight-map-sources/item-245867.json"
+    },
+    {
+      "kind": "item",
+      "id": 279100,
+      "name": "Many-Eyed Flounder",
+      "url": "https://nether.wowhead.com/tooltip/item/279100?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.650313+00:00",
+      "sha256": "066d87acc5ad58438f2e065da4a09a95e224d97aca3ca0a786627702aa5c3b29",
+      "rawCache": ".local/midnight-map-sources/item-279100.json"
+    },
+    {
+      "kind": "item",
+      "id": 274777,
+      "name": "Neutralized Venom Clot",
+      "url": "https://nether.wowhead.com/tooltip/item/274777?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.557886+00:00",
+      "sha256": "b3cd9a115a9adf560147083b905c9fb189d37e6a2d3ba35b8933c27f2adda3ab",
+      "rawCache": ".local/midnight-map-sources/item-274777.json"
+    },
+    {
+      "kind": "item",
+      "id": 279091,
+      "name": "Oozing Goby",
+      "url": "https://nether.wowhead.com/tooltip/item/279091?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.742777+00:00",
+      "sha256": "c13b95c45dfd58c4474de1d648f34c7e2c9e56224473e910f485e5c9bb1a72f4",
+      "rawCache": ".local/midnight-map-sources/item-279091.json"
+    },
+    {
+      "kind": "item",
+      "id": 275334,
+      "name": "Pattern: Stretched Snakeskin Rack",
+      "url": "https://nether.wowhead.com/tooltip/item/275334?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.754173+00:00",
+      "sha256": "174928e84d8a0bd4c9c10264323230f5c92a14a733c19694de8912e934545d40",
+      "rawCache": ".local/midnight-map-sources/item-275334.json"
+    },
+    {
+      "kind": "item",
+      "id": 275338,
+      "name": "Pattern: Twilight's Blade Bedroll",
+      "url": "https://nether.wowhead.com/tooltip/item/275338?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.777359+00:00",
+      "sha256": "00fb9e532217e6643005ad4e0682b93b0d36edd5089dde62a02afcd3706ae60f",
+      "rawCache": ".local/midnight-map-sources/item-275338.json"
+    },
+    {
+      "kind": "item",
+      "id": 275306,
+      "name": "Plans: Amani Forgemaster's Decorative Spear",
+      "url": "https://nether.wowhead.com/tooltip/item/275306?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.777134+00:00",
+      "sha256": "3580d760fda3bb10f4ba90e0365d2d99cffa8ae3390ae8e3123337d7e3f95a64",
+      "rawCache": ".local/midnight-map-sources/item-275306.json"
+    },
+    {
+      "kind": "item",
+      "id": 275308,
+      "name": "Plans: Amani Forgemaster's Rack",
+      "url": "https://nether.wowhead.com/tooltip/item/275308?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.766865+00:00",
+      "sha256": "b0eaefd9085989b35ec9496d00f938eca337e9cc86253f927aa2edc0cfcbd567",
+      "rawCache": ".local/midnight-map-sources/item-275308.json"
+    },
+    {
+      "kind": "item",
+      "id": 262651,
+      "name": "Pointed Spikesnail",
+      "url": "https://nether.wowhead.com/tooltip/item/262651?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.739297+00:00",
+      "sha256": "e06e077e1d2ccc8dc7c5162d800667b1071e4edbbd41f1b2105eb792bd8c9104",
+      "rawCache": ".local/midnight-map-sources/item-262651.json"
+    },
+    {
+      "kind": "item",
+      "id": 274594,
+      "name": "Polluted Puffer",
+      "url": "https://nether.wowhead.com/tooltip/item/274594?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.817470+00:00",
+      "sha256": "8787751cd9851ef8f568fbbf18dfba5d864a61d55ac99cfb18956d5aa5b17e8f",
+      "rawCache": ".local/midnight-map-sources/item-274594.json"
+    },
+    {
+      "kind": "item",
+      "id": 245807,
+      "name": "Powder Pigment",
+      "url": "https://nether.wowhead.com/tooltip/item/245807?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.827777+00:00",
+      "sha256": "3c40fd5271332fc0658e48e5e84ece826d620deeca80fff423cbef41c972e370",
+      "rawCache": ".local/midnight-map-sources/item-245807.json"
+    },
+    {
+      "kind": "item",
+      "id": 275273,
+      "name": "Recipe: Sweet-And-Sour Skewers",
+      "url": "https://nether.wowhead.com/tooltip/item/275273?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.929135+00:00",
+      "sha256": "d4d07e8d224ebc13dd6cac05ca0f49005fbdcb57835bc88bb5ab7e68189df484",
+      "rawCache": ".local/midnight-map-sources/item-275273.json"
+    },
+    {
+      "kind": "item",
+      "id": 278331,
+      "name": "Recipe: Sweet-And-Sour Skewers",
+      "url": "https://nether.wowhead.com/tooltip/item/278331?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.931852+00:00",
+      "sha256": "80daf1053d9f0183c984bb102f1b3c59d6a4b8c5a5b3219ca976b8f12d378253",
+      "rawCache": ".local/midnight-map-sources/item-278331.json"
+    },
+    {
+      "kind": "item",
+      "id": 245865,
+      "name": "Sanguithorn Pigment",
+      "url": "https://nether.wowhead.com/tooltip/item/245865?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.939695+00:00",
+      "sha256": "b5234a98cdda1a9a9dcc384af4a08b3f7678425bf361888dface421bf769c0a5",
+      "rawCache": ".local/midnight-map-sources/item-245865.json"
+    },
+    {
+      "kind": "item",
+      "id": 275320,
+      "name": "Schematic: Aetherlume Field Lamp",
+      "url": "https://nether.wowhead.com/tooltip/item/275320?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.946095+00:00",
+      "sha256": "256cee63ca48e9ed6da5b4ba9afaa40b0a6ba3cace6b545e303db8c97c4f5b52",
+      "rawCache": ".local/midnight-map-sources/item-275320.json"
+    },
+    {
+      "kind": "item",
+      "id": 275684,
+      "name": "Schematic: G-00",
+      "url": "https://nether.wowhead.com/tooltip/item/275684?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.955748+00:00",
+      "sha256": "608c4b5d7454611a2dab54c05926385fa393a653ef0f9750099a42ac4e54f99e",
+      "rawCache": ".local/midnight-map-sources/item-275684.json"
+    },
+    {
+      "kind": "item",
+      "id": 278330,
+      "name": "Schematic: R0CKY",
+      "url": "https://nether.wowhead.com/tooltip/item/278330?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.945186+00:00",
+      "sha256": "ec5a228e069dd9d5d928ed3284f2ed4d4cd78552632457e75409098997973557",
+      "rawCache": ".local/midnight-map-sources/item-278330.json"
+    },
+    {
+      "kind": "item",
+      "id": 278333,
+      "name": "Schematic: R0CKY-To-Go",
+      "url": "https://nether.wowhead.com/tooltip/item/278333?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.984976+00:00",
+      "sha256": "df740fccd219368306a2dbaf0d5ae16d08393ce939dff8e38947d2502bcb6677",
+      "rawCache": ".local/midnight-map-sources/item-278333.json"
+    },
+    {
+      "kind": "item",
+      "id": 262792,
+      "name": "Shredded Bloomline",
+      "url": "https://nether.wowhead.com/tooltip/item/262792?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:31.997720+00:00",
+      "sha256": "404e9dc37fe57aa728fdacb5746f45e923b123e6a5a4b83104b0e3d28bde4ab7",
+      "rawCache": ".local/midnight-map-sources/item-262792.json"
+    },
+    {
+      "kind": "item",
+      "id": 262797,
+      "name": "Shredded Glimmerline",
+      "url": "https://nether.wowhead.com/tooltip/item/262797?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.120581+00:00",
+      "sha256": "14877bbdee9dfd9acfc8dcd40bda9a1e80fbd6ff07658efa2449f6215f4c15d8",
+      "rawCache": ".local/midnight-map-sources/item-262797.json"
+    },
+    {
+      "kind": "item",
+      "id": 274587,
+      "name": "Spotted Killifish",
+      "url": "https://nether.wowhead.com/tooltip/item/274587?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.098574+00:00",
+      "sha256": "790b0739c497b0c7ede2bac9963e1a47d5a90c06cf486e51a63ceb803d374430",
+      "rawCache": ".local/midnight-map-sources/item-274587.json"
+    },
+    {
+      "kind": "item",
+      "id": 274590,
+      "name": "Sulfurous Sludgefish",
+      "url": "https://nether.wowhead.com/tooltip/item/274590?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.104051+00:00",
+      "sha256": "93df5f9c18f7ea7b11def5269bb2f016dd5e657695f38fd279b807ef7f6fcd3c",
+      "rawCache": ".local/midnight-map-sources/item-274590.json"
+    },
+    {
+      "kind": "item",
+      "id": 275324,
+      "name": "Technique: \"Cursed Gaze of Ula'tek\" Mural",
+      "url": "https://nether.wowhead.com/tooltip/item/275324?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.126378+00:00",
+      "sha256": "30a3f287576986dbe8311286bb6e2b4a9fb93a42b1d8767bd1d2b9b8ba9f08a7",
+      "rawCache": ".local/midnight-map-sources/item-275324.json"
+    },
+    {
+      "kind": "item",
+      "id": 275326,
+      "name": "Technique: Chiseled Amani Tablet",
+      "url": "https://nether.wowhead.com/tooltip/item/275326?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.123159+00:00",
+      "sha256": "3452a1166713605db467c577c0170cb6ce47853dff4e2211e63b32b13582c65d",
+      "rawCache": ".local/midnight-map-sources/item-275326.json"
+    },
+    {
+      "kind": "item",
+      "id": 242606,
+      "name": "Tenebrous Amethyst",
+      "url": "https://nether.wowhead.com/tooltip/item/242606?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.042263+00:00",
+      "sha256": "0c77d0ed1fc720ec055a061fe6a1e2b247cf74bf854a7a00fad0035bce039688",
+      "rawCache": ".local/midnight-map-sources/item-242606.json"
+    },
+    {
+      "kind": "item",
+      "id": 253403,
+      "name": "Thalassian Fillet",
+      "url": "https://nether.wowhead.com/tooltip/item/253403?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.159403+00:00",
+      "sha256": "8653d2282762dad0290f96f744f164196f43bdd3386af2b68e9a38465d05b0f3",
+      "rawCache": ".local/midnight-map-sources/item-253403.json"
+    },
+    {
+      "kind": "item",
+      "id": 274588,
+      "name": "Toxic Tlhapi",
+      "url": "https://nether.wowhead.com/tooltip/item/274588?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.197873+00:00",
+      "sha256": "e2cd438ba05baafa051915ded2f3fe717f3a213191740f6905333d336ec8b61e",
+      "rawCache": ".local/midnight-map-sources/item-274588.json"
+    },
+    {
+      "kind": "item",
+      "id": 279105,
+      "name": "Twin-Headed Snipefish",
+      "url": "https://nether.wowhead.com/tooltip/item/279105?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.242670+00:00",
+      "sha256": "28b40abd4e28a0ded2e1a150921f84e8f9f381dfaf38d51f67ef62a399498b81",
+      "rawCache": ".local/midnight-map-sources/item-279105.json"
+    },
+    {
+      "kind": "item",
+      "id": 274589,
+      "name": "Ula'tek Snakehead",
+      "url": "https://nether.wowhead.com/tooltip/item/274589?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.271347+00:00",
+      "sha256": "6c6e240afe2d464b78806c451645a32112d855f71dee5d83bd734e1721d3b01d",
+      "rawCache": ".local/midnight-map-sources/item-274589.json"
+    },
+    {
+      "kind": "item",
+      "id": 262650,
+      "name": "Writhing Wiggleworm",
+      "url": "https://nether.wowhead.com/tooltip/item/262650?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.241505+00:00",
+      "sha256": "0ad01fef6af1248aff6a70c7d83806b7b4a1fe8a5782c1884e6b9d6e76f383e9",
+      "rawCache": ".local/midnight-map-sources/item-262650.json"
+    },
+    {
+      "kind": "spell",
+      "id": 1259655,
+      "name": "Thalassian Fillet",
+      "url": "https://nether.wowhead.com/tooltip/spell/1259655?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.315913+00:00",
+      "sha256": "24073071ac71c099cf6fb4dc0f67e7e7e0f47e489029dde02c2fa703c6d25dff",
+      "rawCache": ".local/midnight-map-sources/spell-1259655.json"
+    },
+    {
+      "kind": "spell",
+      "id": 1231127,
+      "name": "Midnight Prospecting",
+      "url": "https://nether.wowhead.com/tooltip/spell/1231127?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-23T18:37:32.337569+00:00",
+      "sha256": "266660188ee5433039e4aee6497595b0dba19ece23629218dd707f2c4ed9aefa",
+      "rawCache": ".local/midnight-map-sources/spell-1231127.json"
+    }
+  ]
+}

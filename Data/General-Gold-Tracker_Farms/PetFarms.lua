@@ -1,7 +1,8 @@
 local _, NS = ...
 
 -- Curated Retail acquisition research for Drops > Pets and Instances > Pets.
--- Coordinates are normalized UI-map coordinates. Research reviewed 2026-10-08.
+-- Coordinates are normalized UI-map coordinates. Base research reviewed 2026-10-08;
+-- migrated Pandaria acquisition research was reviewed 2026-10-19.
 
 local outdoorByPetID = {
     [42] = { mapID = 25, sourceName = "Syndicate Spy", x = 0.488, y = 0.092 }, -- Black Tabby Cat
@@ -22,10 +23,8 @@ local outdoorByPetID = {
     [279] = { mapID = 207, sourceName = "Jadefang", x = 0.612, y = 0.224, kind = "rare" },
     [834] = { mapID = 422, sourceName = "Karr the Darkener", x = 0.718, y = 0.374, kind = "rare" },
     [836] = { mapID = 422, sourceName = "Nalash Verdantis", x = 0.642, y = 0.584, kind = "rare" },
-    [848] = { mapID = 407, sourceName = "Darkmoon Rabbit", x = 0.758, y = 0.782, kind = "world-boss" },
     [1178] = { mapID = 504, sourceName = "Haywire Sunreaver Construct", x = 0.482, y = 0.872, kind = "rare" },
     [1245] = { mapID = 504, sourceName = "Quivering Filth", x = 0.484, y = 0.804 },
-    [1276] = { mapID = 407, sourceName = "Moonfang", x = 0.3945, y = 0.4389, kind = "world-boss" },
     [1323] = { mapID = 554, sourceName = "Leafmender", x = 0.672, y = 0.440, kind = "rare" },
     [1328] = { mapID = 554, sourceName = "Garnia", x = 0.650, y = 0.274, kind = "rare" },
     [1330] = { mapID = 554, sourceName = "Imperial Python", x = 0.308, y = 0.362 },
@@ -200,11 +199,325 @@ local classicRaidPetRows = {
     { farmID = "AhnQiraj", farmName = "Temple of Ahn'Qiraj", locationID = 320, locationLabel = "Temple of Ahn'Qiraj", petID = 1155, petName = "Anubisath Idol", bossName = "Emperor Vek'lor" },
 }
 
+-- Pandaria pets moved from Materials; preserve the original acquisition research.
+local additionalPetResearch = {
+    {
+        petID = 1201,
+        itemID = 94595,
+        itemName = "Spawn of G'nathus",
+        researchedAt = "2026-10-19",
+        summary = "Tradeable unlearned pet dropped by G'nathus, the large patrolling eel near Shan'ze Dao; the smaller Spawn of G'nathus mobs are not the pet source.",
+        acquisitionType = "rare-drop",
+        sourceUrls = {
+            "https://www.wowhead.com/item=94595",
+            "https://www.wowhead.com/npc=66467/gnathus",
+            "https://www.warcraftpets.com/wow-pets/aquatic/eels/spawn-of-g-nathus/",
+        },
+        spots = {
+            {
+                mapID = 388,
+                source = "Research-backed source anchors; not guaranteed spawns or a measured route",
+                density = "Variable; not benchmarked",
+                id = "mists-round2-gnathus",
+                routeType = "open-world-source",
+                mapName = "Townlong Steppes",
+                tips = {
+                    "Search the water column and northern shore; the eel patrols and this marker is only a historical interception anchor.",
+                    "Use underwater breathing or a water mount when useful; do not farm the smaller, similarly named eels for this pet.",
+                },
+                farmAction = "Find and defeat G'nathus on his underwater patrol; retain the unlearned pet item for sale.",
+                dropDifficulty = "Rare or variable yield; historical source guidance and current item binding checked, farming not benchmarked in game.",
+                targetName = "G'nathus",
+                coords = {
+                    {
+                        y = 0.04,
+                        x = 0.29,
+                        label = "Reported near-surface G'nathus patrol anchor",
+                    },
+                },
+                location = "Northern waters of Shan'ze Dao",
+                confidence = "medium",
+                sourceUrls = {
+                    "https://www.wowhead.com/item=94595",
+                    "https://www.wowhead.com/npc=66467/gnathus",
+                    "https://www.warcraftpets.com/wow-pets/aquatic/eels/spawn-of-g-nathus/",
+                },
+                isRoute = false,
+            },
+        },
+    },
+    {
+        petID = 1207,
+        itemID = 94933,
+        itemName = "Tiny Blue Carp",
+        researchedAt = "2026-10-19",
+        summary = "Rare, directly tradeable fishing pet item. Fish Redbelly Mandarin or Jewel Danio schools; Tiny Blue Carp is a rare side catch. The point is a fishing-area anchor, not a guaranteed pet spawn.",
+        acquisitionType = "fishing",
+        sourceUrls = {
+            "https://www.wowhead.com/item=94933",
+            "https://www.elsanglin.com/catching_tiny_carp.html",
+        },
+        spots = {
+            {
+                mapID = 388,
+                source = "Research-backed source anchors; not guaranteed spawns or a measured route",
+                id = "mists-round2-carp-94933",
+                routeType = "rare-fishing-catch",
+                mapName = "Townlong Steppes",
+                tips = {
+                    "Pool type matters; do not assume every school or every zone can produce every carp color.",
+                    "Historical fishing-skill numbers predate profession scaling; no fixed catch chance or casts-per-pet is asserted.",
+                    "The unlearned item can be sold; do not confuse these pets with bound Nat Pagle quest fish.",
+                },
+                farmAction = "Fish Redbelly Mandarin or Jewel Danio schools; Tiny Blue Carp is a rare side catch.",
+                dropDifficulty = "Rare or variable yield; historical source guidance and current item binding checked, farming not benchmarked in game.",
+                density = "Variable; not benchmarked",
+                coords = {
+                    {
+                        y = 0.626,
+                        x = 0.388,
+                        label = "Redbelly Mandarin pools near Niuzao Temple fishing anchor",
+                    },
+                },
+                location = "Redbelly Mandarin pools near Niuzao Temple",
+                confidence = "medium",
+                sourceUrls = {
+                    "https://www.wowhead.com/item=94933",
+                    "https://www.elsanglin.com/catching_tiny_carp.html",
+                },
+                isRoute = false,
+            },
+        },
+    },
+    {
+        petID = 1208,
+        itemID = 94934,
+        itemName = "Tiny Green Carp",
+        researchedAt = "2026-10-19",
+        summary = "Rare, directly tradeable fishing pet item. Fish Valley freshwater or Emperor Salmon, Jade Lungfish, and Krasarang Paddlefish schools for the rare Tiny Green Carp. The point is a fishing-area anchor, not a guaranteed pet spawn.",
+        acquisitionType = "fishing",
+        sourceUrls = {
+            "https://www.wowhead.com/item=94934",
+            "https://www.elsanglin.com/catching_tiny_carp.html",
+        },
+        spots = {
+            {
+                mapID = 376,
+                source = "Research-backed source anchors; not guaranteed spawns or a measured route",
+                id = "mists-round2-carp-94934",
+                routeType = "rare-fishing-catch",
+                mapName = "Valley of the Four Winds",
+                tips = {
+                    "Pool type matters; do not assume every school or every zone can produce every carp color.",
+                    "Historical fishing-skill numbers predate profession scaling; no fixed catch chance or casts-per-pet is asserted.",
+                    "The unlearned item can be sold; do not confuse these pets with bound Nat Pagle quest fish.",
+                },
+                farmAction = "Fish Valley freshwater or Emperor Salmon, Jade Lungfish, and Krasarang Paddlefish schools for the rare Tiny Green Carp.",
+                dropDifficulty = "Rare or variable yield; historical source guidance and current item binding checked, farming not benchmarked in game.",
+                density = "Variable; not benchmarked",
+                coords = {
+                    {
+                        y = 0.3,
+                        x = 0.416,
+                        label = "Cattail Lake and Valley freshwater fishing anchor",
+                    },
+                },
+                location = "Cattail Lake and Valley freshwater",
+                confidence = "medium",
+                sourceUrls = {
+                    "https://www.wowhead.com/item=94934",
+                    "https://www.elsanglin.com/catching_tiny_carp.html",
+                },
+                isRoute = false,
+            },
+        },
+    },
+    {
+        petID = 1206,
+        itemID = 94932,
+        itemName = "Tiny Red Carp",
+        researchedAt = "2026-10-19",
+        summary = "Rare, directly tradeable fishing pet item. Fish Spinefish schools or suitable sha-touched inland water for the rare Tiny Red Carp. The point is a fishing-area anchor, not a guaranteed pet spawn.",
+        acquisitionType = "fishing",
+        sourceUrls = {
+            "https://www.wowhead.com/item=94932",
+            "https://www.elsanglin.com/catching_tiny_carp.html",
+        },
+        spots = {
+            {
+                mapID = 379,
+                source = "Research-backed source anchors; not guaranteed spawns or a measured route",
+                id = "mists-round2-carp-94932",
+                routeType = "rare-fishing-catch",
+                mapName = "Kun-Lai Summit",
+                tips = {
+                    "Pool type matters; do not assume every school or every zone can produce every carp color.",
+                    "Historical fishing-skill numbers predate profession scaling; no fixed catch chance or casts-per-pet is asserted.",
+                    "The unlearned item can be sold; do not confuse these pets with bound Nat Pagle quest fish.",
+                },
+                farmAction = "Fish Spinefish schools or suitable sha-touched inland water for the rare Tiny Red Carp.",
+                dropDifficulty = "Rare or variable yield; historical source guidance and current item binding checked, farming not benchmarked in game.",
+                density = "Variable; not benchmarked",
+                coords = {
+                    {
+                        y = 0.84,
+                        x = 0.43,
+                        label = "Firebough Nook and Inkgill Mere sha-touched water fishing anchor",
+                    },
+                },
+                location = "Firebough Nook and Inkgill Mere sha-touched water",
+                confidence = "medium",
+                sourceUrls = {
+                    "https://www.wowhead.com/item=94932",
+                    "https://www.elsanglin.com/catching_tiny_carp.html",
+                },
+                isRoute = false,
+            },
+        },
+    },
+    {
+        petID = 1209,
+        itemID = 94935,
+        itemName = "Tiny White Carp",
+        researchedAt = "2026-10-19",
+        summary = "Rare, directly tradeable fishing pet item. Fish coastal open water, Giant Mantis Shrimp schools, or Reef Octopus schools for the rare Tiny White Carp. The point is a fishing-area anchor, not a guaranteed pet spawn.",
+        acquisitionType = "fishing",
+        sourceUrls = {
+            "https://www.wowhead.com/item=94935",
+            "https://www.elsanglin.com/catching_tiny_carp.html",
+        },
+        spots = {
+            {
+                mapID = 422,
+                source = "Research-backed source anchors; not guaranteed spawns or a measured route",
+                id = "mists-round2-carp-94935",
+                routeType = "rare-fishing-catch",
+                mapName = "Dread Wastes",
+                tips = {
+                    "Pool type matters; do not assume every school or every zone can produce every carp color.",
+                    "Historical fishing-skill numbers predate profession scaling; no fixed catch chance or casts-per-pet is asserted.",
+                    "The unlearned item can be sold; do not confuse these pets with bound Nat Pagle quest fish.",
+                },
+                farmAction = "Fish coastal open water, Giant Mantis Shrimp schools, or Reef Octopus schools for the rare Tiny White Carp.",
+                dropDifficulty = "Rare or variable yield; historical source guidance and current item binding checked, farming not benchmarked in game.",
+                density = "Variable; not benchmarked",
+                coords = {
+                    {
+                        y = 0.718,
+                        x = 0.272,
+                        label = "Gokk'lok Shallows coastal fishing fishing anchor",
+                    },
+                },
+                location = "Gokk'lok Shallows coastal fishing",
+                confidence = "medium",
+                sourceUrls = {
+                    "https://www.wowhead.com/item=94935",
+                    "https://www.elsanglin.com/catching_tiny_carp.html",
+                },
+                isRoute = false,
+            },
+        },
+    },
+    {
+        petID = 1205,
+        itemID = 94573,
+        itemName = "Direhorn Runt",
+        researchedAt = "2026-10-19",
+        summary = "Tradeable unlearned Direhorn Runt pet from Isle of Giants direhorns. Farm it alongside bones and normal leather.",
+        acquisitionType = "open-world-drop",
+        sourceUrls = {
+            "https://www.wowhead.com/item=94573",
+            "https://www.warcraftpets.com/wow-pets/beast/direhorns/direhorn-runt/",
+        },
+        spots = {
+            {
+                mapID = 507,
+                source = "Research-backed source anchors; not guaranteed spawns or a measured route",
+                id = "mists-round2-giants-94573",
+                routeType = "open-world-source",
+                mapName = "Isle of Giants",
+                tips = {
+                    "Markers reuse the bundled Isle of Giants skinning catalog scouting coordinates; no recorded yield or fixed spawn guarantee is carried over.",
+                    "Skin eligible corpses after looting if also gathering Mist-Touched Leather; Primal Eggs are bound and are not sale products.",
+                },
+                farmAction = "Kill and loot direhorn mobs on the Isle of Giants for the rare pet drop; do not learn an item intended for sale.",
+                dropDifficulty = "Rare or variable yield; historical source guidance and current item binding checked, farming not benchmarked in game.",
+                density = "Variable; not benchmarked",
+                coords = {
+                    {
+                        y = 0.4549,
+                        x = 0.4998,
+                        label = "Central Isle of Giants dinosaur area",
+                    },
+                    {
+                        y = 0.4329,
+                        x = 0.601,
+                        label = "Eastern dinosaur scouting area",
+                    },
+                    {
+                        y = 0.7263,
+                        x = 0.6544,
+                        label = "Southern dinosaur scouting area",
+                    },
+                },
+                location = "Isle of Giants dinosaur hunting areas",
+                confidence = "medium",
+                sourceUrls = {
+                    "https://www.wowhead.com/item=94573",
+                    "https://www.warcraftpets.com/wow-pets/beast/direhorns/direhorn-runt/",
+                },
+                isRoute = false,
+            },
+        },
+    },
+    {
+        petID = 1039,
+        itemID = 90900,
+        itemName = "Imperial Moth",
+        researchedAt = "2026-10-19",
+        summary = "Tradeable bonus pet from opening Silkworm Cocoons created by the daily Imperial Silk recipe. No pet is guaranteed per craft.",
+        acquisitionType = "crafting-proc",
+        sourceSpellID = 125557,
+        randomOutput = true,
+        sourceUrls = {
+            "https://www.wowhead.com/item=90900",
+            "https://www.wowhead.com/spell=125557/imperial-silk",
+            "https://www.wowhead.com/guide/mists-of-pandaria-tailoring-overview-1064",
+        },
+        spots = {},
+    },
+    {
+        petID = 1040,
+        itemID = 90902,
+        itemName = "Imperial Silkworm",
+        researchedAt = "2026-10-19",
+        summary = "Tradeable bonus pet from opening Silkworm Cocoons created by the daily Imperial Silk recipe. No pet is guaranteed per craft.",
+        acquisitionType = "crafting-proc",
+        sourceSpellID = 125557,
+        randomOutput = true,
+        sourceUrls = {
+            "https://www.wowhead.com/item=90902",
+            "https://www.wowhead.com/spell=125557/imperial-silk",
+            "https://www.wowhead.com/guide/mists-of-pandaria-tailoring-overview-1064",
+        },
+        spots = {},
+    },
+}
+for _, research in ipairs(NS.PetAcquisitionResearch or {}) do
+    additionalPetResearch[#additionalPetResearch + 1] = research
+end
+local additionalPetResearchByPetID = {}
+for _, research in ipairs(additionalPetResearch) do
+    additionalPetResearchByPetID[research.petID] = research
+end
+
 local function BuildCuratedPetRows(rawRows)
     local rows = {}
+    local seenPetIDs = {}
     for _, row in ipairs(rawRows or {}) do
         if tonumber(row.petID) then
             rows[#rows + 1] = row
+            seenPetIDs[tonumber(row.petID)] = true
         end
     end
     for index, data in ipairs(classicRaidPetRows) do
@@ -226,6 +539,29 @@ local function BuildCuratedPetRows(rawRows)
             curatedOrder = index,
         }
     end
+    for _, research in ipairs(additionalPetResearch) do
+        if not seenPetIDs[research.petID] then
+            local spot = research.spots[1]
+            local expansion = research.expansion or "mists"
+            local farmPrefix = research.expansion and ("Research:" .. expansion) or "Pandaria"
+            rows[#rows + 1] = {
+                recordID = "pets:" .. farmPrefix .. ":" .. tostring(research.petID),
+                farmID = farmPrefix .. "Pet" .. tostring(research.petID),
+                farmName = research.itemName,
+                itemID = 82800,
+                itemLink = string.format("|cff0070dd|Hbattlepet:%d:1:3:155:12:12:0000000000000000:6291|h[%s]|h|r", research.petID, research.itemName),
+                petID = research.petID,
+                acquisitionItemID = research.acquisitionItemID,
+                quantity = 1,
+                contentID = research.contentID or 5,
+                expansion = expansion,
+                expansionLabel = research.expansionLabel or "Mists of Pandaria",
+                mapID = spot and spot.mapID or 424, -- Pandaria grouping for unmapped crafting sources.
+                locationLabel = spot and spot.mapName or "Tailoring (Imperial Silk)",
+            }
+            seenPetIDs[research.petID] = true
+        end
+    end
     return rows
 end
 
@@ -243,8 +579,11 @@ local function Slug(value)
     return tostring(value or "unknown"):lower():gsub("[^%w]+", "-"):gsub("^-", ""):gsub("-$", "")
 end
 
-local function BuildSourceURLs(row, raid)
+local function BuildSourceURLs(row, raid, research)
     local urls = {}
+    for _, url in ipairs(research and research.sourceUrls or {}) do
+        urls[#urls + 1] = { siteName = "Acquisition research", url = url }
+    end
     if tonumber(row.petID) then
         urls[#urls + 1] = { siteName = "Wowhead battle pet and comments", url = "https://www.wowhead.com/battle-pet/" .. tostring(row.petID) }
         urls[#urls + 1] = { siteName = "WarcraftPets database", url = "https://www.warcraftpets.com/wow-pets/" }
@@ -287,6 +626,7 @@ local petRows = BuildCuratedPetRows(rawPetRows)
 for _, row in ipairs(petRows) do
     local petID = tonumber(row.petID)
     local name = GetPetName(row)
+    local research = petID and additionalPetResearchByPetID[petID]
     local outdoor = petID and outdoorByPetID[petID]
     local raid = raidByFarmID[row.farmID]
     local sourceCategory = raid and "raidPets" or "pets"
@@ -300,7 +640,46 @@ for _, row in ipairs(petRows) do
         "This record is matched to the exact " .. sourcePath .. " row " .. tostring(row.recordID) .. ".",
     }
 
-    if outdoor then
+    if research then
+        summary = research.summary
+        local firstSpot = research.spots[1]
+        guide = {
+            label = research.guideLabel or (research.acquisitionType == "crafting-proc" and "Tailoring bonus pet" or "Pandaria pet acquisition"),
+            requirement = research.requirement or (firstSpot and ("Travel to " .. firstSpot.location .. ".") or "Use a tailor who knows the Imperial Silk recipe."),
+            action = research.action or (firstSpot and firstSpot.farmAction or "Craft Imperial Silk and open the resulting Silkworm Cocoon for a chance at the pet."),
+            tips = {},
+        }
+        for _, spot in ipairs(research.spots) do
+            local option = BuildMapOption(row, name, spot.mapName, spot.location, spot.mapID, nil, nil, spot.id)
+            option.location = spot.location
+            option.density = spot.density
+            option.dropDifficulty = spot.dropDifficulty
+            option.confidence = spot.confidence
+            option.mapRole = spot.mapRole or option.mapRole
+            option.routeType = spot.routeType
+            option.mapOnly = spot.mapOnly
+            option.inGameTested = spot.inGameTested
+            option.sourceUrls = spot.sourceUrls
+            option.pins = {}
+            for _, coord in ipairs(spot.coords or {}) do
+                option.pins[#option.pins + 1] = { x = coord.x, y = coord.y, label = coord.label }
+            end
+            mapOptions[#mapOptions + 1] = option
+            for _, tip in ipairs(spot.tips or {}) do guide.tips[#guide.tips + 1] = tip end
+        end
+        if not firstSpot then
+            guide.tips = {
+                "These pets are random bonus outputs; a craft does not guarantee either pet.",
+                "The daily Imperial Silk recipe limits attempts; check the recipe cooldown before planning repeat crafts.",
+                "Keep the pet unlearned if you intend to auction the original item.",
+            }
+        end
+        if #guide.tips < 3 then
+            guide.tips[#guide.tips + 1] = "Keep the pet unlearned if you intend to auction the original item."
+        end
+        details[#details + 1] = summary
+        if research.repeatability then details[#details + 1] = research.repeatability end
+    elseif outdoor then
         sourceName = outdoor.sourceName
         mapOptions[1] = BuildMapOption(row, name, row.locationLabel or "Unknown location", sourceName, outdoor.mapID, outdoor.x, outdoor.y)
         summary = string.format("%s is obtained from %s in %s. The pin marks a verified acquisition point, not a generic zone center.", name, sourceName, row.locationLabel or "the listed zone")
@@ -359,7 +738,7 @@ for _, row in ipairs(petRows) do
         details[#details + 1] = "Target: " .. sourceName .. "."
     end
 
-    if #mapOptions > 0 then
+    if #mapOptions > 0 or research then
         farms[#farms + 1] = {
             id = "ggt:pet:" .. Slug(row.recordID),
             sourceType = "curated",
@@ -370,6 +749,7 @@ for _, row in ipairs(petRows) do
             name = name,
             expansion = row.expansionLabel or row.expansion or "Unknown expansion",
             primaryPetID = petID,
+            acquisitionItemID = research and research.acquisitionItemID,
             primaryItemID = not petID and tonumber(row.itemID) or nil,
             sourceRecordID = row.recordID,
             providerFarmID = row.farmID,
@@ -393,7 +773,11 @@ for _, row in ipairs(petRows) do
             summary = summary,
             guide = guide,
             details = details,
-            sourceUrls = BuildSourceURLs(row, raid),
+            sourceUrls = BuildSourceURLs(row, raid, research),
+            researchedAt = research and research.researchedAt,
+            acquisitionType = research and research.acquisitionType,
+            saleMethod = research and research.saleMethod,
+            cageable = research and research.cageable,
             mapOptions = mapOptions,
         }
     end
@@ -445,8 +829,10 @@ catalog.uniqueItemCount = (tonumber(catalog.uniqueItemCount) or 0) + uniqueItems
 catalog.sourceCounts.curatedPets = #farms
 
 NS.PetFarmData = {
-    dataVersion = 2,
-    researchedAt = "2026-10-08",
+    dataVersion = 5,
+    researchedAt = "2026-10-23",
+    baseResearchedAt = "2026-10-08",
+    additionalResearchCount = #(NS.PetAcquisitionResearch or {}),
     sourceRowCount = #rawPetRows,
     curatedRowCount = #petRows,
     rows = petRows,

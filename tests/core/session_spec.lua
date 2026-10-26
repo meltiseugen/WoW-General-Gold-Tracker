@@ -74,6 +74,7 @@ describe("Core/Session reload persistence", function()
 
     it("restores pending reload sessions and clears the pending snapshot", function()
         local log_messages = {}
+        local chat_messages = {}
         local addon = load_session({
             db = {
                 pendingReloadSession = {
@@ -106,6 +107,9 @@ describe("Core/Session reload persistence", function()
             AddLogMessage = function(_, message)
                 log_messages[#log_messages + 1] = message
             end,
+            Print = function(_, message, category)
+                chat_messages[#chat_messages + 1] = { message, category }
+            end,
             UpdateMainWindow = function() end,
         }, {
             time = function()
@@ -125,6 +129,7 @@ describe("Core/Session reload persistence", function()
             end,
         }, function()
             assert.is_true(addon:TryRestorePendingReloadSession())
+            assert.same({ { "Session restored after reload.", "sessions" } }, chat_messages)
         end)
 
         assert.is_nil(addon.db.pendingReloadSession)

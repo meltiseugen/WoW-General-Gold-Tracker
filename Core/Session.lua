@@ -241,6 +241,7 @@ function GoldTracker:TryRestorePendingReloadSession()
     self.tsmWarningShown = false
     self:UpdateSessionLocationContext()
     self:AddLogMessage(string.format("%s  Session restored after reload.", date("%H:%M:%S")), 0.35, 1, 0.35)
+    self:Print("Session restored after reload.", "sessions")
     self:UpdateMainWindow()
     return true
 end
@@ -250,7 +251,7 @@ function GoldTracker:StartSession(forceNew, options)
 
     if self.session.active and not forceNew then
         if not options.silentChat then
-            self:Print("Session already active.")
+            self:Print("Session already active.", "sessions")
         end
         return
     end
@@ -311,7 +312,7 @@ function GoldTracker:StartSession(forceNew, options)
     end
     self:UpdateMainWindow()
     if not options.silentChat then
-        self:Print("Session started.")
+        self:Print("Session started.", "sessions")
     end
 end
 
@@ -320,7 +321,7 @@ function GoldTracker:StopSession(options)
 
     if not self.session.active then
         if not options.silentChat then
-            self:Print("No active session.")
+            self:Print("No active session.", "sessions")
         end
         return
     end
@@ -335,7 +336,7 @@ function GoldTracker:StopSession(options)
 
     self:UpdateMainWindow()
     if not options.silentChat then
-        self:Print(string.format("Session stopped. Total value: %s", self:FormatMoney(self:GetSessionTotalValue())))
+        self:Print(string.format("Session stopped. Total value: %s", self:FormatMoney(self:GetSessionTotalValue())), "sessions")
     end
 end
 
@@ -386,7 +387,7 @@ function GoldTracker:HandleSessionLocationTransition()
         decision.transitionLabel,
         decision.previousName,
         decision.currentName
-    ))
+    ), "sessions")
     return true
 end
 

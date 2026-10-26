@@ -4,7 +4,7 @@ $addonsPath = [IO.Path]::GetFullPath((Join-Path $repoPath ".."))
 
 # Development checkout only. Release packages place these folders beside GGT
 # through .pkgmeta. Junctions keep local catalogs in sync without copying data.
-foreach ($moduleName in @("Rares", "Instances", "Drops", "Materials", "Farms")) {
+foreach ($moduleName in @("Rares", "Instances", "Drops", "Materials", "Farms", "TSMRealmData", "MapData")) {
     $folderName = "General-Gold-Tracker_$moduleName"
     $sourcePath = [IO.Path]::GetFullPath((Join-Path $repoPath "Data\$folderName"))
     $targetPath = [IO.Path]::GetFullPath((Join-Path $addonsPath $folderName))

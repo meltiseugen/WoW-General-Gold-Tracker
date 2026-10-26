@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -1079,22 +1082,22 @@ function GoldTracker:LoadInventoryItemIntoAuctionHouse(row)
 
     local auctionHouseFrame = GetAuctionHouseFrame()
     if not auctionHouseFrame or (auctionHouseFrame.IsShown and not auctionHouseFrame:IsShown()) then
-        self:Print("Open the Auction House first, then right-click an auctionable inventory row.")
+        self:Print("Open the Auction House first, then right-click an auctionable inventory row.", "warnings")
         return false
     end
 
     local itemLocation = FindInventoryItemLocationForRow(row)
     if not itemLocation then
-        self:Print("Could not find that item in your bags. Refresh the auctionable inventory and try again.")
+        self:Print("Could not find that item in your bags. Refresh the auctionable inventory and try again.", "warnings")
         return false
     end
 
     if TryLoadAuctionHouseSellFrame(itemLocation, IsAuctionHouseCommodity(itemLocation)) then
-        self:Print(string.format("Loaded %s into the Auction House sell tab.", tostring(row.itemLink or "item")))
+        self:Print(string.format("Loaded %s into the Auction House sell tab.", tostring(row.itemLink or "item")), "commands")
         return true
     end
 
-    self:Print("Could not load that item into the Auction House. Try opening the Sell tab and right-clicking it again.")
+    self:Print("Could not load that item into the Auction House. Try opening the Sell tab and right-clicking it again.", "warnings")
     return false
 end
 
@@ -1679,6 +1682,9 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
         else
             graphTopOffset = showWowheadLinks and -124 or -62
         end
+        if type(self.RefreshItemRealmPriceView) == "function" then
+            graphTopOffset = self:RefreshItemRealmPriceView(frame, graphTopOffset)
+        end
         frame.graphPanel:SetPoint("TOPLEFT", frame.bodyPanel, "TOPLEFT", 14, graphTopOffset)
         frame.graphPanel:SetPoint("BOTTOMRIGHT", frame.bodyPanel, "BOTTOMRIGHT", -14, INVENTORY_DETAILS_GRAPH_BOTTOM_OFFSET)
     end
@@ -1711,7 +1717,9 @@ function GoldTracker:RefreshInventoryItemDetailsWindow()
         end
     end
 
-    RefreshInventoryDetailsGraph(self, frame, samples, source)
+    if not frame.realmPricesPanel or not frame.realmPricesPanel:IsShown() then
+        RefreshInventoryDetailsGraph(self, frame, samples, source)
+    end
 end
 
 local function CreateInventoryDetailsStatField(parent, label, column, row)
@@ -1795,7 +1803,7 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerInventoryDetailsFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerInventoryDetailsFrame", UIParent)
     frame:SetSize(INVENTORY_DETAILS_WINDOW_WIDTH, INVENTORY_DETAILS_WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 40, 20)
     frame:SetFrameStrata("DIALOG")
@@ -2124,11 +2132,17 @@ function GoldTracker:CreateInventoryItemDetailsWindow()
     end)
     frame:SetScript("OnHide", function()
         GameTooltip:Hide()
+        if type(addon.ClearItemRealmPriceTable) == "function" then
+            addon:ClearItemRealmPriceTable(frame)
+        end
         if type(addon.ReleaseHiddenExplorerCaches) == "function" then
             addon:ReleaseHiddenExplorerCaches()
         end
     end)
 
+    if type(self.CreateItemRealmPriceControls) == "function" then
+        self:CreateItemRealmPriceControls(frame)
+    end
     self.inventoryItemDetailsFrame = frame
 end
 
@@ -2168,6 +2182,14 @@ function GoldTracker:OpenInventoryItemDetailsWindow(row)
         itemLink = itemLink,
         itemName = row.itemName,
         itemQuality = row.itemQuality,
+        itemClassID = row.itemClassID,
+        itemSubclassID = row.itemSubclassID,
+        itemType = row.itemType,
+        itemLevel = row.itemLevel,
+        tsmItemString = row.tsmItemString,
+        petID = row.petID,
+        petSpeciesID = row.petSpeciesID,
+        farmingSourceType = row.farmingSourceType,
         icon = iconTexture,
         npcID = row.npcID,
         rareName = row.rareName,
@@ -2195,6 +2217,7 @@ function GoldTracker:OpenInventoryItemDetailsWindow(row)
     frame.marketHistoryItemKey = itemKey
     frame.marketHistory = history
     frame.selectedSourceKey = GetInventoryDetailsPreferredSourceKey(frame.itemData, history)
+    frame.detailsView = type(self.IsItemRealmPriceType) == "function" and self:IsItemRealmPriceType(frame.itemData) and "realms" or "history"
 
     frame:Show()
     if type(Theme.BringToFront) == "function" then
@@ -2374,7 +2397,7 @@ function GoldTracker:UpdateInventorySortHeaderState()
     end
 end
 
-function GoldTracker:ToggleInventorySort(sortKey)
+function GoldTracker:ToggleInventorySort(sortKey, mouseButton)
     local frame = self.inventoryFrame
     if not frame or not INVENTORY_SORT_KEYS[sortKey] then
         return
@@ -2382,6 +2405,7 @@ function GoldTracker:ToggleInventorySort(sortKey)
 
     self:ToggleTableSortCriterion(frame, sortKey, sortKey == "itemName", {
         validKeys = INVENTORY_SORT_KEYS,
+        mouseButton = mouseButton,
         sortKeyField = "inventorySortKey",
         sortAscendingField = "inventorySortAscending",
     })
@@ -2820,6 +2844,10 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
     local rowHeight = INVENTORY_ROW_HEIGHT
     local yOffset = 0
 
+    if type(self.RecordDisplayedItemMarketSnapshots) == "function" then
+        self:RecordDisplayedItemMarketSnapshots(items)
+    end
+
     self:RefreshInventoryWindowControls()
     self:UpdateInventorySortHeaderState()
 
@@ -3062,7 +3090,7 @@ function GoldTracker:CreateInventoryWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerInventoryFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerInventoryFrame", UIParent)
     frame:SetSize(INVENTORY_WINDOW_DEFAULT_WIDTH, INVENTORY_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame:SetFrameStrata("DIALOG")
@@ -3257,51 +3285,37 @@ function GoldTracker:CreateInventoryWindow()
 
     local totalHeaderButton = CreateInventoryHeaderButton(listPanel, "Stack value", INVENTORY_TOTAL_VALUE_WIDTH, "RIGHT")
     totalHeaderButton:SetPoint("TOPRIGHT", listPanel, "TOPRIGHT", -34, -12)
-    totalHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("totalValue")
-    end)
+    addon:BindTableSortHeaderClick(totalHeaderButton, addon.ToggleInventorySort, "totalValue")
     frame.totalHeaderButton = totalHeaderButton
 
     local unitHeaderButton = CreateInventoryHeaderButton(listPanel, "Unit value", INVENTORY_UNIT_VALUE_WIDTH, "RIGHT")
     unitHeaderButton:SetPoint("RIGHT", totalHeaderButton, "LEFT", -12, 0)
-    unitHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("unitValue")
-    end)
+    addon:BindTableSortHeaderClick(unitHeaderButton, addon.ToggleInventorySort, "unitValue")
     frame.unitHeaderButton = unitHeaderButton
 
     local quantityHeaderButton = CreateInventoryHeaderButton(listPanel, "Qty", INVENTORY_QUANTITY_WIDTH, "RIGHT")
     quantityHeaderButton:SetPoint("RIGHT", unitHeaderButton, "LEFT", -12, 0)
-    quantityHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("quantity")
-    end)
+    addon:BindTableSortHeaderClick(quantityHeaderButton, addon.ToggleInventorySort, "quantity")
     frame.quantityHeaderButton = quantityHeaderButton
 
     local trendHeaderButton = CreateInventoryHeaderButton(listPanel, "Trend", INVENTORY_TREND_WIDTH, "RIGHT")
     trendHeaderButton:SetPoint("RIGHT", quantityHeaderButton, "LEFT", -12, 0)
-    trendHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("marketTrend")
-    end)
+    addon:BindTableSortHeaderClick(trendHeaderButton, addon.ToggleInventorySort, "marketTrend")
     frame.trendHeaderButton = trendHeaderButton
 
     local sellRateHeaderButton = CreateInventoryHeaderButton(listPanel, "Sale %", INVENTORY_SELL_RATE_WIDTH, "RIGHT")
     sellRateHeaderButton:SetPoint("RIGHT", trendHeaderButton, "LEFT", -12, 0)
-    sellRateHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("sellRate")
-    end)
+    addon:BindTableSortHeaderClick(sellRateHeaderButton, addon.ToggleInventorySort, "sellRate")
     frame.sellRateHeaderButton = sellRateHeaderButton
 
     local demandHeaderButton = CreateInventoryHeaderButton(listPanel, "Sold/day", INVENTORY_DEMAND_WIDTH, "RIGHT")
     demandHeaderButton:SetPoint("RIGHT", sellRateHeaderButton, "LEFT", -12, 0)
-    demandHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("demand")
-    end)
+    addon:BindTableSortHeaderClick(demandHeaderButton, addon.ToggleInventorySort, "demand")
     frame.demandHeaderButton = demandHeaderButton
 
     local historyHeaderButton = CreateInventoryHeaderButton(listPanel, "Hist", INVENTORY_HISTORY_WIDTH, "RIGHT")
     historyHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -12, 0)
-    historyHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("historySamples")
-    end)
+    addon:BindTableSortHeaderClick(historyHeaderButton, addon.ToggleInventorySort, "historySamples")
     frame.historyHeaderButton = historyHeaderButton
 
     local favoriteHeaderButton = CreateInventoryHeaderButton(listPanel, "Fav", INVENTORY_TRACKED_COLUMN_WIDTH, "CENTER")
@@ -3319,9 +3333,7 @@ function GoldTracker:CreateInventoryWindow()
     local itemHeaderButton = CreateInventoryHeaderButton(listPanel, "Item", nil, "LEFT")
     itemHeaderButton:SetPoint("LEFT", addHeaderButton, "RIGHT", INVENTORY_ACTION_COLUMN_GAP, 0)
     itemHeaderButton:SetPoint("RIGHT", historyHeaderButton, "LEFT", -12, 0)
-    itemHeaderButton:SetScript("OnClick", function()
-        addon:ToggleInventorySort("itemName")
-    end)
+    addon:BindTableSortHeaderClick(itemHeaderButton, addon.ToggleInventorySort, "itemName")
     frame.itemHeaderButton = itemHeaderButton
 
     local headerUnderline = listPanel:CreateTexture(nil, "ARTWORK")

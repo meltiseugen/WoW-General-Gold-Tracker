@@ -1,5 +1,7 @@
 # Shadowlands specialty farms, composed crafts and housing
 
+Catalog target exclusions were refreshed on 2026-10-23; removed products are pruned from this archive. Counts below describe the original dated research run. See the [current Materials cleanup and map audit](bfa-missing-map-audit-2026-10-23.md).
+
 Researched **2026-10-19** for Retail. This pass adds **410 catalog entries**: **409 saleable products** and **one required bound housing input**. The Shadowlands catalog now contains **461 items**. It records **347 composed recipes**, including 343 newly cataloged outputs and conversions for four existing materials. There are **23 housing recipes**, **32 named random Darkmoon cards**, and **four random blank cards**.
 
 All new catalog rows, research records and source pins have `isRoute = false`. Existing non-ore/herb Shadowlands materials are also explicitly non-route. The previously imported herbalism and mining files and their catalog rows are unchanged. No raw ore, herb, vendor-only product or vendor-only supply row was added. Crafts may consume the existing ore and herb entries.
@@ -37,7 +39,6 @@ The loaded Shadowghast Ingot composition is the Blacksmithing recipe, producing 
 | [Korthite Crystal](https://www.wowhead.com/item=186017) | Korthia daily/weekly reward opportunities and eligible treasures. Rewards and eligibility vary; no unlimited kill farm or guaranteed crystal rate is claimed. The crystal is tradeable while its Vestige product is bound. |
 | [Shadowlands pigments](https://www.wowhead.com/guide/shadowlands-inscription-profession) | Umbral, Luminous and Tranquil Pigment are random milling products. Their ink crafts are composed; no fixed yield is assigned to an individual pigment. |
 | Fishing bait | All six original baits and [Precursor Placoderm Bait](https://www.wowhead.com/item=187712) can be fished as well as purchased. Existing matching-fish water markers are reused. The fishing-pole bait bonus excludes the Zereth Mortis bait; no bait bonus to Strange Goop is assumed. |
-| [Veiled Augment Rune](https://www.wowhead.com/item=181468) | Eligible covenant Adventure missions and reward sources. Mission unlocks, duration and availability apply; this is not an outdoor repeatable node. |
 | [Twilight Bark](https://www.wowhead.com/item=177061) | A non-ore Phaedrum-deposit byproduct needed by housing crafts. Sources also list limited vendor stock, with later comments reporting stock changes. It is retained because it has a supported farmable source and is not vendor-only. |
 
 The existing Desolate Leather, Callous Hide, Pallid Bone, heavy leathers/hides, Protogenic Pelt, Shrouded Cloth, Lightless Silk, Silken Protofiber, Protoflesh, covenant fish and meats remain available. Existing [Strange Goop](https://www.wowhead.com/item=187662) and [Progenitor Essentia](https://www.wowhead.com/item=187707) sources remain explicitly non-route; Essentia has fishing, treasure and reported skinning opportunities beyond ore/herb gathering.

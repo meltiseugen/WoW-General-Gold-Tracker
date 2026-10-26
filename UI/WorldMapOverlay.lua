@@ -1866,7 +1866,7 @@ function GoldTracker:SetWorldMapProjectionWaypoint(pinData)
     end
     if not C_Map or type(C_Map.SetUserWaypoint) ~= "function" or not UiMapPoint or type(UiMapPoint.CreateFromCoordinates) ~= "function" then
         if type(self.Print) == "function" then
-            self:Print("Blizzard waypoint API is unavailable.")
+            self:Print("Blizzard waypoint API is unavailable.", "warnings")
         end
         return false
     end
@@ -1876,7 +1876,7 @@ function GoldTracker:SetWorldMapProjectionWaypoint(pinData)
         C_SuperTrack.SetSuperTrackedUserWaypoint(true)
     end
     if type(self.Print) == "function" then
-        self:Print("Waypoint set for " .. tostring(pinData.label or "projected route pin") .. ".")
+        self:Print("Waypoint set for " .. tostring(pinData.label or "projected route pin") .. ".", "navigation")
     end
     return true
 end
@@ -1887,7 +1887,7 @@ function GoldTracker:ProjectMapRouteToWorldMap(options)
     local projection = self:BuildWorldMapProjectionPayload(options)
     if not projection then
         if not silent and type(self.Print) == "function" then
-            self:Print("No route pins are available to project.")
+            self:Print("No route pins are available to project.", "warnings")
         end
         return false, "No route pins are available to project."
     end
@@ -1907,7 +1907,7 @@ function GoldTracker:ProjectMapRouteToWorldMap(options)
     local providerReady, message = self:EnsureWorldMapProjectionProvider()
     if not providerReady then
         if not silent and type(self.Print) == "function" then
-            self:Print(message)
+            self:Print(message, "warnings")
         end
         return false, message
     end
@@ -1930,7 +1930,7 @@ function GoldTracker:ProjectMapRouteToWorldMap(options)
             #projections,
             #projections == 1 and "projection" or "projections",
             suffix
-        ))
+        ), "navigation")
     end
     return true
 end
@@ -1944,7 +1944,7 @@ function GoldTracker:ClearWorldMapProjection()
     self:ClearMinimapProjectionPins()
     self:RefreshWorldMapProjectionControls()
     if type(self.Print) == "function" then
-        self:Print("Cleared projected farming routes from the world map and minimap.")
+        self:Print("Cleared projected farming routes from the world map and minimap.", "navigation")
     end
     return true
 end
@@ -1973,7 +1973,7 @@ function GoldTracker:ClearWorldMapProjectionByKey(projectionKey, silent)
     self:RefreshMinimapProjectionPins(true)
     self:RefreshWorldMapProjectionControls()
     if silent ~= true and type(self.Print) == "function" then
-        self:Print("Cleared this farming map's projected pins from the world map and minimap.")
+        self:Print("Cleared this farming map's projected pins from the world map and minimap.", "navigation")
     end
     return true, removedCount
 end
@@ -1986,7 +1986,7 @@ function GoldTracker:OpenWorldMapProjectionDetails()
     end
     if type(self.OpenStandaloneMapWindow) ~= "function" then
         if type(self.Print) == "function" then
-            self:Print("The standalone map window is unavailable.")
+            self:Print("The standalone map window is unavailable.", "warnings")
         end
         return false
     end

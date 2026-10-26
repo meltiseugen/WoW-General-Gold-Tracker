@@ -57,6 +57,95 @@ describe("multi-column table sorting", function()
         }, frame.sortCriteria)
     end)
 
+    it("removes individual sorting levels while preserving the remaining order and directions", function()
+        local addon = build_addon()
+        local frame = {}
+        local options = { validKeys = valid_keys, additive = true, mouseButton = "RightButton" }
+        addon:SetTableSortCriteria(frame, {
+            { key = "value", ascending = false },
+            { key = "name", ascending = true },
+            { key = "quantity", ascending = false },
+        }, "sortKey", "sortAscending", valid_keys)
+
+        addon:ToggleTableSortCriterion(frame, "name", true, options)
+        assert.same({
+            { key = "value", ascending = false },
+            { key = "quantity", ascending = false },
+        }, frame.sortCriteria)
+        local _, priority = addon:GetTableSortCriterion(frame.sortCriteria, "quantity")
+        assert.equals(2, priority)
+
+        addon:ToggleTableSortCriterion(frame, "value", false, options)
+        assert.same({ { key = "quantity", ascending = false } }, frame.sortCriteria)
+        assert.equals("quantity", frame.sortKey)
+        assert.is_false(frame.sortAscending)
+
+        addon:ToggleTableSortCriterion(frame, "quantity", false, options)
+        assert.same({}, frame.sortCriteria)
+        assert.is_nil(frame.sortKey)
+        assert.same({}, addon:GetTableSortCriteria(frame, "sortKey", "sortAscending", valid_keys))
+    end)
+
+    it("clears legacy inventory sort fields and ignores inactive columns", function()
+        local addon = build_addon()
+        local frame = { inventorySortKey = "value", inventorySortAscending = true }
+        local options = {
+            validKeys = valid_keys, additive = true, mouseButton = "RightButton",
+            sortKeyField = "inventorySortKey", sortAscendingField = "inventorySortAscending",
+        }
+        addon:ToggleTableSortCriterion(frame, "name", true, options)
+        assert.same({ { key = "value", ascending = true } }, frame.sortCriteria)
+        addon:ToggleTableSortCriterion(frame, "value", false, options)
+        assert.same({}, frame.sortCriteria)
+        assert.is_nil(frame.inventorySortKey)
+        assert.is_false(frame.inventorySortAscending)
+    end)
+
+    it("accepts Shift-right-clicks while preserving normal and Shift-left-click behavior", function()
+        local addon = build_addon()
+        local frame = { sortKey = "value", sortAscending = false }
+        local scripts, registered = {}, {}
+        local button = {
+            RegisterForClicks = function(_, ...) registered = { ... } end,
+            SetScript = function(_, event, callback) scripts[event] = callback end,
+        }
+        local shift = false
+        local calls = 0
+        local function sort(self, key, mouseButton)
+            calls = calls + 1
+            self:ToggleTableSortCriterion(frame, key, true, { mouseButton = mouseButton, validKeys = valid_keys })
+        end
+        addon:BindTableSortHeaderClick(button, sort, "name")
+        assert.same({ "LeftButtonUp", "RightButtonUp" }, registered)
+        loader.with_globals({ IsShiftKeyDown = function() return shift end }, function()
+            scripts.OnClick(button, "RightButton")
+            assert.equals(0, calls)
+            shift = true
+            scripts.OnClick(button, "MiddleButton")
+            assert.equals(0, calls)
+            scripts.OnClick(button, "LeftButton")
+            assert.same({ { key = "value", ascending = false }, { key = "name", ascending = true } }, frame.sortCriteria)
+            scripts.OnClick(button, "LeftButton")
+            assert.is_false(frame.sortCriteria[2].ascending)
+            scripts.OnClick(button, "RightButton")
+            assert.same({ { key = "value", ascending = false } }, frame.sortCriteria)
+            shift = false
+            scripts.OnClick(button, "LeftButton")
+            assert.same({ { key = "name", ascending = true } }, frame.sortCriteria)
+        end)
+    end)
+
+    it("does not remove criteria on a right-click without Shift", function()
+        local addon = build_addon()
+        local frame = { sortKey = "value", sortAscending = false }
+        loader.with_globals({ IsShiftKeyDown = function() return false end }, function()
+            addon:ToggleTableSortCriterion(frame, "value", false, { mouseButton = "RightButton" })
+        end)
+        assert.equals("value", frame.sortKey)
+        assert.is_false(frame.sortAscending)
+        assert.is_nil(frame.sortCriteria)
+    end)
+
     it("normalizes duplicate and invalid saved criteria", function()
         local addon = build_addon()
         local frame = {
@@ -193,5 +282,6 @@ describe("multi-column table sorting", function()
 
         assert.equals("Sort by Value", lines[1])
         assert.equals("Shift-click additional headers to add sorting levels.", lines[3])
+        assert.equals("Shift-right-click a header to remove its sorting level.", lines[5])
     end)
 end)

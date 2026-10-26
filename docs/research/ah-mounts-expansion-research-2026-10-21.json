@@ -1,0 +1,1459 @@
+{
+  "researchedAt": "2026-10-21",
+  "scope": "Additional gameplay-acquired AH mount items for Drops > Mounts, Classic through Midnight",
+  "newMountCount": 20,
+  "curatedMountCount": 27,
+  "mapOptionCount": 33,
+  "pinCount": 34,
+  "totalCuratedMapOptions": 45,
+  "totalCuratedPins": 113,
+  "expansionReview": [
+    {
+      "expansion": "Classic",
+      "representativeQuery": "Classic Retail AH tradeable mount Riding Turtle",
+      "added": 0,
+      "finding": "No additional gameplay-farmable AH mount verified; distinguish TCG redemption and BMAH purchases.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=23720/riding-turtle",
+        "https://www.warcraftmounts.com/bmah.php"
+      ]
+    },
+    {
+      "expansion": "The Burning Crusade",
+      "representativeQuery": "Burning Crusade tradeable crafted Flying Machine trainer coordinates",
+      "added": 2,
+      "finding": "Two crafted mounts; current Retail rider skill requirements retained.",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://www.wowhead.com/npc=25099/jonathan-garrett"
+      ]
+    },
+    {
+      "expansion": "Wrath of the Lich King",
+      "representativeQuery": "Wrath auctionable Mechano-Hog Chopper Flying Carpet trainer Roxi",
+      "added": 3,
+      "finding": "Three crafted mounts; faction schematics and special-parts supplier mapped.",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/Roxi_Ramrocket"
+      ]
+    },
+    {
+      "expansion": "Cataclysm",
+      "representativeQuery": "Cataclysm auction house mounts Vial Sands Yasmin Canopic Jar",
+      "added": 1,
+      "finding": "One crafted mount added; existing Poseidus retained.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=67538/recipe-vial-of-the-sands",
+        "https://www.wowhead.com/npc=49406/yasmin"
+      ]
+    },
+    {
+      "expansion": "Mists of Pandaria",
+      "representativeQuery": "Pandaria tradeable mounts panthers rockets Sky Golem recipes coordinates",
+      "added": 8,
+      "finding": "Eight crafted mounts; reputation, specialization and daily cooldowns documented.",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://www.wowhead.com/npc=55143/sally-fizzlefury",
+        "https://www.wowhead.com/item=100910/schematic-chief-engineer-jards-journal"
+      ]
+    },
+    {
+      "expansion": "Warlords of Draenor",
+      "representativeQuery": "Draenor auctionable Coalfist Gronnling Breaker Two Minion Grumpus Savage Gift",
+      "added": 2,
+      "finding": "Two garrison rewards added; existing Garn Nighthowl retained.",
+      "sourceUrls": [
+        "https://www.wowhead.com/mission=679/breaker-two",
+        "https://www.warcraftmounts.com/mounts/minionofgrumpus.php"
+      ]
+    },
+    {
+      "expansion": "Legion",
+      "representativeQuery": "Legion tradeable Steelbound Harness Tichondrius recipe Nighthold entrance",
+      "added": 1,
+      "finding": "One crafted mount; bound profession-only mounts omitted.",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=213916/fel-core-hound-harness",
+        "https://www.wowhead.com/guide/raid-entrances-of-legion-6034"
+      ]
+    },
+    {
+      "expansion": "Battle for Azeroth",
+      "representativeQuery": "BFA tradeable mounts Mecha Mogul Xiwyllag ATV component recipes entrances",
+      "added": 2,
+      "finding": "Two crafted outputs added; five existing world-drop/fishing mounts retained.",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mount.php?mountid=961",
+        "https://www.wowhead.com/spell=265935/create-xiwyllag-atv"
+      ]
+    },
+    {
+      "expansion": "Shadowlands",
+      "representativeQuery": "Shadowlands crafted mounts auction house protoform synthesis binds pickup",
+      "added": 0,
+      "finding": "No additional saleable output verified; reviewed Protoform mount outputs are bound.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=188809/prototype-leaper",
+        "https://www.wowhead.com/item=187669/serenade"
+      ]
+    },
+    {
+      "expansion": "Dragonflight",
+      "representativeQuery": "Dragonflight mount sources tradeable auction house bind pickup",
+      "added": 0,
+      "finding": "No additional farmable AH mount verified. Bound raid rewards, Trading Post and BMAH offers are not player AH output.",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/dragonflightavailable.php",
+        "https://www.wowhead.com/item=210061/reins-of-anurelos-flames-guidance",
+        "https://www.warcraftmounts.com/bmah.php"
+      ]
+    },
+    {
+      "expansion": "The War Within",
+      "representativeQuery": "War Within auctionable mounts Crowd Pummeler Paxton coordinates Void Crystal Panther binding",
+      "added": 1,
+      "finding": "One crafted output; Void-Crystal Panther rejected using current binding tooltip.",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mount.php?mountid=1801",
+        "https://www.wowhead.com/npc=223163/paxton-bombshell",
+        "https://www.wowhead.com/item=235712"
+      ]
+    },
+    {
+      "expansion": "Midnight",
+      "representativeQuery": "Midnight crafted mounts Rope Lynx Harness auction house binds picked up",
+      "added": 0,
+      "finding": "No additional saleable mount verified. Rope Lynx Harness is bound; its tradeable pattern is a recipe, not a mount.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=270058/rope-lynx-harness",
+        "https://www.wowhead.com/item=272391/pattern-rope-lynx-harness"
+      ]
+    }
+  ],
+  "bindingEvidence": "Current Retail tooltip receipts plus acquisition/tradeability sources; no live AH listings checked.",
+  "exclusions": [
+    {
+      "itemID": 235712,
+      "name": "Void-Crystal Panther",
+      "reason": "Binds to Warband in current Retail tooltip; crafted.php tradeability listing is stale.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=235712",
+        "https://nether.wowhead.com/tooltip/item/235712?dataEnv=1&locale=0"
+      ]
+    },
+    {
+      "itemID": 270058,
+      "name": "Rope Lynx Harness",
+      "reason": "Binds when picked up. Pattern 272391 is tradeable but is not a mount.",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=270058/rope-lynx-harness",
+        "https://www.wowhead.com/item=272391/pattern-rope-lynx-harness"
+      ]
+    }
+  ],
+  "validation": {
+    "focusedLua51SpecsPassed": 36,
+    "lazyLoaderSpecsPassed": 5,
+    "manifests": 6,
+    "runtimeLuaFiles": 240,
+    "liveWoW": false,
+    "liveAuctionHouse": false
+  },
+  "mounts": [
+    {
+      "itemName": "Flying Machine",
+      "action": "Learn the recipe, gather its components and craft the finished flying machine for sale.",
+      "auctionable": true,
+      "requirement": "Train the Outland Engineering recipe from your faction's flying-machine trainer. The buyer must also meet Outland Engineering (1).",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "burningCrusade",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts while materials are available. The Turbo-Charged version consumes a Flying Machine as one of its components.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/Niobe_Whizzlespark",
+        "https://warcraft.wiki.gg/wiki/Jonathan_Garrett",
+        "https://www.wowhead.com/npc=25099/jonathan-garrett",
+        "https://www.wowhead.com/item=34060",
+        "https://nether.wowhead.com/tooltip/item/34060?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Use the trainer for your faction. The pins mark trainers, not free mount vendors; older guides use obsolete combined Engineering skill numbers.",
+        "Repeatable crafts while materials are available. The Turbo-Charged version consumes a Flying Machine as one of its components.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "useRequirement": "Outland Engineering (1)",
+      "mapOptions": [
+        {
+          "mapID": 104,
+          "label": "Alliance recipe trainer - Niobe Whizzlespark",
+          "id": "ggt:mount:item:34060:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Alliance recipe trainer - Niobe Whizzlespark",
+          "mapLabel": "Shadowmoon Valley (Outland)",
+          "pins": [
+            {
+              "y": 0.5489999999999999,
+              "x": 0.36700000000000005,
+              "label": "Niobe Whizzlespark - Alliance trainer in Wildhammer Stronghold"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 104,
+          "label": "Horde recipe trainer - Jonathan Garrett",
+          "id": "ggt:mount:item:34060:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Horde recipe trainer - Jonathan Garrett",
+          "mapLabel": "Shadowmoon Valley (Outland)",
+          "pins": [
+            {
+              "y": 0.28,
+              "x": 0.29,
+              "label": "Jonathan Garrett - stables search anchor in Shadowmoon Village"
+            }
+          ],
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 34060,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "The Burning Crusade",
+      "contentID": 2,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/34060?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Turbo-Charged Flying Machine",
+      "action": "Learn the recipe, gather its components and craft the finished flying machine for sale.",
+      "auctionable": true,
+      "requirement": "Train the Outland Engineering recipe from your faction's flying-machine trainer. The buyer must also meet Outland Engineering (75).",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "burningCrusade",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts while materials are available. The Turbo-Charged version consumes a Flying Machine as one of its components.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/Niobe_Whizzlespark",
+        "https://warcraft.wiki.gg/wiki/Jonathan_Garrett",
+        "https://www.wowhead.com/npc=25099/jonathan-garrett",
+        "https://www.wowhead.com/item=34061",
+        "https://nether.wowhead.com/tooltip/item/34061?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Use the trainer for your faction. The pins mark trainers, not free mount vendors; older guides use obsolete combined Engineering skill numbers.",
+        "Repeatable crafts while materials are available. The Turbo-Charged version consumes a Flying Machine as one of its components.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "useRequirement": "Outland Engineering (75)",
+      "mapOptions": [
+        {
+          "mapID": 104,
+          "label": "Alliance recipe trainer - Niobe Whizzlespark",
+          "id": "ggt:mount:item:34061:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Alliance recipe trainer - Niobe Whizzlespark",
+          "mapLabel": "Shadowmoon Valley (Outland)",
+          "pins": [
+            {
+              "y": 0.5489999999999999,
+              "x": 0.36700000000000005,
+              "label": "Niobe Whizzlespark - Alliance trainer in Wildhammer Stronghold"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 104,
+          "label": "Horde recipe trainer - Jonathan Garrett",
+          "id": "ggt:mount:item:34061:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Horde recipe trainer - Jonathan Garrett",
+          "mapLabel": "Shadowmoon Valley (Outland)",
+          "pins": [
+            {
+              "y": 0.28,
+              "x": 0.29,
+              "label": "Jonathan Garrett - stables search anchor in Shadowmoon Village"
+            }
+          ],
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 34061,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "The Burning Crusade",
+      "contentID": 2,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/34061?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Mechano-Hog",
+      "action": "Learn the faction schematic, obtain the required motorcycle parts from Roxi Ramrocket and craft the finished motorcycle.",
+      "auctionable": true,
+      "requirement": "Use a Horde Northrend engineer, reach Exalted with Horde Expedition and buy the matching faction schematic.",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "wrath",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after the reputation and recipe unlocks; each craft consumes expensive components.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/Gara_Skullcrush",
+        "https://warcraft.wiki.gg/wiki/Roxi_Ramrocket",
+        "https://www.wowhead.com/item=41508",
+        "https://nether.wowhead.com/tooltip/item/41508?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The mount has faction restrictions. Roxi only sells the special parts to engineers who already know an eligible motorcycle schematic; recipe purchase and parts purchase are separate stops.",
+        "Repeatable crafts after the reputation and recipe unlocks; each craft consumes expensive components.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 114,
+          "label": "Horde schematic - Gara Skullcrush",
+          "id": "ggt:mount:item:41508:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Horde schematic - Gara Skullcrush",
+          "mapLabel": "Borean Tundra",
+          "pins": [
+            {
+              "y": 0.537,
+              "x": 0.414,
+              "label": "Gara Skullcrush - Exalted faction schematic"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 120,
+          "label": "Required motorcycle parts - Roxi Ramrocket",
+          "id": "ggt:mount:item:41508:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Required motorcycle parts - Roxi Ramrocket",
+          "mapLabel": "The Storm Peaks",
+          "pins": [
+            {
+              "y": 0.848,
+              "x": 0.40700000000000003,
+              "label": "Roxi Ramrocket at K3 - learn the schematic before visiting"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 41508,
+      "faction": "Horde",
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Wrath of the Lich King",
+      "contentID": 3,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/41508?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Mekgineer's Chopper",
+      "action": "Learn the faction schematic, obtain the required motorcycle parts from Roxi Ramrocket and craft the finished motorcycle.",
+      "auctionable": true,
+      "requirement": "Use a Alliance Northrend engineer, reach Exalted with Alliance Vanguard and buy the matching faction schematic.",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "wrath",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after the reputation and recipe unlocks; each craft consumes expensive components.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/Logistics_Officer_Silverstone",
+        "https://warcraft.wiki.gg/wiki/Roxi_Ramrocket",
+        "https://www.wowhead.com/item=44413",
+        "https://nether.wowhead.com/tooltip/item/44413?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The mount has faction restrictions. Roxi only sells the special parts to engineers who already know an eligible motorcycle schematic; recipe purchase and parts purchase are separate stops.",
+        "Repeatable crafts after the reputation and recipe unlocks; each craft consumes expensive components.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 114,
+          "label": "Alliance schematic - Logistics Officer Silverstone",
+          "id": "ggt:mount:item:44413:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Alliance schematic - Logistics Officer Silverstone",
+          "mapLabel": "Borean Tundra",
+          "pins": [
+            {
+              "y": 0.665,
+              "x": 0.5770000000000001,
+              "label": "Logistics Officer Silverstone - Exalted faction schematic"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 120,
+          "label": "Required motorcycle parts - Roxi Ramrocket",
+          "id": "ggt:mount:item:44413:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Required motorcycle parts - Roxi Ramrocket",
+          "mapLabel": "The Storm Peaks",
+          "pins": [
+            {
+              "y": 0.848,
+              "x": 0.40700000000000003,
+              "label": "Roxi Ramrocket at K3 - learn the schematic before visiting"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 44413,
+      "faction": "Alliance",
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Wrath of the Lich King",
+      "contentID": 3,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/44413?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Flying Carpet",
+      "action": "Train Flying Carpet from a Northrend tailoring trainer such as Charles Worth, then craft the finished carpet.",
+      "auctionable": true,
+      "requirement": "Learn Northrend Tailoring and train Flying Carpet. The buyer also needs Northrend Tailoring (1), as shown in the current item tooltip.",
+      "profession": "tailoring",
+      "acquisitionType": "crafting",
+      "expansion": "wrath",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts while materials are available; this is the ordinary Flying Carpet, not the bound Magnificent or Frosty variants.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mount.php?mountid=193",
+        "https://warcraft.wiki.gg/wiki/Charles_Worth",
+        "https://www.wowhead.com/item=44554",
+        "https://nether.wowhead.com/tooltip/item/44554?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The pin is Charles Worth's shop in Northrend Dalaran. The item is tradeable, but its profession requirement limits eligible buyers.",
+        "Repeatable crafts while materials are available; this is the ordinary Flying Carpet, not the bound Magnificent or Frosty variants.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "useRequirement": "Northrend Tailoring (1)",
+      "mapOptions": [
+        {
+          "mapID": 125,
+          "label": "Charles Worth - Flying Carpet recipe trainer",
+          "id": "ggt:mount:item:44554:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Charles Worth - Flying Carpet recipe trainer",
+          "mapLabel": "Dalaran (Northrend)",
+          "pins": [
+            {
+              "y": 0.332,
+              "x": 0.37,
+              "label": "Charles Worth - Talismanic Textiles"
+            }
+          ],
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 44554,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Wrath of the Lich King",
+      "contentID": 3,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/44554?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Vial of the Sands",
+      "action": "Solve Tol'vir Archaeology artifacts for the recipe, obtain Yasmin's required components and craft Vial of the Sands for sale.",
+      "auctionable": true,
+      "requirement": "An alchemist must learn Recipe: Vial of the Sands from a Tol'vir Archaeology Canopic Jar; the bound recipe must be obtained on the crafter.",
+      "profession": "alchemy",
+      "acquisitionType": "crafting",
+      "expansion": "cataclysm",
+      "guideLabel": "Crafted mount",
+      "repeatability": "The recipe is an RNG archaeology unlock. Once learned, the finished mount can be crafted repeatedly when all components are available.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://www.wowhead.com/item=67538/recipe-vial-of-the-sands",
+        "https://www.wowhead.com/npc=49406/yasmin",
+        "https://www.wowhead.com/item=65891",
+        "https://nether.wowhead.com/tooltip/item/65891?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The map marks the required supplier, not a guaranteed Canopic Jar dig site. Dig sites rotate; follow active Tol'vir sites in original Uldum. The finished mount does not require Alchemy to use.",
+        "The recipe is an RNG archaeology unlock. Once learned, the finished mount can be crafted repeatedly when all components are available.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 249,
+          "label": "Yasmin - required Vial of the Sands components",
+          "id": "ggt:mount:item:65891:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Yasmin - required Vial of the Sands components",
+          "mapLabel": "Uldum",
+          "pins": [
+            {
+              "y": 0.0724,
+              "x": 0.2662,
+              "label": "Yasmin - Oasis of Vir'sar supplier, original Uldum phase"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 65891,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Cataclysm",
+      "contentID": 4,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/65891?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Jade Panther",
+      "action": "Buy the matching design, obtain the Orb of Mystery and other recipe reagents, then craft the finished panther for sale.",
+      "auctionable": true,
+      "requirement": "Learn Pandaria Jewelcrafting and reach Honored with Order of the Cloud Serpent to buy this design from San Redscale.",
+      "profession": "jewelcrafting",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/San_Redscale",
+        "https://warcraft.wiki.gg/wiki/Big_Keech",
+        "https://www.wowhead.com/npc=61650/big-keech",
+        "https://www.wowhead.com/item=83088",
+        "https://nether.wowhead.com/tooltip/item/83088?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The Big Keech pin is a documented patrol anchor in the original Vale phase. Check the nearby dried lakebed and use Zidormi if you are in the N'Zoth assault phase. Recent reports disagree on his presence, so confirm the supplier before committing materials.",
+        "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 371,
+          "label": "San Redscale - Honored design",
+          "id": "ggt:mount:item:83088:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "San Redscale - Honored design",
+          "mapLabel": "The Jade Forest",
+          "pins": [
+            {
+              "y": 0.444,
+              "x": 0.568,
+              "label": "San Redscale - Order of the Cloud Serpent quartermaster"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 390,
+          "label": "Orb of Mystery supplier - documented Big Keech patrol",
+          "id": "ggt:mount:item:83088:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Orb of Mystery supplier - documented Big Keech patrol",
+          "mapLabel": "Vale of Eternal Blossoms",
+          "pins": [
+            {
+              "y": 0.42,
+              "x": 0.7,
+              "label": "Big Keech patrol search anchor - original Vale phase; check nearby"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 83088,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/83088?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Sunstone Panther",
+      "action": "Buy the matching design, obtain the Orb of Mystery and other recipe reagents, then craft the finished panther for sale.",
+      "auctionable": true,
+      "requirement": "Learn Pandaria Jewelcrafting and reach Honored with Order of the Cloud Serpent to buy this design from San Redscale.",
+      "profession": "jewelcrafting",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/San_Redscale",
+        "https://warcraft.wiki.gg/wiki/Big_Keech",
+        "https://www.wowhead.com/npc=61650/big-keech",
+        "https://www.wowhead.com/item=83089",
+        "https://nether.wowhead.com/tooltip/item/83089?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The Big Keech pin is a documented patrol anchor in the original Vale phase. Check the nearby dried lakebed and use Zidormi if you are in the N'Zoth assault phase. Recent reports disagree on his presence, so confirm the supplier before committing materials.",
+        "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 371,
+          "label": "San Redscale - Honored design",
+          "id": "ggt:mount:item:83089:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "San Redscale - Honored design",
+          "mapLabel": "The Jade Forest",
+          "pins": [
+            {
+              "y": 0.444,
+              "x": 0.568,
+              "label": "San Redscale - Order of the Cloud Serpent quartermaster"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 390,
+          "label": "Orb of Mystery supplier - documented Big Keech patrol",
+          "id": "ggt:mount:item:83089:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Orb of Mystery supplier - documented Big Keech patrol",
+          "mapLabel": "Vale of Eternal Blossoms",
+          "pins": [
+            {
+              "y": 0.42,
+              "x": 0.7,
+              "label": "Big Keech patrol search anchor - original Vale phase; check nearby"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 83089,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/83089?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Ruby Panther",
+      "action": "Buy the matching design, obtain the Orb of Mystery and other recipe reagents, then craft the finished panther for sale.",
+      "auctionable": true,
+      "requirement": "Learn Pandaria Jewelcrafting and reach Revered with Order of the Cloud Serpent to buy this design from San Redscale.",
+      "profession": "jewelcrafting",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/San_Redscale",
+        "https://warcraft.wiki.gg/wiki/Big_Keech",
+        "https://www.wowhead.com/npc=61650/big-keech",
+        "https://www.wowhead.com/item=83087",
+        "https://nether.wowhead.com/tooltip/item/83087?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The Big Keech pin is a documented patrol anchor in the original Vale phase. Check the nearby dried lakebed and use Zidormi if you are in the N'Zoth assault phase. Recent reports disagree on his presence, so confirm the supplier before committing materials.",
+        "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 371,
+          "label": "San Redscale - Revered design",
+          "id": "ggt:mount:item:83087:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "San Redscale - Revered design",
+          "mapLabel": "The Jade Forest",
+          "pins": [
+            {
+              "y": 0.444,
+              "x": 0.568,
+              "label": "San Redscale - Order of the Cloud Serpent quartermaster"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 390,
+          "label": "Orb of Mystery supplier - documented Big Keech patrol",
+          "id": "ggt:mount:item:83087:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Orb of Mystery supplier - documented Big Keech patrol",
+          "mapLabel": "Vale of Eternal Blossoms",
+          "pins": [
+            {
+              "y": 0.42,
+              "x": 0.7,
+              "label": "Big Keech patrol search anchor - original Vale phase; check nearby"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 83087,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/83087?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Sapphire Panther",
+      "action": "Buy the matching design, obtain the Orb of Mystery and other recipe reagents, then craft the finished panther for sale.",
+      "auctionable": true,
+      "requirement": "Learn Pandaria Jewelcrafting and reach Revered with Order of the Cloud Serpent to buy this design from San Redscale.",
+      "profession": "jewelcrafting",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/San_Redscale",
+        "https://warcraft.wiki.gg/wiki/Big_Keech",
+        "https://www.wowhead.com/npc=61650/big-keech",
+        "https://www.wowhead.com/item=83090",
+        "https://nether.wowhead.com/tooltip/item/83090?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The Big Keech pin is a documented patrol anchor in the original Vale phase. Check the nearby dried lakebed and use Zidormi if you are in the N'Zoth assault phase. Recent reports disagree on his presence, so confirm the supplier before committing materials.",
+        "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 371,
+          "label": "San Redscale - Revered design",
+          "id": "ggt:mount:item:83090:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "San Redscale - Revered design",
+          "mapLabel": "The Jade Forest",
+          "pins": [
+            {
+              "y": 0.444,
+              "x": 0.568,
+              "label": "San Redscale - Order of the Cloud Serpent quartermaster"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 390,
+          "label": "Orb of Mystery supplier - documented Big Keech patrol",
+          "id": "ggt:mount:item:83090:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Orb of Mystery supplier - documented Big Keech patrol",
+          "mapLabel": "Vale of Eternal Blossoms",
+          "pins": [
+            {
+              "y": 0.42,
+              "x": 0.7,
+              "label": "Big Keech patrol search anchor - original Vale phase; check nearby"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 83090,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/83090?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Jeweled Onyx Panther",
+      "action": "Craft Jeweled Onyx Panther using one each of the Jade, Sunstone, Ruby and Sapphire Panthers. The four colored mounts are consumed.",
+      "auctionable": true,
+      "requirement": "Learn Pandaria Jewelcrafting and reach Exalted with Order of the Cloud Serpent to buy this design from San Redscale.",
+      "profession": "jewelcrafting",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://warcraft.wiki.gg/wiki/San_Redscale",
+        "https://warcraft.wiki.gg/wiki/Big_Keech",
+        "https://www.wowhead.com/npc=61650/big-keech",
+        "https://www.wowhead.com/item=82453",
+        "https://nether.wowhead.com/tooltip/item/82453?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The Big Keech pin is a documented patrol anchor in the original Vale phase. Check the nearby dried lakebed and use Zidormi if you are in the N'Zoth assault phase. Recent reports disagree on his presence, so confirm the supplier before committing materials.",
+        "Repeatable crafts after learning the design. Price all consumed components before crafting; the finished mount has no Jewelcrafting requirement.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 371,
+          "label": "San Redscale - Exalted design",
+          "id": "ggt:mount:item:82453:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "San Redscale - Exalted design",
+          "mapLabel": "The Jade Forest",
+          "pins": [
+            {
+              "y": 0.444,
+              "x": 0.568,
+              "label": "San Redscale - Order of the Cloud Serpent quartermaster"
+            }
+          ],
+          "mapRole": "recipe"
+        },
+        {
+          "mapID": 390,
+          "label": "Orb of Mystery supplier - documented Big Keech patrol",
+          "id": "ggt:mount:item:82453:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Orb of Mystery supplier - documented Big Keech patrol",
+          "mapLabel": "Vale of Eternal Blossoms",
+          "pins": [
+            {
+              "y": 0.42,
+              "x": 0.7,
+              "label": "Big Keech patrol search anchor - original Vale phase; check nearby"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 82453,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/82453?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Depleted-Kyparium Rocket",
+      "action": "Visit Sally Fizzlefury to learn the matching specialization recipe, then craft the finished rocket from its required components.",
+      "auctionable": true,
+      "requirement": "Use a Pandaria engineer with the Goblin Engineering specialization and train the matching rocket recipe.",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after the profession and specialization unlock; buyers do not need Engineering to use the finished mount.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://www.wowhead.com/npc=55143/sally-fizzlefury",
+        "https://www.wowhead.com/item=87250",
+        "https://nether.wowhead.com/tooltip/item/87250?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The two rocket recipes require different Engineering specializations. Check your specialization before travelling to the trainer.",
+        "Repeatable crafts after the profession and specialization unlock; buyers do not need Engineering to use the finished mount.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 376,
+          "label": "Sally Fizzlefury - Goblin rocket recipe",
+          "id": "ggt:mount:item:87250:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Sally Fizzlefury - Goblin rocket recipe",
+          "mapLabel": "Valley of the Four Winds",
+          "pins": [
+            {
+              "y": 0.8315,
+              "x": 0.1606,
+              "label": "Sally Fizzlefury - Nesingwary's Safari"
+            }
+          ],
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 87250,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/87250?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Geosynchronous World Spinner",
+      "action": "Visit Sally Fizzlefury to learn the matching specialization recipe, then craft the finished rocket from its required components.",
+      "auctionable": true,
+      "requirement": "Use a Pandaria engineer with the Gnomish Engineering specialization and train the matching rocket recipe.",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "mists",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after the profession and specialization unlock; buyers do not need Engineering to use the finished mount.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/crafted.php",
+        "https://www.wowhead.com/npc=55143/sally-fizzlefury",
+        "https://www.wowhead.com/item=87251",
+        "https://nether.wowhead.com/tooltip/item/87251?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The two rocket recipes require different Engineering specializations. Check your specialization before travelling to the trainer.",
+        "Repeatable crafts after the profession and specialization unlock; buyers do not need Engineering to use the finished mount.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 376,
+          "label": "Sally Fizzlefury - Gnomish rocket recipe",
+          "id": "ggt:mount:item:87251:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Sally Fizzlefury - Gnomish rocket recipe",
+          "mapLabel": "Valley of the Four Winds",
+          "pins": [
+            {
+              "y": 0.8315,
+              "x": 0.1606,
+              "label": "Sally Fizzlefury - Nesingwary's Safari"
+            }
+          ],
+          "mapRole": "recipe"
+        }
+      ],
+      "itemID": 87251,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/87251?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Sky Golem",
+      "action": "Farm the journal if needed, make 30 Jard's Peculiar Energy Sources on their daily cooldown and combine them with 30 Living Steel to craft Sky Golem.",
+      "auctionable": true,
+      "requirement": "Reach Pandaria Engineering 75, loot Schematic: Chief Engineer Jard's Journal from eligible Pandaria enemies and learn its recipes.",
+      "profession": "engineering",
+      "acquisitionType": "crafting-cooldown",
+      "expansion": "mists",
+      "guideLabel": "Crafting with a daily cooldown",
+      "repeatability": "A new set of Jard's components takes 30 daily crafts per engineer; existing component stock can shorten the remaining wait.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mount.php?mountid=438",
+        "https://www.wowhead.com/item=100910/schematic-chief-engineer-jards-journal",
+        "https://www.icy-veins.com/forums/topic/23145-gold-making-the-sky-golem/",
+        "https://www.wowhead.com/item=95416",
+        "https://nether.wowhead.com/tooltip/item/95416?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The Imperial Granary point is a reported recipe-farming anchor, not a guaranteed journal drop. Sky Golem's current tooltip limits mounted herb gathering to expansions before Dragonflight; do not advertise that benefit for newer zones.",
+        "A new set of Jard's components takes 30 daily crafts per engineer; existing component stock can shorten the remaining wait.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 376,
+          "label": "Imperial Granary - reported journal farming area",
+          "id": "ggt:mount:item:95416:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Imperial Granary - reported journal farming area",
+          "mapLabel": "Valley of the Four Winds",
+          "pins": [
+            {
+              "y": 0.63,
+              "x": 0.54,
+              "label": "Imperial Granary area - reported journal drop from nearby enemies"
+            }
+          ],
+          "mapRole": "farming-area"
+        }
+      ],
+      "itemID": 95416,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Mists of Pandaria",
+      "contentID": 5,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/95416?dataEnv=1&locale=0"
+    },
+    {
+      "saleMethod": "unlearned-item",
+      "itemName": "Coalfist Gronnling",
+      "action": "Check the Town Hall's follower mission table for Breaker Two, counter its threats and complete it for the Coalfist Gronnling reward.",
+      "guideLabel": "Garrison follower mission",
+      "repeatability": "The mission is a random rare offer, not a guaranteed daily. Check eligible characters; more kills at the map anchor do not produce this mount.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/guide/vanity-collections/mounts-from-the-garrison",
+        "https://www.wowhead.com/mission=679/breaker-two",
+        "https://www.wowhead.com/guide/world-events/holidays/hallows-end",
+        "https://wow.gg/guides/coalfist-gronnling-mount-guide",
+        "https://www.wowhead.com/item=128311",
+        "https://nether.wowhead.com/tooltip/item/128311?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The pins are named garrison access anchors, not exact mission-table or mount-drop pins. Use your Garrison Hearthstone and enter the Town Hall; layout changes with garrison tier.",
+        "The mission is a random rare offer, not a guaranteed daily. Check eligible characters; more kills at the map anchor do not produce this mount.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "auctionable": true,
+      "requirement": "Develop a Draenor garrison and a follower roster able to run the rare item-level-675 Breaker Two mission with three followers.",
+      "itemID": 128311,
+      "expansionLabel": "Warlords of Draenor",
+      "acquisitionType": "garrison-mission",
+      "expansion": "warlords",
+      "mapOptions": [
+        {
+          "mapID": 539,
+          "label": "Alliance - Lunarfall access anchor",
+          "id": "ggt:mount:item:128311:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Alliance - Lunarfall access anchor",
+          "mapLabel": "Shadowmoon Valley (Draenor)",
+          "pins": [
+            {
+              "y": 0.165,
+              "x": 0.29600000000000004,
+              "label": "Lunarfall garrison area - enter Town Hall for follower missions"
+            }
+          ],
+          "mapRole": "access"
+        },
+        {
+          "mapID": 525,
+          "label": "Horde - Frostwall access anchor",
+          "id": "ggt:mount:item:128311:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Horde - Frostwall access anchor",
+          "mapLabel": "Frostfire Ridge",
+          "pins": [
+            {
+              "y": 0.642,
+              "x": 0.47,
+              "label": "Frostwall garrison area - enter Town Hall for follower missions"
+            }
+          ],
+          "mapRole": "access"
+        }
+      ],
+      "contentID": 6,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/128311?dataEnv=1&locale=0"
+    },
+    {
+      "saleMethod": "unlearned-item",
+      "itemName": "Minion of Grumpus",
+      "action": "Complete the garrison Winter Veil dailies in Frostfire Ridge, spend five Merry Supplies on a Savage Gift from Izzy Hollyfizzle and open it for a mount chance.",
+      "guideLabel": "Winter Veil reward container",
+      "repeatability": "The seasonal dailies limit supplies per character. The gift is random; the Grumpus enemy does not directly drop the mount.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mounts/minionofgrumpus.php",
+        "https://warcraft.wiki.gg/wiki/Izzy_Hollyfizzle",
+        "https://www.wowhead.com/quest=39651/grumpus",
+        "https://www.wowhead.com/guide/world-events/holidays/hallows-end",
+        "https://www.wowhead.com/item=128671",
+        "https://nether.wowhead.com/tooltip/item/128671?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Start and turn in the dailies in your own garrison. The outdoor Frostwall marker is an access anchor; the Lunarfall option marks Izzy inside the garrison.",
+        "The seasonal dailies limit supplies per character. The gift is random; the Grumpus enemy does not directly drop the mount.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "auctionable": true,
+      "requirement": "During Feast of Winter Veil, use a level-3 Draenor garrison and complete its seasonal dailies. Check the in-game calendar for dates.",
+      "itemID": 128671,
+      "expansionLabel": "Warlords of Draenor",
+      "acquisitionType": "holiday-container",
+      "expansion": "warlords",
+      "mapOptions": [
+        {
+          "mapID": 525,
+          "label": "Winter Veil daily quest area - not a direct mount drop",
+          "id": "ggt:mount:item:128671:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Winter Veil daily quest area - not a direct mount drop",
+          "mapLabel": "Frostfire Ridge",
+          "pins": [
+            {
+              "y": 0.28,
+              "x": 0.46,
+              "label": "Grumpus daily area - collect Merry Supplies, then buy Savage Gift"
+            }
+          ],
+          "mapRole": "quest-area"
+        },
+        {
+          "mapID": 582,
+          "label": "Alliance - Izzy Hollyfizzle",
+          "id": "ggt:mount:item:128671:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Alliance - Izzy Hollyfizzle",
+          "mapLabel": "Lunarfall",
+          "pins": [
+            {
+              "y": 0.512,
+              "x": 0.44299999999999995,
+              "label": "Izzy Hollyfizzle - Savage Gift for five Merry Supplies"
+            }
+          ],
+          "mapRole": "supplier"
+        },
+        {
+          "mapID": 525,
+          "label": "Horde - return to Frostwall and find Izzy",
+          "id": "ggt:mount:item:128671:map:3",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Horde - return to Frostwall and find Izzy",
+          "mapLabel": "Frostfire Ridge",
+          "pins": [
+            {
+              "y": 0.642,
+              "x": 0.47,
+              "label": "Frostwall access anchor - Izzy is inside your level-3 garrison"
+            }
+          ],
+          "mapRole": "access"
+        }
+      ],
+      "contentID": 6,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/128671?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Steelbound Harness",
+      "action": "Farm Tichondrius for the recipe if needed, then craft Steelbound Harness from 100 Demonsteel Bars, 50 Blood of Sargeras, 10 Infernal Brimstone and 10 Felhide.",
+      "auctionable": true,
+      "requirement": "Use a Legion blacksmith and learn Plans: Fel Core Hound Harness, dropped by Tichondrius in The Nighthold.",
+      "profession": "blacksmithing",
+      "acquisitionType": "crafting",
+      "expansion": "legion",
+      "guideLabel": "Crafted mount",
+      "repeatability": "The raid recipe has lockout-limited attempts. Subsequent crafts depend on materials, including the crafter's bound Blood of Sargeras.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=213916/fel-core-hound-harness",
+        "https://www.wowhead.com/guide/raid-entrances-of-legion-6034",
+        "https://www.wowhead.com/item=137686",
+        "https://nether.wowhead.com/tooltip/item/137686?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The map distinguishes the building access and underground raid portal. Enter on a difficulty that can award the recipe; the pin is not a surface Tichondrius spawn. The mount does not require Blacksmithing to use.",
+        "The raid recipe has lockout-limited attempts. Subsequent crafts depend on materials, including the crafter's bound Blood of Sargeras.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 680,
+          "label": "The Nighthold - recipe source inside",
+          "id": "ggt:mount:item:137686:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "The Nighthold - recipe source inside",
+          "mapLabel": "Suramar",
+          "pins": [
+            {
+              "y": 0.6459999999999999,
+              "x": 0.46,
+              "label": "Building access to Sanctum of Order"
+            },
+            {
+              "y": 0.6,
+              "x": 0.44,
+              "label": "Underground Nighthold portal - Tichondrius inside"
+            }
+          ],
+          "mapRole": "entrance"
+        }
+      ],
+      "itemID": 137686,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Legion",
+      "contentID": 7,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/137686?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Mecha-Mogul Mk2",
+      "action": "Obtain the schematic and required engineering parts from The MOTHERLODE!!, then craft the finished mount for sale.",
+      "auctionable": true,
+      "requirement": "Use BfA Engineering and learn the Mecha-Mogul Mk2 schematic from Mogul Razdunk in Mythic The MOTHERLODE!!.",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Crafted mount",
+      "repeatability": "The schematic and some parts require eligible dungeon attempts; keep Engineering active when collecting profession-specific salvage.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mount.php?mountid=961",
+        "https://www.wow-professions.com/guides/bfa-engineering",
+        "https://www.wowhead.com/guide/dungeon-entrances-wow-battle-for-azeroth",
+        "https://www.wowhead.com/item=161134",
+        "https://nether.wowhead.com/tooltip/item/161134?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Choose the entrance for your faction. This is a crafted mount, not a direct boss mount drop, and buyers do not need Engineering.",
+        "The schematic and some parts require eligible dungeon attempts; keep Engineering active when collecting profession-specific salvage.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 862,
+          "label": "Alliance - The MOTHERLODE!! entrance",
+          "id": "ggt:mount:item:161134:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Alliance - The MOTHERLODE!! entrance",
+          "mapLabel": "Zuldazar",
+          "pins": [
+            {
+              "y": 0.7140000000000001,
+              "x": 0.39299999999999996,
+              "label": "Alliance MOTHERLODE entrance - schematic and parts inside"
+            }
+          ],
+          "mapRole": "entrance"
+        },
+        {
+          "mapID": 862,
+          "label": "Horde - The MOTHERLODE!! entrance",
+          "id": "ggt:mount:item:161134:map:2",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Horde - The MOTHERLODE!! entrance",
+          "mapLabel": "Zuldazar",
+          "pins": [
+            {
+              "y": 0.599,
+              "x": 0.561,
+              "label": "Horde MOTHERLODE entrance - schematic and parts inside"
+            }
+          ],
+          "mapRole": "entrance"
+        }
+      ],
+      "itemID": 161134,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Battle for Azeroth",
+      "contentID": 8,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/161134?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Xiwyllag ATV",
+      "action": "Craft or acquire both finished components and combine them into the Xiwyllag ATV mount item for sale.",
+      "auctionable": true,
+      "requirement": "Obtain a Monelite Reinforced Chassis from BfA Blacksmithing and a Super-Charged Engine from BfA Engineering; their recipes drop from K.U.-J.0. in Operation: Mechagon.",
+      "profession": "blacksmithing-engineering",
+      "acquisitionType": "component-assembly",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Combine crafted components",
+      "repeatability": "Repeatable assembly when both components are available. You can source the other profession's part from another crafter or the AH.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://warcraft.wiki.gg/wiki/Xiwyllag_ATV",
+        "https://www.wowhead.com/guide/operation-mechagon-megadungeon-loot",
+        "https://www.wowhead.com/guide/battle-for-azeroth-dungeon-overview-6390",
+        "https://www.wowhead.com/item=153594",
+        "https://nether.wowhead.com/tooltip/item/153594?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "The map marks the dungeon recipe-source entrance. The chassis belongs to Blacksmithing and the engine to Engineering; the finished mount does not require either profession to ride.",
+        "Repeatable assembly when both components are available. You can source the other profession's part from another crafter or the AH.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 1462,
+          "label": "Operation: Mechagon - component recipes inside",
+          "id": "ggt:mount:item:153594:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Operation: Mechagon - component recipes inside",
+          "mapLabel": "Mechagon Island",
+          "pins": [
+            {
+              "y": 0.363,
+              "x": 0.73,
+              "label": "Operation: Mechagon entrance - K.U.-J.0. component recipes"
+            }
+          ],
+          "mapRole": "entrance"
+        }
+      ],
+      "itemID": 153594,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "Battle for Azeroth",
+      "contentID": 8,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/153594?dataEnv=1&locale=0"
+    },
+    {
+      "itemName": "Crowd Pummeler 2-30",
+      "action": "Unlock the schematic, obtain the required mount components through eligible engineering part pilfering, purchases or Paxton Bombshell, then craft the finished mount.",
+      "auctionable": true,
+      "requirement": "Use Khaz Algar Engineering and discover the mount schematic through its Inventing/Scouring system.",
+      "profession": "engineering",
+      "acquisitionType": "crafting",
+      "expansion": "warWithin",
+      "guideLabel": "Crafted mount",
+      "repeatability": "Repeatable crafts after discovering the schematic. Parts can be costly; compare current component costs before buying vendor stock.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftmounts.com/mount.php?mountid=1801",
+        "https://www.wowhead.com/npc=223163/paxton-bombshell",
+        "https://www.wowhead.com/item=227774/pummel-permit",
+        "https://www.wowhead.com/item=221967",
+        "https://nether.wowhead.com/tooltip/item/221967?dataEnv=1&locale=0"
+      ],
+      "tips": [
+        "Paxton's coordinates changed with the Undermine update. Use the current 59.76, 78.43 Ringing Deeps location, not the older 63.8, 78.4 marker. The pin is a component supplier, not a mount drop.",
+        "Repeatable crafts after discovering the schematic. Parts can be costly; compare current component costs before buying vendor stock.",
+        "Keep the finished mount item unlearned to sell it. A learned mount cannot be caged or returned to an auctionable item."
+      ],
+      "mapOptions": [
+        {
+          "mapID": 2214,
+          "label": "Paxton Bombshell - Crowd Pummeler components",
+          "id": "ggt:mount:item:221967:map:1",
+          "routeType": "farm-mount",
+          "density": "Named acquisition source or labelled access anchor",
+          "dropDifficulty": "Follow the source prerequisites; no hourly yield is assumed.",
+          "confidence": "medium",
+          "isRoute": false,
+          "location": "Paxton Bombshell - Crowd Pummeler components",
+          "mapLabel": "The Ringing Deeps",
+          "pins": [
+            {
+              "y": 0.7843000000000001,
+              "x": 0.5976,
+              "label": "Paxton Bombshell - coordinates updated after Undermine"
+            }
+          ],
+          "mapRole": "supplier"
+        }
+      ],
+      "itemID": 221967,
+      "saleMethod": "unlearned-item",
+      "expansionLabel": "The War Within",
+      "contentID": 11,
+      "bindingReceipt": "https://nether.wowhead.com/tooltip/item/221967?dataEnv=1&locale=0"
+    }
+  ]
+}

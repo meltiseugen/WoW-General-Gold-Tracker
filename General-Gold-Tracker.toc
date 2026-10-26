@@ -1,5 +1,8 @@
 ## Interface: 120001, 120000
 ## Title: General Gold Tracker & Farming Helper
+## Category: Auction & Economy
+## Group: General-Gold-Tracker
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## Notes: Retail-only (Midnight+) session-based loot gold tracker.
 ## Author: Eugen
 ## Version: 2.5.0
@@ -7,8 +10,10 @@
 ## OptionalDeps: TradeSkillMaster, JanisTheme-1.0, RareScanner
 
 Core/Namespace.lua
+Core/TSMRealmData.lua
 Core/CatalogLoader.lua
 Core/CustomFarms.lua
+Core/FarmTransfer.lua
 Core/InstanceEntrances.lua
 Core/FarmRoutePlanner.lua
 Core/TableSort.lua
@@ -16,6 +21,8 @@ Core/ItemBinding.lua
 Core/ItemTooltip.lua
 Libs/JanisTheme-1.0/JanisTheme-1.0.lua
 UI/Theme.lua
+UI/VisualThemes.lua
+UI/Skinning.lua
 Core/Diagnostics.lua
 Core/Alerts.lua
 Core/History.lua
@@ -23,12 +30,16 @@ Core/MarketHistory.lua
 Core/SessionFlow.lua
 Core/Session.lua
 Core/InventoryScan.lua
+Core/AltTracker.lua
+Core/AltMapOverview.lua
+Core/AltDestinations.lua
 Data/FarmingItems.lua
 Data/CraftingFarmingLearned.lua
 Data/MaterialIndex.lua
 UI/MinimapButton.lua
 UI/MainWindow.lua
 UI/HelpWindow.lua
+UI/ItemRealmPrices.lua
 UI/InventoryWindow.lua
 UI/RareFarmingWindow.lua
 UI/InstanceFarmingWindow.lua
@@ -36,10 +47,25 @@ UI/CraftingFarmingWindow.lua
 UI/ObservedDropsWindow.lua
 UI/PriceIncreaseAlertsWindow.lua
 UI/MyFarmsWindow.lua
+UI/FarmTransferWindow.lua
 UI/FarmRoutePlanWindow.lua
 UI/ExplorerWindow.lua
+UI/Maps/Geometry.lua
+UI/Maps/ArtMaskIndex.lua
+UI/Maps/OceanIndex.lua
+UI/Maps/CornerFillIndex.lua
+UI/Maps/WaterHatchingIndex.lua
+UI/Maps/MapSource.lua
+UI/Maps/MapScene.lua
+UI/Maps/MapRenderer.lua
+UI/Maps/InteractiveMap.lua
+UI/AltsWindow.lua
+UI/AltsGlobalMapWindow.lua
+UI/AltDestinationPicker.lua
 UI/ExplorerMemory.lua
 UI/DiagnosisWindow.lua
+UI/OptionsPages.lua
+UI/OptionsLayout.lua
 UI/OptionsPanel.lua
 UI/MapAreaOverlay.lua
 UI/MinimapAreaFill.lua

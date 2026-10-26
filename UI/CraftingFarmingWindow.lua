@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -268,6 +271,43 @@ local function GetMaterialsData()
     return data
 end
 
+local EXCLUDED_PANDARIA_MATERIAL_TAGS = {
+    ["Pet Item"] = true,
+    ["Fishing Pet"] = true,
+    ["Crafted Pet"] = true,
+    ["Darkmoon Card"] = true,
+    ["Special Cooking Reagent"] = true,
+    ["Perishable Crafting Input"] = true,
+}
+
+local function IsExcludedPandariaMaterial(item)
+    return item.expansion == "mists" and EXCLUDED_PANDARIA_MATERIAL_TAGS[item.tag or item.category] == true
+end
+
+local function IsExcludedMaterialsProduct(item)
+    -- Old custom/session entries can have only an ID and no catalog metadata.
+    local itemID = tonumber(item.itemID)
+    if itemID == 160053 or itemID == 181468 or itemID == 163131 then
+        return true
+    end
+    local research = NS.MaterialFarmingSpots and NS.MaterialFarmingSpots.items
+    research = research and research[tonumber(item.itemID)]
+    for _, record in ipairs({ item, research or {} }) do
+        local tag = record.tag or record.category or ""
+        if record.auctionable == false or record.supportOnly == true
+            or tag:match("^Bound ") or tag:match("^Warband ")
+            or (item.expansion == "legion" and tag == "Vendor")
+            or string.find(string.lower(tag), "augment[%s%-]*rune")
+            or string.find(string.lower(record.itemName or ""), "augment[%s%-]*rune")
+            or tag == "World Drop Mount"
+            or string.find(string.lower(tag), "darkmoon", 1, true)
+            or string.find(string.lower(record.itemName or ""), "darkmoon", 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
 local function BuildMaterialsItemList(addon)
     local items = {}
     local overrides = addon and type(addon.GetCraftingFarmingItemOverrides) == "function"
@@ -482,7 +522,17 @@ local function BuildMaterialFarmingMapOptionsFromData(item)
     local options = {}
     for _, spot in ipairs(item.spots) do
         local mapID = tonumber(spot and spot.mapID) or ResolveMaterialMapID(spot and spot.mapName)
-        if mapID and type(spot.coords) == "table" then
+        if mapID and spot.mapOnly == true then
+            local mapLabel = spot.mapName or ("Map " .. tostring(mapID))
+            options[#options + 1] = {
+                id = spot.id, sortOrder = tonumber(spot.sortOrder), mapID = mapID,
+                mapLabel = mapLabel, label = spot.dropdownLabel or (mapLabel .. ": " .. tostring(spot.location or item.itemName)),
+                location = spot.location, pins = {}, mapOnly = true, spotCount = 1,
+                detailPins = { BuildMaterialFarmingPin(item, spot, {}, mapID) },
+                mapOnlyStatusText = "Source area shown; see the location and availability guidance.",
+                sourceType = "static", sourceLabel = "Researched source area",
+            }
+        elseif mapID and type(spot.coords) == "table" then
             local option
             for _, rawCoord in ipairs(spot.coords) do
                 local coord = NormalizeMaterialSpotCoord(rawCoord)
@@ -576,6 +626,10 @@ local function HasMaterialFarmingMapData(addon, itemID)
     local materialData = GetMaterialFarmingSpotData(itemID)
     if type(materialData) == "table" and type(materialData.spots) == "table" then
         for _, spot in ipairs(materialData.spots) do
+            if type(spot) == "table" and spot.mapOnly == true
+                and (tonumber(spot.mapID) or ResolveMaterialMapID(spot.mapName)) then
+                return true
+            end
             if type(spot) == "table" and type(spot.coords) == "table" and #spot.coords > 0 then
                 return true
             end
@@ -615,8 +669,17 @@ local function GetExpansionOptions()
     return GetMaterialsData().expansions or {}
 end
 
-local function GetProfessionOptions()
-    return GetMaterialsData().professions or {}
+local function GetProfessionOptions(expansionID)
+    local options = {}
+    for _, option in ipairs(GetMaterialsData().professions or {}) do
+        if not expansionID or expansionID == "all" or not option.expansion or option.expansion == expansionID then
+            options[#options + 1] = option
+        end
+    end
+    options[#options + 1] = { id = "elemental", label = "Elemental" }
+    -- Keep the persisted filter ID so existing saved selections still work.
+    options[#options + 1] = { id = "raidItems", label = "Instance items" }
+    return options
 end
 
 local function GetExpansionLookup()
@@ -662,12 +725,18 @@ local function NormalizeProfessionID(professionID)
     return "all"
 end
 
-local function NormalizeProfessionSelections(professionIDs, fallbackProfessionID)
+local function NormalizeProfessionSelections(professionIDs, fallbackProfessionID, expansionID)
     local lookup = GetProfessionLookup()
     local selectedProfessionID
+    local unavailableSelection = false
 
     local function setProfession(professionID)
         if lookup[professionID] then
+            local scope = lookup[professionID].expansion
+            if expansionID and expansionID ~= "all" and scope and scope ~= expansionID then
+                unavailableSelection = true
+                return false
+            end
             selectedProfessionID = professionID
             return true
         end
@@ -691,7 +760,7 @@ local function NormalizeProfessionSelections(professionIDs, fallbackProfessionID
         end
     end
 
-    selectedProfessionID = selectedProfessionID or NormalizeProfessionID(nil)
+    selectedProfessionID = selectedProfessionID or (unavailableSelection and "all") or NormalizeProfessionID(nil)
     return { [selectedProfessionID] = true }, { selectedProfessionID }
 end
 
@@ -851,10 +920,47 @@ local function GetMaterialsProfessionIDFromItemSubtype(loot)
     return nil
 end
 
-local function ItemMatchesProfessionSelection(item, selected)
+local function HasRaidSource(record)
+    if type(record) ~= "table" then
+        return false
+    end
+    if record.isRaidMaterial == true then
+        return true
+    end
+    -- The legacy raidItems group covers raids, dungeons, delves and instances.
+    for _, field in ipairs({ "acquisitionType", "tag", "category", "routeType" }) do
+        local sourceType = string.lower(tostring(record[field] or ""))
+        if string.find(sourceType, "%f[%a]raids?%f[%A]")
+            or string.find(sourceType, "%f[%a]dungeons?%f[%A]")
+            or string.find(sourceType, "%f[%a]delves?%f[%A]")
+            or string.find(sourceType, "%f[%a]instances?%f[%A]") then
+            return true
+        end
+    end
+    for _, spot in ipairs(record.spots or {}) do
+        if HasRaidSource(spot) then
+            return true
+        end
+    end
+    return false
+end
+
+local function IsRaidMaterial(item)
+    local research = NS.MaterialFarmingSpots and NS.MaterialFarmingSpots.items
+    return HasRaidSource(item) or HasRaidSource(research and research[tonumber(item.itemID)])
+end
+
+local function ItemMatchesProfessionSelection(item, selected, isRaidMaterial)
     local selectedMap = type(selected) == "table" and selected or { all = true }
     if selectedMap.all then
         return true
+    end
+    if selectedMap.raidItems then
+        return isRaidMaterial == true
+    end
+    if selectedMap.elemental then
+        local elementalItemIDs = GetMaterialsData().elementalItemIDs or {}
+        return elementalItemIDs[tonumber(item.itemID)] == true
     end
     for _, currentProfessionID in ipairs(item.professions or {}) do
         if selectedMap[currentProfessionID] then
@@ -877,6 +983,13 @@ local function GetItemInfoByID(itemID)
         return GetItemInfo(itemID)
     end
     return nil
+end
+
+local function GetMaterialsCatalogItemName(itemID)
+    local index = NS.MaterialIndex and NS.MaterialIndex.items
+    local record = index and index[tonumber(itemID)]
+    local research = GetMaterialFarmingSpotData(itemID)
+    return (record and record.itemName) or (research and research.itemName)
 end
 
 local function GetItemInstantInfoByID(itemID)
@@ -953,6 +1066,9 @@ local function FormatMaterialsSoldPerDay(regionSoldPerDay)
     end
     if soldPerDay >= 10 then
         return string.format("%.1f/d", soldPerDay)
+    end
+    if soldPerDay < 0.01 then
+        return string.format("%.3f/d", soldPerDay)
     end
     return string.format("%.2f/d", soldPerDay)
 end
@@ -1037,6 +1153,9 @@ end
 
 local function GetMaterialsRawTSMValue(addon, itemLink, itemID, tsmKey)
     local normalizedItemID = tonumber(itemID)
+    if normalizedItemID and type(addon.GetTSMRawCustomValueForItemID) == "function" then
+        return addon:GetTSMRawCustomValueForItemID(tsmKey, normalizedItemID)
+    end
     if normalizedItemID and type(TSM_API) == "table" and type(TSM_API.GetCustomPriceValue) == "function" then
         local itemString = string.format("i:%d", math.floor(normalizedItemID + 0.5))
         local ok, value = pcall(TSM_API.GetCustomPriceValue, tsmKey, itemString)
@@ -1300,6 +1419,17 @@ function GoldTracker:SaveCraftingFarmingDropRateLookup(lookup, updatedAt)
     return normalized
 end
 
+local function ResolveMaterialsItemValue(addon, source, itemID)
+    if source and type(addon.ResolveItemUnitValue) == "function" then
+        return addon:ResolveItemUnitValue(source.id, nil, itemID, true)
+    end
+    local value = 0
+    if source and source.tsmKey and type(addon.GetTSMItemValueForItemID) == "function" then
+        value = addon:GetTSMItemValueForItemID(source.tsmKey, itemID, true)
+    end
+    return value, source and source.id, source and source.label, false
+end
+
 local function ResolveMaterialsItemCache(addon, frame, source, itemID, deferMetrics)
     frame.itemCache = frame.itemCache or {}
     local cacheKey = tostring(itemID) .. "|" .. tostring(source and source.id or "")
@@ -1315,20 +1445,23 @@ local function ResolveMaterialsItemCache(addon, frame, source, itemID, deferMetr
     end
 
     local value = 0
-    if deferMetrics ~= true and source and source.tsmKey and type(addon.GetTSMItemValueForItemID) == "function" then
-        value = addon:GetTSMItemValueForItemID(source.tsmKey, itemID, true)
+    local valueSourceID, valueSourceLabel = source and source.id, source and source.label
+    local valueSourceWasFallback = false
+    if deferMetrics ~= true then
+        value, valueSourceID, valueSourceLabel, valueSourceWasFallback = ResolveMaterialsItemValue(addon, source, itemID)
     end
 
     cached = {
         itemID = itemID,
-        itemName = itemName,
+        itemName = itemName or GetMaterialsCatalogItemName(itemID),
         itemLink = itemLink,
         itemQuality = tonumber(itemQuality),
         icon = itemIcon,
         value = value,
         metricsLoaded = deferMetrics ~= true,
-        valueSourceID = source and source.id,
-        valueSourceLabel = source and source.label,
+        valueSourceID = valueSourceID,
+        valueSourceLabel = valueSourceLabel,
+        valueSourceWasFallback = valueSourceWasFallback == true,
     }
     frame.itemCache[cacheKey] = cached
 
@@ -1354,26 +1487,19 @@ local function LoadMaterialsItemMetrics(addon, frame, source, itemID)
     end
 
     frame.materialsDemandCache = frame.materialsDemandCache or {}
-    local demandData = GetMaterialsRegionalDemandData(
+    GetMaterialsRegionalDemandData(
         addon,
         cache.itemLink,
         normalizedItemID,
         frame.materialsDemandCache
-    ) or {}
+    )
 
-    local valueByDemandSource = {
-        DBMarket = demandData.marketValue,
-        DBHistorical = demandData.historicalValue,
-        DBRegionSaleRate = demandData.regionSaleRate,
-        DBRegionSoldPerDay = demandData.regionSoldPerDay,
-    }
-    local value = source and source.tsmKey and valueByDemandSource[source.tsmKey] or nil
-    if value == nil and source and source.tsmKey and type(addon.GetTSMItemValueForItemID) == "function" then
-        value = addon:GetTSMItemValueForItemID(source.tsmKey, normalizedItemID, true)
-    end
+    local value, valueSourceID, valueSourceLabel, valueSourceWasFallback =
+        ResolveMaterialsItemValue(addon, source, normalizedItemID)
     cache.value = math.max(0, tonumber(value) or 0)
-    cache.valueSourceID = source and source.id
-    cache.valueSourceLabel = source and source.label
+    cache.valueSourceID = valueSourceID
+    cache.valueSourceLabel = valueSourceLabel
+    cache.valueSourceWasFallback = valueSourceWasFallback == true
     cache.metricsLoaded = true
     return cache
 end
@@ -1413,6 +1539,9 @@ local function MaterialItemMatchesSearch(addon, frame, source, itemID, normalize
             frame.searchItemDataRequested[itemID] = true
             RequestMaterialsItemData(addon, itemID)
         end
+        itemName = GetMaterialsCatalogItemName(itemID)
+    end
+    if not itemName then
         return false
     end
 
@@ -1457,6 +1586,7 @@ local function BuildMaterialRow(addon, frame, source, expansionLookup, item, def
         value = cache.value,
         valueSourceID = cache.valueSourceID,
         valueSourceLabel = cache.valueSourceLabel,
+        valueSourceWasFallback = cache.valueSourceWasFallback == true,
         expansionID = item.expansion,
         expansionLabel = GetOptionLabel(expansionLookup, item.expansion, tostring(item.expansion or "Unknown")),
         professionLabel = GetPrimaryProfessionLabel(item),
@@ -1542,6 +1672,9 @@ local function BuildComponentRow(addon, frame, source, expansionLookup, itemLook
     end
 
     local componentItem = itemLookup[itemID] or {}
+    if IsExcludedPandariaMaterial(componentItem) then
+        return nil
+    end
     local cache = ResolveMaterialsItemCache(addon, frame, source, math.floor(itemID + 0.5), deferMetrics)
     local quantity = math.max(0, tonumber(component.quantity) or 0)
         * math.max(0, tonumber(quantityMultiplier) or 1)
@@ -1580,6 +1713,7 @@ local function BuildComponentRow(addon, frame, source, expansionLookup, itemLook
         recipeSourceLabel = componentItem.recipeSourceLabel,
         valueSourceID = cache.valueSourceID,
         valueSourceLabel = cache.valueSourceLabel,
+        valueSourceWasFallback = cache.valueSourceWasFallback == true,
         dropPerHour = dropRate and dropRate.dropPerHour or 0,
         dropQuantity = dropRate and dropRate.quantity or 0,
         dropDurationSeconds = dropRate and dropRate.durationSeconds or 0,
@@ -1668,7 +1802,25 @@ function GoldTracker:GetCraftingFarmingValueSource()
         or self:GetCurrentValueSource()
 end
 
+function GoldTracker:CollapseCraftingFarmingComposedMaterials()
+    local frame = self.craftingFarmingFrame
+    if not frame or not frame.composedMaterialsExpanded then
+        return false
+    end
+
+    frame.composedMaterialsExpanded = false
+    frame.expandedComposedMaterials = {}
+    frame.materialDisplayRows = nil
+    frame.materialsRefreshGeneration = (tonumber(frame.materialsRefreshGeneration) or 0) + 1
+    frame.materialsRealtimeLoading = false
+    if self.craftingFarmingExpandedFrame then
+        self.craftingFarmingExpandedFrame.materialDisplayRows = nil
+    end
+    return true
+end
+
 function GoldTracker:SetCraftingFarmingValueSource(sourceID)
+    self:CollapseCraftingFarmingComposedMaterials()
     local source = self.VALUE_SOURCE_BY_ID[sourceID] or self:GetCraftingFarmingValueSource()
     if self.db and source then
         self.db.craftingFarmingValueSource = source.id
@@ -1681,6 +1833,7 @@ function GoldTracker:SetCraftingFarmingValueSource(sourceID)
 end
 
 function GoldTracker:SetCraftingFarmingExpansionFilter(expansionID)
+    self:CollapseCraftingFarmingComposedMaterials()
     local normalizedExpansionID = NormalizeExpansionID(expansionID)
     if self.db then
         self.db.craftingFarmingExpansionID = normalizedExpansionID
@@ -1688,11 +1841,21 @@ function GoldTracker:SetCraftingFarmingExpansionFilter(expansionID)
     if self.craftingFarmingFrame then
         self.craftingFarmingFrame.expansionID = normalizedExpansionID
     end
+    local professionID = self.craftingFarmingFrame and self.craftingFarmingFrame.professionID
+        or (self.db and self.db.craftingFarmingProfessionID)
+    local profession = GetProfessionLookup()[professionID]
+    if profession and profession.expansion and normalizedExpansionID ~= "all"
+        and profession.expansion ~= normalizedExpansionID then
+        self:SetCraftingFarmingProfessionFilter("all")
+    end
     return normalizedExpansionID
 end
 
 function GoldTracker:SetCraftingFarmingProfessionFilter(professionID)
-    local selected, ordered = NormalizeProfessionSelections(nil, professionID)
+    self:CollapseCraftingFarmingComposedMaterials()
+    local expansionID = self.craftingFarmingFrame and self.craftingFarmingFrame.expansionID
+        or (self.db and self.db.craftingFarmingExpansionID)
+    local selected, ordered = NormalizeProfessionSelections(nil, professionID, expansionID)
     local normalizedProfessionID = ordered[1] or NormalizeProfessionID(nil)
     if self.db then
         self.db.craftingFarmingProfessionID = normalizedProfessionID
@@ -1706,8 +1869,10 @@ function GoldTracker:SetCraftingFarmingProfessionFilter(professionID)
 end
 
 function GoldTracker:ToggleCraftingFarmingProfessionFilter(professionID)
+    self:CollapseCraftingFarmingComposedMaterials()
     local frame = self.craftingFarmingFrame
-    local selected, ordered = NormalizeProfessionSelections(nil, professionID)
+    local expansionID = frame and frame.expansionID or (self.db and self.db.craftingFarmingExpansionID)
+    local selected, ordered = NormalizeProfessionSelections(nil, professionID, expansionID)
     local normalizedProfessionID = ordered[1] or NormalizeProfessionID(nil)
     if self.db then
         self.db.craftingFarmingProfessionID = normalizedProfessionID
@@ -1730,13 +1895,15 @@ function GoldTracker:BuildCraftingFarmingRows(options)
     local deferMetrics = options.deferMetrics == true
     local source = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetCraftingFarmingValueSource()
     local expansionID = NormalizeExpansionID(frame.expansionID)
-    local professionIDs = NormalizeProfessionSelections(frame.professionIDs, frame.professionID)
+    local professionIDs = NormalizeProfessionSelections(frame.professionIDs, frame.professionID, expansionID)
     local searchText = NormalizeMaterialsSearchText(frame.searchText)
     local isSearching = searchText ~= ""
     local expansionLookup = GetExpansionLookup()
     local rows = {}
     local baseRows = {}
-    local instanceRows = {}
+    local raidRows = {}
+    local raidMaterialCount = 0
+    local raidMaterialsExpanded = frame.raidMaterialsExpanded == true
     local composedRows = {}
     local composedMaterialCount = 0
     local composedMaterialsExpanded = frame.composedMaterialsExpanded == true
@@ -1752,15 +1919,24 @@ function GoldTracker:BuildCraftingFarmingRows(options)
 
     for _, item in ipairs(materialItems) do
         local itemID = tonumber(item and item.itemID)
+        local isRaidMaterial = itemID and IsRaidMaterial(item)
         if itemID
             and not seenItems[itemID]
+            and not IsExcludedMaterialsProduct(item)
+            and not IsExcludedPandariaMaterial(item)
             and (isSearching or expansionID == "all" or item.expansion == expansionID)
-            and (isSearching or ItemMatchesProfessionSelection(item, professionIDs))
+            and (isSearching or ItemMatchesProfessionSelection(item, professionIDs, isRaidMaterial))
             and MaterialItemMatchesSearch(self, frame, source, itemID, searchText) then
             seenItems[itemID] = true
             local isComposedMaterial = ItemHasComponents(item)
             local row
-            if isComposedMaterial and not composedMaterialsExpanded then
+            if isRaidMaterial then
+                raidMaterialCount = raidMaterialCount + 1
+                if raidMaterialsExpanded then
+                    row = BuildMaterialRow(self, frame, source, expansionLookup, item, deferMetrics, isComposedMaterial)
+                    raidRows[#raidRows + 1] = row
+                end
+            elseif isComposedMaterial and not composedMaterialsExpanded then
                 composedMaterialCount = composedMaterialCount + 1
             else
                 row = BuildMaterialRow(
@@ -1773,12 +1949,10 @@ function GoldTracker:BuildCraftingFarmingRows(options)
                     isComposedMaterial and composedMaterialsExpanded
                 )
             end
-            if row then
+            if row and not isRaidMaterial then
                 if row.isComposedMaterial then
                     composedMaterialCount = composedMaterialCount + 1
                     composedRows[#composedRows + 1] = row
-                elseif row.acquisitionType == "instance" then
-                    instanceRows[#instanceRows + 1] = row
                 else
                     baseRows[#baseRows + 1] = row
                 end
@@ -1788,19 +1962,25 @@ function GoldTracker:BuildCraftingFarmingRows(options)
 
     local sortCriteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", MATERIALS_SORT_KEYS)
     SortMaterialsRows(baseRows, frame.sortKey, frame.sortAscending, sortCriteria)
-    SortMaterialsRows(instanceRows, frame.sortKey, frame.sortAscending, sortCriteria)
+    SortMaterialsRows(raidRows, frame.sortKey, frame.sortAscending, sortCriteria)
     SortMaterialsRows(composedRows, frame.sortKey, frame.sortAscending, sortCriteria)
 
     for _, row in ipairs(baseRows) do
         rows[#rows + 1] = row
     end
-    if #instanceRows > 0 then
+    if raidMaterialCount > 0 then
         rows[#rows + 1] = {
             rowType = "divider",
-            label = "Raid and dungeon mining materials",
+            label = "Instance items",
+            dividerKind = "raidMaterials",
+            expanded = raidMaterialsExpanded,
         }
-        for _, row in ipairs(instanceRows) do
+        for _, row in ipairs(raidRows) do
             rows[#rows + 1] = row
+            if row.expanded then
+                AppendExpandedComponentRows(self, frame, source, expansionLookup, itemLookup,
+                    rows, row, 1, { [row.itemID] = true }, deferMetrics)
+            end
         end
     end
     if composedMaterialCount > 0 then
@@ -1838,8 +2018,19 @@ function GoldTracker:GetCraftingFarmingKnownMaterialItems()
     return BuildMaterialsItemList(self)
 end
 
+function GoldTracker:GetCraftingFarmingBrowseProfessionOptions(expansionID)
+    expansionID = expansionID or (self.craftingFarmingFrame and self.craftingFarmingFrame.expansionID)
+        or (self.db and self.db.craftingFarmingExpansionID)
+    return GetProfessionOptions(NormalizeExpansionID(expansionID))
+end
+
 function GoldTracker:GetCraftingFarmingProfessionOptions()
-    return GetProfessionOptions()
+    -- Item assignment menus need real professions, without the extra browsing categories.
+    local options = {}
+    for _, option in ipairs(GetMaterialsData().professions or {}) do
+        if not option.browsingOnly then options[#options + 1] = option end
+    end
+    return options
 end
 
 function GoldTracker:IsCraftingFarmingFavorite(rowOrItemID)
@@ -2019,7 +2210,7 @@ function GoldTracker:OpenMaterialFarmingMap(itemID)
                     end,
                 })
             end
-            return self:BuildStandaloneMapDetailLines((mapOption and mapOption.pins) or {}, mapOption and mapOption.mapID, mapLabel)
+            return self:BuildStandaloneMapDetailLines((mapOption and (mapOption.detailPins or mapOption.pins)) or {}, mapOption and mapOption.mapID, mapLabel)
         end,
     })
     return true
@@ -2332,7 +2523,7 @@ function GoldTracker:RefreshCraftingFarmingWindowControls()
         UIDropDownMenu_SetText(frame.expansionDropdown, expansionOption.label)
     end
 
-    local professionIDs, orderedProfessionIDs = NormalizeProfessionSelections(frame.professionIDs, frame.professionID)
+    local professionIDs, orderedProfessionIDs = NormalizeProfessionSelections(frame.professionIDs, frame.professionID, frame.expansionID)
     frame.professionIDs = professionIDs
     frame.professionID = orderedProfessionIDs[1] or NormalizeProfessionID(nil)
     if frame.professionDropdown then
@@ -2385,7 +2576,7 @@ function GoldTracker:UpdateCraftingFarmingSortHeaderState(targetFrame)
     end
 end
 
-function GoldTracker:ToggleCraftingFarmingSort(sortKey)
+function GoldTracker:ToggleCraftingFarmingSort(sortKey, mouseButton)
     local frame = self.craftingFarmingFrame
     if not frame or not MATERIALS_SORT_KEYS[sortKey] then
         return
@@ -2393,6 +2584,7 @@ function GoldTracker:ToggleCraftingFarmingSort(sortKey)
 
     self:ToggleTableSortCriterion(frame, sortKey, sortKey ~= "value", {
         validKeys = MATERIALS_SORT_KEYS,
+        mouseButton = mouseButton,
     })
 
     self:RefreshCraftingFarmingWindow(true)
@@ -2485,6 +2677,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
             end,
         }
     )
+    local tagWidth = Theme:GetRequiredTextColumnWidth(frame.rows, "tagText", MATERIALS_TAG_WIDTH, { padding = 10 })
     local minimumTableWidth =
         favoriteX
         + MATERIALS_FAVORITE_WIDTH
@@ -2494,7 +2687,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         + requiredItemWidth
         + MATERIALS_EXPANSION_WIDTH
         + MATERIALS_PROFESSION_WIDTH
-        + MATERIALS_TAG_WIDTH
+        + tagWidth
         + MATERIALS_DROP_RATE_WIDTH
         + MATERIALS_GOLD_RATE_WIDTH
         + MATERIALS_DEMAND_WIDTH
@@ -2526,7 +2719,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
     local goldRateX = demandX - MATERIALS_COLUMN_GAP - MATERIALS_GOLD_RATE_WIDTH
     local dropRateX = goldRateX - MATERIALS_COLUMN_GAP - MATERIALS_DROP_RATE_WIDTH
     local valueX = dropRateX - MATERIALS_COLUMN_GAP - MATERIALS_VALUE_WIDTH
-    local tagX = valueX - MATERIALS_COLUMN_GAP - MATERIALS_TAG_WIDTH
+    local tagX = valueX - MATERIALS_COLUMN_GAP - tagWidth
     local itemWidth = math.max(requiredItemWidth, tagX - MATERIALS_COLUMN_GAP - itemX)
 
     if frame.listPanel then
@@ -2535,7 +2728,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         SetMaterialsHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.addHeaderButton, frame.listPanel, headerX + addX - horizontalOffset, MATERIALS_ADD_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
-        SetMaterialsHeaderColumn(frame.tagHeaderButton, frame.listPanel, headerX + tagX - horizontalOffset, MATERIALS_TAG_WIDTH)
+        SetMaterialsHeaderColumn(frame.tagHeaderButton, frame.listPanel, headerX + tagX - horizontalOffset, tagWidth)
         SetMaterialsHeaderColumn(frame.valueHeaderButton, frame.listPanel, headerX + valueX - horizontalOffset, MATERIALS_VALUE_WIDTH)
         SetMaterialsHeaderColumn(frame.componentCostHeaderButton, frame.listPanel, headerX + componentCostX - horizontalOffset, MATERIALS_COMPONENT_COST_WIDTH)
         SetMaterialsHeaderColumn(frame.profitHeaderButton, frame.listPanel, headerX + profitX - horizontalOffset, MATERIALS_MARGIN_WIDTH)
@@ -2573,7 +2766,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
             row.icon:SetPoint("LEFT", row, "LEFT", iconX + rowIndent - horizontalOffset, 0)
         end
         SetMaterialsRowColumn(row.itemText, row, itemX + rowIndent - horizontalOffset, math.max(1, itemWidth - rowIndent))
-        SetMaterialsRowColumn(row.tagText, row, tagX - horizontalOffset, MATERIALS_TAG_WIDTH)
+        SetMaterialsRowColumn(row.tagText, row, tagX - horizontalOffset, tagWidth)
         SetMaterialsRowColumn(row.valueText, row, valueX - horizontalOffset, MATERIALS_VALUE_WIDTH)
         SetMaterialsRowColumn(row.componentCostText, row, componentCostX - horizontalOffset, MATERIALS_COMPONENT_COST_WIDTH)
         SetMaterialsRowColumn(row.profitText, row, profitX - horizontalOffset, MATERIALS_MARGIN_WIDTH)
@@ -2863,7 +3056,11 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
         elseif self.materialManualProfessionOverride then
             GameTooltip:AddDoubleLine("Material source", "Manual profession override", 0.72, 0.86, 1.0, 1, 1, 1)
         end
-        GameTooltip:AddDoubleLine("Value source", self.valueSourceLabel or "Unknown", 0.72, 0.86, 1.0, 1, 1, 1)
+        local valueSourceLabel = self.valueSourceLabel or "Unknown"
+        if self.valueSourceWasFallback then
+            valueSourceLabel = valueSourceLabel .. " (fallback)"
+        end
+        GameTooltip:AddDoubleLine("Value source", valueSourceLabel, 0.72, 0.86, 1.0, 1, 1, 1)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("TSM regional demand", 1.0, 0.82, 0.18)
         local regionSaleRateText = FormatMaterialsDecimalValue(self.regionSaleRate, 3)
@@ -2872,7 +3069,7 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
         end
         GameTooltip:AddDoubleLine(
             "DBRegionSoldPerDay",
-            FormatMaterialsDecimalValue(self.regionSoldPerDay, 2) or "Unknown",
+            FormatMaterialsDecimalValue(self.regionSoldPerDay, 3) or "Unknown",
             0.72, 0.86, 1.0,
             1, 1, 1
         )
@@ -2949,9 +3146,10 @@ function GoldTracker:GetCraftingFarmingWindowRow(index, targetFrame)
     BindMaterialsResultsMouseWheel(itemTooltipTarget, frame)
     row:SetScript("OnClick", function(self, button)
         if self.rowType == "divider" then
-            if self.dividerKind == "composedMaterials" then
+            if self.dividerKind == "composedMaterials" or self.dividerKind == "raidMaterials" then
                 local primaryFrame = GoldTracker.craftingFarmingFrame
-                primaryFrame.composedMaterialsExpanded = not primaryFrame.composedMaterialsExpanded
+                local stateKey = self.dividerKind .. "Expanded"
+                primaryFrame[stateKey] = not primaryFrame[stateKey]
                 GoldTracker:RefreshCraftingFarmingWindow(false)
             end
             return
@@ -3180,7 +3378,9 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
         and options.rows
         or self:BuildCraftingFarmingRows({ deferMetrics = options.deferMetrics == true })
     frame.materialDisplayRows = rows
-    if options.recordSnapshots == true and type(self.RecordCraftingFarmingMarketSnapshots) == "function" then
+    if type(self.RecordDisplayedItemMarketSnapshots) == "function" then
+        self:RecordDisplayedItemMarketSnapshots(rows)
+    elseif options.recordSnapshots == true and type(self.RecordCraftingFarmingMarketSnapshots) == "function" then
         local snapshotRows = {}
         local seenSnapshotItems = {}
         for _, row in ipairs(rows) do
@@ -3282,6 +3482,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
             row.recipeSourceLabel = result.recipeSourceLabel
             row.valueSourceID = result.valueSourceID
             row.valueSourceLabel = result.valueSourceLabel
+            row.valueSourceWasFallback = result.valueSourceWasFallback == true
             row.dropPerHour = result.dropPerHour
             row.goldPerHour = result.goldPerHour
             row.dropQuantity = result.dropQuantity
@@ -3306,7 +3507,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                 if row.favoriteButton then
                     row.favoriteButton:Hide()
                 end
-                local dividerToggle = result.dividerKind == "composedMaterials"
+                local dividerToggle = (result.dividerKind == "composedMaterials" or result.dividerKind == "raidMaterials")
                     and (result.expanded and "-" or "+")
                     or ""
                 row.toggleText:SetText(dividerToggle)
@@ -3508,7 +3709,7 @@ function GoldTracker:CreateCraftingFarmingWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerCraftingFarmingFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerCraftingFarmingFrame", UIParent)
     frame:SetSize(MATERIALS_WINDOW_WIDTH, MATERIALS_WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame:SetFrameStrata("DIALOG")
@@ -3551,7 +3752,8 @@ function GoldTracker:CreateCraftingFarmingWindow()
     local professionOrder
     frame.professionIDs, professionOrder = NormalizeProfessionSelections(
         self.db and self.db.craftingFarmingProfessionIDs,
-        self.db and self.db.craftingFarmingProfessionID
+        self.db and self.db.craftingFarmingProfessionID,
+        frame.expansionID
     )
     frame.professionID = professionOrder[1] or NormalizeProfessionID(nil)
     frame.rows = {}
@@ -3608,7 +3810,7 @@ function GoldTracker:CreateCraftingFarmingWindow()
         UIDropDownMenu_SetAnchor(professionDropdown, 0, -2, "TOPRIGHT", button or professionDropdown, "BOTTOMRIGHT")
     end
     UIDropDownMenu_Initialize(professionDropdown, function(_, level)
-        for _, profession in ipairs(GetProfessionOptions()) do
+        for _, profession in ipairs(addon:GetCraftingFarmingBrowseProfessionOptions(frame.expansionID)) do
             local info = UIDropDownMenu_CreateInfo()
             info.text = profession.label
             info.value = profession.id
@@ -3685,6 +3887,7 @@ function GoldTracker:CreateCraftingFarmingWindow()
             return
         end
         frame.searchText = searchText
+        addon:CollapseCraftingFarmingComposedMaterials()
         frame.materialsSearchGeneration = (tonumber(frame.materialsSearchGeneration) or 0) + 1
         local searchGeneration = frame.materialsSearchGeneration
         local function applySearch()
@@ -3760,98 +3963,74 @@ function GoldTracker:CreateCraftingFarmingWindow()
     local profitHeaderButton = CreateMaterialsHeaderButton(listPanel, "Margin", MATERIALS_MARGIN_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(profitHeaderButton, listPanel, 2)
     profitHeaderButton:SetPoint("RIGHT", mapHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    profitHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("profit")
-    end)
+    addon:BindTableSortHeaderClick(profitHeaderButton, addon.ToggleCraftingFarmingSort, "profit")
     frame.profitHeaderButton = profitHeaderButton
 
     local componentCostHeaderButton = CreateMaterialsHeaderButton(listPanel, "Mat cost", MATERIALS_COMPONENT_COST_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(componentCostHeaderButton, listPanel, 2)
     componentCostHeaderButton:SetPoint("RIGHT", profitHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    componentCostHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("componentCost")
-    end)
+    addon:BindTableSortHeaderClick(componentCostHeaderButton, addon.ToggleCraftingFarmingSort, "componentCost")
     frame.componentCostHeaderButton = componentCostHeaderButton
 
     local valueHeaderButton = CreateMaterialsHeaderButton(listPanel, "Value", MATERIALS_VALUE_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(valueHeaderButton, listPanel, 2)
     valueHeaderButton:SetPoint("RIGHT", componentCostHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    valueHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("value")
-    end)
+    addon:BindTableSortHeaderClick(valueHeaderButton, addon.ToggleCraftingFarmingSort, "value")
     frame.valueHeaderButton = valueHeaderButton
 
     local trendHeaderButton = CreateMaterialsHeaderButton(listPanel, "Trend", MATERIALS_TREND_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(trendHeaderButton, listPanel, 2)
     trendHeaderButton:SetPoint("RIGHT", valueHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    trendHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("marketTrend")
-    end)
+    addon:BindTableSortHeaderClick(trendHeaderButton, addon.ToggleCraftingFarmingSort, "marketTrend")
     frame.trendHeaderButton = trendHeaderButton
 
     local sellRateHeaderButton = CreateMaterialsHeaderButton(listPanel, "Sale %", MATERIALS_SELL_RATE_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(sellRateHeaderButton, listPanel, 2)
     sellRateHeaderButton:SetPoint("RIGHT", trendHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    sellRateHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("sellRate")
-    end)
+    addon:BindTableSortHeaderClick(sellRateHeaderButton, addon.ToggleCraftingFarmingSort, "sellRate")
     frame.sellRateHeaderButton = sellRateHeaderButton
 
     local demandHeaderButton = CreateMaterialsHeaderButton(listPanel, "Sold/day", MATERIALS_DEMAND_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(demandHeaderButton, listPanel, 2)
     demandHeaderButton:SetPoint("RIGHT", sellRateHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    demandHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("demand")
-    end)
+    addon:BindTableSortHeaderClick(demandHeaderButton, addon.ToggleCraftingFarmingSort, "demand")
     frame.demandHeaderButton = demandHeaderButton
 
     local dropRateHeaderButton = CreateMaterialsHeaderButton(listPanel, "Drop/h", MATERIALS_DROP_RATE_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(dropRateHeaderButton, listPanel, 2)
     dropRateHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    dropRateHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("dropRate")
-    end)
+    addon:BindTableSortHeaderClick(dropRateHeaderButton, addon.ToggleCraftingFarmingSort, "dropRate")
     frame.dropRateHeaderButton = dropRateHeaderButton
 
     local goldRateHeaderButton = CreateMaterialsHeaderButton(listPanel, "Gold/h", MATERIALS_GOLD_RATE_WIDTH, "RIGHT")
     SetMaterialsFrameLevel(goldRateHeaderButton, listPanel, 2)
     goldRateHeaderButton:SetPoint("RIGHT", demandHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    goldRateHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("goldRate")
-    end)
+    addon:BindTableSortHeaderClick(goldRateHeaderButton, addon.ToggleCraftingFarmingSort, "goldRate")
     frame.goldRateHeaderButton = goldRateHeaderButton
 
     local tagHeaderButton = CreateMaterialsHeaderButton(listPanel, "Type", MATERIALS_TAG_WIDTH, "LEFT")
     SetMaterialsFrameLevel(tagHeaderButton, listPanel, 2)
     tagHeaderButton:SetPoint("RIGHT", dropRateHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    tagHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("tag")
-    end)
+    addon:BindTableSortHeaderClick(tagHeaderButton, addon.ToggleCraftingFarmingSort, "tag")
     frame.tagHeaderButton = tagHeaderButton
 
     local professionHeaderButton = CreateMaterialsHeaderButton(listPanel, "Profession", MATERIALS_PROFESSION_WIDTH, "LEFT")
     SetMaterialsFrameLevel(professionHeaderButton, listPanel, 2)
     professionHeaderButton:SetPoint("RIGHT", tagHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    professionHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("profession")
-    end)
+    addon:BindTableSortHeaderClick(professionHeaderButton, addon.ToggleCraftingFarmingSort, "profession")
     frame.professionHeaderButton = professionHeaderButton
 
     local expansionHeaderButton = CreateMaterialsHeaderButton(listPanel, "Expansion", MATERIALS_EXPANSION_WIDTH, "LEFT")
     SetMaterialsFrameLevel(expansionHeaderButton, listPanel, 2)
     expansionHeaderButton:SetPoint("RIGHT", professionHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    expansionHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("expansion")
-    end)
+    addon:BindTableSortHeaderClick(expansionHeaderButton, addon.ToggleCraftingFarmingSort, "expansion")
     frame.expansionHeaderButton = expansionHeaderButton
 
     local itemHeaderButton = CreateMaterialsHeaderButton(listPanel, "Item", nil, "LEFT")
     SetMaterialsFrameLevel(itemHeaderButton, listPanel, 2)
     itemHeaderButton:SetPoint("TOPLEFT", listPanel, "TOPLEFT", 92, -12)
     itemHeaderButton:SetPoint("RIGHT", expansionHeaderButton, "LEFT", -MATERIALS_COLUMN_GAP, 0)
-    itemHeaderButton:SetScript("OnClick", function()
-        addon:ToggleCraftingFarmingSort("itemName")
-    end)
+    addon:BindTableSortHeaderClick(itemHeaderButton, addon.ToggleCraftingFarmingSort, "itemName")
     frame.itemHeaderButton = itemHeaderButton
 
     local favoriteHeaderButton = CreateMaterialsHeaderButton(listPanel, "Fav", MATERIALS_FAVORITE_WIDTH, "CENTER")
@@ -3975,8 +4154,13 @@ function GoldTracker:CreateCraftingFarmingWindow()
         addon:RefreshCraftingFarmingWindow(true)
     end)
     frame:SetScript("OnHide", function()
+        local collapsed = addon:CollapseCraftingFarmingComposedMaterials()
         frame.materialsRefreshGeneration = (tonumber(frame.materialsRefreshGeneration) or 0) + 1
         frame.materialsRealtimeLoading = false
+        local expandedFrame = addon.craftingFarmingExpandedFrame
+        if collapsed and expandedFrame and expandedFrame:IsShown() then
+            addon:RefreshCraftingFarmingWindow(false)
+        end
         if type(addon.ReleaseHiddenExplorerCaches) == "function" then
             addon:ReleaseHiddenExplorerCaches()
         end
@@ -3994,7 +4178,7 @@ function GoldTracker:CreateCraftingFarmingExpandedWindow()
 
     self:CreateCraftingFarmingWindow()
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerMaterialsExpandedFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerMaterialsExpandedFrame", UIParent)
     local width = MATERIALS_EXPANDED_WINDOW_WIDTH
     local height = MATERIALS_EXPANDED_WINDOW_HEIGHT
     if UIParent and type(UIParent.GetWidth) == "function" then
@@ -4063,9 +4247,7 @@ function GoldTracker:CreateCraftingFarmingExpandedWindow()
         local button = CreateMaterialsHeaderButton(listPanel, label, widthValue, justify)
         SetMaterialsFrameLevel(button, listPanel, 2)
         if sortKey then
-            button:SetScript("OnClick", function()
-                addon:ToggleCraftingFarmingSort(sortKey)
-            end)
+            addon:BindTableSortHeaderClick(button, addon.ToggleCraftingFarmingSort, sortKey)
         end
         frame[frameKey] = button
         return button
@@ -4185,6 +4367,9 @@ function GoldTracker:CreateCraftingFarmingExpandedWindow()
         addon:RefreshCraftingFarmingExpandedWindow(true)
     end)
     frame:SetScript("OnHide", function()
+        if addon:CollapseCraftingFarmingComposedMaterials() and addon.craftingFarmingFrame:IsShown() then
+            addon:RefreshCraftingFarmingWindow(false)
+        end
         GameTooltip:Hide()
         if type(addon.ReleaseHiddenExplorerCaches) == "function" then
             addon:ReleaseHiddenExplorerCaches()

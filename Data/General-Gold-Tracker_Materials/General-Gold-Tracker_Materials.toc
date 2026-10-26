@@ -1,5 +1,8 @@
 ## Interface: 120001, 120000
 ## Title: General Gold Tracker - Materials
+## Category: Auction & Economy
+## Group: General-Gold-Tracker
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## Notes: On-demand Explorer data for General Gold Tracker.
 ## LoadOnDemand: 1
 ## Dependencies: General-Gold-Tracker
@@ -168,5 +171,13 @@ MaterialFarmingSpots/Midnight/Miscellaneous.lua
 MaterialFarmingSpots/Midnight/Crafting.lua
 MaterialFarmingSpots/Midnight/Housing.lua
 MaterialFarmingSpots/CatalogGathering.lua
+MaterialFarmingSpots/Mists/BaseMaterialMaps.lua
+MaterialFarmingSpots/Warlords/BaseMaterialMaps.lua
+MaterialFarmingSpots/Legion/BaseMaterialMaps.lua
+MaterialFarmingSpots/BattleForAzeroth/BaseMaterialMaps.lua
+MaterialFarmingSpots/Shadowlands/BaseMaterialMaps.lua
+MaterialFarmingSpots/Dragonflight/BaseMaterialMaps.lua
+MaterialFarmingSpots/WarWithin/BaseMaterialMaps.lua
+MaterialFarmingSpots/Midnight/BaseMaterialMaps.lua
 MaterialFarmingSpots/Midnight/Finalize.lua
 MaterialFarmingSpots/Finalize.lua

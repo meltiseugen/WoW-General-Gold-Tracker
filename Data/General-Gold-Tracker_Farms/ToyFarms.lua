@@ -1,7 +1,7 @@
 local _, NS = ...
 
 -- Curated Retail acquisition research for every visible Drops > Toys row.
--- Coordinates are normalized UI-map coordinates. Research reviewed 2026-10-03.
+-- Coordinates are normalized UI-map coordinates. Additions reviewed 2026-10-21.
 
 local researchByFarmID = {
     WornTrollDice = {
@@ -231,6 +231,38 @@ local researchByFarmID = {
             { siteName = "Warcraft Wiki NPC summary", url = "https://warcraft.wiki.gg/wiki/Smashum_Grabb" },
         },
     },
+    PrettyDraenorPearl = {
+        name = "Pretty Draenor Pearl",
+        mapOptions = {
+            {
+                id = "ggt:toy:pretty-draenor-pearl:cave-pool",
+                mapID = 525,
+                mapLabel = "Frostfire Ridge",
+                label = "Giant Draenor Clam cave pool",
+                location = "Northern Frostfire Ridge cave",
+                isRoute = false,
+                density = "One fishing treasure per character",
+                dropDifficulty = "Once-per-character treasure (quest 34907).",
+                pins = { { x = 0.218, y = 0.097, label = "Giant Draenor Clam cave pool" } },
+            },
+        },
+        summary = "Tradeable toy inside the bound Giant Draenor Clam fishing treasure. One treasure per character; the clam itself cannot be auctioned.",
+        guide = {
+            label = "Cave fishing treasure",
+            requirement = "Reach the cave in northern Frostfire Ridge and check treasure quest 34907 before travelling.",
+            action = "Fish the Giant Draenor Clam treasure pool, then open the bound clam for the Pretty Draenor Pearl.",
+            tips = {
+                "Enter the cave near 22,9 in northern Frostfire Ridge and fish the Giant Draenor Clam treasure pool near 21.8,9.7.",
+                "Open the bound Giant Draenor Clam for the tradeable Pretty Draenor Pearl toy. Sell the pearl before learning it.",
+                "This is a once-per-character treasure (quest 34907), not an endlessly repeatable clam farm. Check treasure completion before travelling.",
+            },
+        },
+        details = { "The cave pool is near 21.8,9.7, with the cave approach near 22,9 in Frostfire Ridge." },
+        sourceUrls = {
+            { siteName = "Wowhead pearl", url = "https://www.wowhead.com/item=108739" },
+            { siteName = "Wowhead clam", url = "https://www.wowhead.com/item=108738" },
+        },
+    },
     BigRedRayGun = {
         name = "Big Red Raygun",
         mapOptions = {
@@ -271,15 +303,52 @@ local researchByFarmID = {
 }
 
 local farms = {}
-local toyRows = NS.CatalogDropsData and NS.CatalogDropsData.categories and NS.CatalogDropsData.categories.toys or {}
+local toyRows, seenItems = {}, {}
+local rawRows = NS.CatalogDropsData and NS.CatalogDropsData.categories and NS.CatalogDropsData.categories.toys or {}
+for _, row in ipairs(rawRows) do
+    toyRows[#toyRows + 1] = row
+    seenItems[row.itemID] = true
+end
+for _, research in ipairs(NS.ToyAcquisitionResearch or {}) do
+    local farmID = "ResearchToy" .. research.itemID
+    if not seenItems[research.itemID] then
+        toyRows[#toyRows + 1] = {
+            recordID = "toys:Research:" .. research.itemID, farmID = farmID,
+            farmName = research.itemName, itemName = research.itemName, itemID = research.itemID,
+            itemLink = string.format("|Hitem:%d::::::::|h[%s]|h", research.itemID, research.itemName),
+            quantity = 1, contentID = research.contentID,
+            expansion = research.expansion, expansionLabel = research.expansionLabel,
+            mapID = research.mapOptions[1].mapID, locationLabel = research.mapOptions[1].mapLabel,
+            auctionable = research.auctionable, saleMethod = research.saleMethod,
+        }
+        seenItems[research.itemID] = true
+    end
+    local sources = {}
+    for _, url in ipairs(research.sourceUrls) do sources[#sources + 1] = { siteName = "Acquisition research", url = url } end
+    researchByFarmID[farmID] = {
+        name = research.itemName, summary = research.action,
+        guide = { label = research.guideLabel, requirement = research.requirement,
+            action = research.action, tips = research.tips },
+        details = { research.requirement, research.repeatability },
+        sourceUrls = sources, mapOptions = research.mapOptions,
+        auctionable = research.auctionable, saleMethod = research.saleMethod,
+        acquisitionType = research.acquisitionType, profession = research.profession,
+        useRequirement = research.useRequirement, minimumUseLevel = research.minimumUseLevel,
+        researchedAt = research.researchedAt,
+    }
+end
 for _, row in ipairs(toyRows) do
     local research = researchByFarmID[row.farmID]
     if research then
         local mapIDs = {}
         local mapNames = {}
+        local seenMaps = {}
         for _, option in ipairs(research.mapOptions or {}) do
-            mapIDs[#mapIDs + 1] = option.mapID
-            mapNames[#mapNames + 1] = option.mapLabel
+            if not seenMaps[option.mapID] then
+                mapIDs[#mapIDs + 1] = option.mapID
+                mapNames[#mapNames + 1] = option.mapLabel
+                seenMaps[option.mapID] = true
+            end
         end
         farms[#farms + 1] = {
             id = "ggt:toy:" .. tostring(row.farmID):lower():gsub("[^%w]+", "-"),
@@ -302,6 +371,13 @@ for _, row in ipairs(toyRows) do
             details = research.details,
             sourceUrls = research.sourceUrls,
             mapOptions = research.mapOptions,
+            auctionable = research.auctionable,
+            saleMethod = research.saleMethod,
+            acquisitionType = research.acquisitionType,
+            profession = research.profession,
+            useRequirement = research.useRequirement,
+            minimumUseLevel = research.minimumUseLevel,
+            researchedAt = research.researchedAt,
         }
     end
 end
@@ -351,8 +427,10 @@ catalog.uniqueItemCount = (tonumber(catalog.uniqueItemCount) or 0) + uniqueItems
 catalog.sourceCounts.curatedToys = #farms
 
 NS.ToyFarmData = {
-    dataVersion = 1,
-    researchedAt = "2026-10-03",
+    dataVersion = 2,
+    researchedAt = "2026-10-21",
+    baseResearchedAt = "2026-10-03",
     sourceRowCount = #toyRows,
+    rows = toyRows,
     farms = farms,
 }

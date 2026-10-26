@@ -1,0 +1,2105 @@
+{
+  "scope": "Missing visible warWithin Materials maps, including Instance items; Composed materials excluded",
+  "researchedAt": "2026-10-23",
+  "initialMissingMaps": 56,
+  "unusableExistingButtons": 6,
+  "repairedExistingRecords": 33,
+  "itemCount": 89,
+  "sources": {
+    "pigments": {
+      "url": "https://www.method.gg/guides/the-war-within-herb-milling-and-pigment-guide",
+      "supports": "Specific herb-to-pigment families and all three quality ranks.",
+      "review": "readable opened article"
+    },
+    "milling": {
+      "url": "https://www.method.gg/guides/the-war-within-inscription-profession-leveling-guide",
+      "supports": "Khaz Algar Milling consumes ten herbs.",
+      "review": "readable search-index text"
+    },
+    "crushing": {
+      "url": "https://www.wowhead.com/spell=434020/algari-crushing",
+      "supports": "Algari Crushing consumes three Khaz Algar gems plus ten Bismuth.",
+      "review": "readable opened spell page"
+    },
+    "unraveling": {
+      "url": "https://www.wowhead.com/spell=446926/unraveling",
+      "supports": "Tailoring destroys five eligible Khaz Algar cloth.",
+      "review": "readable opened spell page"
+    },
+    "threads": {
+      "url": "https://www.method.gg/guides/the-war-within-tailoring-profession-leveling-guide",
+      "supports": "Cloth-to-thread Unraveling; specialty cloth requires corresponding Tailoring setup.",
+      "review": "readable search-index text"
+    },
+    "modifiers": {
+      "url": "https://www.wowhead.com/guide/the-war-within/professions/herbalism-overview",
+      "supports": "Altered and Sporefused herbs provide Writhing Sample and Viridescent Spores.",
+      "review": "readable search-index text"
+    },
+    "thaumaturgy": {
+      "url": "https://www.wowhead.com/item=212514/blasphemite",
+      "supports": "Alchemy and Gleaming Transmutagen path, not an ore prospecting result.",
+      "review": "readable search-index text"
+    },
+    "peafowl": {
+      "url": "https://www.wowhead.com/npc=221523/dazzling-peafowl",
+      "supports": "Isle of Dorn and recorded Basically Beef, Warped Wing, Clipped Bird Wing drops; no precise pin established.",
+      "review": "readable search-index text"
+    },
+    "worms": {
+      "url": "https://www.wowhead.com/npc=218393/disturbed-earthgorger",
+      "supports": "Ringing Deeps rare elite with recorded Massive Worm Flank drops; not a continuous pull farm.",
+      "review": "readable search-index text"
+    },
+    "brisket": {
+      "url": "https://www.wowhead.com/item=225567/bug-brisket",
+      "supports": "Azj-Kahet Harvest Hauler and Isolated Crawler source records.",
+      "review": "readable search-index text"
+    },
+    "scrap": {
+      "url": "https://warcraft.wiki.gg/wiki/Slum_Shark_Scrap",
+      "supports": "Secondary result of Cooking Fresh Fillet on five Kaheti Slum Sharks; not an ordinary creature meat drop.",
+      "review": "readable search-index text"
+    },
+    "cooking": {
+      "url": "https://www.method.gg/guides/best-meat-and-fish-for-producing-ingredients-in-the-war-within",
+      "supports": "Fish and meat processing into prepared ingredients; five-input batches; no historical yields imported.",
+      "review": "readable opened article"
+    },
+    "steak": {
+      "url": "https://www.wowhead.com/spell=445118/portioned-steak",
+      "supports": "Portion five meats; quantity depends on Cooking skill.",
+      "review": "readable opened spell page"
+    },
+    "eggs": {
+      "url": "https://www.wowhead.com/item=223975/suspiciously-heavy-egg",
+      "supports": "Egg vendor /way #2216 60.0 31.6 and recipe /way #2213 48.2 24.8; powder plus chance of Yolk, excluding Yesterday eggs for Yolk.",
+      "review": "readable search-index text"
+    },
+    "protein": {
+      "url": "https://www.wowhead.com/spell=447871/protein-slurp",
+      "supports": "Five Fine Egg Powder; recipe from Eight-Shaker Sallow. Meat-salvage comments are not used as the established acquisition chain.",
+      "review": "readable search-index text"
+    },
+    "prepared-ghoulfish": {
+      "url": "https://warcraft.wiki.gg/wiki/Cursed_Ghoulfish",
+      "supports": "Bound Cursed Ghoulfish processes into Prepared Ghoulfish rather than normal Fresh Fillet; bound input remains hidden.",
+      "review": "readable search-index text"
+    },
+    "pilfering": {
+      "url": "https://www.wowhead.com/spell=447311/pilfer-through-parts",
+      "supports": "Five engineering components consumed. Reports distinguish bolts from components yielding rarer Pummeler parts.",
+      "review": "readable search-index text"
+    },
+    "scouring": {
+      "url": "https://www.wowhead.com/spell=447310/scour-through-scrap",
+      "supports": "Rusted Scrap processing and recorded refurbished tinker outcomes.",
+      "review": "readable search-index text"
+    },
+    "paxton": {
+      "url": "https://www.wowhead.com/npc=223163/paxton-bombshell",
+      "supports": "Post-11.1 player correction to 59.76,78.43 in Ringing Deeps; five rare parts purchase alternative; no vendor Bolts option added.",
+      "review": "readable search-index text"
+    },
+    "bloodstone": {
+      "url": "https://worldofwarcraft.blizzard.com/en-us/news/24134803/hotfixes-august-29-2024",
+      "supports": "2024 Blizzard hotfix: Vicious Bloodstone from eligible victory boxes, War Mode and Honor.",
+      "review": "readable search-index Blizzard text; direct open returned 403"
+    },
+    "pvp-hub": {
+      "url": "https://astro.k.icy-veins.com/wow/the-war-within-pvp-season-1-guide",
+      "supports": "Dornogal Contender gate quartermaster area 55.5,76.9. Historical prices and seasonal stats are not imported.",
+      "review": "readable search-index text"
+    },
+    "heraldry": {
+      "url": "https://warcraft.wiki.gg/wiki/Forged_Combatant%27s_Heraldry",
+      "supports": "Season 1 source has ended and new Heraldry is no longer obtainable; map is explicitly historical context.",
+      "review": "readable search-index text"
+    },
+    "delves": {
+      "url": "https://www.bluetracker.gg/wow/topic/eu-en/531278-the-war-within-hotfixes-16-october/",
+      "supports": "October 1 2024 Blizzard hotfix distributes all five specialty reagents across delve Heavy Trunks.",
+      "review": "readable opened Blizzard-post mirror"
+    },
+    "delve-entrances": {
+      "url": "https://www.wowhead.com/achievement=40437/delver-of-the-depths",
+      "supports": "Explicit numbered outdoor map coordinates: #2248 38.7 73.6; #2214 46.2 48.0; #2215 35.1 46.2; #2255 54.8 72.6.",
+      "review": "readable search-index comments across English PTR and German live pages; same location table"
+    },
+    "map-layer-conflict": {
+      "url": "https://www.method.gg/guides/tak-rethan-abyss-delve-guide",
+      "supports": "67.72,24.29 is explicitly City of Threads with unspecified layer, not Azj-Kahet overview. Old access marker replaced by the explicitly numbered #2255 entrance.",
+      "review": "readable opened article"
+    },
+    "coelacanth": {
+      "url": "https://www.wowhead.com/item=220153/awoken-coelacanth",
+      "supports": "Azj-Kahet open-water catch with Whispers of the Deep; unsupported shared Ringing Deeps/Hallowfall pool alternatives removed.",
+      "review": "readable item-comment excerpts across indexed PTR variants; no live farming test"
+    },
+    "pouch-removal": {
+      "url": "https://warcraft.wiki.gg/wiki/Delver%27s_Pouch_of_Reagents",
+      "supports": "Removed in 12.0.1, excluded as current farm.",
+      "review": "readable search-index text"
+    },
+    "sturdy-chests": {
+      "url": "https://www.cymre.com/2024/08/21/treasures-of-khaz-algar/",
+      "supports": "Nightfall Sanctum interior exploration chest context; not an exterior repeatable farm.",
+      "review": "readable search-index text"
+    },
+    "raid-entrance": {
+      "url": "https://www.blizzspirit.com/warcraft/manaforge-omega-guide-de-poche-du-raid-de-the-war-within/",
+      "supports": "K-aresh raid exterior 41.8,21.5; Forgeweaver Araz encounter and Reshii Wraps access requirements.",
+      "review": "readable opened article"
+    },
+    "raid-reagent": {
+      "url": "https://www.wowhead.com/item=249218",
+      "supports": "Existing researched reagent tooltip names Forgeweaver Araz; preserved source classification.",
+      "review": "inherited acquisition research from prior specialty pass; not independently re-fetched this pass"
+    }
+  },
+  "reviewLimits": [
+    "Source-family research; each quality variant was not fetched individually.",
+    "Inherited sourceUrls are retained, not all freshly reviewed.",
+    "Source-area choices have no invented coordinates.",
+    "A useful Map button does not imply current availability for the explicitly legacy Heraldry item.",
+    "Native WoW rendering, loot eligibility and drop yields remain untested."
+  ],
+  "items": [
+    {
+      "itemID": 210221,
+      "itemName": "Forged Combatant's Heraldry",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "heraldry"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210796,
+      "itemName": "Mycobloom",
+      "initialMapButton": true,
+      "initialMapOptions": 5,
+      "originalSpotIDs": [
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-ringing-deeps-underground-herb-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-hallowfall-arathors-spear-west-route",
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0409-01"
+      ],
+      "mapOptionCount": 9,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210797,
+      "itemName": "Mycobloom",
+      "initialMapButton": true,
+      "initialMapOptions": 3,
+      "originalSpotIDs": [
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-ringing-deeps-underground-herb-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-hallowfall-arathors-spear-west-route",
+        "catalog-gathering-0206-01"
+      ],
+      "mapOptionCount": 7,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210798,
+      "itemName": "Mycobloom",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-ringing-deeps-underground-herb-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-hallowfall-arathors-spear-west-route"
+      ],
+      "mapOptionCount": 6,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210799,
+      "itemName": "Luredrop",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-ringing-deeps-dark-route",
+        "tww-luredrop-hallowfall-beledars-bounty-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210800,
+      "itemName": "Luredrop",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-ringing-deeps-dark-route",
+        "tww-luredrop-hallowfall-beledars-bounty-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210801,
+      "itemName": "Luredrop",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-ringing-deeps-dark-route",
+        "tww-luredrop-hallowfall-beledars-bounty-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210802,
+      "itemName": "Orbinid",
+      "initialMapButton": true,
+      "initialMapOptions": 3,
+      "originalSpotIDs": [
+        "tww-orbinid-2255-1-supplied",
+        "tww-orbinid-2214-2-supplied",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route",
+        "catalog-gathering-0408-01"
+      ],
+      "mapOptionCount": 6,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210803,
+      "itemName": "Orbinid",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-orbinid-2255-1-supplied",
+        "tww-orbinid-2214-2-supplied",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route"
+      ],
+      "mapOptionCount": 5,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210804,
+      "itemName": "Orbinid",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-orbinid-2255-1-supplied",
+        "tww-orbinid-2214-2-supplied",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route"
+      ],
+      "mapOptionCount": 5,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210805,
+      "itemName": "Blessing Blossom",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-hallowfall-rich-soil-beledars-bounty"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210806,
+      "itemName": "Blessing Blossom",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-hallowfall-rich-soil-beledars-bounty"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210807,
+      "itemName": "Blessing Blossom",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-hallowfall-rich-soil-beledars-bounty"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210808,
+      "itemName": "Arathor's Spear",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-arathor-s-spear-2215-1-supplied",
+        "tww-arathor-s-spear-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-hallowfall-arathors-spear-west-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210809,
+      "itemName": "Arathor's Spear",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-arathor-s-spear-2215-1-supplied",
+        "tww-arathor-s-spear-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-hallowfall-arathors-spear-west-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210810,
+      "itemName": "Arathor's Spear",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-arathor-s-spear-2215-1-supplied",
+        "tww-arathor-s-spear-2248-2-supplied",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-hallowfall-arathors-spear-west-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210930,
+      "itemName": "Bismuth",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-azj-kahet-aqirite-route"
+      ],
+      "mapOptionCount": 6,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210931,
+      "itemName": "Bismuth",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-azj-kahet-aqirite-route"
+      ],
+      "mapOptionCount": 6,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210932,
+      "itemName": "Bismuth",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-azj-kahet-aqirite-route"
+      ],
+      "mapOptionCount": 6,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210933,
+      "itemName": "Aqirite",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-aqirite-2215-1-supplied",
+        "tww-aqirite-2215-2-supplied",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-azj-kahet-aqirite-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210934,
+      "itemName": "Aqirite",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-aqirite-2215-1-supplied",
+        "tww-aqirite-2215-2-supplied",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-azj-kahet-aqirite-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210935,
+      "itemName": "Aqirite",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-aqirite-2215-1-supplied",
+        "tww-aqirite-2215-2-supplied",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-azj-kahet-aqirite-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210936,
+      "itemName": "Ironclaw Ore",
+      "initialMapButton": true,
+      "initialMapOptions": 4,
+      "originalSpotIDs": [
+        "tww-ironclaw-ore-2248-1-supplied",
+        "tww-ironclaw-ore-2248-2-supplied",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route",
+        "catalog-gathering-0407-01",
+        "catalog-gathering-0410-01"
+      ],
+      "mapOptionCount": 6,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210937,
+      "itemName": "Ironclaw Ore",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-ironclaw-ore-2248-1-supplied",
+        "tww-ironclaw-ore-2248-2-supplied",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 210938,
+      "itemName": "Ironclaw Ore",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-ironclaw-ore-2248-1-supplied",
+        "tww-ironclaw-ore-2248-2-supplied",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 212514,
+      "itemName": "Blasphemite",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 9,
+      "evidenceKeys": [
+        "thaumaturgy"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0409-01",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 213197,
+      "itemName": "Null Lotus",
+      "initialMapButton": true,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-ringing-deeps-underground-herb-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-hallowfall-arathors-spear-west-route"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [],
+      "inheritedGeometryOnly": true,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 213219,
+      "itemName": "Crushed Gemstones",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "crushing"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210930
+      ],
+      "inputRouteIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-azj-kahet-aqirite-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 213220,
+      "itemName": "Crushed Gemstones",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "crushing"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210930
+      ],
+      "inputRouteIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-azj-kahet-aqirite-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 213221,
+      "itemName": "Crushed Gemstones",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "crushing"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210930
+      ],
+      "inputRouteIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-azj-kahet-aqirite-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 213611,
+      "itemName": "Writhing Sample",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 19,
+      "evidenceKeys": [
+        "modifiers"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796,
+        210799,
+        210802
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0408-01",
+        "catalog-gathering-0409-01",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-hallowfall-beledars-bounty-route",
+        "tww-luredrop-ringing-deeps-dark-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-orbinid-2214-2-supplied",
+        "tww-orbinid-2255-1-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 213612,
+      "itemName": "Viridescent Spores",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 27,
+      "evidenceKeys": [
+        "modifiers"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796,
+        210799,
+        210802,
+        210805,
+        210808
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0408-01",
+        "catalog-gathering-0409-01",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route",
+        "tww-arathor-s-spear-2215-1-supplied",
+        "tww-arathor-s-spear-2248-2-supplied",
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-hallowfall-beledars-bounty-route",
+        "tww-luredrop-ringing-deeps-dark-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-orbinid-2214-2-supplied",
+        "tww-orbinid-2255-1-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 215236,
+      "itemName": "Vicious Bloodstone",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "bloodstone",
+        "pvp-hub"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 220144,
+      "itemName": "Roaring Anglerseeker",
+      "initialMapButton": true,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [
+        "tww-fishing-anglerseeker-torrent-route"
+      ],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-anglerseeker-torrent-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 220146,
+      "itemName": "Regal Dottyback",
+      "initialMapButton": true,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [
+        "tww-fishing-royal-ripple-hallowfall-azj-kahet-route"
+      ],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-royal-ripple-hallowfall-azj-kahet-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 220148,
+      "itemName": "Pale Huskfish",
+      "initialMapButton": true,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [
+        "tww-fishing-azj-kahet-rare-water-route"
+      ],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-rare-water-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 220150,
+      "itemName": "Spiked Sea Raven",
+      "initialMapButton": true,
+      "initialMapOptions": 1,
+      "originalSpotIDs": [
+        "tww-fishing-isle-of-dorn-coastal-pool-route",
+        "tww-fishing-anglerseeker-torrent-route"
+      ],
+      "mapOptionCount": 3,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-anglerseeker-torrent-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 220151,
+      "itemName": "Queen's Lurefish",
+      "initialMapButton": true,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [
+        "tww-fishing-royal-ripple-hallowfall-azj-kahet-route"
+      ],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-royal-ripple-hallowfall-azj-kahet-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 220153,
+      "itemName": "Awoken Coelacanth",
+      "initialMapButton": true,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [
+        "tww-fishing-azj-kahet-rare-water-route",
+        "tww-fishing-anglerseeker-torrent-route"
+      ],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances",
+        "coelacanth"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-rare-water-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 221754,
+      "itemName": "Ringing Deeps Ingot",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "delves",
+        "delve-entrances",
+        "pouch-removal",
+        "sturdy-chests"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 221756,
+      "itemName": "Vial of Kaheti Oils",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "delves",
+        "delve-entrances",
+        "pouch-removal",
+        "sturdy-chests"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 221757,
+      "itemName": "Gloomfathom Hide",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "delves",
+        "delve-entrances",
+        "pouch-removal",
+        "sturdy-chests"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 221758,
+      "itemName": "Profaned Tinderbox",
+      "initialMapButton": true,
+      "initialMapOptions": 1,
+      "originalSpotIDs": [
+        "tww-reagent-nightfall-sanctum-profaned-tinderbox-route",
+        "tww-reagent-dornogal-profaned-tinderbox-borgos-exchange"
+      ],
+      "mapOptionCount": 5,
+      "evidenceKeys": [
+        "delves",
+        "delve-entrances",
+        "pouch-removal",
+        "sturdy-chests"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 221763,
+      "itemName": "Viridian Charmcap",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "delves",
+        "delve-entrances",
+        "pouch-removal",
+        "sturdy-chests"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222533,
+      "itemName": "Goldengill Trout",
+      "initialMapButton": true,
+      "initialMapOptions": 2,
+      "originalSpotIDs": [
+        "tww-fishing-isle-of-dorn-coastal-pool-route",
+        "tww-fishing-azj-kahet-rare-water-route",
+        "catalog-gathering-0296-01"
+      ],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-rare-water-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222612,
+      "itemName": "Luredrop Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210799
+      ],
+      "inputRouteIDs": [
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-hallowfall-beledars-bounty-route",
+        "tww-luredrop-ringing-deeps-dark-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222613,
+      "itemName": "Luredrop Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210799
+      ],
+      "inputRouteIDs": [
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-hallowfall-beledars-bounty-route",
+        "tww-luredrop-ringing-deeps-dark-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222614,
+      "itemName": "Luredrop Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210799
+      ],
+      "inputRouteIDs": [
+        "tww-luredrop-2214-2-supplied",
+        "tww-luredrop-2255-1-supplied",
+        "tww-luredrop-hallowfall-beledars-bounty-route",
+        "tww-luredrop-ringing-deeps-dark-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222618,
+      "itemName": "Nacreous Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 9,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0409-01",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222619,
+      "itemName": "Nacreous Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 9,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0409-01",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222620,
+      "itemName": "Nacreous Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 9,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0409-01",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222737,
+      "itemName": "Chopped Mycobloom",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 9,
+      "evidenceKeys": [
+        "cooking"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210796
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0205-01",
+        "catalog-gathering-0207-01",
+        "catalog-gathering-0409-01",
+        "tww-hallowfall-arathors-spear-west-route",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route",
+        "tww-mycobloom-2214-1-supplied",
+        "tww-mycobloom-2248-2-supplied",
+        "tww-ringing-deeps-underground-herb-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222738,
+      "itemName": "Portioned Steak",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 5,
+      "evidenceKeys": [
+        "cooking",
+        "steak"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        223512,
+        225565,
+        225567,
+        225568
+      ],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-slum-shark-swarm-route",
+        "tww-fishing-hallowfall-blood-in-the-water-route",
+        "tww-map-223512-1",
+        "tww-map-225565-1",
+        "tww-map-225567-1"
+      ],
+      "mapOnlyOptions": 3,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222739,
+      "itemName": "Spiced Meat Stock",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 5,
+      "evidenceKeys": [
+        "cooking"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        223512,
+        225565,
+        225567,
+        225568
+      ],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-slum-shark-swarm-route",
+        "tww-fishing-hallowfall-blood-in-the-water-route",
+        "tww-map-223512-1",
+        "tww-map-225565-1",
+        "tww-map-225567-1"
+      ],
+      "mapOnlyOptions": 3,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222741,
+      "itemName": "Fresh Fillet",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 3,
+      "evidenceKeys": [
+        "cooking"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        220138,
+        220147
+      ],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-slum-shark-swarm-route",
+        "tww-fishing-hallowfall-blood-in-the-water-route",
+        "tww-fishing-isle-of-dorn-coastal-pool-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222789,
+      "itemName": "Spool of Duskthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224824
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224824",
+        "tww-tailoring-isle-of-dorn-opalcreg-duskweave-route-specialty-224824"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222790,
+      "itemName": "Spool of Duskthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224824
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224824",
+        "tww-tailoring-isle-of-dorn-opalcreg-duskweave-route-specialty-224824"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222791,
+      "itemName": "Spool of Duskthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224824
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224824",
+        "tww-tailoring-isle-of-dorn-opalcreg-duskweave-route-specialty-224824"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222792,
+      "itemName": "Spool of Dawnthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224826
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224826",
+        "tww-tailoring-isle-of-dorn-opalcreg-dawnweave-route-specialty-224826"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222793,
+      "itemName": "Spool of Dawnthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224826
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224826",
+        "tww-tailoring-isle-of-dorn-opalcreg-dawnweave-route-specialty-224826"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222794,
+      "itemName": "Spool of Dawnthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224826
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224826",
+        "tww-tailoring-isle-of-dorn-opalcreg-dawnweave-route-specialty-224826"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222795,
+      "itemName": "Spool of Weaverthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224828
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224828",
+        "tww-tailoring-isle-of-dorn-opalcreg-weavercloth-route-specialty-224828"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222796,
+      "itemName": "Spool of Weaverthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224828
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224828",
+        "tww-tailoring-isle-of-dorn-opalcreg-weavercloth-route-specialty-224828"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 222797,
+      "itemName": "Spool of Weaverthread",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "unraveling",
+        "threads"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        224828
+      ],
+      "inputRouteIDs": [
+        "tww-tailoring-hallowfall-veneration-grounds-weavercloth-route-specialty-224828",
+        "tww-tailoring-isle-of-dorn-opalcreg-weavercloth-route-specialty-224828"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 223512,
+      "itemName": "Basically Beef",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "peafowl"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 223967,
+      "itemName": "Protein Slurp",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "protein",
+        "eggs"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 223977,
+      "itemName": "Coagulated Yolk",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "eggs"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 224800,
+      "itemName": "Orbinid Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210802
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0408-01",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route",
+        "tww-orbinid-2214-2-supplied",
+        "tww-orbinid-2255-1-supplied"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 224801,
+      "itemName": "Orbinid Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210802
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0408-01",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route",
+        "tww-orbinid-2214-2-supplied",
+        "tww-orbinid-2255-1-supplied"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 224802,
+      "itemName": "Orbinid Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210802
+      ],
+      "inputRouteIDs": [
+        "catalog-gathering-0408-01",
+        "orbinid-isle-of-dorn-freywold-cave",
+        "orbinid-isle-of-dorn-three-shields-caves",
+        "orbinid-ringing-deeps-underground-route",
+        "tww-orbinid-2214-2-supplied",
+        "tww-orbinid-2255-1-supplied"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 224803,
+      "itemName": "Blossom Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210805
+      ],
+      "inputRouteIDs": [
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 224804,
+      "itemName": "Blossom Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210805
+      ],
+      "inputRouteIDs": [
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 224805,
+      "itemName": "Blossom Pigment",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 4,
+      "evidenceKeys": [
+        "pigments",
+        "milling"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210805
+      ],
+      "inputRouteIDs": [
+        "tww-blessing-blossom-2248-1-supplied",
+        "tww-blessing-blossom-2248-2-supplied",
+        "tww-hallowfall-rich-soil-beledars-bounty",
+        "tww-herbalism-isle-of-dorn-general-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225241,
+      "itemName": "Refurbished Tinker: Alarm-O-Turret",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "pilfering",
+        "scouring"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210930
+      ],
+      "inputRouteIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-azj-kahet-aqirite-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225242,
+      "itemName": "Refurbished Tinker: Plane Displacer",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "pilfering",
+        "scouring"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210930
+      ],
+      "inputRouteIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-azj-kahet-aqirite-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225565,
+      "itemName": "Massive Worm Flank",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "worms"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225566,
+      "itemName": "Warped Wing",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "peafowl"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225567,
+      "itemName": "Bug Brisket",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "brisket"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225568,
+      "itemName": "Slum Shark Scrap",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "scrap",
+        "cooking"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        220147
+      ],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-slum-shark-swarm-route",
+        "tww-fishing-hallowfall-blood-in-the-water-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225569,
+      "itemName": "Clipped Bird Wing",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "peafowl"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225876,
+      "itemName": "Fine Egg Powder",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "eggs"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 225883,
+      "itemName": "Prepared Ghoulfish",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 3,
+      "evidenceKeys": [
+        "prepared-ghoulfish",
+        "map-layer-conflict",
+        "delve-entrances"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        220152
+      ],
+      "inputRouteIDs": [
+        "tww-fishing-azj-kahet-rare-water-route",
+        "tww-fishing-hallowfall-blood-in-the-water-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 227769,
+      "itemName": "Bountiful Bolts",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 6,
+      "evidenceKeys": [
+        "pilfering",
+        "scouring"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [
+        210930
+      ],
+      "inputRouteIDs": [
+        "tww-bismuth-2214-1-supplied",
+        "tww-bismuth-2248-2-supplied",
+        "tww-mining-azj-kahet-aqirite-route",
+        "tww-mining-hallowfall-aqirite-bismuth-route",
+        "tww-mining-isle-of-dorn-bismuth-ironclaw-route",
+        "tww-mining-ringing-deeps-ironclaw-bismuth-route"
+      ],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 227770,
+      "itemName": "Assorted Whirligigs",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "pilfering",
+        "paxton"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 227771,
+      "itemName": "Blinker Fluid",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "pilfering",
+        "paxton"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 227772,
+      "itemName": "Cataclysmic Converter",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "pilfering",
+        "paxton"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 227773,
+      "itemName": "Pummel-Proof Plating",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "pilfering",
+        "paxton"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 227774,
+      "itemName": "Pummel Permit",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 2,
+      "evidenceKeys": [
+        "pilfering",
+        "paxton"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 1,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    },
+    {
+      "itemID": 249218,
+      "itemName": "Manaforged Instrument",
+      "initialMapButton": false,
+      "initialMapOptions": 0,
+      "originalSpotIDs": [],
+      "mapOptionCount": 1,
+      "evidenceKeys": [
+        "raid-entrance",
+        "raid-reagent"
+      ],
+      "inheritedGeometryOnly": false,
+      "inputItemIDs": [],
+      "inputRouteIDs": [],
+      "mapOnlyOptions": 0,
+      "coordinateReview": "Input and existing gathering geometry retained with original provenance; not re-surveyed. Newly chosen entrances/vendor positions use cited published locations. See audit for fishing-layer corrections."
+    }
+  ]
+}

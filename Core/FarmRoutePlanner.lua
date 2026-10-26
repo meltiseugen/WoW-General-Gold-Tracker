@@ -33,7 +33,8 @@ local function GetPointXY(point)
     return NormalizeCoordinate(point.x or point[1]), NormalizeCoordinate(point.y or point[2])
 end
 
-local function GetCatalogFarmByID(farmID)
+local function GetCatalogFarmByID(farmID, entry)
+    if entry and type(entry.catalogSnapshot) == "table" then return entry.catalogSnapshot end
     local catalog = NS.FarmCatalog
     local position = type(catalog) == "table" and type(catalog.byID) == "table" and catalog.byID[farmID] or nil
     return position and type(catalog.farms) == "table" and catalog.farms[tonumber(position)] or nil
@@ -188,14 +189,19 @@ local function BuildCatalogCandidates(addon, catalogFarm, playerLocation)
     local seen = {}
     local mapsWithExactRoutes = {}
     local instanceEntrance
-    if type(addon.ResolveCatalogFarmInstanceEntrance) == "function" then
+    if type(catalogFarm.ggtEntrance) == "table" then
+        instanceEntrance = catalogFarm.ggtEntrance
+        candidates[#candidates + 1] = instanceEntrance
+        seen[instanceEntrance.id] = true
+    elseif type(addon.ResolveCatalogFarmInstanceEntrance) == "function" then
         instanceEntrance = addon:ResolveCatalogFarmInstanceEntrance(catalogFarm)
         if instanceEntrance then
             candidates[#candidates + 1] = instanceEntrance
             seen[instanceEntrance.id] = true
         end
     end
-    local records = type(NS.CatalogGatheringData) == "table" and NS.CatalogGatheringData.farmsByRecordID or nil
+    local records = catalogFarm.ggtGatheringRecords
+    if not records then records = type(NS.CatalogGatheringData) == "table" and NS.CatalogGatheringData.farmsByRecordID or nil end
     for _, recordID in ipairs(catalogFarm and catalogFarm.sourceRecordIDs or {}) do
         local record = records and records[recordID] or nil
         for routeIndex, route in ipairs(type(record) == "table" and record.routes or {}) do
@@ -395,7 +401,7 @@ local function BuildPlanNodes(addon, farm, playerLocation)
     local state = GetPlanState(farm)
     local nodes = {}
     for originalIndex, step in ipairs(addon:GetCustomFarmSteps(farm)) do
-        local catalogFarm = step.catalogFarmID and GetCatalogFarmByID(step.catalogFarmID) or nil
+        local catalogFarm = step.catalogFarmID and GetCatalogFarmByID(step.catalogFarmID, step.entries and step.entries[1]) or nil
         local candidates = catalogFarm and BuildCatalogCandidates(addon, catalogFarm, playerLocation) or BuildStandaloneCandidates(addon, step)
         local destination = SelectCandidate(candidates, state.locationOverrides[step.key], playerLocation)
         local mapID = destination and destination.mapID or tonumber(step.mapIDs and step.mapIDs[1])
@@ -748,7 +754,7 @@ function GoldTracker:BuildCustomFarmRoutePlanStepProjection(farmID, stepKey)
     local mapOption
     local selectedMapOptionIndex = 1
     if selected.catalogFarmID and type(self.BuildFarmDetailsMapOptions) == "function" then
-        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID)
+        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID, firstEntry)
         mapOptions = catalogFarm and self:BuildFarmDetailsMapOptions(
             { catalogFarm },
             firstEntry and firstEntry.itemID or nil
@@ -1179,7 +1185,7 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
     local overview, reason = self:BuildCustomFarmRoutePlanOverview(farmID)
     if not overview then
         if reason and type(self.Print) == "function" then
-            self:Print(reason)
+            self:Print(reason, "warnings")
         end
         return false
     end
@@ -1260,7 +1266,7 @@ function GoldTracker:OpenCustomFarmRoutePlanStepMap(farmID, stepKey)
     local firstEntry = selected.entries and selected.entries[1] or nil
     if selected.catalogFarmID and type(self.BuildFarmDetailsMapOptions) == "function"
         and type(self.OpenStandaloneMapWindow) == "function" then
-        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID)
+        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID, firstEntry)
         local mapOptions = catalogFarm and self:BuildFarmDetailsMapOptions(
             { catalogFarm },
             firstEntry and firstEntry.itemID or nil
@@ -1348,24 +1354,25 @@ function GoldTracker:NavigateCustomFarmRoutePlanStep(farmID, stepKey)
             if C_SuperTrack and type(C_SuperTrack.SetSuperTrackedUserWaypoint) == "function" then
                 C_SuperTrack.SetSuperTrackedUserWaypoint(true)
             end
-            self:Print("Next farm stop: " .. (selected.mapName or selected.name) .. ".")
+            self:Print("Next farm stop: " .. (selected.mapName or selected.name) .. ".", "navigation")
             return true
         end
     end
     if selected.catalogFarmID and type(self.OpenFarmDetails) == "function" then
-        self:Print("Exact arrival coordinates are unavailable; opening the farm map.")
+        self:Print("Exact arrival coordinates are unavailable; opening the farm map.", "warnings")
         return self:OpenFarmDetails(selected.catalogFarmID, {
             itemID = selected.entries[1] and selected.entries[1].itemID or nil,
+            farmSnapshot = selected.entries[1] and selected.entries[1].catalogSnapshot,
         }) == true
     end
     if selected.mapID and type(C_Map) == "table" and type(C_Map.OpenWorldMap) == "function" then
-        self:Print("Exact arrival coordinates are unavailable; opening the destination map.")
+        self:Print("Exact arrival coordinates are unavailable; opening the destination map.", "warnings")
         return pcall(C_Map.OpenWorldMap, selected.mapID)
     end
     if selected.mapID and type(OpenWorldMap) == "function" then
-        self:Print("Exact arrival coordinates are unavailable; opening the destination map.")
+        self:Print("Exact arrival coordinates are unavailable; opening the destination map.", "warnings")
         return pcall(OpenWorldMap, selected.mapID)
     end
-    self:Print("This farm step has no navigable location yet.")
+    self:Print("This farm step has no navigable location yet.", "warnings")
     return false
 end

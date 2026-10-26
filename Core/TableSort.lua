@@ -74,7 +74,17 @@ function GoldTracker:ToggleTableSortCriterion(frame, sortKey, defaultAscending, 
         additive = type(IsShiftKeyDown) == "function" and IsShiftKeyDown() == true
     end
 
-    if additive then
+    if options.mouseButton == "RightButton" then
+        if not additive then
+            return nil
+        end
+        for index, criterion in ipairs(criteria) do
+            if criterion.key == sortKey then
+                table.remove(criteria, index)
+                break
+            end
+        end
+    elseif additive then
         local matched = false
         for _, criterion in ipairs(criteria) do
             if criterion.key == sortKey then
@@ -210,6 +220,22 @@ function GoldTracker:SetCollapsedLocationHeadersEnabled(enabled)
     return enabled == true
 end
 
+function GoldTracker:BindTableSortHeaderClick(button, onSort, sortKey)
+    if type(button.RegisterForClicks) == "function" then
+        button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    end
+    button:SetScript("OnClick", function(_, mouseButton)
+        if mouseButton == "RightButton" then
+            if type(IsShiftKeyDown) ~= "function" or IsShiftKeyDown() ~= true then
+                return
+            end
+        elseif mouseButton ~= nil and mouseButton ~= "LeftButton" then
+            return
+        end
+        onSort(self, sortKey, mouseButton)
+    end)
+end
+
 function GoldTracker:AttachTableSortHeaderTooltip(button, label)
     if not button or button.goldTrackerSortTooltipAttached then
         return
@@ -230,6 +256,7 @@ function GoldTracker:AttachTableSortHeaderTooltip(button, label)
         GameTooltip:AddLine("Click to sort by this column.", 0.82, 0.82, 0.82, true)
         GameTooltip:AddLine("Shift-click additional headers to add sorting levels.", 1.0, 0.82, 0.18, true)
         GameTooltip:AddLine("Shift-click an active header to reverse its direction.", 0.72, 0.76, 0.84, true)
+        GameTooltip:AddLine("Shift-right-click a header to remove its sorting level.", 1.0, 0.82, 0.18, true)
         GameTooltip:Show()
     end)
     bindScript(button, "OnLeave", function()

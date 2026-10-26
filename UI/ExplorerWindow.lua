@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -11,7 +14,8 @@ local EXPLORER_WINDOW_MAX_HEIGHT = 920
 
 local EXPLORER_TABS = {
     { id = "favorites", label = "Favorites" },
-    { id = "priceAlerts", label = "Alerts" },
+    { id = "alts", label = "Alts" },
+    { id = "priceAlerts", label = "Market Watch", width = 108 },
     { id = "rares", label = "Rares" },
     { id = "instances", label = "Instances" },
     { id = "drops", label = "Drops" },
@@ -73,6 +77,7 @@ local function DisableEmbeddedWindowChrome(frame)
         return
     end
 
+    HideFramePart(frame.artBorder)
     HideFramePart(frame.headerBar)
     HideFramePart(frame.headerAccent)
     HideFramePart(frame.headerTitleText)
@@ -151,6 +156,7 @@ local function RaiseEmbeddedWindowParts(frame)
         "myFarmsTabButton",
         "farmsTabButton",
         "newFarmButton",
+        "farmShareButton",
         "catalogRefreshButton",
         "catalogMaximizeButton",
     }) do
@@ -178,7 +184,7 @@ local function GetActiveExplorerChildFrame(addon)
         return nil
     end
 
-    for _, childFrame in ipairs({
+    for _, childFrame in pairs({
         addon.rareFarmingFrame,
         addon.instanceFarmingFrame,
         addon.craftingFarmingFrame,
@@ -186,6 +192,7 @@ local function GetActiveExplorerChildFrame(addon)
         addon.observedDropsFrame,
         addon.inventoryFrame,
         addon.priceIncreaseAlertsFrame,
+        addon.altsFrame,
     }) do
         if IsExplorerEmbeddedChildFrame(childFrame)
             and type(childFrame.IsShown) == "function"
@@ -303,6 +310,7 @@ local function HideExplorerChildFrames(addon, activeFrame)
     hideIfInactive(addon.observedDropsFrame)
     hideIfInactive(addon.inventoryFrame)
     hideIfInactive(addon.priceIncreaseAlertsFrame)
+    hideIfInactive(addon.altsFrame)
 end
 
 local function ShowEmbeddedFrame(addon, frame)
@@ -418,6 +426,13 @@ function GoldTracker:SetExplorerTab(tabID)
     end
     self:RefreshExplorerTabs()
 
+    if normalizedTabID == "alts" then
+        self:CreateAltsWindow()
+        ShowEmbeddedFrame(self, self.altsFrame)
+        self:RefreshAltsWindow(true)
+        return
+    end
+
     if normalizedTabID == "instances" then
         self:CreateInstanceFarmingWindow()
         ShowEmbeddedFrame(self, self.instanceFarmingFrame)
@@ -485,7 +500,6 @@ function GoldTracker:SetExplorerTab(tabID)
         self.rareFarmingFrame.rareFarmingLibraryTab = "favorites"
         self.rareFarmingFrame.rareFarmingNavigationTab = "favorites"
         self:SetRareFarmingWindowView("library")
-        self:RefreshRareFarmingLibraryWindow()
         ConfigureRareExplorerTabs(self, normalizedTabID)
     elseif self.rareFarmingFrame.scanState then
         self:SetRareFarmingWindowView("scan")
@@ -504,7 +518,7 @@ function GoldTracker:CreateExplorerWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerExplorerFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerExplorerFrame", UIParent)
     frame:SetSize(EXPLORER_WINDOW_WIDTH, EXPLORER_WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 30)
     frame:SetFrameStrata("DIALOG")
@@ -545,7 +559,10 @@ function GoldTracker:CreateExplorerWindow()
     frame.tabButtons = {}
     local previousButton = nil
     for _, tab in ipairs(EXPLORER_TABS) do
-        local button = CreateExplorerButton(frame, 104, 24, tab.label, "neutral")
+        local button = CreateExplorerButton(frame, tab.width or 88, 24, tab.label, "neutral")
+        if type(Theme.ApplySelectorArt) == "function" then
+            Theme:ApplySelectorArt(button, { centered = true, arrow = false })
+        end
         if previousButton then
             button:SetPoint("LEFT", previousButton, "RIGHT", 8, 0)
         else
@@ -602,6 +619,9 @@ function GoldTracker:CreateExplorerWindow()
             if addon.priceIncreaseAlertsFrame and addon.priceIncreaseAlertsFrame:IsShown() then
                 addon:RefreshPriceIncreaseAlertsWindowLayout()
                 addon:RefreshPriceIncreaseAlertsWindow(false)
+            end
+            if addon.altsFrame and addon.altsFrame:IsShown() then
+                addon:RefreshAltsWindowLayout()
             end
         end,
     })

@@ -25,7 +25,7 @@ local ISLE_DORN_OPALCREG_CLOTH_ROUTE = {
     dropDifficulty = "Strong group farm and usable solo pull route. Weavercloth output improves with Tailoring "
         .. "cloth specializations.",
     tips = {
-        "Method identifies Opalcreg as a strong Weavercloth and Darkmoon Card farm, especially with a 2x4 group.",
+        "Method identifies Opalcreg as a strong Weavercloth farm, especially with a 2x4 group.",
         "Stay near the mine ramps and worker packs instead of spreading into the full zone.",
         "Webbed ore nearby can add Weavercloth for dual gatherers, but humanoid kills are the cloth route itself.",
     },

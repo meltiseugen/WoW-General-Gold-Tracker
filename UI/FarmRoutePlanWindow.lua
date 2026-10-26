@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -233,7 +236,7 @@ function GoldTracker:CreateFarmRoutePlanWindow()
         return self.farmRoutePlanFrame
     end
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerFarmRoutePlanFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerFarmRoutePlanFrame", UIParent)
     frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 30)
     frame:SetFrameStrata("DIALOG")

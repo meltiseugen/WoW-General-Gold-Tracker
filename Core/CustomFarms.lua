@@ -6,7 +6,7 @@ local CONFIRM_ADD_DIALOG_KEY = "GGT_CONFIRM_ADD_TO_CUSTOM_FARM"
 local CREATE_AND_ADD_DIALOG_KEY = "GGT_CREATE_CUSTOM_FARM_FOR_ITEM"
 
 local SOURCE_LABELS = {
-    alerts = "Alerts",
+    alerts = "Market Watch",
     drops = "Drops",
     favorites = "Favorites",
     instances = "Instances",
@@ -15,6 +15,41 @@ local SOURCE_LABELS = {
     map = "Map",
     rares = "Rares",
 }
+
+local PROFESSION_IDS = {
+    [164] = "blacksmithing", [165] = "leatherworking", [171] = "alchemy", [182] = "herbalism",
+    [185] = "cooking", [186] = "mining", [197] = "tailoring", [202] = "engineering",
+    [333] = "enchanting", [356] = "fishing", [393] = "skinning", [755] = "jewelcrafting", [773] = "inscription",
+}
+local PROFESSION_LABELS = {
+    blacksmithing = "Blacksmithing", leatherworking = "Leatherworking", alchemy = "Alchemy", herbalism = "Herbalism",
+    cooking = "Cooking", mining = "Mining", tailoring = "Tailoring", engineering = "Engineering",
+    enchanting = "Enchanting", fishing = "Fishing", skinning = "Skinning", jewelcrafting = "Jewelcrafting", inscription = "Inscription",
+}
+local GATHERING_PROFESSIONS = { mining = true, herbalism = true, skinning = true, fishing = true }
+
+local function CopyData(value, seen)
+    if type(value) ~= "table" then return value end
+    seen = seen or {}
+    if seen[value] then return seen[value] end
+    local copy = {}
+    seen[value] = copy
+    for key, child in pairs(value) do copy[key] = CopyData(child, seen) end
+    return copy
+end
+
+function GoldTracker:CopyCustomFarmData(value)
+    return CopyData(value)
+end
+
+local function PreserveExtraFields(source, target, knownFields)
+    local known = {}
+    for key in knownFields:gmatch("%S+") do known[key] = true end
+    for key, value in pairs(source) do
+        if not known[key] then target[key] = CopyData(value) end
+    end
+    return target
+end
 
 local function TrimText(value)
     if type(value) ~= "string" then
@@ -83,19 +118,15 @@ local function CopyMapSource(option)
         areaLabel = TrimText(option.areaLabel),
         pins = {},
     }
+    PreserveExtraFields(option, copy, "id mapID label mapLabel sourceType sourceLabel parentOptionID areaKey areaLabel pins key")
     copy.key = GetMapSourceKey(copy)
     for _, pin in ipairs(type(option.pins) == "table" and option.pins or {}) do
         local x, y = NormalizeCoordinate(pin.x), NormalizeCoordinate(pin.y)
         if x and y and NormalizePositiveInteger(pin.mapID) == copy.mapID then
-            local copiedPin = {}
-            for key, value in pairs(pin) do
-                if type(value) == "string" or type(value) == "number" or type(value) == "boolean" then
-                    copiedPin[key] = value
-                end
-            end
+            local copiedPin = CopyData(pin)
             copiedPin.x, copiedPin.y = x, y
-            copiedPin.tips = CopyStringList(pin.tips)
-            copiedPin.sourceUrls = CopyStringList(pin.sourceUrls)
+            copiedPin.tips = type(pin.tips) == "table" and CopyData(pin.tips) or {}
+            copiedPin.sourceUrls = type(pin.sourceUrls) == "table" and CopyData(pin.sourceUrls) or {}
             copy.pins[#copy.pins + 1] = copiedPin
         end
     end
@@ -104,6 +135,8 @@ end
 
 local function ClearEntryMethod(entry)
     entry.catalogFarmID = nil
+    entry.catalogSnapshot = nil
+    entry.portableMapSource = nil
     entry.catalogFarmName = nil
     entry.catalogSourcePath = nil
     entry.catalogActivity = nil
@@ -123,6 +156,12 @@ local function GetCatalogFarmByID(catalogFarmID)
     end
     local position = type(catalog.byID) == "table" and tonumber(catalog.byID[normalizedID]) or nil
     return position and type(catalog.farms) == "table" and catalog.farms[position] or nil
+end
+
+function GoldTracker:ResolveCustomFarmCatalog(entry)
+    if type(entry) ~= "table" or not entry.catalogFarmID then return nil end
+    if type(entry.catalogSnapshot) == "table" then return entry.catalogSnapshot end
+    return GetCatalogFarmByID(entry.catalogFarmID)
 end
 
 local function GetCurrentCharacterLabel()
@@ -173,7 +212,7 @@ local function NormalizeEntry(entry, fallbackID)
     local sourceKey = TrimText(entry.sourceKey)
     local entryKey = TrimText(entry.entryKey)
         or table.concat({ sourceType, tostring(itemID), sourceKey or "item" }, ":")
-    return {
+    local result = {
         id = NormalizePositiveInteger(entry.id) or NormalizePositiveInteger(fallbackID),
         entryKey = entryKey,
         originEntryKey = TrimText(entry.originEntryKey),
@@ -197,6 +236,7 @@ local function NormalizeEntry(entry, fallbackID)
         mapSource = CopyMapSource(entry.mapSource),
         addedAt = tonumber(entry.addedAt) or Now(),
     }
+    return PreserveExtraFields(entry, result, "id entryKey originEntryKey itemID itemName itemLink icon sourceType sourceLabel sourceKey targetName locationLabel mapID x y catalogFarmID catalogFarmName catalogSourcePath catalogActivity catalogMapNames mapSource addedAt")
 end
 
 local function NormalizeFarm(farm, fallbackID)
@@ -223,7 +263,7 @@ local function NormalizeFarm(farm, fallbackID)
     if not assignedCharacter then
         assignedCharacter = CopyStringList(farm.assignedCharacters)[1]
     end
-    return {
+    local result = {
         id = farmID,
         name = TrimText(farm.name) or ("New Farm " .. tostring(farmID)),
         createdAt = tonumber(farm.createdAt) or Now(),
@@ -233,6 +273,7 @@ local function NormalizeFarm(farm, fallbackID)
         entries = entries,
         routePlan = type(farm.routePlan) == "table" and farm.routePlan or nil,
     }
+    return PreserveExtraFields(farm, result, "id name createdAt updatedAt nextEntryID assignedCharacter assignedCharacters entries routePlan")
 end
 
 function GoldTracker:GetCustomFarmStore()
@@ -308,6 +349,13 @@ function GoldTracker:GetKnownCustomFarmCharacters()
         return {}
     end
     self:RegisterCurrentCustomFarmCharacter()
+    for _, character in pairs(type(self.db.altCharacters) == "table" and self.db.altCharacters or {}) do
+        local name = type(character) == "table" and TrimText(character.name)
+        if name then
+            local realm = TrimText(character.realm)
+            store.knownCharacters[name .. (realm and ("-" .. realm) or "")] = true
+        end
+    end
     for _, session in ipairs(type(self.db.sessionHistory) == "table" and self.db.sessionHistory or {}) do
         for _, label in ipairs(type(session.savedByCharacters) == "table" and session.savedByCharacters or {}) do
             label = TrimText(label)
@@ -340,6 +388,163 @@ function GoldTracker:GetCustomFarmByID(farmID)
     return store and GetFarmByIDFromStore(store, farmID) or nil
 end
 
+local function CharacterAssignmentKey(label)
+    return (TrimText(label) or ""):gsub("%s+", ""):lower()
+end
+
+function GoldTracker:GetCustomFarmContinentIDs(farmID)
+    local farm = type(farmID) == "table" and farmID or self:GetCustomFarmByID(farmID)
+    local continents, seenMaps, seenFarms = {}, {}, {}
+    if not farm or type(self.GetAltMapHierarchy) ~= "function" then return continents end
+
+    local function addMap(mapID)
+        mapID = NormalizePositiveInteger(mapID)
+        if not mapID then return false end
+        if seenMaps[mapID] ~= nil then return seenMaps[mapID] end
+        local hierarchy = self:GetAltMapHierarchy(mapID)
+        local continentID = hierarchy and NormalizePositiveInteger(hierarchy.continentMapID)
+        seenMaps[mapID] = continentID ~= nil
+        if continentID then continents[continentID] = true end
+        return continentID ~= nil
+    end
+
+    for _, entry in ipairs(farm.entries or {}) do
+        if entry.mapSource then
+            addMap(entry.mapSource.mapID)
+        elseif entry.catalogFarmID then
+            if not seenFarms[entry.catalogFarmID] then
+                seenFarms[entry.catalogFarmID] = true
+                local catalogFarm = self:ResolveCustomFarmCatalog(entry)
+                local resolved = false
+                for _, mapID in ipairs(catalogFarm and catalogFarm.mapIDs or {}) do
+                    resolved = addMap(mapID) or resolved
+                end
+                for _, option in ipairs(catalogFarm and catalogFarm.mapOptions or {}) do
+                    resolved = addMap(option.mapID) or resolved
+                end
+                if not resolved and catalogFarm and type(self.ResolveCatalogFarmInstanceEntrance) == "function" then
+                    local entrance = self:ResolveCatalogFarmInstanceEntrance(catalogFarm)
+                    addMap(entrance and entrance.mapID)
+                end
+            end
+        else
+            addMap(entry.mapID)
+        end
+    end
+    return continents
+end
+
+function GoldTracker:GetCustomFarmProfessionIDs(farmID)
+    local farm = type(farmID) == "table" and farmID or self:GetCustomFarmByID(farmID)
+    local result = {}
+    local index = rawget(NS, "MaterialIndex")
+    for _, entry in ipairs(farm and farm.entries or {}) do
+        local activity = type(entry.catalogActivity) == "string" and entry.catalogActivity:lower()
+        if PROFESSION_LABELS[activity] then
+            result[activity] = true
+        elseif not activity and not entry.catalogFarmID then
+            local item = index and index.items and index.items[entry.itemID]
+            local professions = item and item.professions or {}
+            for _, id in ipairs(professions) do
+                -- Material tags also include consumers; they do not identify a crafting method.
+                if GATHERING_PROFESSIONS[id] then result[id] = true end
+            end
+        end
+    end
+    return result
+end
+
+local function CharacterProfessionMatches(character, wanted)
+    local labels, seen = {}, {}
+    for _, profession in ipairs(type(character.professions) == "table" and character.professions or {}) do
+        local id = PROFESSION_IDS[profession.skillLineID]
+            or (type(profession.name) == "string" and profession.name:lower())
+        if wanted[id] and not seen[id] then
+            seen[id] = true
+            labels[#labels + 1] = TrimText(profession.name) or PROFESSION_LABELS[id]
+        end
+    end
+    table.sort(labels)
+    return labels
+end
+
+function GoldTracker:GetCustomFarmCharacterOptions(farmID)
+    local farm = type(farmID) == "table" and farmID or self:GetCustomFarmByID(farmID)
+    local options, altsByKey, assignments = {}, {}, {}
+    local continents = self:GetCustomFarmContinentIDs(farm)
+    local professions = self:GetCustomFarmProfessionIDs(farm)
+    local altCharacters = type(self.db) == "table" and self.db.altCharacters
+    for _, character in pairs(type(altCharacters) == "table" and altCharacters or {}) do
+        local name = type(character) == "table" and TrimText(character.name)
+        if name then
+            local realm = TrimText(character.realm)
+            local key = CharacterAssignmentKey(name .. (realm and ("-" .. realm) or ""))
+            local previous = altsByKey[key]
+            local savedAt = character.location and tonumber(character.location.savedAt) or 0
+            local previousSavedAt = previous and previous.location and tonumber(previous.location.savedAt) or 0
+            if not previous or savedAt > previousSavedAt then altsByKey[key] = character end
+        end
+    end
+    for _, otherFarm in ipairs(self:GetCustomFarms()) do
+        if otherFarm.assignedCharacter then
+            local key = CharacterAssignmentKey(otherFarm.assignedCharacter)
+            assignments[key] = assignments[key] or {}
+            assignments[key][#assignments[key] + 1] = otherFarm.name
+        end
+    end
+    local selectedKey = farm and CharacterAssignmentKey(farm.assignedCharacter)
+    for key, character in pairs(altsByKey) do
+        local lowLevel = type(self.IsLowLevelAlt) == "function" and self:IsLowLevelAlt(character) or false
+        local bank = type(character.roles) == "table" and character.roles.bank == true
+        if not bank and not lowLevel then
+            local location = character and character.location or {}
+            local continentID = NormalizePositiveInteger(location.continentMapID)
+            local continentName = TrimText(location.continentName)
+            if (not continentID or not continentName) and type(self.GetAltMapHierarchy) == "function" then
+                local hierarchy = self:GetAltMapHierarchy(NormalizePositiveInteger(location.mapID) or continentID)
+                continentID = continentID or NormalizePositiveInteger(hierarchy.continentMapID)
+                continentName = continentName or TrimText(hierarchy.continentName)
+            end
+            local assignedFarms = assignments[key] or {}
+            local unassigned = #assignedFarms == 0
+            local sameContinent = continentID ~= nil and continents[continentID] == true
+            local matches = CharacterProfessionMatches(character, professions)
+            local suggested = unassigned and (sameContinent or #matches > 0)
+            local name, realm = TrimText(character.name), TrimText(character.realm)
+            local reasons = {}
+            if #matches > 0 then reasons[#reasons + 1] = "Profession match: " .. table.concat(matches, ", ") .. "." end
+            if sameContinent then reasons[#reasons + 1] = "On a matching continent, based on the last saved Alts location." end
+            local option = {
+                value = name .. (realm and ("-" .. realm) or ""),
+                name = name,
+                label = name .. " - " .. (continentName or "Unknown location"),
+                continentMapID = continentID,
+                continentName = continentName,
+                selected = key == selectedKey,
+                suggested = suggested,
+                professionMatches = matches,
+                sameContinent = sameContinent,
+                suggestionReason = suggested and table.concat(reasons, "\n") or nil,
+                group = suggested and "suggested" or (unassigned and "unassigned" or "assigned"),
+                rank = suggested and 1 or (unassigned and 2 or 3),
+                assignedFarms = assignedFarms,
+            }
+            options[#options + 1] = option
+        end
+    end
+    table.sort(options, function(a, b)
+        if a.rank ~= b.rank then return a.rank < b.rank end
+        if a.suggested and b.suggested then
+            if #a.professionMatches ~= #b.professionMatches then return #a.professionMatches > #b.professionMatches end
+            if a.sameContinent ~= b.sameContinent then return a.sameContinent end
+        end
+        if a.name:lower() ~= b.name:lower() then return a.name:lower() < b.name:lower() end
+        if a.label ~= b.label then return a.label < b.label end
+        return a.value < b.value
+    end)
+    return options
+end
+
 function GoldTracker:GetActiveCustomFarm()
     local store = self:GetCustomFarmStore()
     if not store then
@@ -359,6 +564,9 @@ function GoldTracker:NotifyCustomFarmsChanged()
     end
     if self.myFarmsFrame and type(self.RefreshMyFarmsWindow) == "function" then
         self:RefreshMyFarmsWindow()
+    end
+    if self.altsFrame and self.altsFrame:IsShown() and type(self.RefreshAltsWindow) == "function" then
+        self:RefreshAltsWindow()
     end
     if self.farmRoutePlanFrame and type(self.RefreshFarmRoutePlanWindow) == "function" then
         self:RefreshFarmRoutePlanWindow()
@@ -553,6 +761,7 @@ function GoldTracker:GetCustomFarmMapSourceKey(option)
 end
 
 function GoldTracker:ResolveCustomFarmEntryMapOption(entry)
+    if type(entry) == "table" and type(entry.portableMapSource) == "table" then return entry.portableMapSource end
     local saved = entry and entry.mapSource
     if not saved then
         return nil
@@ -646,7 +855,7 @@ function GoldTracker:GetCustomFarmSteps(farmID)
         if entry.catalogFarmID then
             step = catalogSteps[entry.catalogFarmID]
             if not step then
-                local catalogFarm = GetCatalogFarmByID(entry.catalogFarmID)
+                local catalogFarm = self:ResolveCustomFarmCatalog(entry)
                 step = {
                     key = "catalog:" .. entry.catalogFarmID,
                     catalogFarmID = entry.catalogFarmID,
@@ -720,9 +929,9 @@ local function AddConfirmedEntry(payload)
     local added, reason = GoldTracker:AddEntryToCustomFarm(payload.farmID, payload.entry)
     local farm = GoldTracker:GetCustomFarmByID(payload.farmID)
     if added then
-        GoldTracker:Print(string.format("Added %s to %s.", payload.entry.itemName or ("Item " .. payload.entry.itemID), farm and farm.name or "custom farm"))
+        GoldTracker:Print(string.format("Added %s to %s.", payload.entry.itemName or ("Item " .. payload.entry.itemID), farm and farm.name or "custom farm"), "farms")
     elseif reason == "duplicate" then
-        GoldTracker:Print("That entry is already in this farm.")
+        GoldTracker:Print("That entry is already in this farm.", "farms")
     end
     return added, reason
 end
@@ -806,7 +1015,7 @@ end
 function GoldTracker:RequestAddToCustomFarm(row, sourceType, mapOption)
     local entry = self:BuildCustomFarmEntry(row, sourceType)
     if not entry then
-        self:Print("This row cannot be added to a custom farm.")
+        self:Print("This row cannot be added to a custom farm.", "warnings")
         return false
     end
     if mapOption then

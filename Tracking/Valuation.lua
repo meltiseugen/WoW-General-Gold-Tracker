@@ -316,7 +316,7 @@ function GoldTracker:GetTSMItemValue(priceSource, itemLink)
     if type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
         if not self.tsmWarningShown then
             self.tsmWarningShown = true
-            self:Print("TSM source selected but TradeSkillMaster API is unavailable. Returning 0 for item values.")
+            self:Print("TSM source selected but TradeSkillMaster API is unavailable. Returning 0 for item values.", "warnings")
         end
         return 0
     end
@@ -357,7 +357,7 @@ function GoldTracker:GetTSMItemValueFromItemString(priceSource, itemString, supp
     if type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
         if not suppressWarning and not self.tsmWarningShown then
             self.tsmWarningShown = true
-            self:Print("TSM source selected but TradeSkillMaster API is unavailable. Returning 0 for item values.")
+            self:Print("TSM source selected but TradeSkillMaster API is unavailable. Returning 0 for item values.", "warnings")
         end
         return 0
     end
@@ -387,6 +387,29 @@ function GoldTracker:GetTSMItemValueForItemID(priceSource, itemID, suppressWarni
     )
 end
 
+local function GetTSMRawCustomValueFromItemString(priceSource, itemString)
+    -- TSM rounds custom expressions to whole numbers. Scale regional statistics
+    -- before evaluation to retain their native three-decimal precision.
+    local sourceKey = string.lower(tostring(priceSource or ""))
+    local scale = (sourceKey == "dbregionsalerate" or sourceKey == "dbregionsoldperday") and 1000 or 1
+    local expression = scale == 1 and priceSource or ("1000 * " .. priceSource)
+    local ok, value = pcall(TSM_API.GetCustomPriceValue, expression, itemString)
+    if ok and type(value) == "number" and value > 0 then
+        return value / scale
+    end
+    return nil
+end
+
+function GoldTracker:GetTSMRawCustomValueForItemID(priceSource, itemID)
+    local normalizedItemID = tonumber(itemID)
+    if not normalizedItemID or normalizedItemID <= 0
+        or type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
+        return nil
+    end
+    return GetTSMRawCustomValueFromItemString(priceSource,
+        string.format("i:%d", math.floor(normalizedItemID + 0.5)))
+end
+
 function GoldTracker:GetTSMRawCustomValue(priceSource, itemLink)
     if type(TSM_API) ~= "table" or type(TSM_API.GetCustomPriceValue) ~= "function" then
         return nil
@@ -406,12 +429,7 @@ function GoldTracker:GetTSMRawCustomValue(priceSource, itemLink)
         return nil
     end
 
-    local ok, value = pcall(TSM_API.GetCustomPriceValue, priceSource, itemString)
-    if ok and type(value) == "number" and value > 0 then
-        return value
-    end
-
-    return nil
+    return GetTSMRawCustomValueFromItemString(priceSource, itemString)
 end
 
 function GoldTracker:GetItemUnitValueFromSource(sourceID, itemLink)
@@ -585,8 +603,9 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
 
     self:UpdateSessionLocationContext()
     local locationData = self:GetCurrentSessionLootLocationData()
+    local observedDropRecorded
     if type(self.RecordObservedWorldDrop) == "function" then
-        self:RecordObservedWorldDrop(
+        observedDropRecorded = self:RecordObservedWorldDrop(
             itemLink,
             quantity,
             itemQuality,
@@ -668,10 +687,14 @@ function GoldTracker:TrackLootItem(itemLink, quantity, lootSourceInfo)
         lootSourceIsAoe = lootSourceIsAoe,
         lootSourceText = lootSourceText,
         isCraftingReagent = isCraftingReagent == true,
+        observedDropRecorded = observedDropRecorded == true or nil,
     }
     self.session.itemLoots[#self.session.itemLoots + 1] = sessionLootEntry
 
     local function RecordMaterialLocation(finalLocation)
+        if observedDropRecorded and type(self.UpdateObservedDropLootLocation) == "function" then
+            self:UpdateObservedDropLootLocation(itemLink, finalLocation, lootSourceInfo)
+        end
         if type(self.RecordUserMaterialFarmingPinForLoot) == "function" then
             self:RecordUserMaterialFarmingPinForLoot(
                 itemLink,

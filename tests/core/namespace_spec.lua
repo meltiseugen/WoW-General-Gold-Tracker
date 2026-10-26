@@ -60,6 +60,53 @@ local function with_loaded_namespace(saved_db, callback, ns_overrides)
 end
 
 describe("Core/Namespace custom normalization", function()
+    it("defaults experimental maps off while preserving an explicit opt-in", function()
+        with_loaded_namespace({}, function(addon, db)
+            addon:InitializeDatabase()
+            assert.is_false(db.enableExperimentalMaps)
+            db.enableExperimentalMaps = true
+            addon:InitializeDatabase()
+            assert.is_true(db.enableExperimentalMaps)
+            db.enableExperimentalMaps = "true"
+            addon:InitializeDatabase()
+            assert.is_false(db.enableExperimentalMaps)
+        end)
+    end)
+
+    it("refreshes existing map styles only when the experimental preference changes", function()
+        local addon = load_namespace({ enableExperimentalMaps = false })
+        local calls = 0
+        addon.RefreshInteractiveMapStyles = function() calls = calls + 1 end
+        addon:SetExperimentalMapsEnabled(true)
+        assert.is_true(addon.db.enableExperimentalMaps)
+        addon:SetExperimentalMapsEnabled(true)
+        assert.equals(1, calls)
+        addon:SetExperimentalMapsEnabled(false)
+        assert.is_false(addon.db.enableExperimentalMaps)
+        assert.equals(2, calls)
+    end)
+
+    it("invalidates Materials caches when the shared price fallback order changes", function()
+        local addon = load_namespace({})
+        addon.craftingFarmingFrame = { itemCache = { old = true }, materialDisplayRows = { {} } }
+        addon.craftingFarmingExpandedFrame = { materialDisplayRows = { {} } }
+        addon:SetValueSourceFallbackOrder({ "TSM_DBREGIONMARKETAVG", "TSM_DBMARKET" })
+        assert.same({}, addon.craftingFarmingFrame.itemCache)
+        assert.is_nil(addon.craftingFarmingFrame.materialDisplayRows)
+        assert.is_nil(addon.craftingFarmingExpandedFrame.materialDisplayRows)
+    end)
+
+    it("enables standard observed-drop capture for new and previously disabled profiles", function()
+        for _, saved in ipairs({ {}, { enableObservedWorldDrops = false } }) do
+            with_loaded_namespace(saved, function(addon)
+                addon:InitializeDatabase()
+                assert.is_true(addon.DEFAULTS.enableObservedWorldDrops)
+                assert.is_true(addon.db.enableObservedWorldDrops)
+                assert.is_true(addon:IsObservedWorldDropsEnabled())
+            end)
+        end
+    end)
+
     it("normalizes inventory category order by removing invalid and duplicate categories", function()
         local addon = load_namespace({
             inventoryCategoryOrder = { "transmog", "invalid", "crafting", "transmog" },
@@ -617,5 +664,26 @@ describe("Core/Namespace session style filtering", function()
         assert.equals(100, armor.rawTotal)
         assert.equals(300, other.totalValue)
         assert.equals(60, other.rawTotal)
+    end)
+end)
+
+describe("Market history capture settings", function()
+    it("defaults to hourly observations without evicting other item histories", function()
+        with_loaded_namespace({}, function(addon)
+            addon:InitializeDatabase()
+            assert.equals(60, addon.db.marketHistorySnapshotIntervalMinutes)
+            assert.equals(0, addon.db.marketHistoryMaxItems)
+        end)
+    end)
+
+    it("clamps capture intervals while preserving an explicit unlimited item setting", function()
+        with_loaded_namespace({ marketHistorySnapshotIntervalMinutes = 0, marketHistoryMaxItems = 0 }, function(addon)
+            addon:InitializeDatabase()
+            assert.equals(1, addon.db.marketHistorySnapshotIntervalMinutes)
+            assert.equals(0, addon.db.marketHistoryMaxItems)
+            addon.db.marketHistorySnapshotIntervalMinutes = 9999
+            addon:InitializeDatabase()
+            assert.equals(1440, addon.db.marketHistorySnapshotIntervalMinutes)
+        end)
     end)
 end)

@@ -19,6 +19,34 @@ local function load_options(addon)
 end
 
 describe("UI/OptionsPanel numeric inputs", function()
+    it("saves the alt cutoff, refreshes visible views, and restores invalid input", function()
+        local alts, farms, options = 0, 0, 0
+        local addon = load_options({
+            db = {},
+            altsFrame = { IsShown = function() return true end },
+            myFarmsFrame = { IsShown = function() return true end },
+            RefreshAltsWindow = function() alts = alts + 1 end,
+            RefreshMyFarmsWindow = function() farms = farms + 1 end,
+        })
+        loader.load_module("Core/AltTracker.lua", addon)
+        addon.RefreshOptionsControls = function() options = options + 1 end
+        local input = edit_box("40")
+        addon:SaveAltLowLevelThresholdInput(input)
+        assert.equals(40, addon.db.altLowLevelThreshold)
+        assert.equals("40", input:GetText())
+        assert.equals(1, alts)
+        assert.equals(1, farms)
+        input:SetText("invalid")
+        addon:SaveAltLowLevelThresholdInput(input)
+        assert.equals("40", input:GetText())
+        assert.equals(1, alts)
+        input:SetText("0")
+        addon:SaveAltLowLevelThresholdInput(input)
+        assert.equals(0, addon.db.altLowLevelThreshold)
+        assert.equals(2, farms)
+        assert.equals(3, options)
+    end)
+
     it("registers the settings entry at login without constructing the options window", function()
         local created, registrations = {}, 0
         local function widget()
@@ -157,6 +185,14 @@ describe("UI/OptionsPanel numeric inputs", function()
         assert.equals(365, value)
         assert.equals(365, addon.db.marketHistoryRetentionDays)
         assert.is_true(pruned)
+    end)
+
+    it("saves the market snapshot interval and allows retaining all item histories", function()
+        local addon = load_options({ db = {} })
+        assert.equals(10, addon:SetMarketHistoryNumberOption("marketHistorySnapshotIntervalMinutes", "10", 1, 1440, 60))
+        assert.equals(10, addon.db.marketHistorySnapshotIntervalMinutes)
+        assert.equals(0, addon:SetMarketHistoryNumberOption("marketHistoryMaxItems", "0", 0, 50000, 0))
+        assert.equals(0, addon.db.marketHistoryMaxItems)
     end)
 
     it("saves world map projection pin size and refreshes active map pins", function()

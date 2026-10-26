@@ -1,0 +1,2253 @@
+{
+  "scope": "Retail Legion base Materials only; composed materials excluded",
+  "checkedAt": "2026-10-21T16:09:50.345873+00:00",
+  "itemCount": 118,
+  "sourceCount": 118,
+  "failedSourceCount": 0,
+  "items": [
+    {
+      "itemID": 139786,
+      "itemName": "Ancient Mana Crystal",
+      "category": "Ancient Mana Item",
+      "sourceKeys": [
+        "item:139786"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 139890,
+      "itemName": "Ancient Mana Gem",
+      "category": "Ancient Mana Item",
+      "sourceKeys": [
+        "item:139890"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130903,
+      "itemName": "Ancient Suramar Scroll",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:130903"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130904,
+      "itemName": "Highmountain Ritual-Stone",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:130904"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130905,
+      "itemName": "Mark of the Deceiver",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:130905"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124124,
+      "itemName": "Blood of Sargeras",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:124124"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 146710,
+      "itemName": "Bolt of Shadowcloth",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:146710"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 146711,
+      "itemName": "Bolt of Starweave",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:146711"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 140784,
+      "itemName": "Fel Piston Stabilizer",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:140784"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 146714,
+      "itemName": "Hammer of Forgotten Heroes",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:146714"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 140785,
+      "itemName": "Hardened Circuitboard Plating",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:140785"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 140782,
+      "itemName": "Neural Net Detangler",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:140782"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 140783,
+      "itemName": "Predictive Combat Operations Databank",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:140783"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151568,
+      "itemName": "Primal Sargerite",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:151568"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 146713,
+      "itemName": "Prime Wardenscale",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:146713"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 146712,
+      "itemName": "Wisp-Touched Elderhide",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:146712"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 140781,
+      "itemName": "X-87 Battle Circuit",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:140781"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124438,
+      "itemName": "Unbroken Claw",
+      "category": "Claw",
+      "sourceKeys": [
+        "item:124438"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151567,
+      "itemName": "Lightweave Cloth",
+      "category": "Cloth",
+      "sourceKeys": [
+        "item:151567"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124437,
+      "itemName": "Shal'dorei Silk",
+      "category": "Cloth",
+      "sourceKeys": [
+        "item:124437"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 142336,
+      "itemName": "Falcosaur Egg",
+      "category": "Egg",
+      "sourceKeys": [
+        "item:142336"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124444,
+      "itemName": "Infernal Brimstone",
+      "category": "Elemental",
+      "sourceKeys": [
+        "item:124444"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124440,
+      "itemName": "Arkhana",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:124440"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124442,
+      "itemName": "Chaos Crystal",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:124442"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124441,
+      "itemName": "Leylight Shard",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:124441"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 144329,
+      "itemName": "Hardened Felglass",
+      "category": "Engineering Reagent",
+      "sourceKeys": [
+        "item:144329"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 142335,
+      "itemName": "Pristine Falcosaur Feather",
+      "category": "Feather",
+      "sourceKeys": [
+        "item:142335"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 138967,
+      "itemName": "Big Fountain Goldfish",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:138967"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124112,
+      "itemName": "Black Barracuda",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:124112"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124107,
+      "itemName": "Cursed Queenfish",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:124107"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124109,
+      "itemName": "Highmountain Salmon",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:124109"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124108,
+      "itemName": "Mossgill Perch",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:124108"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124111,
+      "itemName": "Runescale Koi",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:124111"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133607,
+      "itemName": "Silver Mackerel",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:133607"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124110,
+      "itemName": "Stormray",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:124110"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133715,
+      "itemName": "Ancient Vrykul Ring",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133715"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133702,
+      "itemName": "Aromatic Murloc Slime",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133702"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133722,
+      "itemName": "Axefish Lure",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133722"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133724,
+      "itemName": "Decayed Whale Blubber",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133724"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133720,
+      "itemName": "Demonic Detritus",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133720"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133708,
+      "itemName": "Drowned Thistleleaf",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133708"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133717,
+      "itemName": "Enchanted Lure",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133717"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133712,
+      "itemName": "Frost Worm",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133712"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133709,
+      "itemName": "Funky Sea Snail",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133709"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133721,
+      "itemName": "Message in a Beer Bottle",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133721"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133713,
+      "itemName": "Moosehorn Hook",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133713"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133707,
+      "itemName": "Nightmare Nightcrawler",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133707"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133703,
+      "itemName": "Pearlescent Conch",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133703"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133795,
+      "itemName": "Ravenous Fly",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133795"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133705,
+      "itemName": "Rotten Fishbone",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133705"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133704,
+      "itemName": "Rusty Queenfish Brooch",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133704"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133710,
+      "itemName": "Salmon Lure",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133710"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133714,
+      "itemName": "Silverscale Minnow",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133714"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133701,
+      "itemName": "Skrog Toenail",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133701"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133719,
+      "itemName": "Sleeping Murloc",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133719"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133716,
+      "itemName": "Soggy Drakescale",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133716"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133723,
+      "itemName": "Stunned, Angry Shark",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133723"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133711,
+      "itemName": "Swollen Murloc Egg",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:133711"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 139408,
+      "itemName": "Deck Sandals",
+      "category": "Fishing Transmog",
+      "sourceKeys": [
+        "item:139408"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 139407,
+      "itemName": "Diver's Chain Boots",
+      "category": "Fishing Transmog",
+      "sourceKeys": [
+        "item:139407"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 139405,
+      "itemName": "Kul'Tiras Marine Issue Boots",
+      "category": "Fishing Transmog",
+      "sourceKeys": [
+        "item:139405"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 139406,
+      "itemName": "Sea Dog Boots",
+      "category": "Fishing Transmog",
+      "sourceKeys": [
+        "item:139406"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151718,
+      "itemName": "Argulite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:151718"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130174,
+      "itemName": "Azsunite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130174"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130175,
+      "itemName": "Chaotic Spinel",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130175"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151720,
+      "itemName": "Chemirine",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:151720"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130180,
+      "itemName": "Dawnlight",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130180"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130173,
+      "itemName": "Deep Amber",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130173"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130179,
+      "itemName": "Eye of Prophecy",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130179"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151722,
+      "itemName": "Florid Malachite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:151722"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130178,
+      "itemName": "Furystone",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130178"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151721,
+      "itemName": "Hesselian",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:151721"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151579,
+      "itemName": "Labradorite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:151579"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151719,
+      "itemName": "Lightsphene",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:151719"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130182,
+      "itemName": "Maelstrom Sapphire",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130182"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130181,
+      "itemName": "Pandemonite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130181"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130177,
+      "itemName": "Queen's Opal",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130177"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130172,
+      "itemName": "Sangrite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130172"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130183,
+      "itemName": "Shadowruby",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130183"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 130176,
+      "itemName": "Skystone",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:130176"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129100,
+      "itemName": "Gem Chip",
+      "category": "Gem Chip",
+      "sourceKeys": [
+        "item:129100"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124101,
+      "itemName": "Aethril",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:124101"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151565,
+      "itemName": "Astral Glory",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:151565"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124102,
+      "itemName": "Dreamleaf",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:124102"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124106,
+      "itemName": "Felwort",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:124106"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124104,
+      "itemName": "Fjarnskaggl",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:124104"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124103,
+      "itemName": "Foxflower",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:124103"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124105,
+      "itemName": "Starlight Rose",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:124105"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124116,
+      "itemName": "Felhide",
+      "category": "Hide",
+      "sourceKeys": [
+        "item:124116"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151566,
+      "itemName": "Fiendish Leather",
+      "category": "Leather",
+      "sourceKeys": [
+        "item:151566"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124113,
+      "itemName": "Stonehide Leather",
+      "category": "Leather",
+      "sourceKeys": [
+        "item:124113"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124115,
+      "itemName": "Stormscale",
+      "category": "Leather",
+      "sourceKeys": [
+        "item:124115"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124119,
+      "itemName": "Big Gamy Ribs",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:124119"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124118,
+      "itemName": "Fatty Bearsteak",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:124118"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124117,
+      "itemName": "Lean Shank",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:124117"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124120,
+      "itemName": "Leyblood",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:124120"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133680,
+      "itemName": "Slice of Bacon",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:133680"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124121,
+      "itemName": "Wildfowl Egg",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:124121"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 151564,
+      "itemName": "Empyrium",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:151564"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 123919,
+      "itemName": "Felslate",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:123919"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 123918,
+      "itemName": "Leystone Ore",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:123918"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129032,
+      "itemName": "Roseate Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:129032"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129034,
+      "itemName": "Sallow Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:129034"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129284,
+      "itemName": "Aethril Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:129284"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129285,
+      "itemName": "Dreamleaf Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:129285"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129289,
+      "itemName": "Felwort Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:129289"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129287,
+      "itemName": "Fjarnskaggl Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:129287"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129286,
+      "itemName": "Foxflower Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:129286"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 129288,
+      "itemName": "Starlight Rose Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:129288"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128304,
+      "itemName": "Yseralline Seed",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:128304"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 124439,
+      "itemName": "Unbroken Tooth",
+      "category": "Tooth",
+      "sourceKeys": [
+        "item:124439"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133589,
+      "itemName": "Dalape\u00f1o Pepper",
+      "category": "Vendor",
+      "sourceKeys": [
+        "item:133589"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133588,
+      "itemName": "Flaked Sea Salt",
+      "category": "Vendor",
+      "sourceKeys": [
+        "item:133588"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133590,
+      "itemName": "Muskenbutter",
+      "category": "Vendor",
+      "sourceKeys": [
+        "item:133590"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133591,
+      "itemName": "River Onion",
+      "category": "Vendor",
+      "sourceKeys": [
+        "item:133591"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133593,
+      "itemName": "Royal Olive",
+      "category": "Vendor",
+      "sourceKeys": [
+        "item:133593"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 133592,
+      "itemName": "Stonedark Snail",
+      "category": "Vendor",
+      "sourceKeys": [
+        "item:133592"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 251767,
+      "itemName": "Fel-Touched Lumber",
+      "category": "Warband Housing Lumber",
+      "sourceKeys": [
+        "item:251767"
+      ],
+      "status": "retrieved"
+    }
+  ],
+  "sources": {
+    "item:123918": {
+      "kind": "item",
+      "id": 123918,
+      "name": "Leystone Ore",
+      "pageUrl": "https://www.wowhead.com/item=123918",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/123918?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.572397+00:00",
+      "sha256": "2a55933453aa489822a9561c5f9dfc0c2d25428601ae763213580951a241e25e",
+      "status": "retrieved"
+    },
+    "item:123919": {
+      "kind": "item",
+      "id": 123919,
+      "name": "Felslate",
+      "pageUrl": "https://www.wowhead.com/item=123919",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/123919?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.595431+00:00",
+      "sha256": "70ac10f8e33f0f7e09c9cb0afd827f331287019c0e985b5f2abe602b72e4979f",
+      "status": "retrieved"
+    },
+    "item:124101": {
+      "kind": "item",
+      "id": 124101,
+      "name": "Aethril",
+      "pageUrl": "https://www.wowhead.com/item=124101",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124101?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.572397+00:00",
+      "sha256": "26f12e245093365cdfa1868faaea5aedc379125d422a7d2ac3f7ff8c7727a2b3",
+      "status": "retrieved"
+    },
+    "item:124102": {
+      "kind": "item",
+      "id": 124102,
+      "name": "Dreamleaf",
+      "pageUrl": "https://www.wowhead.com/item=124102",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124102?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.584397+00:00",
+      "sha256": "9da955935db909af75f6f57e1664fafa189f705205fff39d6e307e3242ab14dc",
+      "status": "retrieved"
+    },
+    "item:124103": {
+      "kind": "item",
+      "id": 124103,
+      "name": "Foxflower",
+      "pageUrl": "https://www.wowhead.com/item=124103",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124103?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.790483+00:00",
+      "sha256": "1b498bd126e48f29477675cc97f2c3503176241e7ea47de8624a54cd832f96eb",
+      "status": "retrieved"
+    },
+    "item:124104": {
+      "kind": "item",
+      "id": 124104,
+      "name": "Fjarnskaggl",
+      "pageUrl": "https://www.wowhead.com/item=124104",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124104?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.793483+00:00",
+      "sha256": "968935b7a72e8d375628508639ad085a1a01850794d73e478c4150c353c549c7",
+      "status": "retrieved"
+    },
+    "item:124105": {
+      "kind": "item",
+      "id": 124105,
+      "name": "Starlight Rose",
+      "pageUrl": "https://www.wowhead.com/item=124105",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124105?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.780570+00:00",
+      "sha256": "428a991b41e2b9f607b9fdbc91f2eaeaf17aca031ea70677c1e4694e39ea9ddd",
+      "status": "retrieved"
+    },
+    "item:124106": {
+      "kind": "item",
+      "id": 124106,
+      "name": "Felwort",
+      "pageUrl": "https://www.wowhead.com/item=124106",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124106?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.776566+00:00",
+      "sha256": "3c3cb16ca668722686687ccf1c935f1dfc821cd72d8a6a40e9775feaa052bfd8",
+      "status": "retrieved"
+    },
+    "item:124107": {
+      "kind": "item",
+      "id": 124107,
+      "name": "Cursed Queenfish",
+      "pageUrl": "https://www.wowhead.com/item=124107",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124107?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.991871+00:00",
+      "sha256": "a03ab112aba1fee281004aebca440e99a61b2206b5b06c97f05ae966e9a0479d",
+      "status": "retrieved"
+    },
+    "item:124108": {
+      "kind": "item",
+      "id": 124108,
+      "name": "Mossgill Perch",
+      "pageUrl": "https://www.wowhead.com/item=124108",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124108?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.960733+00:00",
+      "sha256": "804a0475e8a7e3d0b12699e3ea0424b95f6090743a920ab8d421929022814d23",
+      "status": "retrieved"
+    },
+    "item:124109": {
+      "kind": "item",
+      "id": 124109,
+      "name": "Highmountain Salmon",
+      "pageUrl": "https://www.wowhead.com/item=124109",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124109?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.983743+00:00",
+      "sha256": "21b8835d5d366a2a4d623977b7f156e9c40fc2979c586f4dd295273433edd83c",
+      "status": "retrieved"
+    },
+    "item:124110": {
+      "kind": "item",
+      "id": 124110,
+      "name": "Stormray",
+      "pageUrl": "https://www.wowhead.com/item=124110",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124110?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:44.993869+00:00",
+      "sha256": "41562123b000f38b0a55fe170c9ae3f96a097ea52ce625932f11f78cb604f160",
+      "status": "retrieved"
+    },
+    "item:124111": {
+      "kind": "item",
+      "id": 124111,
+      "name": "Runescale Koi",
+      "pageUrl": "https://www.wowhead.com/item=124111",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124111?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.125219+00:00",
+      "sha256": "e15061e79ade0f229173d84e021a517de63f031e1d1b81d67cfa6b958f4e540b",
+      "status": "retrieved"
+    },
+    "item:124112": {
+      "kind": "item",
+      "id": 124112,
+      "name": "Black Barracuda",
+      "pageUrl": "https://www.wowhead.com/item=124112",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124112?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.152144+00:00",
+      "sha256": "c98e3cde9a1a4ac9d9fa327449f7e4f75ed3c3112163afc855dc28571f615c14",
+      "status": "retrieved"
+    },
+    "item:124113": {
+      "kind": "item",
+      "id": 124113,
+      "name": "Stonehide Leather",
+      "pageUrl": "https://www.wowhead.com/item=124113",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124113?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.184842+00:00",
+      "sha256": "2bd2c942ee2b2b91d95de8954fcf7ebd1f2d4dac6659899b14c04b896416a9ca",
+      "status": "retrieved"
+    },
+    "item:124115": {
+      "kind": "item",
+      "id": 124115,
+      "name": "Stormscale",
+      "pageUrl": "https://www.wowhead.com/item=124115",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124115?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.186885+00:00",
+      "sha256": "206329d6d60a086f603a52e59777e8cfef3454bf481b2331fc42881ad4c9b54d",
+      "status": "retrieved"
+    },
+    "item:124116": {
+      "kind": "item",
+      "id": 124116,
+      "name": "Felhide",
+      "pageUrl": "https://www.wowhead.com/item=124116",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124116?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.304650+00:00",
+      "sha256": "0e92d9bd00db66faee71a5f876aa177298676e339cfd31605f0b9c061385e59d",
+      "status": "retrieved"
+    },
+    "item:124117": {
+      "kind": "item",
+      "id": 124117,
+      "name": "Lean Shank",
+      "pageUrl": "https://www.wowhead.com/item=124117",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124117?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.390796+00:00",
+      "sha256": "e95f5cf0fb1d21443c19a315cf30c6871c5072769f8a02653279bd82bfe72ea4",
+      "status": "retrieved"
+    },
+    "item:124118": {
+      "kind": "item",
+      "id": 124118,
+      "name": "Fatty Bearsteak",
+      "pageUrl": "https://www.wowhead.com/item=124118",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124118?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.358571+00:00",
+      "sha256": "5a28eae401d79d6b16007b37224e4f877f39c32a0f5f8bad336015451b07f37d",
+      "status": "retrieved"
+    },
+    "item:124119": {
+      "kind": "item",
+      "id": 124119,
+      "name": "Big Gamy Ribs",
+      "pageUrl": "https://www.wowhead.com/item=124119",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124119?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.359571+00:00",
+      "sha256": "2c12edab1334037d2398283439dd5822d5535cf01f8696b7d94d9f9c3006aec1",
+      "status": "retrieved"
+    },
+    "item:124120": {
+      "kind": "item",
+      "id": 124120,
+      "name": "Leyblood",
+      "pageUrl": "https://www.wowhead.com/item=124120",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124120?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.482635+00:00",
+      "sha256": "f645f84b7b6d409382750171fe7b0e5cff670588472772639f12de91cb688ee2",
+      "status": "retrieved"
+    },
+    "item:124121": {
+      "kind": "item",
+      "id": 124121,
+      "name": "Wildfowl Egg",
+      "pageUrl": "https://www.wowhead.com/item=124121",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124121?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.525686+00:00",
+      "sha256": "c5e5a990dc71f69778f30f1128c1a243a99d39dc8caffaae38e04b59a249cb2f",
+      "status": "retrieved"
+    },
+    "item:124124": {
+      "kind": "item",
+      "id": 124124,
+      "name": "Blood of Sargeras",
+      "pageUrl": "https://www.wowhead.com/item=124124",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124124?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.547685+00:00",
+      "sha256": "e183482e808fca9cee04a844d91b1c2a1ea045c899855ef14debb74400bbefa9",
+      "status": "retrieved"
+    },
+    "item:124437": {
+      "kind": "item",
+      "id": 124437,
+      "name": "Shal'dorei Silk",
+      "pageUrl": "https://www.wowhead.com/item=124437",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124437?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.572422+00:00",
+      "sha256": "a51d821976e211516e5156cee86e7049b86bc445d46e02fdd69ea43d9054ed1a",
+      "status": "retrieved"
+    },
+    "item:124438": {
+      "kind": "item",
+      "id": 124438,
+      "name": "Unbroken Claw",
+      "pageUrl": "https://www.wowhead.com/item=124438",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124438?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.654421+00:00",
+      "sha256": "d8a58c3098b727025f5338dbce822cfffcea095f18253e9c1c798207f9e74d73",
+      "status": "retrieved"
+    },
+    "item:124439": {
+      "kind": "item",
+      "id": 124439,
+      "name": "Unbroken Tooth",
+      "pageUrl": "https://www.wowhead.com/item=124439",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124439?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.712422+00:00",
+      "sha256": "8d8ed63cdc8fd49e6da916b685d109c1fe7600bb813559fcaa3cd0f446f16816",
+      "status": "retrieved"
+    },
+    "item:124440": {
+      "kind": "item",
+      "id": 124440,
+      "name": "Arkhana",
+      "pageUrl": "https://www.wowhead.com/item=124440",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124440?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.719422+00:00",
+      "sha256": "a9f63db33ee3b87a20108bf86ae9b821ebef9a236262d8f3e35cd60f4d0462f0",
+      "status": "retrieved"
+    },
+    "item:124441": {
+      "kind": "item",
+      "id": 124441,
+      "name": "Leylight Shard",
+      "pageUrl": "https://www.wowhead.com/item=124441",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124441?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.747791+00:00",
+      "sha256": "16174112ec28fe213f498afaa2e2f489781d604277c6fcbe83d527d6d82afaee",
+      "status": "retrieved"
+    },
+    "item:124442": {
+      "kind": "item",
+      "id": 124442,
+      "name": "Chaos Crystal",
+      "pageUrl": "https://www.wowhead.com/item=124442",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124442?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.820473+00:00",
+      "sha256": "0a43263723ad7434c282ebdd9d60b4c53484c8573ef00d337dfd4676ce8c4f95",
+      "status": "retrieved"
+    },
+    "item:124444": {
+      "kind": "item",
+      "id": 124444,
+      "name": "Infernal Brimstone",
+      "pageUrl": "https://www.wowhead.com/item=124444",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/124444?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.895402+00:00",
+      "sha256": "3df7b769ea60a2378f497b72df08db519d4f507d10d7106e06b95622fdace79e",
+      "status": "retrieved"
+    },
+    "item:128304": {
+      "kind": "item",
+      "id": 128304,
+      "name": "Yseralline Seed",
+      "pageUrl": "https://www.wowhead.com/item=128304",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128304?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.891400+00:00",
+      "sha256": "2293f60b71e57eeb6c0e23644a76caa9e895d07612958e4416645ee08dffad3d",
+      "status": "retrieved"
+    },
+    "item:129032": {
+      "kind": "item",
+      "id": 129032,
+      "name": "Roseate Pigment",
+      "pageUrl": "https://www.wowhead.com/item=129032",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129032?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:45.991267+00:00",
+      "sha256": "69fa779268e338de2d73b50f3c46d2a44d45fb637994f5f5fd1026e7a1480780",
+      "status": "retrieved"
+    },
+    "item:129034": {
+      "kind": "item",
+      "id": 129034,
+      "name": "Sallow Pigment",
+      "pageUrl": "https://www.wowhead.com/item=129034",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129034?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.011273+00:00",
+      "sha256": "214538bc43651846b426000af5226b29705f18916bdfbc4e20d2dd0817db47b8",
+      "status": "retrieved"
+    },
+    "item:129100": {
+      "kind": "item",
+      "id": 129100,
+      "name": "Gem Chip",
+      "pageUrl": "https://www.wowhead.com/item=129100",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129100?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.064326+00:00",
+      "sha256": "0190a6761cd1a78ed87f04b1e5f6fe36ff4165d1f57378a6c166817368d04560",
+      "status": "retrieved"
+    },
+    "item:129284": {
+      "kind": "item",
+      "id": 129284,
+      "name": "Aethril Seed",
+      "pageUrl": "https://www.wowhead.com/item=129284",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129284?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.074327+00:00",
+      "sha256": "fec978eedee99b74bd5e22fa8ca568089a2a9a6504186e4de20b95bab5ec3b33",
+      "status": "retrieved"
+    },
+    "item:129285": {
+      "kind": "item",
+      "id": 129285,
+      "name": "Dreamleaf Seed",
+      "pageUrl": "https://www.wowhead.com/item=129285",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129285?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.182523+00:00",
+      "sha256": "860eacabd35cb99eda6ea922f94e44371c35bcdb7e538b1655572a025fd5647a",
+      "status": "retrieved"
+    },
+    "item:129286": {
+      "kind": "item",
+      "id": 129286,
+      "name": "Foxflower Seed",
+      "pageUrl": "https://www.wowhead.com/item=129286",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129286?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.250667+00:00",
+      "sha256": "e881769e37045b50b7eb351d32b23299c994894e75af29bea4cde404c0f25378",
+      "status": "retrieved"
+    },
+    "item:129287": {
+      "kind": "item",
+      "id": 129287,
+      "name": "Fjarnskaggl Seed",
+      "pageUrl": "https://www.wowhead.com/item=129287",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129287?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.245671+00:00",
+      "sha256": "e9a15c0cec806c9705795cbc79d869727d67a0d58f5255ef9eaaaef2840f75ae",
+      "status": "retrieved"
+    },
+    "item:129288": {
+      "kind": "item",
+      "id": 129288,
+      "name": "Starlight Rose Seed",
+      "pageUrl": "https://www.wowhead.com/item=129288",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129288?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.255669+00:00",
+      "sha256": "a11bd4059e4d60faa848c95b0cbde9dee8983ef2d7909d91b86474ec0ba6a8ba",
+      "status": "retrieved"
+    },
+    "item:129289": {
+      "kind": "item",
+      "id": 129289,
+      "name": "Felwort Seed",
+      "pageUrl": "https://www.wowhead.com/item=129289",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129289?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.431798+00:00",
+      "sha256": "ae71a328a4af422142416c2100cfd830f451fc14400b1fa20f66259ded347c20",
+      "status": "retrieved"
+    },
+    "item:130172": {
+      "kind": "item",
+      "id": 130172,
+      "name": "Sangrite",
+      "pageUrl": "https://www.wowhead.com/item=130172",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130172?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.428798+00:00",
+      "sha256": "784403c0accc582965a9f9ed50b97588c355875b1a46d64235e3f4ac665c73f4",
+      "status": "retrieved"
+    },
+    "item:130173": {
+      "kind": "item",
+      "id": 130173,
+      "name": "Deep Amber",
+      "pageUrl": "https://www.wowhead.com/item=130173",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130173?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.448273+00:00",
+      "sha256": "2275a0aa303a1024b8c9281a8d3699c92237d996fa6827aa1cf7837c06980a51",
+      "status": "retrieved"
+    },
+    "item:130174": {
+      "kind": "item",
+      "id": 130174,
+      "name": "Azsunite",
+      "pageUrl": "https://www.wowhead.com/item=130174",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130174?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.424798+00:00",
+      "sha256": "cd8513ee23dddb3b46ca15b49bde4a58051f4d262024739c17c544bf5965fc70",
+      "status": "retrieved"
+    },
+    "item:130175": {
+      "kind": "item",
+      "id": 130175,
+      "name": "Chaotic Spinel",
+      "pageUrl": "https://www.wowhead.com/item=130175",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130175?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.632425+00:00",
+      "sha256": "b7e9fc09e5187ace352922fddc9f72b492c2ccd6ed376ebf0011547f2187d8e8",
+      "status": "retrieved"
+    },
+    "item:130176": {
+      "kind": "item",
+      "id": 130176,
+      "name": "Skystone",
+      "pageUrl": "https://www.wowhead.com/item=130176",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130176?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.615422+00:00",
+      "sha256": "09d303cd203984b5fe9c1f7f382431fcb6411b232230e6af96ff769d18367a3a",
+      "status": "retrieved"
+    },
+    "item:130177": {
+      "kind": "item",
+      "id": 130177,
+      "name": "Queen's Opal",
+      "pageUrl": "https://www.wowhead.com/item=130177",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130177?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.671102+00:00",
+      "sha256": "27fcb9b68578699a63b63e3a88835c5d816b164d32ae64618049bbcac2ceae3d",
+      "status": "retrieved"
+    },
+    "item:130178": {
+      "kind": "item",
+      "id": 130178,
+      "name": "Furystone",
+      "pageUrl": "https://www.wowhead.com/item=130178",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130178?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.630423+00:00",
+      "sha256": "20f37857ca09e73bd54be4b09d91a46f5b2e35729fc80f021b82dd8a19ad7d1b",
+      "status": "retrieved"
+    },
+    "item:130179": {
+      "kind": "item",
+      "id": 130179,
+      "name": "Eye of Prophecy",
+      "pageUrl": "https://www.wowhead.com/item=130179",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130179?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.782950+00:00",
+      "sha256": "42351d531507ae98319ef113976a4bfe12745114aa92ed17d0d6f6ab5c6fd19b",
+      "status": "retrieved"
+    },
+    "item:130180": {
+      "kind": "item",
+      "id": 130180,
+      "name": "Dawnlight",
+      "pageUrl": "https://www.wowhead.com/item=130180",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130180?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.798376+00:00",
+      "sha256": "e41893d9125b1f4e67878afe681dafd565752053952f279f31d355d42dbe0744",
+      "status": "retrieved"
+    },
+    "item:130181": {
+      "kind": "item",
+      "id": 130181,
+      "name": "Pandemonite",
+      "pageUrl": "https://www.wowhead.com/item=130181",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130181?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.802372+00:00",
+      "sha256": "e8af13fc51f2517c35603cf1653f7deade1acbf07fc7d78edb41962d29568c44",
+      "status": "retrieved"
+    },
+    "item:130182": {
+      "kind": "item",
+      "id": 130182,
+      "name": "Maelstrom Sapphire",
+      "pageUrl": "https://www.wowhead.com/item=130182",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130182?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.875119+00:00",
+      "sha256": "e3336b08f09e8579f46b33eff446d799ffbfe5a4a4118931f7e5b57b06621b93",
+      "status": "retrieved"
+    },
+    "item:130183": {
+      "kind": "item",
+      "id": 130183,
+      "name": "Shadowruby",
+      "pageUrl": "https://www.wowhead.com/item=130183",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130183?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.992601+00:00",
+      "sha256": "1c4714f1e2e154d25602dd5f837f23d339ed2494b8600980469444689bf60bec",
+      "status": "retrieved"
+    },
+    "item:130903": {
+      "kind": "item",
+      "id": 130903,
+      "name": "Ancient Suramar Scroll",
+      "pageUrl": "https://www.wowhead.com/item=130903",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130903?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:46.984602+00:00",
+      "sha256": "92bc95f55b4dcc067f1c354f79dcb4b83989cbd6a1164d96753e0f58f8d143b3",
+      "status": "retrieved"
+    },
+    "item:130904": {
+      "kind": "item",
+      "id": 130904,
+      "name": "Highmountain Ritual-Stone",
+      "pageUrl": "https://www.wowhead.com/item=130904",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130904?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.026141+00:00",
+      "sha256": "a94318c6eff5b62207a14c15f4006488be62424e869096367ad3aead7e348aa0",
+      "status": "retrieved"
+    },
+    "item:130905": {
+      "kind": "item",
+      "id": 130905,
+      "name": "Mark of the Deceiver",
+      "pageUrl": "https://www.wowhead.com/item=130905",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/130905?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.067520+00:00",
+      "sha256": "1b0314e34e069759422a724db7fc0a2824345fe100bed2847c1937c60f4b66ca",
+      "status": "retrieved"
+    },
+    "item:133588": {
+      "kind": "item",
+      "id": 133588,
+      "name": "Flaked Sea Salt",
+      "pageUrl": "https://www.wowhead.com/item=133588",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133588?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.235394+00:00",
+      "sha256": "a8b54a16febae9930c31024bc42e9594fb218e283fabbb2e379c1fecd27568e5",
+      "status": "retrieved"
+    },
+    "item:133589": {
+      "kind": "item",
+      "id": 133589,
+      "name": "Dalape\u00f1o Pepper",
+      "pageUrl": "https://www.wowhead.com/item=133589",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133589?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.188382+00:00",
+      "sha256": "b66db398099712aaf00376a6f0d33183a713b810ffe4c4304090dceabd0903c9",
+      "status": "retrieved"
+    },
+    "item:133590": {
+      "kind": "item",
+      "id": 133590,
+      "name": "Muskenbutter",
+      "pageUrl": "https://www.wowhead.com/item=133590",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133590?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.240479+00:00",
+      "sha256": "2bda2468c2c2e7d958d2ca2d360055d8a5c0476eb52663b7f1a1e3a8f37d40e2",
+      "status": "retrieved"
+    },
+    "item:133591": {
+      "kind": "item",
+      "id": 133591,
+      "name": "River Onion",
+      "pageUrl": "https://www.wowhead.com/item=133591",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133591?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.274878+00:00",
+      "sha256": "ec693d08c3a09134cc634d8175ae880b16d0ef148a80c3077fb5a4f0694fda74",
+      "status": "retrieved"
+    },
+    "item:133592": {
+      "kind": "item",
+      "id": 133592,
+      "name": "Stonedark Snail",
+      "pageUrl": "https://www.wowhead.com/item=133592",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133592?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.391416+00:00",
+      "sha256": "b88d54b474fa50792b13cb33772c03485559a91ac826be3993439a0dbe3ba4be",
+      "status": "retrieved"
+    },
+    "item:133593": {
+      "kind": "item",
+      "id": 133593,
+      "name": "Royal Olive",
+      "pageUrl": "https://www.wowhead.com/item=133593",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133593?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.503174+00:00",
+      "sha256": "fb63c0b9c3bf68db117276a6306f66f141fca667bfe9dd2195ecee956ac53064",
+      "status": "retrieved"
+    },
+    "item:133607": {
+      "kind": "item",
+      "id": 133607,
+      "name": "Silver Mackerel",
+      "pageUrl": "https://www.wowhead.com/item=133607",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133607?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.425740+00:00",
+      "sha256": "9931e550624626bbb84175ea68c47df12a015828fafe6638921952c7106a87a4",
+      "status": "retrieved"
+    },
+    "item:133680": {
+      "kind": "item",
+      "id": 133680,
+      "name": "Slice of Bacon",
+      "pageUrl": "https://www.wowhead.com/item=133680",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133680?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.469002+00:00",
+      "sha256": "a852f283b4098663b0eb363e28aeb6c4005206c0628f3c8c2f88e47546055dcf",
+      "status": "retrieved"
+    },
+    "item:133701": {
+      "kind": "item",
+      "id": 133701,
+      "name": "Skrog Toenail",
+      "pageUrl": "https://www.wowhead.com/item=133701",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133701?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.581901+00:00",
+      "sha256": "c575445e761f137185db45234477461b2593fa7e74c4cd0080cb56239f4acd9e",
+      "status": "retrieved"
+    },
+    "item:133702": {
+      "kind": "item",
+      "id": 133702,
+      "name": "Aromatic Murloc Slime",
+      "pageUrl": "https://www.wowhead.com/item=133702",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133702?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.669216+00:00",
+      "sha256": "3df1c772d9834daab6e63b399cd0e55cf5464c2439b91f84e658305975b62784",
+      "status": "retrieved"
+    },
+    "item:133703": {
+      "kind": "item",
+      "id": 133703,
+      "name": "Pearlescent Conch",
+      "pageUrl": "https://www.wowhead.com/item=133703",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133703?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.632214+00:00",
+      "sha256": "b7daf90ccc38fcc2d22802b6194baf5522d9d465a14581f06d169f85855f4ffe",
+      "status": "retrieved"
+    },
+    "item:133704": {
+      "kind": "item",
+      "id": 133704,
+      "name": "Rusty Queenfish Brooch",
+      "pageUrl": "https://www.wowhead.com/item=133704",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133704?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.692218+00:00",
+      "sha256": "5fe17383efe483248bb775fe50d3cc9bf6ad217ce13cd1c1255fa27d3db83146",
+      "status": "retrieved"
+    },
+    "item:133705": {
+      "kind": "item",
+      "id": 133705,
+      "name": "Rotten Fishbone",
+      "pageUrl": "https://www.wowhead.com/item=133705",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133705?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.883213+00:00",
+      "sha256": "0e4929631c46a30ef4e91dc6b80c32ae3a1e4b6c49eb25d02932db0531c6ef62",
+      "status": "retrieved"
+    },
+    "item:133707": {
+      "kind": "item",
+      "id": 133707,
+      "name": "Nightmare Nightcrawler",
+      "pageUrl": "https://www.wowhead.com/item=133707",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133707?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.807213+00:00",
+      "sha256": "4c20424cf05aaedd46ca042d6b144d4349d1d5b1a20f701b3b0aac179340fd38",
+      "status": "retrieved"
+    },
+    "item:133708": {
+      "kind": "item",
+      "id": 133708,
+      "name": "Drowned Thistleleaf",
+      "pageUrl": "https://www.wowhead.com/item=133708",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133708?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.855213+00:00",
+      "sha256": "c120402195593cdb1f1ddec4817301d0b5c1eac267437b824ef4c179f7e4bf25",
+      "status": "retrieved"
+    },
+    "item:133709": {
+      "kind": "item",
+      "id": 133709,
+      "name": "Funky Sea Snail",
+      "pageUrl": "https://www.wowhead.com/item=133709",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133709?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:47.875212+00:00",
+      "sha256": "66e1b8d9d091d4a75d03757d37847440048712b5cc6c828518132b29f6510223",
+      "status": "retrieved"
+    },
+    "item:133710": {
+      "kind": "item",
+      "id": 133710,
+      "name": "Salmon Lure",
+      "pageUrl": "https://www.wowhead.com/item=133710",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133710?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.005214+00:00",
+      "sha256": "850d8273d4948dfe58cedbbdb81a6c11366a22747f0d0d8484796497b8535d91",
+      "status": "retrieved"
+    },
+    "item:133711": {
+      "kind": "item",
+      "id": 133711,
+      "name": "Swollen Murloc Egg",
+      "pageUrl": "https://www.wowhead.com/item=133711",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133711?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.045111+00:00",
+      "sha256": "4503fbe554fb05229f14522e9e75b48819e3216d69b7ddfe255e881ee29e0dfe",
+      "status": "retrieved"
+    },
+    "item:133712": {
+      "kind": "item",
+      "id": 133712,
+      "name": "Frost Worm",
+      "pageUrl": "https://www.wowhead.com/item=133712",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133712?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.056109+00:00",
+      "sha256": "23a92163e63444141f799f17968c39c3f8bcd6e0c33404622611fb362a6ba49c",
+      "status": "retrieved"
+    },
+    "item:133713": {
+      "kind": "item",
+      "id": 133713,
+      "name": "Moosehorn Hook",
+      "pageUrl": "https://www.wowhead.com/item=133713",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133713?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.057129+00:00",
+      "sha256": "437450b61588dab456f82987a65273d0f7eb641ac690fd428f446adea94c5271",
+      "status": "retrieved"
+    },
+    "item:133714": {
+      "kind": "item",
+      "id": 133714,
+      "name": "Silverscale Minnow",
+      "pageUrl": "https://www.wowhead.com/item=133714",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133714?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.204538+00:00",
+      "sha256": "4861e516145e28254a9748156a7d8a7aeee13718016e9b617ef1b2cc1606b056",
+      "status": "retrieved"
+    },
+    "item:133715": {
+      "kind": "item",
+      "id": 133715,
+      "name": "Ancient Vrykul Ring",
+      "pageUrl": "https://www.wowhead.com/item=133715",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133715?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.226708+00:00",
+      "sha256": "6e2711b49afeb254fc77e5a04fe762d145e914ade32739e2bdcb8e55e481f1d2",
+      "status": "retrieved"
+    },
+    "item:133716": {
+      "kind": "item",
+      "id": 133716,
+      "name": "Soggy Drakescale",
+      "pageUrl": "https://www.wowhead.com/item=133716",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133716?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.268395+00:00",
+      "sha256": "12713c95bcdcd9dbf34df1aeab59849684437b1f57f7541a7bb8f490d8b94f2d",
+      "status": "retrieved"
+    },
+    "item:133717": {
+      "kind": "item",
+      "id": 133717,
+      "name": "Enchanted Lure",
+      "pageUrl": "https://www.wowhead.com/item=133717",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133717?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.345518+00:00",
+      "sha256": "663e5e5f932434d5c17f2e5e5e56d06db78ef8096b032057b8ef4511e8a2cdd4",
+      "status": "retrieved"
+    },
+    "item:133719": {
+      "kind": "item",
+      "id": 133719,
+      "name": "Sleeping Murloc",
+      "pageUrl": "https://www.wowhead.com/item=133719",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133719?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.396169+00:00",
+      "sha256": "c3d7cb8fbe21bab3e7a9cbf0b2b804fec1d3d31b12cb3112fcfe9091360560cf",
+      "status": "retrieved"
+    },
+    "item:133720": {
+      "kind": "item",
+      "id": 133720,
+      "name": "Demonic Detritus",
+      "pageUrl": "https://www.wowhead.com/item=133720",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133720?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.415733+00:00",
+      "sha256": "5b660bcb769d87ef924084e566055a58ac8fa607927107baacb4d922d2cf5bdb",
+      "status": "retrieved"
+    },
+    "item:133721": {
+      "kind": "item",
+      "id": 133721,
+      "name": "Message in a Beer Bottle",
+      "pageUrl": "https://www.wowhead.com/item=133721",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133721?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.464972+00:00",
+      "sha256": "a22d957a197777d7947ae6961c6a40525260bd1b9b0f283db91b284e02882300",
+      "status": "retrieved"
+    },
+    "item:133722": {
+      "kind": "item",
+      "id": 133722,
+      "name": "Axefish Lure",
+      "pageUrl": "https://www.wowhead.com/item=133722",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133722?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.531429+00:00",
+      "sha256": "12370de368d64bc9746c42ff90bbd5a23404eec1001cfd7ae0b156263f0244c1",
+      "status": "retrieved"
+    },
+    "item:133723": {
+      "kind": "item",
+      "id": 133723,
+      "name": "Stunned, Angry Shark",
+      "pageUrl": "https://www.wowhead.com/item=133723",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133723?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.634614+00:00",
+      "sha256": "5c3e1d8531a3a625abc826ef6d6c718229298cb23094c6ada3ff16d2eff4e537",
+      "status": "retrieved"
+    },
+    "item:133724": {
+      "kind": "item",
+      "id": 133724,
+      "name": "Decayed Whale Blubber",
+      "pageUrl": "https://www.wowhead.com/item=133724",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133724?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.655463+00:00",
+      "sha256": "c8b5c0317a1db89ae9e0843993afb3b7f830eb26abce15a163b03441a1982abc",
+      "status": "retrieved"
+    },
+    "item:133795": {
+      "kind": "item",
+      "id": 133795,
+      "name": "Ravenous Fly",
+      "pageUrl": "https://www.wowhead.com/item=133795",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/133795?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.644464+00:00",
+      "sha256": "c2a5645772f411cea67eb45ae717f484657dc36485192f0257ab6bb1ddf25e82",
+      "status": "retrieved"
+    },
+    "item:138967": {
+      "kind": "item",
+      "id": 138967,
+      "name": "Big Fountain Goldfish",
+      "pageUrl": "https://www.wowhead.com/item=138967",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/138967?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.708776+00:00",
+      "sha256": "64fbe05fcf317d4cc8b2392106b615d9950c90d98133e007a4265cd737362339",
+      "status": "retrieved"
+    },
+    "item:139405": {
+      "kind": "item",
+      "id": 139405,
+      "name": "Kul'Tiras Marine Issue Boots",
+      "pageUrl": "https://www.wowhead.com/item=139405",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/139405?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.052350+00:00",
+      "sha256": "74846e2911e28997f0377a617839b32995812f0f0947a228e2a75cf944a91b8c",
+      "status": "retrieved"
+    },
+    "item:139406": {
+      "kind": "item",
+      "id": 139406,
+      "name": "Sea Dog Boots",
+      "pageUrl": "https://www.wowhead.com/item=139406",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/139406?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.832217+00:00",
+      "sha256": "e41ccfde137b93f52b10af9e49b1fc80b2b5ebd88d48ddc71502a17dbcd64913",
+      "status": "retrieved"
+    },
+    "item:139407": {
+      "kind": "item",
+      "id": 139407,
+      "name": "Diver's Chain Boots",
+      "pageUrl": "https://www.wowhead.com/item=139407",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/139407?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.831203+00:00",
+      "sha256": "48767af4fb0ad0c242b3a2354a805c2de1a5a1479cca0345613b153c05015188",
+      "status": "retrieved"
+    },
+    "item:139408": {
+      "kind": "item",
+      "id": 139408,
+      "name": "Deck Sandals",
+      "pageUrl": "https://www.wowhead.com/item=139408",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/139408?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:48.902124+00:00",
+      "sha256": "3d8f5eae892dbf6ef8e28f9a5198c2c15138b32a98de58d50ba619c38b85c86f",
+      "status": "retrieved"
+    },
+    "item:139786": {
+      "kind": "item",
+      "id": 139786,
+      "name": "Ancient Mana Crystal",
+      "pageUrl": "https://www.wowhead.com/item=139786",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/139786?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.023018+00:00",
+      "sha256": "d785d90ff0519e93312af2ccdb45f4062cc221b0d1795c8b0867752f1e29185d",
+      "status": "retrieved"
+    },
+    "item:139890": {
+      "kind": "item",
+      "id": 139890,
+      "name": "Ancient Mana Gem",
+      "pageUrl": "https://www.wowhead.com/item=139890",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/139890?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.021031+00:00",
+      "sha256": "3fd021377605729e4114793aa17657993a51be87149dbe17ef9356018a57b67a",
+      "status": "retrieved"
+    },
+    "item:140781": {
+      "kind": "item",
+      "id": 140781,
+      "name": "X-87 Battle Circuit",
+      "pageUrl": "https://www.wowhead.com/item=140781",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/140781?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.291256+00:00",
+      "sha256": "05533ad739d978319c4666217600c2f4a089de534d613dc91440b7b19f8fd5d3",
+      "status": "retrieved"
+    },
+    "item:140782": {
+      "kind": "item",
+      "id": 140782,
+      "name": "Neural Net Detangler",
+      "pageUrl": "https://www.wowhead.com/item=140782",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/140782?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.204859+00:00",
+      "sha256": "2dec94b0baeabc4a6d11d2427db5b149e9edeeb36e0e4a5b761ec8a22e8d662e",
+      "status": "retrieved"
+    },
+    "item:140783": {
+      "kind": "item",
+      "id": 140783,
+      "name": "Predictive Combat Operations Databank",
+      "pageUrl": "https://www.wowhead.com/item=140783",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/140783?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.233188+00:00",
+      "sha256": "78b7abb6defc340d925ac1a895991dc265624db976817309a4a8553f00760d12",
+      "status": "retrieved"
+    },
+    "item:140784": {
+      "kind": "item",
+      "id": 140784,
+      "name": "Fel Piston Stabilizer",
+      "pageUrl": "https://www.wowhead.com/item=140784",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/140784?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.272119+00:00",
+      "sha256": "586d9d39011196992e53b38cd244b9d94fd4e642e4c89bc094fc827e0ab54fdf",
+      "status": "retrieved"
+    },
+    "item:140785": {
+      "kind": "item",
+      "id": 140785,
+      "name": "Hardened Circuitboard Plating",
+      "pageUrl": "https://www.wowhead.com/item=140785",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/140785?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.422279+00:00",
+      "sha256": "941f76fa03f34d1bd7cc3a288f6e9e6b95236d4c77125ed1c7cc2408d0447ee4",
+      "status": "retrieved"
+    },
+    "item:142335": {
+      "kind": "item",
+      "id": 142335,
+      "name": "Pristine Falcosaur Feather",
+      "pageUrl": "https://www.wowhead.com/item=142335",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/142335?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.396523+00:00",
+      "sha256": "1c585608f3791957e0f589b9151be54966b6258511aa7585b21da26834de755a",
+      "status": "retrieved"
+    },
+    "item:142336": {
+      "kind": "item",
+      "id": 142336,
+      "name": "Falcosaur Egg",
+      "pageUrl": "https://www.wowhead.com/item=142336",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/142336?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.474658+00:00",
+      "sha256": "4baf4fc14b6b1d849c942f3a6397aec4b6104c4c74d990a18e045ed0113542b6",
+      "status": "retrieved"
+    },
+    "item:144329": {
+      "kind": "item",
+      "id": 144329,
+      "name": "Hardened Felglass",
+      "pageUrl": "https://www.wowhead.com/item=144329",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/144329?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.471689+00:00",
+      "sha256": "230b54843e34d8a3da858c93f97ede9a1c68c5c249e86625bb299be22aedf93e",
+      "status": "retrieved"
+    },
+    "item:146710": {
+      "kind": "item",
+      "id": 146710,
+      "name": "Bolt of Shadowcloth",
+      "pageUrl": "https://www.wowhead.com/item=146710",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/146710?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.578499+00:00",
+      "sha256": "471e588d3f06367683f9e5f64f50e3837f18885b9a571193777569cc3a4a94ca",
+      "status": "retrieved"
+    },
+    "item:146711": {
+      "kind": "item",
+      "id": 146711,
+      "name": "Bolt of Starweave",
+      "pageUrl": "https://www.wowhead.com/item=146711",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/146711?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.598497+00:00",
+      "sha256": "5aa3e773d814e25cfedead5569fc183595b5c7826b49cae1ad5e58c8de35c47c",
+      "status": "retrieved"
+    },
+    "item:146712": {
+      "kind": "item",
+      "id": 146712,
+      "name": "Wisp-Touched Elderhide",
+      "pageUrl": "https://www.wowhead.com/item=146712",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/146712?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.709556+00:00",
+      "sha256": "b822c98bef06a7e44f2bfa1f19ea046f3026e9396772072a17d7f0d29d8ba505",
+      "status": "retrieved"
+    },
+    "item:146713": {
+      "kind": "item",
+      "id": 146713,
+      "name": "Prime Wardenscale",
+      "pageUrl": "https://www.wowhead.com/item=146713",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/146713?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.659412+00:00",
+      "sha256": "cefcf11c6ac1363d79d87796c1906016153950afa272bbc3ccbc5ccb211c7f40",
+      "status": "retrieved"
+    },
+    "item:146714": {
+      "kind": "item",
+      "id": 146714,
+      "name": "Hammer of Forgotten Heroes",
+      "pageUrl": "https://www.wowhead.com/item=146714",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/146714?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.775303+00:00",
+      "sha256": "c654e1f2b747db5be9e244bc64c73fd11353615b3cf33dd3c96c467616974c57",
+      "status": "retrieved"
+    },
+    "item:151564": {
+      "kind": "item",
+      "id": 151564,
+      "name": "Empyrium",
+      "pageUrl": "https://www.wowhead.com/item=151564",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151564?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.760269+00:00",
+      "sha256": "93d4f671183fa6b39a09edc89c25a82d45725e061ae183e98124ebc16ecae874",
+      "status": "retrieved"
+    },
+    "item:151565": {
+      "kind": "item",
+      "id": 151565,
+      "name": "Astral Glory",
+      "pageUrl": "https://www.wowhead.com/item=151565",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151565?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.846272+00:00",
+      "sha256": "89c307afaacc6ad08d9bee835b680845cab8b54451659918f06a2cb2848203cb",
+      "status": "retrieved"
+    },
+    "item:151566": {
+      "kind": "item",
+      "id": 151566,
+      "name": "Fiendish Leather",
+      "pageUrl": "https://www.wowhead.com/item=151566",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151566?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.899275+00:00",
+      "sha256": "c1292c30b683bfa5b847e9b154b1d23c34ecf9f83cdf83832d4194b511a53b9d",
+      "status": "retrieved"
+    },
+    "item:151567": {
+      "kind": "item",
+      "id": 151567,
+      "name": "Lightweave Cloth",
+      "pageUrl": "https://www.wowhead.com/item=151567",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151567?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.962305+00:00",
+      "sha256": "af6944bee2e2b3791c0c4f397fa6869c7cc5cca8881007fae716d138223fa213",
+      "status": "retrieved"
+    },
+    "item:151568": {
+      "kind": "item",
+      "id": 151568,
+      "name": "Primal Sargerite",
+      "pageUrl": "https://www.wowhead.com/item=151568",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151568?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:49.970525+00:00",
+      "sha256": "ced92832906b9589c148f324909098a34babac027d6c86bf218adaa931a4e9d2",
+      "status": "retrieved"
+    },
+    "item:151579": {
+      "kind": "item",
+      "id": 151579,
+      "name": "Labradorite",
+      "pageUrl": "https://www.wowhead.com/item=151579",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151579?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.012530+00:00",
+      "sha256": "8bc93904d3bf04c05e0043d147476acb423fe9aa35e7a2ee57e91e3d3f49ed0e",
+      "status": "retrieved"
+    },
+    "item:151718": {
+      "kind": "item",
+      "id": 151718,
+      "name": "Argulite",
+      "pageUrl": "https://www.wowhead.com/item=151718",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151718?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.091438+00:00",
+      "sha256": "8f402825a91ab3bd246074575c6734139a53181f7a63b09e288edbce623df57a",
+      "status": "retrieved"
+    },
+    "item:151719": {
+      "kind": "item",
+      "id": 151719,
+      "name": "Lightsphene",
+      "pageUrl": "https://www.wowhead.com/item=151719",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151719?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.152270+00:00",
+      "sha256": "111c66a127d32750f4819da26a8be88f47dc9363ab3fb9e10176edac75fe7232",
+      "status": "retrieved"
+    },
+    "item:151720": {
+      "kind": "item",
+      "id": 151720,
+      "name": "Chemirine",
+      "pageUrl": "https://www.wowhead.com/item=151720",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151720?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.190952+00:00",
+      "sha256": "a6a59867933d4270ec81f4d04bf13a85951fa8b587f671d08bef71d92f5804f9",
+      "status": "retrieved"
+    },
+    "item:151721": {
+      "kind": "item",
+      "id": 151721,
+      "name": "Hesselian",
+      "pageUrl": "https://www.wowhead.com/item=151721",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151721?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.205897+00:00",
+      "sha256": "d560e1647894f219cd7c77084a948ba06272fc68f2eba22a1b515da5c52547c1",
+      "status": "retrieved"
+    },
+    "item:151722": {
+      "kind": "item",
+      "id": 151722,
+      "name": "Florid Malachite",
+      "pageUrl": "https://www.wowhead.com/item=151722",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151722?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.283179+00:00",
+      "sha256": "f9c07f5ed0adc6e93b25dcada975c4580c0adb3ec57fa3879d23fb4bb2b8c490",
+      "status": "retrieved"
+    },
+    "item:251767": {
+      "kind": "item",
+      "id": 251767,
+      "name": "Fel-Touched Lumber",
+      "pageUrl": "https://www.wowhead.com/item=251767",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/251767?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T16:09:50.344620+00:00",
+      "sha256": "d952c5ce5d708eb76147c25b9e39846fc4baf2f8d0d80d111c64bdfd8bc5408f",
+      "status": "retrieved"
+    }
+  }
+}

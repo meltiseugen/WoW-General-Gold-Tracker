@@ -1,5 +1,7 @@
 # Dragonflight specialty farms, composed crafts and housing
 
+The 23 fishing-related recipe-scroll products moved from Materials to [Drops > Recipes on 2026-10-23](dragonflight-recipes-migration-2026-10-23.md). Counts below describe the original dated research pass; its acquisition evidence is retained in the dedicated recipe catalog.
+
 Researched **2026-10-19–20** for Retail. Added **1,329 catalog entries**: **1,315 saleable products** and **14 explicitly bound support inputs**. Of these, 1,328 entries belong to Dragonflight; the remaining entry is the seasonal Classic Snowball required by a Dragonflight novelty craft. The pass records **1,186 composed products and conversions**, including **25 housing recipes**. It includes **32 named random Darkmoon cards** and **23 fishing-related recipe drops**.
 
 All new catalog and research entries and their map pins use `isRoute = false`. Existing Dragonflight non-ore/herb records are also explicitly non-route. No raw ore or herb row was added, and the previously imported herbalism/mining files and their catalog rows are preserved. The old vendor-only Ohn’ahran Potato row and vendor pins were removed from the loaded catalog. Vendor-only supplies are excluded from the new component graphs.

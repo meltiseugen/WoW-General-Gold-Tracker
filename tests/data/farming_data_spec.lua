@@ -253,6 +253,8 @@ local MATERIAL_FARMING_SPOT_MODULES = {
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Crafting.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Housing.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/CatalogGathering.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Mists/BaseMaterialMaps.lua",
+    "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Shadowlands/BaseMaterialMaps.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Midnight/Finalize.lua",
     "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Finalize.lua",
 }
@@ -1489,7 +1491,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                 end
             end
         end
-        assert.equals(927, recipes)
+        assert.equals(923, recipes)
         assert.equals(7, bound_inputs)
         for _, profession in ipairs({ "alchemy", "blacksmithing", "cooking", "enchanting", "engineering", "inscription", "jewelcrafting", "leatherworking", "tailoring" }) do
             assert.is_true(counts[profession], profession)
@@ -1502,7 +1504,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         for _, item in ipairs(ns.FarmingItems.items) do
             catalog[item.itemID] = item
         end
-        for _, item_id in ipairs({ 86592, 94288, 85506, 94573, 94574, 94595, 94932, 94933, 94934, 94935, 90900, 90902, 105718 }) do
+        for _, item_id in ipairs({ 86592, 94288, 85506, 94574, 105718 }) do
             local item = assert(data.items[item_id])
             assert.is_true(catalog[item_id].auctionable)
             assert.is_true(item.auctionable)
@@ -1530,7 +1532,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("models Pandaria cards and Perfect gems as chance outputs and complete decks as exact sets", function()
+    it("retains Pandaria chance outputs while excluding Darkmoon decks and rewards", function()
         local data, ns = load_material_farming_spots(true)
         local catalog = {}
         local chance_outputs = 0
@@ -1546,19 +1548,9 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                 assert.is_true(data.items[item.itemID].randomOutput)
             end
         end
-        assert.equals(101, chance_outputs)
-        for _, deck in ipairs({ { 79323, 79283 }, { 79324, 79291 }, { 79325, 79299 }, { 79326, 79307 } }) do
-            local item = catalog[deck[1]]
-            assert.equals(8, #item.components)
-            for index, component in ipairs(item.components) do
-                assert.equals(deck[2] + index - 1, component.itemID)
-                assert.equals(1, component.quantity)
-                assert.is_true(catalog[component.itemID].randomOutput)
-            end
-        end
-        for _, recipe in ipairs({ { 79327, 79323 }, { 79328, 79323 }, { 79329, 79324 }, { 79330, 79325 }, { 79331, 79326 } }) do
-            assert.equals("quest-exchange", catalog[recipe[1]].recipeSource)
-            assert.same({ { itemID = recipe[2], quantity = 1 } }, catalog[recipe[1]].components)
+        assert.equals(67, chance_outputs)
+        for _, itemID in ipairs({ 79323, 79324, 79325, 79326, 79327, 79328, 79329, 79330, 79331 }) do
+            assert.is_nil(catalog[itemID])
         end
         for _, item_id in ipairs({ 101630, 101661, 101662 }) do
             assert.equals(5, catalog[item_id].outputQuantity)
@@ -2000,7 +1992,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                 check_chain(item.itemID, {})
             end
         end
-        assert.is_true(count >= 381)
+        assert.is_true(count >= 377)
         for _, profession in ipairs({ "alchemy", "blacksmithing", "cooking", "enchanting", "engineering",
             "inscription", "jewelcrafting", "leatherworking", "tailoring" }) do
             assert.is_true(professions[profession], profession)
@@ -2013,28 +2005,13 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("keeps Legion random cards separate from deterministic eight-card trinket assemblies", function()
+    it("excludes Legion Darkmoon cards and their trinket assemblies", function()
         local data, ns = load_material_farming_spots(true)
-        local cards = 0
         for _, item in ipairs(ns.FarmingItems.items) do
-            if item.expansion == "legion" and item.randomOutput and item.sourceSpellID == 191659 then
-                cards = cards + 1
-                assert.is_true(item.auctionable)
-                assert.is_nil(item.components)
-                assert.is_nil(data.items[item.itemID].components)
-                assert.is_false(data.items[item.itemID].isRoute)
-            end
+            assert.is_true(item.sourceSpellID ~= 191659)
         end
-        assert.equals(32, cards)
-        assert.is_nil(data.items[128712])
-        for _, item_id in ipairs({ 128705, 128709, 128710, 128711 }) do
-            local item = data.items[item_id]
-            assert.equals(8, #item.components)
-            assert.equals(1, item.outputQuantity)
-            for _, component in ipairs(item.components) do
-                assert.equals(1, component.quantity)
-                assert.is_true(data.items[component.itemID].randomOutput)
-            end
+        for _, itemID in ipairs({ 128705, 128709, 128710, 128711, 128712 }) do
+            assert.is_nil(data.items[itemID])
         end
     end)
 
@@ -2367,7 +2344,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         end
     end)
 
-    it("keeps every researched Shadowlands spot anchored by coordinates", function()
+    it("keeps every researched Shadowlands spot coordinate-backed or explicitly navigation-only", function()
         local spots = load_material_farming_spots(true)
 
         for item_id, item in pairs(spots.items) do
@@ -2378,7 +2355,13 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                         .. " / "
                         .. tostring(spot.id)
                     assert.is_table(spot.coords, message)
-                    assert.is_true(#spot.coords > 0, message)
+                    if spot.mapOnly then
+                        assert.equals(0, #spot.coords)
+                        assert.is_number(spot.mapID)
+                        assert_non_empty_string(spot.farmAction, message)
+                    else
+                        assert.is_true(#spot.coords > 0, message)
+                    end
                     for _, coord in ipairs(spot.coords) do
                         assert.is_number(coord.x, message)
                         assert.is_number(coord.y, message)
@@ -2422,7 +2405,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                 end
                 for _, spot in ipairs(item.spots or {}) do
                     local spot_context = item_context .. " spot " .. tostring(spot.id)
-                    assert.is_true(#(spot.coords or {}) > 0, spot_context .. " has no coords")
+                    assert.is_true(spot.mapOnly == true or #(spot.coords or {}) > 0, spot_context .. " has no usable map")
                     for _, url in ipairs(spot.sourceUrls or {}) do
                         assert_retail_url(url, spot_context)
                     end
@@ -2436,7 +2419,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         local catalog = {}
         for _, item in ipairs(ns.FarmingItems.items) do catalog[item.itemID] = item end
         for _, itemID in ipairs({ 193252, 193253, 193254, 193256, 193258, 193259, 205413,
-            210456, 204092, 198395, 198397, 199344, 200061, 203419, 198614,
+            210456, 204092, 198395, 198397, 199344, 200061, 203419,
             201400, 201401, 201403, 201406, 192615, 192636, 192658, 204464, 208212, 204460 }) do
             assert.is_true(catalog[itemID].auctionable, tostring(itemID))
             assert.is_false(catalog[itemID].isRoute)
@@ -2489,7 +2472,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
                 visit(item.itemID, {})
             end
         end
-        assert.equals(1186, composed)
+        assert.equals(1182, composed)
         assert.equals(2, catalog[191318].outputQuantity)
         assert.equals(5, catalog[191387].outputQuantity)
         assert.equals(1, catalog[194017].outputQuantity)
@@ -2499,9 +2482,10 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
         assert.is_true(catalog[204463].recipeSourceLabel:find("1 day recharge", 1, true) ~= nil)
         assert.equals(10, catalog[190316].components[1].quantity)
         for _, itemID in ipairs({ 198086, 198087, 198088, 198089 }) do
-            assert.equals(8, #catalog[itemID].components)
+            assert.is_nil(catalog[itemID])
+            assert.is_nil(data.items[itemID])
         end
-        for _, itemID in ipairs({ 198397, 198614, 194785, 194791, 198412, 193368 }) do
+        for _, itemID in ipairs({ 198397, 198412, 193368 }) do
             assert.is_true(catalog[itemID].randomOutput)
             assert.is_nil(catalog[itemID].components)
         end
@@ -3959,7 +3943,7 @@ describe("Data/General-Gold-Tracker_Materials/MaterialFarmingSpots", function()
 
         assert.is_table(imported)
         assert.equals("v4.3.1", imported.sourceVersion)
-        assert.equals(415, imported.farmCount)
+        assert.equals(414, imported.farmCount)
         assert.equals(317, imported.routeCount)
         assert.equals(10872, imported.pointCount)
         assert.equals(imported.farmCount, #imported.farms)
@@ -4222,8 +4206,8 @@ describe("Data/CatalogDrops", function()
         assert.equals(9049, data.categoryCounts.transmogs)
         assert.equals(147, data.categoryCounts.openWorldInstances)
         assert.equals(7, data.categoryCounts.mounts)
-        assert.equals(7, data.categoryCounts.toys)
-        assert.equals(47, data.categoryCounts.pets)
+        assert.equals(8, data.categoryCounts.toys)
+        assert.equals(45, data.categoryCounts.pets)
         assert.equals(91, data.categoryCounts.raidPets)
 
         local outdoorPetIDs = {}
@@ -4254,10 +4238,10 @@ describe("Data/Farms", function()
         assert.equals(2, data.dataVersion)
         assert.equals("v4.3.1", data.sourceVersion)
         assert.is_false(data.runtimeDependency)
-        assert.equals(504, data.farmCount)
-        assert.equals(11151, data.targetCount)
-        assert.equals(4966, data.uniqueItemCount)
-        assert.equals(414, data.sourceCounts.gathering)
+        assert.equals(503, data.farmCount)
+        assert.equals(11141, data.targetCount)
+        assert.equals(4956, data.uniqueItemCount)
+        assert.equals(413, data.sourceCounts.gathering)
         assert.equals(90, data.sourceCounts.drops)
         assert.equals(data.farmCount, #data.farms)
         assert.is_table(data.byID)
@@ -4327,7 +4311,7 @@ describe("Data/FarmLocationOverrides", function()
             "Data/General-Gold-Tracker_Farms/FarmLocationOverrides.lua",
         })
         local catalog = ns.FarmCatalog
-        local expectedCount = 38
+        local expectedCount = 37
         local actualCount = 0
 
         for _, farm in ipairs(catalog.farms) do
@@ -4421,7 +4405,7 @@ describe("Draenor specialty materials and profession crafts", function()
                 end
             end
         end
-        assert.equals(525, research.items[108739].spots[1].mapID)
+        assert.is_nil(research.items[108739]) -- Pretty Draenor Pearl belongs in Drops > Toys.
         assert.equals(534, research.items[128499].spots[1].mapID)
         for _, id in ipairs({ 111658, 111665, 111672, 110292 }) do
             for _, spot in ipairs(research.items[id].spots) do
@@ -4431,7 +4415,6 @@ describe("Draenor specialty materials and profession crafts", function()
         end
         assert.equals(0, #research.items[251766].spots) -- Housing trees move.
         assert.equals(0, #research.items[109585].spots) -- Active dig sites rotate.
-        assert.matches("once%-per%-character", research.items[108739].spots[1].tips[3])
     end)
 
     it("uses current housing inputs and states variable batch yields", function()
@@ -4451,24 +4434,18 @@ describe("Draenor specialty materials and profession crafts", function()
         assert.is_true(#research.items[251766].housingUses > 0)
     end)
 
-    it("keeps random Darkmoon cards distinct from deterministic deck assembly", function()
+    it("excludes Draenor Darkmoon cards, decks and trinkets while retaining Card of Omens", function()
         local research, ns = load_material_farming_spots(true)
-        local catalog, cards = {}, 0
+        local catalog = {}
         for _, item in ipairs(ns.FarmingItems.items) do
             catalog[item.itemID] = item
-            if item.expansion == "warlords" and item.tag == "Darkmoon Card" then
-                cards = cards + 1
-                assert.is_true(item.randomOutput)
-                assert.is_nil(item.components)
-                assert.equals(163294, research.items[item.itemID].sourceSpellID)
-            end
+            assert.is_true(item.tag ~= "Darkmoon Card")
         end
-        assert.equals(32, cards)
-        for _, pair in ipairs({ { 112303, 112319 }, { 112304, 112320 }, { 112305, 112317 }, { 112306, 112318 } }) do
-            assert.equals(8, #catalog[pair[1]].components)
-            assert.same({ { itemID = pair[1], quantity = 1 } }, catalog[pair[2]].components)
+        for _, itemID in ipairs({ 112303, 112304, 112305, 112306, 112317, 112318, 112319, 112320 }) do
+            assert.is_nil(catalog[itemID])
+            assert.is_nil(research.items[itemID])
         end
-        assert.equals(10, catalog[113355].outputQuantity) -- Card of Omens is a separate crafted batch.
+        assert.equals(10, catalog[113355].outputQuantity)
     end)
 
     it("keeps BfA specialty products and composed recipes separate from bound and purchased supplies", function()
@@ -4506,7 +4483,7 @@ describe("Draenor specialty materials and profession crafts", function()
         end
         assert.is_true(composed >= 600)
         for _, itemID in ipairs({ 163782, 167738, 168215, 168216, 168217,
-            168822, 168825, 168828, 154989, 154990, 163131, 163573, 163574, 163575, 163576 }) do
+            168822, 168825, 168828, 154989, 154990 }) do
             assert.is_true(catalog[itemID].auctionable)
         end
         for _, itemID in ipairs({ 152668, 162460, 162461, 165703, 165948, 167562,
@@ -4581,10 +4558,10 @@ describe("Draenor specialty materials and profession crafts", function()
                 end
             end
         end
-        assert.equals(347, composed)
+        assert.equals(343, composed)
         for _, itemID in ipairs({ 186017, 187633, 187634, 187635, 187636,
             189145, 189146, 189147, 189148, 189149, 189150, 189151,
-            189152, 189153, 189154, 189155, 189156, 190388, 181468, 187712 }) do
+            189152, 189153, 189154, 189155, 189156, 190388, 187712 }) do
             assert.is_true(catalog[itemID].auctionable)
         end
         assert.is_false(catalog[251772].auctionable)
@@ -4643,9 +4620,9 @@ describe("Draenor specialty materials and profession crafts", function()
                 assert.equals(311441, research.items[item.itemID].sourceSpellID)
             end
         end
-        assert.equals(32, named)
-        assert.equals(4, blank)
-        for _, itemID in ipairs({ 173069, 173078, 173087, 173096 }) do assert.equals(8, #catalog[itemID].components) end
+        assert.equals(0, named)
+        assert.equals(0, blank)
+        for _, itemID in ipairs({ 173069, 173078, 173087, 173096 }) do assert.is_nil(catalog[itemID]); assert.is_nil(research.items[itemID]) end
         for _, itemID in ipairs({ 187633, 187634, 187635, 187636, 189145, 189146, 189147,
             189149, 189150, 189151, 189152, 189153, 189154, 189155, 189156, 190388,
             173038, 173039, 173040, 173041, 173042, 173043, 187712, 187662 }) do
@@ -4660,7 +4637,9 @@ describe("Draenor specialty materials and profession crafts", function()
             end
         end
         -- Nests and lumber are dynamic, with no fabricated fixed spawn pins.
-        assert.equals(0, #research.items[189148].spots)
+        assert.equals(1, #research.items[189148].spots)
+        assert.is_true(research.items[189148].spots[1].mapOnly)
+        assert.equals(0, #research.items[189148].spots[1].coords)
         assert.equals(0, #research.items[251772].spots)
         for _, itemID in ipairs({ 171828, 171829, 171830, 171831, 171832, 171833, 187700,
             169701, 168583, 168586, 168589, 170554, 171315, 187699 }) do
@@ -4685,11 +4664,11 @@ describe("Draenor specialty materials and profession crafts", function()
                 assert.is_nil(item.components)
             end
         end
-        assert.equals(32, cards)
+        assert.equals(0, cards)
         assert.is_nil(catalog[153598]) -- Random creation placeholder is not a named sale product.
-        for _, itemID in ipairs({ 159125, 159126, 159127, 159128 }) do assert.equals(8, #catalog[itemID].components) end
+        for _, itemID in ipairs({ 159125, 159126, 159127, 159128 }) do assert.is_nil(catalog[itemID]); assert.is_nil(research.items[itemID]) end
         assert.same({ { itemID = 158886, quantity = 1 }, { itemID = 158887, quantity = 1 } }, catalog[153594].components)
-        for _, itemID in ipairs({ 163782, 167738, 168215, 168822, 163131, 163573, 163574, 163575, 163576 }) do
+        for _, itemID in ipairs({ 163782, 167738, 168215, 168822 }) do
             local options = ns.GoldTracker:BuildMaterialFarmingMapOptions(itemID)
             assert.is_true(#options > 0)
             for _, option in ipairs(options) do
@@ -4773,7 +4752,7 @@ describe("Draenor specialty materials and profession crafts", function()
                 visit(item.itemID, {})
             end
         end
-        assert.equals(941, count)
+        assert.equals(925, count)
         assert.equals(58, heraldryRecipes)
         assert.equals(24, #ns.WarWithinHousing.recipes)
         for _, recipe in ipairs(ns.WarWithinHousing.recipes) do
@@ -4800,8 +4779,8 @@ describe("Draenor specialty materials and profession crafts", function()
                 assert.is_nil(item.components)
             end
         end
-        assert.equals(32, cards)
-        for _, itemID in ipairs({ 219672, 222653, 222671, 222680 }) do assert.equals(8, #catalog[itemID].components) end
+        assert.equals(0, cards)
+        for _, itemID in ipairs({ 219672, 222653, 222671, 222680 }) do assert.is_nil(catalog[itemID]); assert.is_nil(research.items[itemID]) end
         for _, itemID in ipairs({ 222789, 222792, 222795, 222741, 213219, 222612, 235845 }) do
             assert.is_true(catalog[itemID].randomOutput)
             assert.is_nil(catalog[itemID].components)

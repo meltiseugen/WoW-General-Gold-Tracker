@@ -47,7 +47,6 @@
     "goldenmane.html": "https://www.wowhead.com/item=163573/goldenmanes-reins",
     "bloodfeaster.html": "https://www.wowhead.com/item=163575/reins-of-a-tamed-bloodfeaster",
     "honeyback.html": "https://www.wowhead.com/guide/honeyback-hive-reputation-bee-mount-rewards",
-    "searay.html": "https://www.wowhead.com/item=163131/great-sea-ray",
     "bfa-mounts.html": "https://www.wowhead.com/guide/mount-collecting-battle-for-azeroth"
   },
   "newRows": [
@@ -17572,28 +17571,6 @@
         "miscellaneous"
       ],
       "tag": "World Drop Mount",
-      "isRoute": false,
-      "auctionable": true
-    },
-    {
-      "itemID": 163131,
-      "itemName": "Great Sea Ray",
-      "expansion": "battleForAzeroth",
-      "professions": [
-        "fishing"
-      ],
-      "tag": "Fishing Mount",
-      "isRoute": false,
-      "auctionable": true
-    },
-    {
-      "itemID": 160053,
-      "itemName": "Battle-Scarred Augment Rune",
-      "expansion": "battleForAzeroth",
-      "professions": [
-        "miscellaneous"
-      ],
-      "tag": "Augment Rune",
       "isRoute": false,
       "auctionable": true
     },
@@ -109087,64 +109064,6 @@
       ]
     },
     {
-      "itemID": 163131,
-      "name": "Great Sea Ray",
-      "professions": [
-        "fishing"
-      ],
-      "category": "Fishing Mount",
-      "auctionable": true,
-      "summary": "Great Sea Ray is a rare tradeable catch from eligible BfA waters.",
-      "tips": [
-        "Fish eligible BfA open water while collecting ordinary fish; the mount is a chance catch rather than a guaranteed school reward.",
-        "Community catches include Forgotten Cove in Stormsong Valley; fishing level does not turn the mount into a guaranteed outcome.",
-        "Keep the mount item unused for sale. Reports also document catches after learning the mount, so it is not treated as once per account."
-      ],
-      "sourceUrls": [
-        "https://www.wowhead.com/item=163131/great-sea-ray",
-        "https://www.wowhead.com/guide/mount-collecting-battle-for-azeroth"
-      ],
-      "spots": [
-        {
-          "id": "bfa-specialty-great-sea-ray",
-          "mapID": 942,
-          "mapName": "Stormsong Valley",
-          "location": "Forgotten Cove fishing water reported by players",
-          "coords": [
-            {
-              "x": 0.7843000000000001,
-              "y": 0.5156000000000001,
-              "label": "Forgotten Cove shoreline"
-            }
-          ],
-          "routeType": "fishing-chance-source",
-          "isRoute": false,
-          "confidence": "medium"
-        }
-      ]
-    },
-    {
-      "itemID": 160053,
-      "name": "Battle-Scarred Augment Rune",
-      "professions": [
-        "miscellaneous"
-      ],
-      "category": "Augment Rune",
-      "auctionable": true,
-      "summary": "Tradeable Battle-Scarred Augment Rune from eligible BfA mission-table and reward sources.",
-      "tips": [
-        "Check available War Campaign follower missions for augment-rune rewards.",
-        "Mission availability and rewards vary; this is a timed mission source rather than a repeatable outdoor mob farm.",
-        "Check the current level restriction before consuming or crafting a sales plan; no current demand or sale price is assumed."
-      ],
-      "sourceUrls": [
-        "https://www.wowhead.com/item=160053/battle-scarred-augment-rune",
-        "https://warcraft.wiki.gg/wiki/War_Campaign_mission"
-      ],
-      "spots": [],
-      "acquisitionType": "mission"
-    },
-    {
       "itemID": 161129,
       "name": "Mecha-Mogul Mk1 Remote Activation Device",
       "professions": [
@@ -112817,12 +112736,6 @@
       "name": "Coastal Rejuvenation Potion",
       "profession": "alchemy",
       "status": "verified_composed_recipe"
-    },
-    {
-      "itemID": 163131,
-      "name": "Great Sea Ray (MOUNT!)",
-      "profession": "fishing",
-      "status": "verified_specialty_or_support"
     },
     {
       "itemID": 163222,
@@ -121154,20 +121067,6 @@
       "bindingSection": "Unique"
     },
     {
-      "itemID": 163131,
-      "itemName": "Great Sea Ray",
-      "auctionable": true,
-      "tooltipUrl": "https://nether.wowhead.com/tooltip/item/163131",
-      "bindingSection": ""
-    },
-    {
-      "itemID": 160053,
-      "itemName": "Battle-Scarred Augment Rune",
-      "auctionable": true,
-      "tooltipUrl": "https://nether.wowhead.com/tooltip/item/160053",
-      "bindingSection": ""
-    },
-    {
       "itemID": 161129,
       "itemName": "Mecha-Mogul Mk1 Remote Activation Device",
       "auctionable": false,
@@ -121649,5 +121548,6 @@
     "inGameTested": false,
     "auctionHouseListingTested": false,
     "demandOrProfitTested": false
-  }
+  },
+  "catalogExclusionsUpdated": "2026-10-23; removed products pruned from target/source arrays. Dated validation counts describe the earlier research run."
 }

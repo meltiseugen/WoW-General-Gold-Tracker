@@ -38,6 +38,105 @@ local function with_addon(callback)
 end
 
 describe("On-demand catalog modules", function()
+    it("opens and refreshes Favorites without loading catalogs or restoring scans", function()
+        with_addon(function(addon, ns, loaded, calls)
+            addon:InitializeDatabase()
+            addon:InitializeMemoryStorage()
+            -- Numeric scan filters used to load Rares even before a view opened.
+            addon.db.rareFarmingExpansionFilter = "6"
+            local favorites = addon:GetFarmingFavoriteStore()
+            favorites["item:2770"] = { itemID = 2770, itemName = "Copper Ore", itemLink = "item:2770",
+                farmingSourceType = "material", expansionLabel = "Classic" }
+            favorites["item:40001"] = { itemID = 40001, itemName = "Rare Cape", itemLink = "item:40001",
+                npcID = 1001, rareName = "Rare One", expansionFilterID = "6",
+                locationLabel = "Pandaria", locations = { { mapID = 371, x = 42, y = 51 } } }
+            favorites["item:40002"] = { itemID = 40002, itemName = "Boss Cape", itemLink = "item:40002",
+                instanceName = "Raid One", instanceMapID = 100, expansionLabel = "Classic" }
+            addon.LoadRareFarmingScanCacheForCurrentFilters = function()
+                error("Favorites must not restore an unrelated scan")
+            end
+            local ui = require("tests.helpers.explorer_ui")
+            ui.with_ui(ns, function()
+                addon:OpenExplorerWindow()
+                assert.equals("favorites", addon.explorerFrame.activeTabID)
+                assert.equals("3 favorite items grouped by expansion", addon.rareFarmingFrame.libraryStatusText:GetText())
+                local itemRows = {}
+                for _, row in ipairs(addon.rareFarmingFrame.libraryRows) do
+                    if row.itemID then
+                        itemRows[row.itemID] = row
+                        assert.is_true(row.favoriteFarmButton:IsShown())
+                        row.itemTooltipTarget:GetScript("OnEnter")(row.itemTooltipTarget)
+                    end
+                end
+                assert.is_table(itemRows[2770])
+                assert.is_table(itemRows[40001])
+                assert.is_table(itemRows[40002])
+                -- Item-data callbacks and resize refreshes must stay in the library.
+                local unrelatedResults = { setmetatable({}, { __index = function()
+                    error("Favorites must not walk unrelated saved scan results")
+                end }) }
+                addon.db.rareFarmingScanCache.unrelated = { results = unrelatedResults }
+                loader.with_globals({ C_Item = { GetItemInfo = function()
+                    return "Loaded Copper Ore", "item:2770", 1
+                end } }, function()
+                    addon.rareFarmingFrame:GetScript("OnEvent")(nil, "GET_ITEM_INFO_RECEIVED", 2770)
+                end)
+                assert.equals("Loaded Copper Ore", favorites["item:2770"].itemName)
+                addon.db.rareFarmingScanCache.unrelated = nil
+                addon:RefreshRareFarmingWindow(false)
+                addon.rareFarmingFrame:GetScript("OnSizeChanged")()
+                addon.explorerFrame:Hide()
+                addon:OpenExplorerWindow()
+                assert.same({}, loaded)
+                assert.same({}, calls)
+                assert.is_nil(addon.instanceFarmingFrame)
+                assert.is_nil(addon.craftingFarmingFrame)
+                assert.is_nil(addon.observedDropsFrame)
+                assert.is_nil(addon.myFarmsFrame)
+                -- Only the requested scan subtab loads Rares and its dropdown.
+                addon:SetExplorerTab("rares")
+                assert.same({}, loaded)
+                addon:OpenRareFarmingNewScan()
+                assert.is_true(loaded["General-Gold-Tracker_Rares"])
+                assert.equals(1, calls["General-Gold-Tracker_Rares"])
+                assert.is_nil(loaded["General-Gold-Tracker_Materials"])
+                assert.is_nil(loaded["General-Gold-Tracker_Farms"])
+                assert.is_nil(loaded["General-Gold-Tracker_Drops"])
+                assert.is_nil(loaded["General-Gold-Tracker_Instances"])
+            end)
+        end)
+    end)
+
+    it("defers material map loading until a favorite Map button is clicked", function()
+        with_addon(function(addon, ns, loaded)
+            addon:InitializeDatabase()
+            addon:InitializeMemoryStorage()
+            addon:GetFarmingFavoriteStore()["item:2770"] = {
+                itemID = 2770, itemName = "Copper Ore", itemLink = "item:2770",
+                farmingSourceType = "material", expansionLabel = "Classic",
+            }
+            require("tests.helpers.explorer_ui").with_ui(ns, function()
+                addon:OpenExplorerWindow()
+                assert.same({}, loaded)
+                -- Native map rendering is separate; map selection/data lookup is real.
+                local openedItemID
+                addon.OpenMaterialFarmingMap = function(_, itemID)
+                    openedItemID = itemID
+                    return true
+                end
+                for _, row in ipairs(addon.rareFarmingFrame.libraryRows) do
+                    if row.itemID == 2770 then
+                        row.favoriteFarmButton:GetScript("OnClick")(row.favoriteFarmButton)
+                    end
+                end
+                assert.equals(2770, openedItemID)
+                assert.is_true(loaded["General-Gold-Tracker_Materials"])
+                assert.is_nil(loaded["General-Gold-Tracker_Rares"])
+                assert.is_nil(loaded["General-Gold-Tracker_Instances"])
+            end)
+        end)
+    end)
+
     it("keeps catalogs unloaded through database initialization and automatic price work", function()
         with_addon(function(addon, ns, loaded)
             addon:InitializeDatabase()
@@ -51,6 +150,34 @@ describe("On-demand catalog modules", function()
             assert.same({}, loaded)
             assert.is_nil(rawget(ns, "MaterialFarmingSpots"))
             assert.is_nil(rawget(ns, "CatalogDropsData"))
+        end)
+    end)
+
+    it("loads recipe rows with Drops alone and defers recipe guides to the Farms module", function()
+        with_addon(function(_,ns,loaded,calls)
+            assert.is_nil(rawget(ns,"RecipeDropsData"))
+            assert.equals(23,#ns.RecipeDropsData.rows)
+            assert.equals(1,calls["General-Gold-Tracker_Drops"])
+            assert.is_nil(loaded["General-Gold-Tracker_Farms"])
+            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
+            assert.equals(23,#ns.RecipeFarmData.farms)
+            assert.equals(1,calls["General-Gold-Tracker_Farms"])
+            assert.equals(1,calls["General-Gold-Tracker_Drops"])
+            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
+        end)
+    end)
+
+    it("loads Cosmetics rows separately from guides and never needs Materials", function()
+        with_addon(function(_,ns,loaded,calls)
+            assert.is_nil(rawget(ns,"CosmeticDropsData"))
+            assert.equals(219,#ns.CosmeticDropsData.rows)
+            assert.equals(1,calls["General-Gold-Tracker_Drops"])
+            assert.is_nil(loaded["General-Gold-Tracker_Farms"])
+            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
+            assert.equals(219,#ns.CosmeticFarmData.farms)
+            assert.equals(1,calls["General-Gold-Tracker_Farms"])
+            assert.equals(1,calls["General-Gold-Tracker_Drops"])
+            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
         end)
     end)
 
@@ -68,7 +195,13 @@ describe("On-demand catalog modules", function()
             assert.is_table(ns.FarmCatalog.farms)
             assert.is_table(ns.PetFarmData.rows)
             assert.is_table(ns.MountFarmData)
+            assert.equals(27, #ns.MountFarmData.rows)
+            assert.equals(20, #ns.MountAcquisitionResearch)
+            assert.is_table(ns.FarmCatalog.indexes.byItemID[221967])
             assert.is_table(ns.ToyFarmData)
+            assert.equals(36, #ns.ToyFarmData.rows)
+            assert.equals(28, #ns.ToyAcquisitionResearch)
+            assert.is_table(ns.FarmCatalog.indexes.byItemID[248485])
             assert.is_table(ns.CatalogDropsData.categories)
             assert.equals(1, calls["General-Gold-Tracker_Farms"])
             assert.equals(1, calls["General-Gold-Tracker_Drops"])

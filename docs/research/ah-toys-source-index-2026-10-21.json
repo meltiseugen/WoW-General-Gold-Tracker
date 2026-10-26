@@ -1,0 +1,342 @@
+[
+  {
+    "itemID": 1973,
+    "name": "Orb of Deception",
+    "tooltipText": "Orb of Deception Item Level 1 Binds when used Toy Use: Transforms caster to look like a member of the opposing faction for 5 min. (30 Min Cooldown)",
+    "pageUrl": "https://www.wowhead.com/item=1973",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/1973?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.304273+00:00",
+    "sha256": "448d3b8de78d829db9b4e041d33a704f6cb94372b58aab72efbe6bc1f38cde9b",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 5507,
+    "name": "Ornate Spyglass",
+    "tooltipText": "Ornate Spyglass Item Level 10 Use: Allows you to look far into the distance. Sell Price: 6",
+    "pageUrl": "https://www.wowhead.com/item=5507",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/5507?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.305491+00:00",
+    "sha256": "1fcb5cd6330cbbdf8c5a6dd6eb25cf751948942c528260377e6943fb734ee8f7",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 18660,
+    "name": "World Enlarger",
+    "tooltipText": "World Enlarger Item Level 1 Toy Use: Enlarges the entire world for 5 min or until you attack. (15 Min Cooldown) Requires Classic Engineering (1) Requires Gnomish Engineer \"Only Gnomish Technology could invent a device that affects the entire world!\" Sell Price: 75",
+    "pageUrl": "https://www.wowhead.com/item=18660",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/18660?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.305064+00:00",
+    "sha256": "8bb230b680337805e9c36637af5478c9956a9ef9bf2512f3ed4b511acc7f76cc",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 18984,
+    "name": "Dimensional Ripper - Everlook",
+    "tooltipText": "Dimensional Ripper - Everlook Item Level 13 Binds when used Toy Use: Rips the dimensional walls asunder and transports you to Everlook in Winterspring. There are technical problems that sometimes occur, but that's what Goblin Engineering is all about! (4 Hrs Cooldown) Requires Classic Engineering (260) Requires Goblin Engineer Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=18984",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/18984?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.201292+00:00",
+    "sha256": "b32e2365705d100df06d410c7c837665d0c9b01a9869f5d451cb2dfe1749afa2",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 18986,
+    "name": "Ultrasafe Transporter: Gadgetzan",
+    "tooltipText": "Ultrasafe Transporter: Gadgetzan Item Level 13 Binds when used Toy Use: Safely transport yourself to Gadgetzan in Tanaris! Emphasis on Safe! Yup, nothing bad could ever happen while using this device! (4 Hrs Cooldown) Requires Classic Engineering (260) Requires Gnomish Engineer Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=18986",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/18986?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.202361+00:00",
+    "sha256": "030784aee424411217b230ac9a3b38b44fba79b55af4ed2d3fec1e40063f2a52",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 30542,
+    "name": "Dimensional Ripper - Area 52",
+    "tooltipText": "Dimensional Ripper - Area 52 Item Level 13 Binds when used Toy Use: Rips the dimensional walls asunder and transports you to Area 52 in Netherstorm. There are technical problems that sometimes occur, but that's what Goblin Engineering is all about! (4 Hrs Cooldown) Requires Outland Engineering (50) Requires Goblin Engineer Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=30542",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/30542?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.200826+00:00",
+    "sha256": "bdfdbcadc912bdd40e985f141f4168068031c6b4c45a55b572fb3202cda01ee3",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 30544,
+    "name": "Ultrasafe Transporter: Toshley's Station",
+    "tooltipText": "Ultrasafe Transporter: Toshley's Station Item Level 13 Binds when used Toy Use: Safely transport yourself to Toshley's Station in Blade's Edge! Nothing to worry about while using this baby! Gnomish know-how will get you there in a safe and timely fashion! (4 Hrs Cooldown) Requires Outland Engineering (50) Requires Gnomish Engineer Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=30544",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/30544?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.267299+00:00",
+    "sha256": "673771e0300a391dcd1c141f225aa4160e49887031418be9776409b11664ddd4",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 23767,
+    "name": "Crashin' Thrashin' Robot",
+    "tooltipText": "Crashin' Thrashin' Robot Item Level 12 Binds when used Toy Use: Summon a robot pet that will fight other fighting robots. (3 Min Cooldown) Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=23767",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/23767?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.368631+00:00",
+    "sha256": "968212f578ba1a628d881482e94f5f2539aff504b6679055f958674958296afb",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 40727,
+    "name": "Gnomish Gravity Well",
+    "tooltipText": "Gnomish Gravity Well Item Level 14 Binds when used Toy Use: Temporarily reverse your gravity. Only works out of combat and in areas where you can fly with a flying mount. Requires Cataclysm Engineering (50) Requires Gnomish Engineer Sell Price: 8 5 7",
+    "pageUrl": "https://www.wowhead.com/item=40727",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/40727?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.444206+00:00",
+    "sha256": "52bf30b540163cfe84473cf6f0d71ddc06d353b949385cb290c4a550ad9dee00",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 40768,
+    "name": "MOLL-E",
+    "tooltipText": "MOLL-E Item Level 14 Binds when used Toy Use: Creates a portable mailbox for 10 min. (1 Hour Cooldown) Requires Northrend Engineering (50) \"Mobile Oversized Letter and Literary Extractor\"",
+    "pageUrl": "https://www.wowhead.com/item=40768",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/40768?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.462100+00:00",
+    "sha256": "b6ab8a61691807e5efd89e5fde89da7840e41a3c21eb54936927d7473502157a",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 48933,
+    "name": "Wormhole Generator: Northrend",
+    "tooltipText": "Wormhole Generator: Northrend Item Level 14 Binds when used Toy Use: Creates an unstable wormhole the Engineer can use to travel around Northrend. Lasts 1 min. (4 Hrs Cooldown) Requires Level 24 Requires Northrend Engineering (40) \"Dimensional folding is not fully understood in any capacity. A parachute and medical supplies are best kept on hand!\" Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=48933",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/48933?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.394810+00:00",
+    "sha256": "5e41aae289f889b8a9926fef8a4dfdbdbb84718c44f28eb087e2c374b3b161ee",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 45854,
+    "name": "Rituals of the New Moon",
+    "tooltipText": "Rituals of the New Moon Item Level 14 Binds when equipped Held In Off-hand +6 Intellect +3 Stamina + 2 Critical Strike Use: Transform into a giant wolf. (10 Min Cooldown) Requires Level 27 Sell Price: 75 6",
+    "pageUrl": "https://www.wowhead.com/item=45854",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/45854?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.505362+00:00",
+    "sha256": "5a71b3bee45e544e81bd5936080abad9f7e10bd4fe7365892a3fa2a7c9e1f8f8",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 60854,
+    "name": "Loot-A-Rang",
+    "tooltipText": "Loot-A-Rang Item Level 14 Binds when used Toy Use: Retrieves the loot from a nearby corpse. (3 Sec Cooldown) Requires Cataclysm Engineering (70) Sell Price: 2 25",
+    "pageUrl": "https://www.wowhead.com/item=60854",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/60854?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.497190+00:00",
+    "sha256": "e1e75f25e998ee2bea4fb8b06c13a3a9e5856052b0294a6cb334652f150cdf46",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 87215,
+    "name": "Wormhole Generator: Pandaria",
+    "tooltipText": "Wormhole Generator: Pandaria Item Level 15 Binds when used Toy Use: Teleports you to somewhere in Pandaria. The exact location is difficult to predict, but will likely be far away. (15 Min Cooldown) Requires Level 29 Requires Pandaria Engineering (1) \"There is a tiny note on the side: Wheeeeeeeeeee!\" Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=87215",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/87215?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.500994+00:00",
+    "sha256": "ccde17196e17f647ad600b9a8e47fab46da6fe1b3ce466d514a5d0919f1493b1",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 111820,
+    "name": "Swapblaster",
+    "tooltipText": "Swapblaster Item Level 1 Binds when used Use: Swaps your location with another party member. Cannot be used in combat. (1 Min Cooldown) \"Warning: Swapping with someone using a Neural Silencer is highly dangerous.\" Sell Price: 7 50",
+    "pageUrl": "https://www.wowhead.com/item=111820",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111820?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.567120+00:00",
+    "sha256": "974d2ea48ad69fae0f2c318a0d2b840543570b666d05edcf2a2b74fb5b719267",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 109183,
+    "name": "World Shrinker",
+    "tooltipText": "World Shrinker Item Level 1 Toy Use: Shrinks the entire world for 5 min or until you attack. (15 Min Cooldown) Requires Draenor Engineering (1) \"Overuse may result in permanent shrinkage.\" Sell Price: 75",
+    "pageUrl": "https://www.wowhead.com/item=109183",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109183?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.632437+00:00",
+    "sha256": "59c71769d5ecab3d81dc83f460ff49ed145768905f222131bd52aa1af212c6bd",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 109167,
+    "name": "Findle's Loot-A-Rang",
+    "tooltipText": "Findle's Loot-A-Rang Item Level 15 Binds when used Toy Use: Retrieves the loot from a nearby corpse. Can only be used in Draenor. (3 Sec Cooldown) Sell Price: 2 25",
+    "pageUrl": "https://www.wowhead.com/item=109167",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109167?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.632955+00:00",
+    "sha256": "b8a91b199b48661ae36d871bface4286f2d0c06a5bc9798b4c332618d7e36853",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 112059,
+    "name": "Wormhole Centrifuge",
+    "tooltipText": "Wormhole Centrifuge Item Level 15 Binds when used Toy Use: Creates a spinning wormhole the Engineer can use to travel around Draenor. (4 Hrs Cooldown) Requires Level 34 Requires Draenor Engineering (1) Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=112059",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/112059?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.617356+00:00",
+    "sha256": "f6ea23a0545adabf7bcc27b3efa3f10d85208c2c78fa01e4d876dc7354db5f53",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 112384,
+    "name": "Reflecting Prism",
+    "tooltipText": "Reflecting Prism Item Level 1 Use: Swap appearances with a party member. 50 Charges Sell Price: 25",
+    "pageUrl": "https://www.wowhead.com/item=112384",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/112384?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.676231+00:00",
+    "sha256": "368c68f1d7c8748e1ec07fc33e309f7aa046294092ecc1998a986e908e855197",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 128807,
+    "name": "Coin of Many Faces",
+    "tooltipText": "Coin of Many Faces Item Level 15 Toy Use: Become someone else. Cooldown reduced during Hallow's End. (1 Day Cooldown) Sell Price: 5 72 71",
+    "pageUrl": "https://www.wowhead.com/item=128807",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128807?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.679569+00:00",
+    "sha256": "f96856384842b2d869effa706751fb955fe60b85d85610b8172b1fb212804ec2",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 132518,
+    "name": "Blingtron's Circuit Design Tutorial",
+    "tooltipText": "Blingtron's Circuit Design Tutorial Item Level 16 Toy Use: Play a circuit-uncrossing game. Sell Price: 8 75",
+    "pageUrl": "https://www.wowhead.com/item=132518",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/132518?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.740797+00:00",
+    "sha256": "9dc5e9fdd4daaeb105e70a2171c304ce90b8b422ce0489285bbb0d8c1e1d153e",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 151652,
+    "name": "Wormhole Generator: Argus",
+    "tooltipText": "Wormhole Generator: Argus Item Level 16 Binds when used Toy Use: Teleports the player to a random location on Argus. (15 Min Cooldown) Requires Level 39 Requires Legion Engineering (1) \"The user is responsible for final destinations teleported to, and may not take any legal action against the maker of this device.\" Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=151652",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/151652?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.688775+00:00",
+    "sha256": "404b62d38384625a06abc1871acb93637c914e7270472922ed5060fa370c1b1e",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 129956,
+    "name": "Leather Love Seat",
+    "tooltipText": "Leather Love Seat Item Level 16 Toy Use: Place down a Leather Love Seat. (2 Min Cooldown) \"Has room for two.\"",
+    "pageUrl": "https://www.wowhead.com/item=129956",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129956?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.807717+00:00",
+    "sha256": "54410d2dd1a7787ff137afe37c63d84375a00045fc114a86f82b8e5afa332355",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 168807,
+    "name": "Wormhole Generator: Kul Tiras",
+    "tooltipText": "Wormhole Generator: Kul Tiras Item Level 17 Binds when used Toy Use: Teleports the player to a random location on Kul Tiras. (15 Min Cooldown) Requires Level 45 Requires Kul Tiran Engineering (1) \"The user is responsible for final destinations teleported to, and may not take any legal action against the maker of this device.\" Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=168807",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/168807?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.701344+00:00",
+    "sha256": "b3ff6b98bab2fd8d30929cbbe7b1e7fe3eb5c10f20b0201b1793a6ead51147af",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 168808,
+    "name": "Wormhole Generator: Zandalar",
+    "tooltipText": "Wormhole Generator: Zandalar Item Level 17 Binds when used Toy Use: Teleports the player to a random location on Zandalar. (15 Min Cooldown) Requires Level 45 Requires Kul Tiran Engineering (1) \"The user is responsible for final destinations teleported to, and may not take any legal action against the maker of this device.\" Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=168808",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/168808?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.738600+00:00",
+    "sha256": "8c6e21b5f00f203aecaef857f51fb5d2182eb5a1ad5db776ba1c6018f4cf57b7",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 172924,
+    "name": "Wormhole Generator: Shadowlands",
+    "tooltipText": "Wormhole Generator: Shadowlands Item Level 19 Binds when used Toy Use: Open a wormhole that allows the user to quickly travel to one of several fixed points within the Shadowlands. (15 Min Cooldown) Requires Shadowlands Engineering (1) \"CAUTION: Failure to operate within strict safety guidelines may result in... double death? Turbo death? Aliveness?\" Sell Price: 50",
+    "pageUrl": "https://www.wowhead.com/item=172924",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/172924?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.742345+00:00",
+    "sha256": "d13027a30c3c925f7c636158e9ec62804016e20c00d2d9cee1f38a19c94c717c",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 198173,
+    "name": "Atomic Recalibrator",
+    "tooltipText": "Atomic Recalibrator Item Level 1 Binds when used Toy Use: Deploy a device that will temporarily rearrange the genetic composition of anyone you convince to step onto it. (12 Hrs Cooldown) Sell Price: 5",
+    "pageUrl": "https://www.wowhead.com/item=198173",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/198173?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.860329+00:00",
+    "sha256": "c0b732657ab2300597bcf278d9dbacde02e01122fe9a015d44938c6638cce1ff",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 198206,
+    "name": "Environmental Emulator",
+    "tooltipText": "Environmental Emulator Item Level 1 Binds when used Toy Use: Place down an Environmental Emulator for up to 2 hrs that allows you to view the world from a different perspective. A cloaking device attached to this machine ensures that only members of your party or raid can see the machine and its effects. Can only be used outside. (2 Hrs Cooldown) Sell Price: 15",
+    "pageUrl": "https://www.wowhead.com/item=198206",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/198206?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.864982+00:00",
+    "sha256": "7f4e86b7d2d36a3cc264ba136b83f30aef836356b502d165e87cf260dd891050",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 198156,
+    "name": "Wyrmhole Generator: Dragon Isles",
+    "tooltipText": "Wyrmhole Generator: Dragon Isles Item Level 1 Binds when used Toy Use: Open a wormhole that allows the user to quickly travel to a random location in the Dragon Isles. Engineers that specialize into triangulation can learn to warp to specific locations. (30 Min Cooldown) Requires Dragon Isles Engineering (1) Sell Price: 2 50",
+    "pageUrl": "https://www.wowhead.com/item=198156",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/198156?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.804492+00:00",
+    "sha256": "2767d3eb1ddd4798a156abe9c7c0cc0c6f01c4362394e27bc497366fffba4663",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 221966,
+    "name": "Wormhole Generator: Khaz Algar",
+    "tooltipText": "Wormhole Generator: Khaz Algar Item Level 23 Toy Use: Open a wormhole that allows the user to quickly travel to a random location in Khaz Algar. (30 Min Cooldown) Requires Level 68 Requires Khaz Algar Engineering (1) Sell Price: 100",
+    "pageUrl": "https://www.wowhead.com/item=221966",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/221966?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.855056+00:00",
+    "sha256": "019fcc5671146087b0eaa576ef4be50fc0b4ca05d51837dd495f3bf002630824",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 248485,
+    "name": "Wormhole Generator: Quel'Thalas",
+    "tooltipText": "Wormhole Generator: Quel'Thalas Item Level 23 Toy Use: Open a wormhole that allows the user to quickly travel to a random Midnight location. (30 Min Cooldown) Requires Level 78 Requires Midnight Engineering (1) Sell Price: 6 9 20",
+    "pageUrl": "https://www.wowhead.com/item=248485",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/248485?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.804831+00:00",
+    "sha256": "194f0792923d1220fc4dfc297eddffad356b1bef878fe86accfc1b4516f69ff4",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 127668,
+    "name": "Jewel of Hellfire",
+    "tooltipText": "Jewel of Hellfire Item Level 15 Binds when picked up Toy Use: Apply directly to the forehead. (30 Min Cooldown)",
+    "pageUrl": "https://www.wowhead.com/item=127668",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/127668?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:12:15.981831+00:00",
+    "sha256": "4cfdc267a4b2c3c8f966a409474220a3d6209d05d3342644603b37cab2959551",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 221964,
+    "name": "Filmless Camera",
+    "tooltipText": "Filmless Camera Item Level 23 Toy Use: Embrace your inner photographer! (30 Sec Cooldown) Sell Price: 100",
+    "pageUrl": "https://www.wowhead.com/item=221964",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/221964?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:16:39.957543+00:00",
+    "sha256": "1d2677d6f19ec65070bb1ccf4a4b03d6be1bc64e5d2349bfc248b15742340488",
+    "status": "retrieved"
+  },
+  {
+    "itemID": 129055,
+    "name": "Shoe Shine Kit",
+    "tooltipText": "Shoe Shine Kit Item Level 1 Binds when picked up Unique Toy Use: Shine someone's shoes. (10 Min Cooldown) Sell Price: 1",
+    "pageUrl": "https://www.wowhead.com/item=129055",
+    "retrievalUrl": "https://nether.wowhead.com/tooltip/item/129055?dataEnv=1&locale=0",
+    "retrievedAt": "2026-10-21T18:16:39.957727+00:00",
+    "sha256": "794518840be7fb4218ce1bf74761f3f1e070306f92e3403e4ce94f222e723ea1",
+    "status": "retrieved"
+  }
+]

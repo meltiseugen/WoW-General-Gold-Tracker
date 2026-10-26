@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 local MapAreaOverlay = GoldTracker.MapAreaOverlay
@@ -1144,8 +1147,8 @@ local function ShowSourceLinkWindow(url, siteName)
 
     local frame = GoldTracker.standaloneMapSourceLinkFrame
     if not frame then
-        frame = CreateFrame("Frame", "GoldTrackerStandaloneMapSourceLinkFrame", UIParent, "BasicFrameTemplateWithInset")
-        frame:SetSize(620, 150)
+        frame = CreateFrame("Frame", "GoldTrackerStandaloneMapSourceLinkFrame", UIParent)
+        frame:SetSize(620, 200)
         frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         frame:SetFrameStrata("TOOLTIP")
         frame:SetClampedToScreen(true)
@@ -1154,13 +1157,11 @@ local function ShowSourceLinkWindow(url, siteName)
         frame:RegisterForDrag("LeftButton")
         frame:SetScript("OnDragStart", frame.StartMoving)
         frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-        if frame.TitleText then
-            frame.TitleText:SetText("Source Link")
-        end
+        local chrome = Theme:ApplyWindowChrome(frame, "Source Link")
 
         local body = CreatePanel(frame, "body", "goldBorder")
-        body:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -34)
-        body:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 12)
+        body:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+        body:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
 
         local label = body:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         label:SetPoint("TOPLEFT", body, "TOPLEFT", 12, -12)
@@ -1796,7 +1797,7 @@ function GoldTracker:CreateRecordedYieldsWindow()
         return self.recordedYieldsFrame
     end
 
-    local frame = CreateFrame("Frame", "GoldTrackerRecordedYieldsFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerRecordedYieldsFrame", UIParent)
     frame:SetSize(RECORDED_YIELDS_WINDOW_WIDTH, RECORDED_YIELDS_WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("DIALOG")
@@ -2513,7 +2514,7 @@ function GoldTracker:RefreshStandaloneMapWindow()
     local areaGroups = GetStandaloneMapAreaGroups(frame)
     local selectedArea = FindAreaGroupByKey(areaGroups, frame.selectedMapAreaKey)
     if selectedOption and selectedOption.mapOnly == true then
-        SetStatus(frame, string.format("Instance map shown; no route coordinates are available. Zoom %.2fx", frame.mapZoom or 1))
+        SetStatus(frame, string.format("%s Zoom %.2fx", selectedOption.mapOnlyStatusText or "Instance map shown; no route coordinates are available.", frame.mapZoom or 1))
     elseif routePointCount == 0 and #areaGroups > 1 and not selectedArea then
         SetStatus(frame, string.format(
             "Select one of the %d farming overlays before setting a waypoint. Zoom %.2fx",
@@ -2686,7 +2687,7 @@ function GoldTracker:CreateStandaloneMapWindow()
         return self.standaloneMapFrame
     end
 
-    local frame = CreateFrame("Frame", "GoldTrackerStandaloneMapFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerStandaloneMapFrame", UIParent)
     frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("DIALOG")

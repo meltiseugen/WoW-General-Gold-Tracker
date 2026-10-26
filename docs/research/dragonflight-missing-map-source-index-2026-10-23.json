@@ -1,0 +1,2504 @@
+{
+  "scope": "Missing visible Dragonflight Materials maps including Raid Items; composed entries excluded",
+  "researchedAt": "2026-10-23",
+  "initialMissingMaps": 44,
+  "repairedExistingMaps": 14,
+  "itemCount": 58,
+  "sources": {
+    "prospecting": {
+      "url": "https://www.wowhead.com/spell=374627/dragon-isles-prospecting",
+      "supports": "Five-ore Jewelcrafting processing and random gem/byproduct outputs; not ground spawns.",
+      "review": "readable search-index spell text and player processing table"
+    },
+    "pigments": {
+      "url": "https://www.method.gg/guides/what-dragonflight-herbs-do-you-need-to-mill-to-get-each-pigment",
+      "supports": "Shimmering/Hochenblume, Blazing/Saxifrage, Serene/Bubble Poppy, Flourishing/Writhebark; quality depends on input and profession.",
+      "review": "readable search-index article text"
+    },
+    "crushing": {
+      "url": "https://www.wowhead.com/spell=395696/dragon-isles-crushing",
+      "supports": "Three eligible Dragon Isles gems are consumed by Crushing to produce Silken Gemdust.",
+      "review": "readable search-index spell text"
+    },
+    "order": {
+      "url": "https://www.wowhead.com/guide/professions/farming-awakened-and-rousing-order",
+      "supports": "Titan-Touched Mining/Herbalism source; modifiers rotate, ordinary creatures are not the farm.",
+      "review": "readable search-index guide text"
+    },
+    "infurious": {
+      "url": "https://www.wowhead.com/spell=389464/infurious-serevite-deposit",
+      "supports": "Infurious gathering and Fury of Battle; War Mode requirement is corroborated by gathering reports.",
+      "review": "readable search-index spell text and player reports"
+    },
+    "ire": {
+      "url": "https://diamondlobby.com/world-of-warcraft/how-to-get-rousing-ire-wow-dragonflight/",
+      "supports": "War Mode/Infurious gathering; PvP reward and War Supply Chest alternatives.",
+      "review": "readable search-index article text"
+    },
+    "decay": {
+      "url": "https://www.wowhead.com/item=190330/rousing-decay",
+      "supports": "Azure Span decay creatures; player-reported 18,34 camp and 14,21 Creektooth search areas. No historical rates/respawns are treated as guarantees.",
+      "review": "readable search-index item table and player reports"
+    },
+    "decay-farm": {
+      "url": "https://www.wow-professions.com/farming/rousing-decay-farming",
+      "supports": "Brackenhide/Blackenhide Outskirts Rotting Treant source area.",
+      "review": "readable opened page"
+    },
+    "decayed-herbs": {
+      "url": "https://www.wowhead.com/guide/professions/herbalism/overview-leveling-dragonflight",
+      "supports": "Decayed herbs provide Rousing Decay and have a disease penalty; Azure Span source area.",
+      "review": "readable search-index guide section"
+    },
+    "hide": {
+      "url": "https://www.wowhead.com/item=193258/fire-infused-hide",
+      "supports": "Fiery-creature Skinning tooltip and fishing source zones: Waking Shores, Zaralek Cavern and Emerald Dream. No exact skinning pin established.",
+      "review": "readable opened item page"
+    },
+    "orb": {
+      "url": "https://www.wowhead.com/item=201406/glowing-titan-orb",
+      "supports": "Named Tyrhold titan constructs and Zaralek containment enemies in the current acquisition table; no exact farm pin asserted.",
+      "review": "readable search-index item/drop table"
+    },
+    "dream-raid": {
+      "url": "https://gaminghero.io/wow-gold-making-in-raids/",
+      "supports": "Dreaming Essence from Amirdrassil bosses; chance raid rewards.",
+      "review": "readable search-index article text"
+    },
+    "smolderon": {
+      "url": "https://www.wowhead.com/npc=200927/smolderon/heroic-encounter-journal",
+      "supports": "Amirdrassil boss loot table lists both Dreaming Essence and Shadowflame Essence.",
+      "review": "readable search-index loot table"
+    },
+    "shadowflame": {
+      "url": "https://www.wowhead.com/item=204464/shadowflame-essence",
+      "supports": "Player drop reports for Aberrus including LFR, Amirdrassil, and outdoor-boss alternatives. No exclusive-source or unlimited-repeat claim.",
+      "review": "readable opened item page"
+    },
+    "amirdrassil-entrance": {
+      "url": "https://blizzardwatch.com/2023/11/13/amirdrassil-raid-entrance/",
+      "supports": "Outdoor raid entrance at Emerald Dream 27.30,31.04; distinct from summoning stone.",
+      "review": "readable search-index article text"
+    },
+    "aberrus-entrance": {
+      "url": "https://dotesports.com/wow/news/how-to-get-to-aberrus-the-shadowed-crucible-in-wow-dragonflight",
+      "supports": "Outdoor Aberrus entrance at Zaralek Cavern 48.46,10.35.",
+      "review": "readable search-index article text"
+    },
+    "legacy-geometry": {
+      "path": "Data/General-Gold-Tracker_Materials/MaterialFarmingSpots/Dragonflight/Jewelcrafting.lua",
+      "supports": "Original named cross-zone sequence: first seven points Waking Shores, next five Ohnahran. All original coordinates retained in separate options.",
+      "review": "current local source inspected"
+    }
+  },
+  "items": [
+    {
+      "itemID": 190322,
+      "itemName": "Rousing Order",
+      "category": "Elemental",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 32,
+      "sourceKeys": [
+        "order"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2023-1-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2022-2-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "catalog-gathering-0137-01"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2025-3-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "catalog-gathering-0138-01"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-bubble-poppy-water-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "catalog-gathering-0406-01"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-1-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-2-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-writhebark-foliage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "catalog-gathering-0405-01"
+        }
+      ]
+    },
+    {
+      "itemID": 190330,
+      "itemName": "Rousing Decay",
+      "category": "Elemental",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 4,
+      "sourceKeys": [
+        "decay",
+        "decay-farm",
+        "decayed-herbs"
+      ],
+      "inheritedInputRoutes": []
+    },
+    {
+      "itemID": 190451,
+      "itemName": "Rousing Ire",
+      "category": "Elemental",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 32,
+      "sourceKeys": [
+        "infurious",
+        "ire"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2023-1-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2022-2-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "catalog-gathering-0137-01"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2025-3-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "catalog-gathering-0138-01"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-bubble-poppy-water-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "catalog-gathering-0406-01"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-1-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-2-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-writhebark-foliage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "catalog-gathering-0405-01"
+        }
+      ]
+    },
+    {
+      "itemID": 192837,
+      "itemName": "Queen's Ruby",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192838,
+      "itemName": "Queen's Ruby",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192839,
+      "itemName": "Queen's Ruby",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192840,
+      "itemName": "Mystic Sapphire",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192841,
+      "itemName": "Mystic Sapphire",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192842,
+      "itemName": "Mystic Sapphire",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192843,
+      "itemName": "Vibrant Emerald",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192844,
+      "itemName": "Vibrant Emerald",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192845,
+      "itemName": "Vibrant Emerald",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192846,
+      "itemName": "Sundered Onyx",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192847,
+      "itemName": "Sundered Onyx",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192848,
+      "itemName": "Sundered Onyx",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192849,
+      "itemName": "Eternity Amber",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192850,
+      "itemName": "Eternity Amber",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192851,
+      "itemName": "Eternity Amber",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192852,
+      "itemName": "Alexstraszite",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192853,
+      "itemName": "Alexstraszite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192855,
+      "itemName": "Alexstraszite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192856,
+      "itemName": "Malygite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192857,
+      "itemName": "Malygite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192858,
+      "itemName": "Malygite",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192859,
+      "itemName": "Ysemerald",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192860,
+      "itemName": "Ysemerald",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192861,
+      "itemName": "Ysemerald",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192862,
+      "itemName": "Neltharite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192863,
+      "itemName": "Neltharite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192865,
+      "itemName": "Neltharite",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192866,
+      "itemName": "Nozdorite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192867,
+      "itemName": "Nozdorite",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192868,
+      "itemName": "Nozdorite",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192869,
+      "itemName": "Illimited Diamond",
+      "category": "Gem",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192870,
+      "itemName": "Illimited Diamond",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192871,
+      "itemName": "Illimited Diamond",
+      "category": "Gem",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192872,
+      "itemName": "Fractured Glass",
+      "category": "Glass",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 192880,
+      "itemName": "Crumbled Stone",
+      "category": "Stone",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 193258,
+      "itemName": "Fire-Infused Hide",
+      "category": "Species-specific Hide",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 4,
+      "sourceKeys": [
+        "hide"
+      ],
+      "inheritedInputRoutes": []
+    },
+    {
+      "itemID": 193368,
+      "itemName": "Silken Gemdust",
+      "category": "Gemdust",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting",
+        "crushing"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 193369,
+      "itemName": "Silken Gemdust",
+      "category": "Gemdust",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting",
+        "crushing"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 193370,
+      "itemName": "Silken Gemdust",
+      "category": "Gemdust",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 10,
+      "sourceKeys": [
+        "prospecting",
+        "crushing"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2022-1-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2023-2-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-serevite-ore-2024-3-supplied"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 190394,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2024-1-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2025-2-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-draconium-ore-2022-3-supplied"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-waking-shores-obsidian-ore-route"
+        },
+        {
+          "inputItemID": 188658,
+          "inputRouteID": "dragonflight-ohnahran-plains-herb-ore-route"
+        }
+      ]
+    },
+    {
+      "itemID": 194545,
+      "itemName": "Prismatic Ore",
+      "category": "Ore",
+      "status": "repaired-unopenable-existing-map",
+      "originalMapFlag": true,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "prospecting",
+        "legacy-geometry"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        },
+        {
+          "inputItemID": null,
+          "inputRouteID": "dragonflight-prospecting-ore-input-route"
+        }
+      ]
+    },
+    {
+      "itemID": 198412,
+      "itemName": "Serene Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 6,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-bubble-poppy-water-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "catalog-gathering-0406-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198413,
+      "itemName": "Serene Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 6,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-bubble-poppy-water-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "catalog-gathering-0406-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198414,
+      "itemName": "Serene Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 6,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-bubble-poppy-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-bubble-poppy-water-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191467,
+          "inputRouteID": "catalog-gathering-0406-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198415,
+      "itemName": "Flourishing Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 6,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-1-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-2-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-writhebark-foliage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "catalog-gathering-0405-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198416,
+      "itemName": "Flourishing Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 6,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-1-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-2-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-writhebark-foliage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "catalog-gathering-0405-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198417,
+      "itemName": "Flourishing Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 6,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-1-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-2-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-writhebark-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-writhebark-foliage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191470,
+          "inputRouteID": "catalog-gathering-0405-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198418,
+      "itemName": "Blazing Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 5,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2025-3-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "catalog-gathering-0138-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198419,
+      "itemName": "Blazing Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 5,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2025-3-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "catalog-gathering-0138-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198420,
+      "itemName": "Blazing Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 5,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2022-1-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2023-2-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-saxifrage-2025-3-supplied"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191464,
+          "inputRouteID": "catalog-gathering-0138-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198421,
+      "itemName": "Shimmering Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 5,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2023-1-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2022-2-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "catalog-gathering-0137-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198422,
+      "itemName": "Shimmering Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 5,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2023-1-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2022-2-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "catalog-gathering-0137-01"
+        }
+      ]
+    },
+    {
+      "itemID": 198423,
+      "itemName": "Shimmering Pigment",
+      "category": "Pigment",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 5,
+      "sourceKeys": [
+        "pigments"
+      ],
+      "inheritedInputRoutes": [
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2023-1-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2022-2-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-hochenblume-2024-3-supplied"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "dragonflight-ohnahran-plains-hochenblume-saxifrage-route"
+        },
+        {
+          "inputItemID": 191460,
+          "inputRouteID": "catalog-gathering-0137-01"
+        }
+      ]
+    },
+    {
+      "itemID": 201406,
+      "itemName": "Glowing Titan Orb",
+      "category": "Rare Creature Reagent",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "orb"
+      ],
+      "inheritedInputRoutes": []
+    },
+    {
+      "itemID": 204464,
+      "itemName": "Shadowflame Essence",
+      "category": "Raid Reagent",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 2,
+      "sourceKeys": [
+        "shadowflame",
+        "smolderon",
+        "aberrus-entrance",
+        "amirdrassil-entrance"
+      ],
+      "inheritedInputRoutes": []
+    },
+    {
+      "itemID": 208212,
+      "itemName": "Dreaming Essence",
+      "category": "Raid Reagent",
+      "status": "filled-missing-map",
+      "originalMapFlag": false,
+      "mapOptionCount": 1,
+      "sourceKeys": [
+        "dream-raid",
+        "smolderon",
+        "amirdrassil-entrance"
+      ],
+      "inheritedInputRoutes": []
+    }
+  ],
+  "provenanceNote": "Existing herb and ore geometry, tips, sources and exports are inherited from the loaded catalog, not independently re-surveyed. New acquisition evidence is reviewed by family; not every quality-variant item page was fetched again. Search-index excerpts are identified separately from directly opened pages.",
+  "liveGameTested": false
+}

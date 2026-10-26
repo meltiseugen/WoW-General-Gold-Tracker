@@ -20,6 +20,12 @@ It combines:
 
 ---
 
+## UI skins
+
+Open `/gt options`, then **Appearance** to choose Midnight Classic, Ember Parchment, Quiet Botanical, Quiet Arcane, Field Ledger, or Minimal Voidglass. The skin preview shows your selection; click **Reload UI** to apply it. Midnight Classic remains the default; all artwork is bundled, so TODO-Planner is not required.
+
+---
+
 ## 📦 Installation (CurseForge-Friendly)
 
 ### Option 1: CurseForge App (recommended)
@@ -31,7 +37,7 @@ It combines:
 ### Option 2: Manual install (ZIP)
 1. Download the addon ZIP.
 2. Extract it.
-3. Move all six addon folders into:
+3. Move all eight addon folders into:
    `World of Warcraft/_retail_/Interface/AddOns/`
 4. Confirm these folders are beside each other:
    - `General-Gold-Tracker`
@@ -40,8 +46,10 @@ It combines:
    - `General-Gold-Tracker_Drops`
    - `General-Gold-Tracker_Materials`
    - `General-Gold-Tracker_Farms`
+   - `General-Gold-Tracker_TSMRealmData` (optional TSM realm comparisons)
+   - `General-Gold-Tracker_MapData` (terrain detail for interactive maps)
 5. Fully exit and restart WoW after adding these folders so it discovers the
-   data addons. `/reload` is sufficient for later file updates once all six
+   bundled addons. `/reload` is sufficient for later file updates once all eight
    folders have been discovered.
 
 ### Option 3: Development checkout
@@ -53,8 +61,8 @@ PowerShell from the repository root:
 .\tools\install_catalog_modules.ps1
 ```
 
-This links the five bundled catalogs into the adjacent addon folders so local
-data edits stay in sync. Fully exit and restart WoW after the first installation.
+This links the five bundled catalogs, map data, and optional TSM realm module into adjacent
+addon folders so local edits stay in sync. Fully exit and restart WoW after the first installation.
 Missing catalog folders prevent Explorer from displaying their data.
 
 ---
@@ -82,7 +90,15 @@ If you enable auto-start in options, sessions can begin automatically.
 ![Session History Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Session+History+Screenshot)
 
 ### Options Panel
-![Options Panel Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Options+Panel+Screenshot)
+Open `/gt options` for a searchable sidebar with **Appearance**, **Sessions & Loot**, **Pricing**, **Bags**, **Alts**, **Maps**, **History & Storage**, **Alerts**, **Logging**, **Advanced**, and **Experimental** pages.
+
+Hover a setting's **?** button or its control for a detailed explanation, a practical example, and its default value. Numeric settings also show their ranges and units. Help remains available through **?** when a setting is disabled and explains what enables it. Dropdown choices, ordering arrows, alert-rule controls, and page resets have contextual help too. Search includes the detailed explanations and examples.
+
+Preferences save automatically and apply across characters. Pages remember their scroll positions, lists support dragging and up/down buttons, and alert rules offer a Test button. Numeric inputs show their units and reject out-of-range values. **Reset this page** requires a second click and restores only that page's preferences; it does not clear saved sessions, farms, or recorded observations. Later market-history maintenance still applies the configured storage limits.
+
+**Pricing** distinguishes the tracker source, Bags default source, and shared missing-price fallback order. Other Explorer windows retain their own source selectors. **History & Storage** separates session records from market-price observations, with an explicit **Unlimited items** switch; retention days and samples per item still apply.
+
+**Logging** controls GGT output in your default chat frame. Its master switch covers all categories, including warnings, command replies, `/gttsm` reports, and the chat part of alerts. Choose startup, sessions, farming scans, navigation, farm edits, history actions, alerts, warnings/errors, and command/action replies separately. Startup and navigation confirmations default off; the other categories default on. Existing master-switch preferences are preserved. Optional timestamps and **Test chat** apply immediately. Chat preferences do not change the tracker's loot log, diagnostics, alert sounds, or other alert displays; messages are not saved as a separate log file.
 
 ### Minimap Button
 ![Minimap Button Placeholder](https://via.placeholder.com/1000x560?text=Minimap+Button)
@@ -156,6 +172,8 @@ SavedVariables table:
 
 Session history, saved farming scans, favorites, options, and market/observed drop data are stored account-wide, so every character on the same WoW account can see the same saved data. New session history entries also record which character and realm saved the session.
 
+Eligible uncommon-or-better BoE loot is automatically added to Drops → Session Observed. Scan saved sessions appends older eligible loot without removing existing items or counting the same loot again. Recorded loot coordinates are available through each item's Map button.
+
 Materials learned from session history, refreshed material drop/hour rates, profession/category changes made in the Materials item details, and aggregated map/coordinate observations are written by WoW to SavedVariables. Loot coordinates use a fresh map lookup, short retries, and a recent same-map fallback; unresolved captures are retained as unavailable instead of receiving invented coordinates. To commit that curated data into this repo after logging out or reloading the UI, run:
 
 `lua tools/export_crafting_farming_learned.lua "<WoW>/WTF/Account/<Account>/SavedVariables/General-Gold-Tracker.lua"`
@@ -185,23 +203,115 @@ Explorer's large datasets are separate load-on-demand addons: `General-Gold-Trac
 `General-Gold-Tracker_Instances`, `General-Gold-Tracker_Drops`, `General-Gold-Tracker_Materials`,
 and `General-Gold-Tracker_Farms`. Install every folder from the release ZIP. A catalog loads
 when a feature reads it, including an active farm that needs its route data. Opening Inventory
-or Alerts does not itself require the full material/location catalog. Once loaded, catalogs
+or Market Watch does not itself require the full material/location catalog. Once loaded, catalogs
 remain available until the next UI reload; closing a window releases rebuildable view caches.
 
 For a development checkout directly in `Interface/AddOns`, run
 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/install_catalog_modules.ps1`.
-This creates sibling junctions to the five data modules without copying the datasets.
+This creates sibling junctions to the five catalogs, map data, and the optional TSM realm module without copying the datasets.
 Restart WoW completely once after adding them. Release packaging puts the modules in the
 same sibling layout through `.pkgmeta`; end users do not need the development script.
 
+### Interactive Alts map
+
+Alts uses ordinary Blizzard map paintings by default, with recorded character
+pins, drag panning, cursor-directed zoom, and **Reset view**. The continent-group
+**Map** buttons and all four **Global Map** tabs remain available.
+
+**Options > Experimental > Seamless maps** opts into the unfinished stitched-zone
+and minimap-terrain rendering. It is off by default and applies immediately.
+Switching styles resets existing maps to their initial view and preserves recorded
+locations, discoveries, roles, destinations and other Alts features.
+
+With seamless maps enabled, you can explore anywhere on that
+continent; zooming out stops at the continent view. **Reset view** restores the
+original zone, zoom, and position. Maps and close-up minimap terrain are always
+fully revealed, regardless of what the selected character has explored.
+The same transition and terrain renderer serves all supported continents and
+worlds, including nested maps and separate physical worlds.
+
+The **Global Map** button at the top of Alts opens a separate, movable and resizable
+window with large **Azeroth**, **Outland**, **Draenor**, and **Shadowlands** tabs.
+Each world shows its recorded character locations, including low-level, Main, and
+Bank alts. Pan and zoom into its continents and zones; **Reset view** returns to
+the whole selected world. Characters without usable saved coordinates are counted
+as unavailable rather than assigned an approximate marker.
+
+The map component is original GGT code and does not require OpenMap. MapData loads
+when an interactive map needs its painted overlays or terrain. Map art remains in the game client and is
+copyright Blizzard Entertainment.
+
+### Optional TSM realm prices and diagnostics
+
+Click an armour, weapon, mount, pet, or toy row to open Item Market Details.
+The Realm prices view lists captured realms with Min Buyout, Market Value,
+Recent Value, Historical Price, and Region sell rate columns. The current realm appears first.
+Sell rate uses TSM's `DBRegionSaleRate`, displayed as a percentage. It is the same
+regional average across rows, read once per item through TSM's public API without
+retaining another dataset. It is not a realm-specific statistic.
+Price history remains available in the adjacent view. Missing prices show `--`;
+hover a value for its TSM source, snapshot time, and any base-item/species fallback.
+Long values use horizontal scrolling and longer realm lists scroll vertically.
+The always-available **Realm setup** button opens the setup steps in Help > Value
+Sources. The table shows the available realm count, invites additional realms when
+only one is captured, and explains how to enable the optional module when needed.
+
+`General Gold Tracker - TSM Realm Prices` captures non-commodity prices from the
+realms downloaded by the TSM desktop app. Its source is under
+`Data/General-Gold-Tracker_TSMRealmData/` and it ships in the same release as GGT.
+Unlike the catalogs, it loads during startup, before AppHelper delivers its data.
+It requires GGT and TradeSkillMaster. TSM and AppHelper files are never modified.
+
+Disable this module in WoW's AddOns list and reload to remove its hook, captured
+payloads, decoder, and profiling state. GGT's normal current-realm TSM pricing
+continues working. Captured data remains in memory only and refreshes at login
+or `/reload`, after the desktop app updates its files. There is no background
+price polling or full decoded price database.
+
+Diagnostics are explicit and do not produce startup chat messages:
+
+```text
+/gttsm status
+/gttsm item 6331
+/gttsm copy 6331
+/gttsm profile on
+/gttsm profile off
+/gttsm reset
+```
+
+Status/copy reports show hook timing, dataset timestamps, retained payload bytes
+per realm, payload high-water size, and errors. Capture/query counters and elapsed
+time (total, average, maximum) are always available. WoW-attributed module memory
+is sampled at login and on diagnostic reports. Payload bytes are not additional
+RAM: strings shared with TSM may be attributed to TSM instead of this module.
+
+`profile on` enables native per-call execution/allocation measurements where
+supported and samples attributed memory every five seconds; `profile off` cancels
+that timer. Only the profiling preference is saved: enable it and `/reload` to
+measure startup capture allocations as well. Highest sampled memory is not a true
+peak, allocated bytes are cumulative allocation traffic, and timings cover this
+module's capture/query work rather than all TSM processing. No global profiler
+settings or garbage collections are forced. `reset` clears diagnostic metrics
+while retaining prices. `copy` opens a report for Ctrl+A / Ctrl+C.
+
 After editing the material-location catalogs, regenerate the small startup index with
 `lua tools/generate_material_index.lua`. Keep `tests/core/catalog_loader_spec.lua` passing
-so Alerts eligibility, metadata and map availability stay aligned with the full dataset.
+so Market Watch eligibility, metadata and map availability stay aligned with the full dataset.
 
-Startup migrates automatic known-price records to priced materials used by Alerts. Detailed
+Startup migrates automatic known-price records to priced materials used by Market Watch. Detailed
 market snapshots use a compact saved format that retains their values and respects the
 existing retention settings. Session history, favorites, user maps and farms are preserved.
 See [the memory change report](docs/MEMORY_OPTIMIZATION.md) for measurements and validation.
+
+Item price graphs collect an observation whenever a valued item list is displayed in
+Materials (including the expanded view), Instances, Rares, Drops, Bags, Favorites,
+Market Watch, or farm item valuations. Each item saves at most one new sample per elapsed
+interval, even when its price has not changed. Configure **Snapshot interval (minutes)**
+under **Options > History & Storage > Market-price storage**; the default is 60 minutes.
+The previous default limit of 500 tracked items is upgraded to **Max items = 0 (all)**
+once so browsing catalogs does not evict other item graphs. Other custom caps remain
+unchanged. The existing retention and per-item sample limits still apply; snapshots
+already evicted by the old limit cannot be restored.
 
 ---
 

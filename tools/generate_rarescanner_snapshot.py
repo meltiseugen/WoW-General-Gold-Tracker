@@ -6,6 +6,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from catalog_exclusions import EXCLUDED_ITEM_IDS, DARKMOON_NPC_IDS
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ADDONS_ROOT = REPO_ROOT.parent
@@ -53,7 +55,10 @@ def parse_loot_table() -> dict[int, dict[str, Any]]:
             continue
 
         npc_id = int(match.group(1))
-        item_ids = [int(value) for value in re.findall(r"\d+", match.group(2))]
+        if npc_id in DARKMOON_NPC_IDS or "darkmoon" in match.group(3).lower():
+            continue
+        item_ids = [int(value) for value in re.findall(r"\d+", match.group(2))
+                    if int(value) not in EXCLUDED_ITEM_IDS]
         if not item_ids:
             continue
 

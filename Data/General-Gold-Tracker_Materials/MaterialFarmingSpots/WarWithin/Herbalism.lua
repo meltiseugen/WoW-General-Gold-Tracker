@@ -437,7 +437,7 @@ local SUPPLIED_HERB_ROUTES = {
             {
                 "Prioritize the eastern/south-western landmasses, which are repeatedly used by published Phantom Bloom routes. Method",
                 "Do not spend time sweeping Eco-Domes specifically for Phantom Bloom; the herb's distribution is biased outside them.",
-                "Many nodes are close to hostile mobs, so Darkmoon Firewater is useful for improving gathering speed and reducing exposure time. Method",
+                "Many nodes are close to hostile mobs; plan safe approaches and minimize gathering exposure time. Method",
                 "Unlike the original five herbs, I would not build your Phantom Bloom addon recommendation around Truesight revealing hidden Phantom Bloom. Current gather data lists normal/lush variants rather than a camouflaged one. Wowhead",
                 "Compare the Resource Market exchange rate before converting Phantom Bloom into Khaz Algar herbs; rates change, so compare direct gathering against the exchange for the desired herb.",
             },

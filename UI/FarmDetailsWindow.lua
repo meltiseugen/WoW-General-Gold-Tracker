@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -127,10 +130,18 @@ local function IsCuratedResearchFarm(farm)
     return type(farm) == "table"
         and (farm.sourceDataset == "GGTMountFarmData"
             or farm.sourceDataset == "GGTPetFarmData"
-            or farm.sourceDataset == "GGTToyFarmData")
+            or farm.sourceDataset == "GGTToyFarmData"
+            or farm.sourceDataset == "GGTRecipeFarmData"
+            or farm.sourceDataset == "GGTCosmeticFarmData")
 end
 
 local function GetCuratedResearchLabel(farm)
+    if farm and farm.sourceDataset == "GGTCosmeticFarmData" then
+        return "GGT cosmetic acquisition guide"
+    end
+    if farm and farm.sourceDataset == "GGTRecipeFarmData" then
+        return "GGT researched recipe guide"
+    end
     if farm and farm.sourceDataset == "GGTPetFarmData" then
         return "GGT researched pet guide"
     end
@@ -141,6 +152,12 @@ local function GetCuratedResearchLabel(farm)
 end
 
 local function GetCuratedResearchFallbackSummary(farm)
+    if farm and farm.sourceDataset == "GGTCosmeticFarmData" then
+        return "Cosmetic item acquisition guide."
+    end
+    if farm and farm.sourceDataset == "GGTRecipeFarmData" then
+        return "Curated recipe acquisition guide."
+    end
     if farm and farm.sourceDataset == "GGTPetFarmData" then
         return "Curated pet farm."
     end
@@ -604,6 +621,7 @@ function GoldTracker:BuildFarmRouteMapOptions(farm)
     if type(farm) ~= "table" then
         return {}
     end
+    if type(farm.ggtMapOptions) == "table" then return self:CopyCustomFarmData(farm.ggtMapOptions) end
 
     if type(farm.mapOptions) == "table" then
         local guide = GetFarmGuide(farm)
@@ -1028,6 +1046,9 @@ function GoldTracker:BuildFarmRecordedYieldLines(farm, selectedItemID, valuation
     end
 
     valuationSnapshot = valuationSnapshot or self:BuildFarmValuationSnapshot(farm)
+    if type(self.RecordDisplayedItemMarketSnapshots) == "function" then
+        self:RecordDisplayedItemMarketSnapshots(valuationSnapshot.targets)
+    end
     local targetFilter = FARM_TARGET_FILTERS[options.targetFilter] and options.targetFilter or "all"
     local targetSortKey = FARM_TARGET_SORT_KEYS[options.targetSortKey] and options.targetSortKey or "itemName"
     local targetSortAscending = options.targetSortAscending ~= false
@@ -1410,6 +1431,13 @@ local function AccumulateFarmValuationTarget(state, target)
     end
     local quantity = math.max(0, tonumber(target.quantity) or 0)
     local sampleValue = value * quantity
+    if value > 0 and type(state.addon.RecordDisplayedItemMarketSnapshots) == "function" then
+        state.addon:RecordDisplayedItemMarketSnapshots({
+            itemID = itemID, itemLink = itemLink, unitValue = value,
+            quantity = quantity, totalValue = sampleValue,
+            valueSourceID = state.source and state.source.id,
+        })
+    end
     if value > 0 then
         state.pricedTargets = state.pricedTargets + 1
         state.total = state.total + sampleValue
@@ -1906,8 +1934,8 @@ local function ShowFarmSourceLink(url)
     end
     local frame = GoldTracker.farmSourceLinkFrame
     if not frame then
-        frame = CreateFrame("Frame", "GoldTrackerFarmSourceLinkFrame", UIParent, "BasicFrameTemplateWithInset")
-        frame:SetSize(620, 150)
+        frame = CreateFrame("Frame", "GoldTrackerFarmSourceLinkFrame", UIParent)
+        frame:SetSize(620, 200)
         frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         frame:SetFrameStrata("TOOLTIP")
         frame:SetClampedToScreen(true)
@@ -1916,13 +1944,11 @@ local function ShowFarmSourceLink(url)
         frame:RegisterForDrag("LeftButton")
         frame:SetScript("OnDragStart", frame.StartMoving)
         frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-        if frame.TitleText then
-            frame.TitleText:SetText("Farm Source")
-        end
+        local chrome = Theme:ApplyWindowChrome(frame, "Farm Source")
 
         local body = CreatePanel(frame, "body", "goldBorder")
-        body:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -34)
-        body:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 12)
+        body:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
+        body:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
         local label = body:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         label:SetPoint("TOPLEFT", body, "TOPLEFT", 12, -12)
         label:SetText("Copy source link")
@@ -2007,7 +2033,7 @@ function GoldTracker:CreateFarmDetailsWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerFarmDetailsFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerFarmDetailsFrame", UIParent)
     frame:SetSize(FARM_DETAILS_WIDTH, FARM_DETAILS_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 30, 30)
     frame:SetFrameStrata("DIALOG")
@@ -2155,11 +2181,11 @@ function GoldTracker:CreateFarmDetailsWindow()
 end
 
 function GoldTracker:OpenFarmDetails(farmID, options)
-    local farm = self:GetFarmByID(farmID)
+    options = type(options) == "table" and options or {}
+    local farm = type(options.farmSnapshot) == "table" and options.farmSnapshot or self:GetFarmByID(farmID)
     if not farm then
         return false
     end
-    options = type(options) == "table" and options or {}
     local farms = type(options.farms) == "table" and options.farms or { farm }
     if #farms == 0 then
         farms = { farm }

@@ -22,9 +22,6 @@ local function load_observed_drops(overrides)
                 tsmKey = "DBRegionMarketAvg",
             },
         },
-        IsObservedWorldDropsEnabled = function(self)
-            return self.db.enableObservedWorldDrops == true
-        end,
         GetItemIDFromLink = function(_, item_link)
             return tonumber(string.match(item_link or "", "item:(%d+)"))
         end,
@@ -66,7 +63,7 @@ describe("Tracking/ObservedDrops", function()
         _G.time = original_time
     end)
 
-    it("records only enabled uncommon-or-better non-bound non-reagent world drops", function()
+    it("records uncommon-or-better non-bound non-reagent world drops", function()
         local addon = load_observed_drops()
 
         assert.is_true(addon:ShouldRecordObservedWorldDrop(item_link, 2, false, false, { kind = "NPC" }))
@@ -77,12 +74,13 @@ describe("Tracking/ObservedDrops", function()
         assert.is_false(addon:ShouldRecordObservedWorldDrop(item_link, 2, false, false, { kind = "Mining" }))
     end)
 
-    it("does not record while the feature flag is disabled", function()
+    it("automatically adds eligible loot to Session Observed even with an old disabled flag", function()
         local addon = load_observed_drops()
         addon.db.enableObservedWorldDrops = false
 
-        assert.is_false(addon:RecordObservedWorldDrop(item_link, 1, 2, false, false, { kind = "NPC" }))
-        assert.same({}, addon.db.observedWorldDrops)
+        assert.is_true(addon:RecordObservedWorldDrop(item_link, 1, 2, false, false, { kind = "NPC" }))
+        assert.equals(1, addon.db.observedSavedSessionDrops["i:99999"].totalQuantity)
+        assert.equals(addon.db.observedWorldDrops, addon.db.observedSavedSessionDrops)
     end)
 
     it("stores item, source, location, quantity, and TSM values", function()
@@ -99,6 +97,8 @@ describe("Tracking/ObservedDrops", function()
                 locationLabel = "Elwynn Forest 42.0,51.0",
                 mapID = 37,
                 mapName = "Elwynn Forest",
+                mapX = 0.42,
+                mapY = 0.51,
                 expansionID = 0,
                 expansionName = "Classic",
             },
@@ -122,6 +122,9 @@ describe("Tracking/ObservedDrops", function()
         assert.equals(234567, drop.regionMarketValue)
         assert.equals(345678, drop.averageValue)
         assert.equals("Elwynn Forest 42.0,51.0", drop.lastLocationLabel)
+        assert.equals(37, drop.lootLocations[1].mapID)
+        assert.equals(0.42, drop.lootLocations[1].mapX)
+        assert.equals(0.51, drop.lootLocations[1].mapY)
         assert.equals(3, drop.locations["Elwynn Forest 42.0,51.0"])
         assert.equals("Test Gnoll", drop.lastSourceText)
         assert.equals(3, drop.sources["Test Gnoll"])
@@ -184,6 +187,8 @@ describe("Tracking/ObservedDrops", function()
                         locationLabel = "Stormwind Stockade",
                         mapID = 225,
                         mapName = "Stormwind Stockade",
+                        mapX = 0.3,
+                        mapY = 0.7,
                         expansionID = 0,
                         expansionName = "Classic",
                     },
@@ -197,18 +202,72 @@ describe("Tracking/ObservedDrops", function()
         assert.equals(1, result.scannedItems)
         assert.equals(1, result.eligibleItems)
         assert.equals(1, result.addedItems)
-        assert.same({}, addon.db.observedWorldDrops)
         local drop = addon.db.observedSavedSessionDrops["i:99999"]
+        assert.equals(drop, addon.db.observedWorldDrops["i:99999"])
         assert.is_table(drop)
         assert.equals(2, drop.totalQuantity)
         assert.equals(1, drop.seenCount)
         assert.equals("Stormwind Stockade", drop.lastLocationLabel)
+        assert.equals(225, drop.lootLocations[1].mapID)
+        assert.equals(0.3, drop.lootLocations[1].mapX)
+        assert.equals(0.7, drop.lootLocations[1].mapY)
         assert.equals("Prison Guard", drop.lastSourceText)
         assert.equals("Classic", drop.lastExpansionName)
         assert.equals(111111, drop.value)
         assert.equals(1710000000, addon.db.observedSavedSessionDropsScannedAt)
         assert.is_true(addon.db.observedSavedSessionDrops == addon.db.observedDropsShared.savedSessionDrops)
         assert.equals(1710000000, addon.db.observedDropsShared.savedSessionDropsScannedAt)
+    end)
+
+    it("retains distinct loot spots across scans without duplicate pins or borrowed coordinates", function()
+        local addon = load_observed_drops()
+        local function session(mapID, x, y)
+            return {
+                mapID = mapID, mapX = 0.99, mapY = 0.99,
+                itemLoots = { {
+                    itemLink = item_link, itemQuality = 2, lootSourceType = "Unit",
+                    mapID = mapID, mapX = x, mapY = y,
+                } },
+            }
+        end
+        addon.db.sessionHistory = { session(37, 0, 1), session(37, 0, 1), session(100, 0.3, 0.4) }
+        addon:ScanSavedSessionsForObservedDrops()
+        local drop = addon.db.observedSavedSessionDrops["i:99999"]
+        assert.equals(2, #drop.lootLocations)
+        addon.db.sessionHistory = { session(225) }
+        addon:ScanSavedSessionsForObservedDrops()
+        addon:ScanSavedSessionsForObservedDrops()
+        drop = addon.db.observedSavedSessionDrops["i:99999"]
+        assert.equals(3, #drop.lootLocations)
+        assert.equals(225, drop.lootLocations[3].mapID)
+        assert.is_nil(drop.lootLocations[3].mapX)
+        assert.is_nil(drop.lootLocations[3].mapY)
+        assert.equals(0, drop.lootLocations[1].mapX)
+        assert.equals(1, drop.lootLocations[1].mapY)
+    end)
+
+    it("recovers legacy observed loot coordinates from matching trash loot only", function()
+        local addon = load_observed_drops()
+        local drop = { itemKey = "i:99999", lastMapID = 37 }
+        addon.db.sessionHistory = { {
+            mapID = 37, mapX = 0.99, mapY = 0.99,
+            itemLoots = {
+                { itemLink = item_link, lootSourceType = "Unit", mapX = 0.42, mapY = 0.51 },
+                { itemLink = item_link, lootSourceType = "Unit", mapX = 0.42, mapY = 0.51 },
+                { itemLink = item_link, lootSourceType = "Mining", mapX = 0.2, mapY = 0.2 },
+                { itemLink = "|Hitem:11111:|h[Other]|h", lootSourceType = "Unit", mapX = 0.1, mapY = 0.1 },
+                { itemLink = item_link, lootSourceType = "Unit", mapID = 100, mapX = 2, mapY = 0.4 },
+            },
+        } }
+        local locations = addon:GetObservedDropLootLocations(drop)
+        assert.equals(3, #locations)
+        assert.equals(37, locations[1].mapID)
+        assert.equals(0.42, locations[1].mapX)
+        assert.equals(0.51, locations[1].mapY)
+        assert.equals(100, locations[2].mapID)
+        assert.is_nil(locations[2].mapX)
+        assert.is_nil(locations[2].mapY)
+        assert.is_nil(drop.lootLocations)
     end)
 
     it("saves rare-quality saved trash drops and keeps their quality", function()
@@ -301,10 +360,82 @@ describe("Tracking/ObservedDrops", function()
         assert.equals(1, first_result.addedItems)
         assert.equals(0, second_result.addedItems)
         assert.equals(1, second_result.updatedItems)
-        assert.equals(0, second_result.alreadyImportedItems)
+        assert.equals(1, second_result.alreadyImportedItems)
         local drop = addon.db.observedSavedSessionDrops["i:99999"]
         assert.equals(4, drop.totalQuantity)
         assert.equals(1, drop.seenCount)
+    end)
+
+    it("appends new sightings of an existing item after its earlier session leaves history", function()
+        local addon = load_observed_drops()
+        local function session(id, quantity, source)
+            return { id = id, itemLoots = { {
+                itemLink = item_link, itemQuality = 2, quantity = quantity,
+                lootSourceType = "NPC", lootSourceText = source,
+                locationLabel = source, mapID = id, mapX = 0.2, mapY = 0.3,
+            } } }
+        end
+        addon.db.sessionHistory = { session(7, 4, "First mob") }
+        addon:ScanSavedSessionsForObservedDrops()
+        local list = addon.db.observedSavedSessionDrops
+        local drop = list["i:99999"]
+        addon.db.sessionHistory = { session(8, 2, "Second mob") }
+        addon:ScanSavedSessionsForObservedDrops()
+        addon:ScanSavedSessionsForObservedDrops()
+        assert.equals(list, addon.db.observedSavedSessionDrops)
+        assert.equals(drop, list["i:99999"])
+        assert.equals(6, drop.totalQuantity)
+        assert.equals(2, drop.seenCount)
+        assert.equals(4, drop.sources["First mob"])
+        assert.equals(2, drop.sources["Second mob"])
+        assert.equals(2, #drop.lootLocations)
+    end)
+
+    it("does not import automatically captured loot again when its session is scanned", function()
+        local addon = load_observed_drops()
+        local recorded = addon:RecordObservedWorldDrop(item_link, 3, 2, false, false, { kind = "Unit" })
+        addon.db.sessionHistory = { { itemLoots = { {
+            itemLink = item_link, itemQuality = 2, quantity = 3, lootSourceType = "Unit",
+            observedDropRecorded = recorded, mapID = 37, mapX = 0.42, mapY = 0.51,
+        } } } }
+        local result = addon:ScanSavedSessionsForObservedDrops()
+        local drop = addon.db.observedSavedSessionDrops["i:99999"]
+        assert.equals(1, result.alreadyImportedItems)
+        assert.equals(3, drop.totalQuantity)
+        assert.equals(1, drop.seenCount)
+        assert.equals(0.42, drop.lootLocations[1].mapX)
+        addon:UpdateObservedDropLootLocation(item_link, { mapID = 37, mapX = 0.4, mapY = 0.5 })
+        assert.equals(3, drop.totalQuantity)
+        assert.equals(2, #drop.lootLocations)
+    end)
+
+    it("migrates old live captures and scanned items without double counting their historical loot", function()
+        local addon = load_observed_drops()
+        local existing = { itemKey = "i:99999", itemLink = item_link, totalQuantity = 4, seenCount = 1 }
+        addon.db.observedSavedSessionDrops["i:99999"] = existing
+        addon.db.observedSavedSessionDropsScannedAt = 100
+        addon.db.observedWorldDrops["i:88888"] = {
+            itemKey = "i:88888", totalQuantity = 2, seenCount = 1, lastSeenAt = 90,
+        }
+        addon.db.sessionHistory = { { itemLoots = {
+            { itemLink = item_link, itemQuality = 2, quantity = 4, lootSourceType = "Unit", timestamp = 80 },
+            { itemLink = item_link, itemQuality = 2, quantity = 3, lootSourceType = "Unit", timestamp = 110 },
+        } } }
+        addon:ScanSavedSessionsForObservedDrops()
+        addon:ScanSavedSessionsForObservedDrops()
+        assert.equals(existing, addon.db.observedSavedSessionDrops["i:99999"])
+        assert.equals(7, existing.totalQuantity)
+        assert.equals(2, existing.seenCount)
+        assert.equals(2, addon.db.observedSavedSessionDrops["i:88888"].totalQuantity)
+        assert.equals(addon.db.observedWorldDrops, addon.db.observedSavedSessionDrops)
+        -- A newly imported older session must still append after migration.
+        addon.db.sessionHistory = { { itemLoots = { {
+            itemLink = item_link, itemQuality = 2, quantity = 2,
+            lootSourceType = "Unit", timestamp = 50,
+        } } } }
+        addon:ScanSavedSessionsForObservedDrops()
+        addon:ScanSavedSessionsForObservedDrops()
+        assert.equals(9, existing.totalQuantity)
     end)
 
     it("keeps saved-session entries that are absent from a later history scan", function()

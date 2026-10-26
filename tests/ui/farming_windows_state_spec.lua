@@ -140,6 +140,26 @@ local function build_addon()
 end
 
 describe("UI farming windows shared state", function()
+    it("checks favorite map availability without building maps or normalizing unrelated user pins", function()
+        local addon = build_addon()
+        addon.db.userMaterialFarmingPins = { items = {
+            ["40005"] = { maps = { ["1"] = { pins = { saved = { x = 0.4, y = 0.5 } } } } },
+        } }
+        local unavailable = function() error("Map data must only resolve on click") end
+        addon.BuildRareFarmingMapOptions = unavailable
+        addon.BuildInstanceFarmingMapOptions = unavailable
+        addon.BuildMaterialFarmingMapOptions = unavailable
+        addon.GetUserMaterialFarmingPinStore = unavailable
+        addon = loader.load_module("UI/RareFarmingWindow.lua", addon, {
+            MaterialIndex = { items = { [40003] = { hasMap = true } } },
+        })
+        assert.equals("rare", addon:GetFavoriteFarmingMapKind({ itemID = 40001, npcID = 1001 }, true))
+        assert.equals("instance", addon:GetFavoriteFarmingMapKind({ itemID = 40002, instanceName = "Raid One" }, true))
+        assert.equals("material", addon:GetFavoriteFarmingMapKind({ itemID = 40003 }, true))
+        assert.equals("material", addon:GetFavoriteFarmingMapKind({ itemID = 40005 }, true))
+        assert.is_nil(addon:GetFavoriteFarmingMapKind({ itemID = 40004, farmingSourceType = "inventory" }, true))
+    end)
+
     it("uses the shared fallback resolver for rare and instance row prices", function()
         local addon = build_addon()
         addon.VALUE_SOURCE_BY_ID.TSM_DBREGIONMARKETAVG = {

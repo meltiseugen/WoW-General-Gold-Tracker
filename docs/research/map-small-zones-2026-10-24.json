@@ -1,0 +1,83 @@
+{
+  "build": "12.1.5.70529",
+  "issue": "Small explored outdoor zones were classified as local city paintings by area alone, delaying detail until close zoom.",
+  "fix": "Ordinary small outdoor zones use the shared continent transition. Nested localities and small no-fog paintings retain close-up handling.",
+  "affectedEasternKingdomsMaps": [
+    32,
+    42,
+    49,
+    51
+  ],
+  "nativeRuntimeVerified": false,
+  "runtime_sha256": {
+    "UI/Maps/Geometry.lua": "b50de8628503b0c0b4cf46e3dbe24eca2cf6e6b899fcde666720822a5344669d",
+    "UI/Maps/InteractiveMap.lua": "80044c695a914e0a0f96979c5b307a2f0cfb809341f5647a91f2e5f644b4bb78",
+    "UI/Maps/MapRenderer.lua": "bdde9c952d9f7f4892227056010f36cabe6e77b2483958eefed15255fc64da7a",
+    "UI/Maps/MapScene.lua": "68968b676fee86db50b5d2d0d07ad0d4546052d58cd84c64247a6ce9afc16a1e",
+    "UI/Maps/MapSource.lua": "6cccc3d7228558f04d6a10fc16949fd1cac4efb07ffe9d6fffab58c4f8712cbf"
+  },
+  "previousSceneSha256": "88b37f1bb7a190fee4dd2f40285c3be850bbdc4ec9b1c15ae7596efd9192c1e4",
+  "metadataReceipt": "map-transition-coverage-2026-10-24.json",
+  "offlineChecks": {
+    "scenes": 30,
+    "zoomStates": 210,
+    "budgetFailures": 0,
+    "peakRegions": 2197,
+    "focusedLuaChecks": 28,
+    "pythonMapTests": 10,
+    "manifestValidation": "8 manifests and 274 runtime Lua files",
+    "negativeControl": "The new small-zone regression fails with the previous scene planner; 27 prior checks pass."
+  },
+  "visualComparison": {
+    "before": {
+      "mapID": 13,
+      "focusMapID": 49,
+      "stages": [
+        {
+          "name": "zoom-03.00",
+          "zoom": 3.0,
+          "regions": 460,
+          "terrainPieces": 0,
+          "budgetReached": false
+        },
+        {
+          "name": "zoom-05.00",
+          "zoom": 5.0,
+          "regions": 340,
+          "terrainPieces": 0,
+          "budgetReached": false
+        }
+      ]
+    },
+    "after": {
+      "mapID": 13,
+      "focusMapID": 49,
+      "stages": [
+        {
+          "name": "zoom-03.00",
+          "zoom": 3.0,
+          "regions": 637,
+          "terrainPieces": 0,
+          "budgetReached": false
+        },
+        {
+          "name": "zoom-05.00",
+          "zoom": 5.0,
+          "regions": 469,
+          "terrainPieces": 0,
+          "budgetReached": false
+        }
+      ]
+    }
+  },
+  "commands": [
+    "preview_interactive_map.py --continent 13 --focus 49 --zooms 3 5",
+    "preview_interactive_map.py --continent 13 --focus 49 --zooms 3 5 --scene <previous-scene.lua>",
+    "preview_interactive_map.py --all-continents --audit-only",
+    "preview_interactive_map.py --global-cases --audit-only"
+  ],
+  "limitations": [
+    "Offline screenshots use the actual Lua renderer and default client metadata, not native WoW rendering.",
+    "Active phases, native mask rendering, and interaction performance still require an in-game check."
+  ]
+}

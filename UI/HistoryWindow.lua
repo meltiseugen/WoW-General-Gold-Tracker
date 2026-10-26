@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local HistoryConstants = NS.HistoryConstants
 local HistoryDateFilter = NS.HistoryDateFilter
@@ -240,11 +243,11 @@ local function EnsureSplitDialogRegistered()
         OnAccept = function(dialog)
             local splitEntries, reason = GoldTracker:SplitHistorySessionByLocation(dialog.data)
             if splitEntries and #splitEntries > 0 then
-                GoldTracker:Print(string.format("Split session into %d location rows.", #splitEntries))
+                GoldTracker:Print(string.format("Split session into %d location rows.", #splitEntries), "history")
             elseif reason == "single-location" then
-                GoldTracker:Print("Session has only one location; nothing to split.")
+                GoldTracker:Print("Session has only one location; nothing to split.", "history")
             else
-                GoldTracker:Print("Unable to split this session.")
+                GoldTracker:Print("Unable to split this session.", "warnings")
             end
         end,
     }
@@ -642,7 +645,7 @@ function GoldTracker:PromptSplitHistorySession(sessionID)
 
     local locationOptions = BuildHistoryLocationOptions(session)
     if #locationOptions <= 2 then
-        self:Print("Session has only one location; nothing to split.")
+        self:Print("Session has only one location; nothing to split.", "history")
         return
     end
 
@@ -682,7 +685,7 @@ function GoldTracker:CreateHistoryWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerHistoryFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerHistoryFrame", UIParent)
     frame:SetSize(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
@@ -766,7 +769,7 @@ function GoldTracker:CreateHistoryWindow()
         if merged then
             addon:ClearHistorySelection()
             addon:RefreshHistoryWindow()
-            addon:Print(string.format("Merged %d sessions into \"%s\".", #selectedIDs, merged.name or "Session"))
+            addon:Print(string.format("Merged %d sessions into \"%s\".", #selectedIDs, merged.name or "Session"), "history")
         end
     end)
     mergeButton:Hide()
@@ -786,7 +789,7 @@ function GoldTracker:CreateHistoryWindow()
         if removedCount > 0 then
             addon:ClearHistorySelection()
             addon:RefreshHistoryWindow()
-            addon:Print(string.format("Deleted %d history sessions.", removedCount))
+            addon:Print(string.format("Deleted %d history sessions.", removedCount), "history")
         end
     end)
     bulkDeleteButton:Hide()
@@ -845,31 +848,23 @@ function GoldTracker:CreateHistoryWindow()
 
     local summaryHeaderButton = CreateHistorySortHeaderButton(listContainer, 96, "Highlights")
     summaryHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 302, -56)
-    summaryHeaderButton:SetScript("OnClick", function()
-        addon:ToggleHistorySort("highlights")
-    end)
+    addon:BindTableSortHeaderClick(summaryHeaderButton, addon.ToggleHistorySort, "highlights")
     frame.summaryHeaderButton = summaryHeaderButton
     frame.listSummaryHeaderText = summaryHeaderButton.text
 
     local totalHeaderButton = CreateHistorySortHeaderButton(listContainer, 104, "Session Total")
     totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 406, -56)
-    totalHeaderButton:SetScript("OnClick", function()
-        addon:ToggleHistorySort("sessionTotal")
-    end)
+    addon:BindTableSortHeaderClick(totalHeaderButton, addon.ToggleHistorySort, "sessionTotal")
     frame.totalHeaderButton = totalHeaderButton
 
     local totalRawHeaderButton = CreateHistorySortHeaderButton(listContainer, 106, "Raw Total")
     totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 518, -56)
-    totalRawHeaderButton:SetScript("OnClick", function()
-        addon:ToggleHistorySort("sessionTotalRaw")
-    end)
+    addon:BindTableSortHeaderClick(totalRawHeaderButton, addon.ToggleHistorySort, "sessionTotalRaw")
     frame.totalRawHeaderButton = totalRawHeaderButton
 
     local durationHeaderButton = CreateHistorySortHeaderButton(listContainer, 64, "Duration")
     durationHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 632, -56)
-    durationHeaderButton:SetScript("OnClick", function()
-        addon:ToggleHistorySort("duration")
-    end)
+    addon:BindTableSortHeaderClick(durationHeaderButton, addon.ToggleHistorySort, "duration")
     frame.durationHeaderButton = durationHeaderButton
 
     local dividerColorR, dividerColorG, dividerColorB, dividerColorA = 1, 0.82, 0, 0.60
@@ -1924,7 +1919,7 @@ function GoldTracker:UpdateHistorySortHeaderState()
     end
 end
 
-function GoldTracker:ToggleHistorySort(sortKey)
+function GoldTracker:ToggleHistorySort(sortKey, mouseButton)
     if not self.historyFrame then
         return
     end
@@ -1936,6 +1931,7 @@ function GoldTracker:ToggleHistorySort(sortKey)
 
     self:ToggleTableSortCriterion(frame, sortKey, false, {
         validKeys = HISTORY_SORT_KEYS,
+        mouseButton = mouseButton,
         allowClear = true,
     })
 
@@ -2308,7 +2304,7 @@ end
 
 function GoldTracker:OpenHistoryWindow()
     if not self:IsSessionHistoryEnabled() then
-        self:Print("Session history is disabled. Enable it in options first.")
+        self:Print("Session history is disabled. Enable it in options first.", "warnings")
         return
     end
 
@@ -2689,7 +2685,7 @@ function GoldTracker:CreateHistoryExportWindow()
         return
     end
 
-    local frame = CreateFrame("Frame", "GoldTrackerHistoryExportFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerHistoryExportFrame", UIParent)
     frame:SetSize(780, 520)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
     frame:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -2808,7 +2804,7 @@ function GoldTracker:CreateHistoryLootBreakdownWindow()
         return
     end
 
-    local frame = CreateFrame("Frame", "GoldTrackerHistoryBreakdownFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerHistoryBreakdownFrame", UIParent)
     frame:SetSize(540, 480)
     frame:SetPoint("CENTER", UIParent, "CENTER", 220, 40)
     frame:SetFrameStrata("FULLSCREEN_DIALOG")

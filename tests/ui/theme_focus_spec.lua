@@ -455,7 +455,7 @@ describe("UI/Theme list window maximization", function()
 end)
 
 describe("UI/Theme progress bars", function()
-    it("shows incomplete progress and hides the completed bar container", function()
+    it("only shows progress during active scans, including pending item loads", function()
         local theme = nil
         loader.with_globals({
             CreateFrame = function()
@@ -484,10 +484,19 @@ describe("UI/Theme progress bars", function()
             },
         }
 
+        assert.is_false(theme:SetProgressBarProgress(owner, 0, 1))
+        assert.is_false(owner.progressBackdrop.shown)
+
+        owner.scanState = {}
         assert.is_false(theme:SetProgressBarProgress(owner, 3, 10))
         assert.is_true(owner.progressBackdrop.shown)
         assert.is_false(owner.progressComplete)
         assert.equals(3, owner.progressBar.value)
+
+        owner.scanState.cancelled = true
+        theme:SetProgressBarProgress(owner, 3, 10)
+        assert.is_false(owner.progressBackdrop.shown)
+        owner.scanState = {}
 
         assert.is_true(theme:SetProgressBarProgress(owner, 10, 10))
         assert.is_false(owner.progressBackdrop.shown)
@@ -497,5 +506,8 @@ describe("UI/Theme progress bars", function()
         assert.is_false(theme:SetProgressBarProgress(owner, 10, 10, false))
         assert.is_true(owner.progressBackdrop.shown)
         assert.is_false(owner.progressComplete)
+        owner.scanState = nil
+        theme:SetProgressBarProgress(owner, 0, 1)
+        assert.is_false(owner.progressBackdrop.shown)
     end)
 end)

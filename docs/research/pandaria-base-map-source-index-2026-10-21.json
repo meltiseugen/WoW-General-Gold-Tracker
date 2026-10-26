@@ -1,0 +1,3639 @@
+{
+  "scope": "Retail Pandaria base Materials only; composed materials excluded",
+  "checkedAt": "2026-10-21T07:41:59.897648+00:00",
+  "itemCount": 131,
+  "sourceCount": 198,
+  "failedSourceCount": 0,
+  "items": [
+    {
+      "itemID": 72092,
+      "itemName": "Ghost Iron Ore",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:72092"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72093,
+      "itemName": "Kyparite",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:72093"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72094,
+      "itemName": "Black Trillium Ore",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:72094"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79010,
+      "itemName": "Snow Lily",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:79010"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79011,
+      "itemName": "Fool's Cap",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:79011"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72234,
+      "itemName": "Green Tea Leaf",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:72234"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72235,
+      "itemName": "Silkweed",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:72235"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72237,
+      "itemName": "Rain Poppy",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:72237"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72238,
+      "itemName": "Golden Lotus",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:72238"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 89639,
+      "itemName": "Desecrated Herb",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:89639"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72162,
+      "itemName": "Sha-Touched Leather",
+      "category": "Leather",
+      "sourceKeys": [
+        "item:72162"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79101,
+      "itemName": "Prismatic Scale",
+      "category": "Scale",
+      "sourceKeys": [
+        "item:79101"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72988,
+      "itemName": "Windwool Cloth",
+      "category": "Cloth",
+      "sourceKeys": [
+        "item:72988"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74249,
+      "itemName": "Spirit Dust",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:74249"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74833,
+      "itemName": "Raw Tiger Steak",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:74833"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74834,
+      "itemName": "Mushan Ribs",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:74834"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74837,
+      "itemName": "Raw Turtle Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:74837"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74838,
+      "itemName": "Raw Crab Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:74838"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74839,
+      "itemName": "Wildfowl Breast",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:74839"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 75014,
+      "itemName": "Raw Crocolisk Belly",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:75014"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74856,
+      "itemName": "Jade Lungfish",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74856"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74857,
+      "itemName": "Giant Mantis Shrimp",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74857"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74859,
+      "itemName": "Emperor Salmon",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74859"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74860,
+      "itemName": "Redbelly Mandarin",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74860"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74861,
+      "itemName": "Tiger Gourami",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74861"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74863,
+      "itemName": "Jewel Danio",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74863"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74864,
+      "itemName": "Reef Octopus",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74864"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74865,
+      "itemName": "Krasarang Paddlefish",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74865"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74866,
+      "itemName": "Golden Carp",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:74866"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 83064,
+      "itemName": "Spinefish",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:83064"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76130,
+      "itemName": "Tiger Opal",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:76130"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76133,
+      "itemName": "Lapis Lazuli",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:76133"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76134,
+      "itemName": "Sunstone",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:76134"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76135,
+      "itemName": "Roguestone",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:76135"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76136,
+      "itemName": "Pandarian Garnet",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:76136"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76137,
+      "itemName": "Alexandrite",
+      "category": "Gem",
+      "sourceKeys": [
+        "item:76137"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 89112,
+      "itemName": "Mote of Harmony",
+      "category": "Elemental",
+      "sourceKeys": [
+        "item:89112"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 92426,
+      "itemName": "Sealed Tome of the Lost Legion",
+      "category": "Class Unlock",
+      "sourceKeys": [
+        "item:92426"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 72103,
+      "itemName": "White Trillium Ore",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:72103"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74840,
+      "itemName": "Green Cabbage",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74840"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74847,
+      "itemName": "Jade Squash",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74847"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74841,
+      "itemName": "Juicycrunch Carrot",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74841"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74842,
+      "itemName": "Mogu Pumpkin",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74842"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74849,
+      "itemName": "Pink Turnip",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74849"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74844,
+      "itemName": "Red Blossom Leek",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74844"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74843,
+      "itemName": "Scallions",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74843"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74848,
+      "itemName": "Striped Melon",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74848"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74850,
+      "itemName": "White Turnip",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74850"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74846,
+      "itemName": "Witchberries",
+      "category": "Vegetable",
+      "sourceKeys": [
+        "item:74846"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 74252,
+      "itemName": "Small Ethereal Shard",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:74252"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 80433,
+      "itemName": "Blood Spirit",
+      "category": "Raid Reagent",
+      "sourceKeys": [
+        "item:80433"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 94289,
+      "itemName": "Haunting Spirit",
+      "category": "Raid Reagent",
+      "sourceKeys": [
+        "item:94289"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 102218,
+      "itemName": "Spirit of War",
+      "category": "Raid Reagent",
+      "sourceKeys": [
+        "item:102218"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79253,
+      "itemName": "Misty Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:79253"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79251,
+      "itemName": "Shadow Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:79251"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 90407,
+      "itemName": "Sparkling Shard",
+      "category": "Prospecting Reagent",
+      "sourceKeys": [
+        "item:90407"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 95373,
+      "itemName": "Mantid Amber Sliver",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:95373"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79869,
+      "itemName": "Mogu Statue Piece",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:79869"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 79868,
+      "itemName": "Pandaren Pottery Shard",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:79868"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 251763,
+      "itemName": "Bamboo Lumber",
+      "category": "Warband Housing Lumber",
+      "sourceKeys": [
+        "item:251763"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76570,
+      "itemName": "Perfect Rigid Lapis Lazuli",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76570",
+        "spell:107617"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76571,
+      "itemName": "Perfect Stormy Lapis Lazuli",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76571",
+        "spell:107621"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76572,
+      "itemName": "Perfect Sparkling Lapis Lazuli",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76572",
+        "spell:107620"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76573,
+      "itemName": "Perfect Solid Lapis Lazuli",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76573",
+        "spell:107619"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76574,
+      "itemName": "Perfect Misty Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76574",
+        "spell:107605"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76575,
+      "itemName": "Perfect Piercing Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76575",
+        "spell:107607"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76576,
+      "itemName": "Perfect Lightning Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76576",
+        "spell:107604"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76577,
+      "itemName": "Perfect Sensei's Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76577",
+        "spell:107611"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76578,
+      "itemName": "Perfect Effulgent Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76578",
+        "spell:107599"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76579,
+      "itemName": "Perfect Zen Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76579",
+        "spell:107616"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76580,
+      "itemName": "Perfect Balanced Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76580",
+        "spell:107598"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76581,
+      "itemName": "Perfect Vivid Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76581",
+        "spell:107615"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76582,
+      "itemName": "Perfect Turbid Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76582",
+        "spell:107614"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76583,
+      "itemName": "Perfect Radiant Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76583",
+        "spell:107609"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76584,
+      "itemName": "Perfect Shattered Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76584",
+        "spell:107612"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76585,
+      "itemName": "Perfect Energized Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76585",
+        "spell:107600"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76587,
+      "itemName": "Perfect Regal Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76587",
+        "spell:107610"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76588,
+      "itemName": "Perfect Forceful Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76588",
+        "spell:107601"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76590,
+      "itemName": "Perfect Puissant Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76590",
+        "spell:107608"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76591,
+      "itemName": "Perfect Steady Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76591",
+        "spell:107613"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76592,
+      "itemName": "Perfect Deadly Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76592",
+        "spell:107649"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76593,
+      "itemName": "Perfect Crafty Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76593",
+        "spell:107648"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76594,
+      "itemName": "Perfect Potent Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76594",
+        "spell:107657"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76595,
+      "itemName": "Perfect Inscribed Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76595",
+        "spell:107653"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76596,
+      "itemName": "Perfect Polished Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76596",
+        "spell:107656"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76597,
+      "itemName": "Perfect Resolute Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76597",
+        "spell:107659"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76598,
+      "itemName": "Perfect Stalwart Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76598",
+        "spell:107663"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76599,
+      "itemName": "Perfect Champion's Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76599",
+        "spell:107647"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76600,
+      "itemName": "Perfect Deft Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76600",
+        "spell:107650"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76601,
+      "itemName": "Perfect Wicked Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76601",
+        "spell:107666"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76602,
+      "itemName": "Perfect Reckless Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76602",
+        "spell:107658"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76603,
+      "itemName": "Perfect Fierce Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76603",
+        "spell:107651"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76604,
+      "itemName": "Perfect Adept Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76604",
+        "spell:107645"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76605,
+      "itemName": "Perfect Keen Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76605",
+        "spell:107654"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76606,
+      "itemName": "Perfect Artful Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76606",
+        "spell:107646"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76607,
+      "itemName": "Perfect Fine Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76607",
+        "spell:107652"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76608,
+      "itemName": "Perfect Skillful Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76608",
+        "spell:107661"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76609,
+      "itemName": "Perfect Lucent Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76609",
+        "spell:107655"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76610,
+      "itemName": "Perfect Tenuous Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76610",
+        "spell:107665"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76611,
+      "itemName": "Perfect Willful Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76611",
+        "spell:107667"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76612,
+      "itemName": "Perfect Splendid Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76612",
+        "spell:107662"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76613,
+      "itemName": "Perfect Resplendent Tiger Opal",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76613",
+        "spell:107660"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76614,
+      "itemName": "Perfect Glinting Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76614",
+        "spell:107631"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76615,
+      "itemName": "Perfect Accurate Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76615",
+        "spell:107627"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76616,
+      "itemName": "Perfect Veiled Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76616",
+        "spell:107639"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76617,
+      "itemName": "Perfect Retaliating Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76617",
+        "spell:107635"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76618,
+      "itemName": "Perfect Etched Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76618",
+        "spell:107630"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76619,
+      "itemName": "Perfect Mysterious Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76619",
+        "spell:107633"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76620,
+      "itemName": "Perfect Purified Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76620",
+        "spell:107634"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76621,
+      "itemName": "Perfect Shifting Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76621",
+        "spell:107636"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76622,
+      "itemName": "Perfect Guardian's Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76622",
+        "spell:107632"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76623,
+      "itemName": "Perfect Timeless Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76623",
+        "spell:107638"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76624,
+      "itemName": "Perfect Defender's Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76624",
+        "spell:107628"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76625,
+      "itemName": "Perfect Sovereign Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76625",
+        "spell:107637"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76626,
+      "itemName": "Perfect Delicate Pandarian Garnet",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76626",
+        "spell:107624"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76627,
+      "itemName": "Perfect Precise Pandarian Garnet",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76627",
+        "spell:107626"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76628,
+      "itemName": "Perfect Brilliant Pandarian Garnet",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76628",
+        "spell:107623"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76629,
+      "itemName": "Perfect Flashing Pandarian Garnet",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76629",
+        "spell:107625"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76630,
+      "itemName": "Perfect Bold Pandarian Garnet",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76630",
+        "spell:107622"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76631,
+      "itemName": "Perfect Smooth Sunstone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76631",
+        "spell:107643"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76632,
+      "itemName": "Perfect Subtle Sunstone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76632",
+        "spell:107644"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76633,
+      "itemName": "Perfect Quick Sunstone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76633",
+        "spell:107642"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76634,
+      "itemName": "Perfect Fractured Sunstone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76634",
+        "spell:107640"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 76635,
+      "itemName": "Perfect Mystic Sunstone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:76635",
+        "spell:107641"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 89676,
+      "itemName": "Perfect Tense Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:89676",
+        "spell:130655"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 89679,
+      "itemName": "Perfect Assassin's Roguestone",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:89679",
+        "spell:130656"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 93707,
+      "itemName": "Perfect Nimble Alexandrite",
+      "category": "Perfect Gem",
+      "sourceKeys": [
+        "item:93707",
+        "spell:107606"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 86592,
+      "itemName": "Hozen Peace Pipe",
+      "category": "Reputation Consumable",
+      "sourceKeys": [
+        "item:86592"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 94288,
+      "itemName": "Giant Dinosaur Bone",
+      "category": "Collectible Reagent",
+      "sourceKeys": [
+        "item:94288"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 85506,
+      "itemName": "Viseclaw Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:85506"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 105718,
+      "itemName": "Sha Crystal Fragment",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:105718"
+      ],
+      "status": "retrieved"
+    }
+  ],
+  "sources": {
+    "item:102218": {
+      "kind": "item",
+      "id": 102218,
+      "name": "Spirit of War",
+      "pageUrl": "https://www.wowhead.com/item=102218",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/102218?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:31.569152+00:00",
+      "sha256": "ed1d3e84a2390220937d8d576d28454f5ff6752f9c08c8c25e0b02e32860c898",
+      "status": "retrieved"
+    },
+    "item:105718": {
+      "kind": "item",
+      "id": 105718,
+      "name": "Sha Crystal Fragment",
+      "pageUrl": "https://www.wowhead.com/item=105718",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/105718?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:32.547653+00:00",
+      "sha256": "6df4ab207ef01637036936a42b21639d0031a8630de4d4a0ce9621e4e1d94a2d",
+      "status": "retrieved"
+    },
+    "item:251763": {
+      "kind": "item",
+      "id": 251763,
+      "name": "Bamboo Lumber",
+      "pageUrl": "https://www.wowhead.com/item=251763",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/251763?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:33.711653+00:00",
+      "sha256": "44b9c8ccc13f8207f6084e2c39aef4ee120aca9cac6791738758b6ce21a3be4d",
+      "status": "retrieved"
+    },
+    "item:72092": {
+      "kind": "item",
+      "id": 72092,
+      "name": "Ghost Iron Ore",
+      "pageUrl": "https://www.wowhead.com/item=72092",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72092?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.297652+00:00",
+      "sha256": "d7403900cc71d1285ad562de9bcb208c140671b2dfd9cc0139ec90352d1285fe",
+      "status": "retrieved"
+    },
+    "item:72093": {
+      "kind": "item",
+      "id": 72093,
+      "name": "Kyparite",
+      "pageUrl": "https://www.wowhead.com/item=72093",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72093?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.384652+00:00",
+      "sha256": "7518d391d6f2341e947e6145cc58a08ba74b5081d38aec3ac4cb571a7550f2bc",
+      "status": "retrieved"
+    },
+    "item:72094": {
+      "kind": "item",
+      "id": 72094,
+      "name": "Black Trillium Ore",
+      "pageUrl": "https://www.wowhead.com/item=72094",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72094?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.420654+00:00",
+      "sha256": "cb3ebfd6ec178ff361c7f6e67bacc06c7c892537dbe38830ca08e26b71c1104e",
+      "status": "retrieved"
+    },
+    "item:72103": {
+      "kind": "item",
+      "id": 72103,
+      "name": "White Trillium Ore",
+      "pageUrl": "https://www.wowhead.com/item=72103",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72103?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.550651+00:00",
+      "sha256": "5293e85bf3b6de82c5752779737999b9334b278c97474f9392d75c307f7ee7dc",
+      "status": "retrieved"
+    },
+    "item:72162": {
+      "kind": "item",
+      "id": 72162,
+      "name": "Sha-Touched Leather",
+      "pageUrl": "https://www.wowhead.com/item=72162",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72162?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.681662+00:00",
+      "sha256": "ed1b1c079a55d34dcfc347cefc6a3c0f446edf430c9a62f7b2a2e55d0c42b8d3",
+      "status": "retrieved"
+    },
+    "item:72234": {
+      "kind": "item",
+      "id": 72234,
+      "name": "Green Tea Leaf",
+      "pageUrl": "https://www.wowhead.com/item=72234",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72234?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.796152+00:00",
+      "sha256": "622ea255ab538fd42dd40702288be5f8baf6a35c79ed59ad31b1817c94612263",
+      "status": "retrieved"
+    },
+    "item:72235": {
+      "kind": "item",
+      "id": 72235,
+      "name": "Silkweed",
+      "pageUrl": "https://www.wowhead.com/item=72235",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72235?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.871654+00:00",
+      "sha256": "dab20ce3babbd732f6886c3262888e3dfca3a80db0cf50fe68a52d31e23cdb45",
+      "status": "retrieved"
+    },
+    "item:72237": {
+      "kind": "item",
+      "id": 72237,
+      "name": "Rain Poppy",
+      "pageUrl": "https://www.wowhead.com/item=72237",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72237?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:32.905154+00:00",
+      "sha256": "d9f3d5a342a7d218b7991358c443cd030b9c1073deba260f5d342abb7e78b9a1",
+      "status": "retrieved"
+    },
+    "item:72238": {
+      "kind": "item",
+      "id": 72238,
+      "name": "Golden Lotus",
+      "pageUrl": "https://www.wowhead.com/item=72238",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72238?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:33.003153+00:00",
+      "sha256": "2148bb1acdd7e031b92fbfc17483fdd91ade731c358f9327a0d58a466daf2401",
+      "status": "retrieved"
+    },
+    "item:72988": {
+      "kind": "item",
+      "id": 72988,
+      "name": "Windwool Cloth",
+      "pageUrl": "https://www.wowhead.com/item=72988",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/72988?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:33.128651+00:00",
+      "sha256": "b816911fd713be8ba2c9a81d0c588f2c91e9e265d685bdb07fe7a249b3b8c8ae",
+      "status": "retrieved"
+    },
+    "item:74249": {
+      "kind": "item",
+      "id": 74249,
+      "name": "Spirit Dust",
+      "pageUrl": "https://www.wowhead.com/item=74249",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74249?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:33.204651+00:00",
+      "sha256": "34c406e0ccbf4db908013e0690e7d42fe72d879547f9a0784e5d64ad4c41b91d",
+      "status": "retrieved"
+    },
+    "item:74252": {
+      "kind": "item",
+      "id": 74252,
+      "name": "Small Ethereal Shard",
+      "pageUrl": "https://www.wowhead.com/item=74252",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74252?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:33.413652+00:00",
+      "sha256": "dd0913334324d7934765deb38e8f8b443c24440c86f5812ee2594b570ae817f3",
+      "status": "retrieved"
+    },
+    "item:74833": {
+      "kind": "item",
+      "id": 74833,
+      "name": "Raw Tiger Steak",
+      "pageUrl": "https://www.wowhead.com/item=74833",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74833?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.630152+00:00",
+      "sha256": "fba35d18ce049ddebde8c7c37fc0df04dfd2e652ae18a56a82421e46eaa82c7e",
+      "status": "retrieved"
+    },
+    "item:74834": {
+      "kind": "item",
+      "id": 74834,
+      "name": "Mushan Ribs",
+      "pageUrl": "https://www.wowhead.com/item=74834",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74834?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.646152+00:00",
+      "sha256": "e045f99b24641681b677c9902561c9ac444aa035587618203a4782a367fba635",
+      "status": "retrieved"
+    },
+    "item:74837": {
+      "kind": "item",
+      "id": 74837,
+      "name": "Raw Turtle Meat",
+      "pageUrl": "https://www.wowhead.com/item=74837",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74837?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.807652+00:00",
+      "sha256": "7146551abe96881497d573ee5a5c016e235b1c21ce4ef4290d7ce6acb3f32d66",
+      "status": "retrieved"
+    },
+    "item:74838": {
+      "kind": "item",
+      "id": 74838,
+      "name": "Raw Crab Meat",
+      "pageUrl": "https://www.wowhead.com/item=74838",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74838?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.810151+00:00",
+      "sha256": "5d2918bb4e4619bb127a4721cc9cb6afd6b8adaf5739d11b92ccf791a4427959",
+      "status": "retrieved"
+    },
+    "item:74839": {
+      "kind": "item",
+      "id": 74839,
+      "name": "Wildfowl Breast",
+      "pageUrl": "https://www.wowhead.com/item=74839",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74839?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.829154+00:00",
+      "sha256": "36a0c77b3327f413643e65846be8a256b7025cd1a1a2df7eb18c07d2c6f6b47c",
+      "status": "retrieved"
+    },
+    "item:74840": {
+      "kind": "item",
+      "id": 74840,
+      "name": "Green Cabbage",
+      "pageUrl": "https://www.wowhead.com/item=74840",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74840?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.859652+00:00",
+      "sha256": "885efea0d11aee0c3aed582df50ef7bf75731b725088575f359459d25f6d9598",
+      "status": "retrieved"
+    },
+    "item:74841": {
+      "kind": "item",
+      "id": 74841,
+      "name": "Juicycrunch Carrot",
+      "pageUrl": "https://www.wowhead.com/item=74841",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74841?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.003153+00:00",
+      "sha256": "0f099d2869be6e1a7ec34eb51532aec99ebd89274b0ff432b111d2a07b0dc39e",
+      "status": "retrieved"
+    },
+    "item:74842": {
+      "kind": "item",
+      "id": 74842,
+      "name": "Mogu Pumpkin",
+      "pageUrl": "https://www.wowhead.com/item=74842",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74842?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:35.999153+00:00",
+      "sha256": "84bf8e876e2a539d1798a3e0fe7bbb6b61cfecd74d9dd7092881aae304941db6",
+      "status": "retrieved"
+    },
+    "item:74843": {
+      "kind": "item",
+      "id": 74843,
+      "name": "Scallions",
+      "pageUrl": "https://www.wowhead.com/item=74843",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74843?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.027653+00:00",
+      "sha256": "701b911a316a7108be7aff9b0061b56604d8ba6686d888aff67187b0f9d0a906",
+      "status": "retrieved"
+    },
+    "item:74844": {
+      "kind": "item",
+      "id": 74844,
+      "name": "Red Blossom Leek",
+      "pageUrl": "https://www.wowhead.com/item=74844",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74844?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.079654+00:00",
+      "sha256": "4ab2b859ae86769cbfa7f2daa0a1d3ce24d85fe1f250af93936d0acab0404515",
+      "status": "retrieved"
+    },
+    "item:74846": {
+      "kind": "item",
+      "id": 74846,
+      "name": "Witchberries",
+      "pageUrl": "https://www.wowhead.com/item=74846",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74846?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.239151+00:00",
+      "sha256": "dcf5d38ccd701a006b5f2c7fd7ba1343dd6e2101a3dbefd1114f8aaf10a7901a",
+      "status": "retrieved"
+    },
+    "item:74847": {
+      "kind": "item",
+      "id": 74847,
+      "name": "Jade Squash",
+      "pageUrl": "https://www.wowhead.com/item=74847",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74847?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.213652+00:00",
+      "sha256": "601a3fbf8411b3cc7904c15728e7cc13eb72335fb2ebf1482b01576090c5f36d",
+      "status": "retrieved"
+    },
+    "item:74848": {
+      "kind": "item",
+      "id": 74848,
+      "name": "Striped Melon",
+      "pageUrl": "https://www.wowhead.com/item=74848",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74848?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.237155+00:00",
+      "sha256": "952034c81f33bdd49caa921141f4aaf8d2aa8f5d922d64a8b5165d5805100f34",
+      "status": "retrieved"
+    },
+    "item:74849": {
+      "kind": "item",
+      "id": 74849,
+      "name": "Pink Turnip",
+      "pageUrl": "https://www.wowhead.com/item=74849",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74849?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.316152+00:00",
+      "sha256": "58ef23119f180db9d9e4b2a9d95a70c4b3fd4f6197c46e1ba5d08c1bd43d1c28",
+      "status": "retrieved"
+    },
+    "item:74850": {
+      "kind": "item",
+      "id": 74850,
+      "name": "White Turnip",
+      "pageUrl": "https://www.wowhead.com/item=74850",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74850?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.415151+00:00",
+      "sha256": "c1f9ad6168ea2d6e418e425229b001f23594d2bf8526362b49fc4e9c386b3a46",
+      "status": "retrieved"
+    },
+    "item:74856": {
+      "kind": "item",
+      "id": 74856,
+      "name": "Jade Lungfish",
+      "pageUrl": "https://www.wowhead.com/item=74856",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74856?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.438653+00:00",
+      "sha256": "80efda3c3e0c26a03ea9040c39870e6ef8e7fa34df580033ce5fe423ddefc202",
+      "status": "retrieved"
+    },
+    "item:74857": {
+      "kind": "item",
+      "id": 74857,
+      "name": "Giant Mantis Shrimp",
+      "pageUrl": "https://www.wowhead.com/item=74857",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74857?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.405154+00:00",
+      "sha256": "be77546d7cf39aad3b01bd772b13a365329360aadb2e1ef1553528e48830d8fd",
+      "status": "retrieved"
+    },
+    "item:74859": {
+      "kind": "item",
+      "id": 74859,
+      "name": "Emperor Salmon",
+      "pageUrl": "https://www.wowhead.com/item=74859",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74859?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.533163+00:00",
+      "sha256": "3651e9e7b2bbac82bb6af82e678ed19e16c47b0c1ab665bd3f5e5d0466ee0af9",
+      "status": "retrieved"
+    },
+    "item:74860": {
+      "kind": "item",
+      "id": 74860,
+      "name": "Redbelly Mandarin",
+      "pageUrl": "https://www.wowhead.com/item=74860",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74860?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.573686+00:00",
+      "sha256": "c4ab6116cbdeba59aabc4c2019bd0b8dd7bcd75bb02a991afd07dec1c97c34f2",
+      "status": "retrieved"
+    },
+    "item:74861": {
+      "kind": "item",
+      "id": 74861,
+      "name": "Tiger Gourami",
+      "pageUrl": "https://www.wowhead.com/item=74861",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74861?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.590653+00:00",
+      "sha256": "c5cc7afe2b1050e5597c2afe83842fff57d5e4285368ca020d58f057aadea741",
+      "status": "retrieved"
+    },
+    "item:74863": {
+      "kind": "item",
+      "id": 74863,
+      "name": "Jewel Danio",
+      "pageUrl": "https://www.wowhead.com/item=74863",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74863?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.616153+00:00",
+      "sha256": "22684010519ee40ecd3d8277775bd51d5413b993d216e054819a63a7dedcee03",
+      "status": "retrieved"
+    },
+    "item:74864": {
+      "kind": "item",
+      "id": 74864,
+      "name": "Reef Octopus",
+      "pageUrl": "https://www.wowhead.com/item=74864",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74864?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.704152+00:00",
+      "sha256": "f779b6528f55f3e203964d3bb189971b2c8f908d882800a9f4b381566fcb3492",
+      "status": "retrieved"
+    },
+    "item:74865": {
+      "kind": "item",
+      "id": 74865,
+      "name": "Krasarang Paddlefish",
+      "pageUrl": "https://www.wowhead.com/item=74865",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74865?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.818153+00:00",
+      "sha256": "88ad58634cafe7d563a51c22e9f00b4536c485b2562e4fe7774a3ac75c885856",
+      "status": "retrieved"
+    },
+    "item:74866": {
+      "kind": "item",
+      "id": 74866,
+      "name": "Golden Carp",
+      "pageUrl": "https://www.wowhead.com/item=74866",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/74866?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.805651+00:00",
+      "sha256": "3ece5700da78c8356d757bd52e2b4d9befb373ce15bded2fed600777944d13b4",
+      "status": "retrieved"
+    },
+    "item:75014": {
+      "kind": "item",
+      "id": 75014,
+      "name": "Raw Crocolisk Belly",
+      "pageUrl": "https://www.wowhead.com/item=75014",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/75014?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:36.897666+00:00",
+      "sha256": "4237c9e904ebc99b6834e72291c67bec55a34e93213dd1c523d898b77a808f10",
+      "status": "retrieved"
+    },
+    "item:76130": {
+      "kind": "item",
+      "id": 76130,
+      "name": "Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76130",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76130?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:38.339651+00:00",
+      "sha256": "d497d6979d71b2728654f8f91d0f31bb1428d300756607796307185c7cb6656c",
+      "status": "retrieved"
+    },
+    "item:76133": {
+      "kind": "item",
+      "id": 76133,
+      "name": "Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/item=76133",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76133?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:38.545652+00:00",
+      "sha256": "ea22b24668919519bcf23d7286a0dfc7d8cb3dd28a30adc16501c799749b9de4",
+      "status": "retrieved"
+    },
+    "item:76134": {
+      "kind": "item",
+      "id": 76134,
+      "name": "Sunstone",
+      "pageUrl": "https://www.wowhead.com/item=76134",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76134?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:38.559652+00:00",
+      "sha256": "e3d3a10144cb6a94edd9302619fdd8d1c609d3efbac5844c29ed1eaf7f09dbea",
+      "status": "retrieved"
+    },
+    "item:76135": {
+      "kind": "item",
+      "id": 76135,
+      "name": "Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76135",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76135?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:38.688653+00:00",
+      "sha256": "d676618e66303dfaa7f00427f02279d69933070e1b10884584f06f4e2dcb1d7b",
+      "status": "retrieved"
+    },
+    "item:76136": {
+      "kind": "item",
+      "id": 76136,
+      "name": "Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/item=76136",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76136?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:38.752151+00:00",
+      "sha256": "1b084fcdfbdd5a116d0a34e48293639ff84b215af835ac1109b76311b3c65843",
+      "status": "retrieved"
+    },
+    "item:76137": {
+      "kind": "item",
+      "id": 76137,
+      "name": "Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76137",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76137?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:38.746154+00:00",
+      "sha256": "1dd3dd56d4006c3d62b344ec8e94270f8fcaf16c7d1f052b7c0c77987fd33dc9",
+      "status": "retrieved"
+    },
+    "item:76570": {
+      "kind": "item",
+      "id": 76570,
+      "name": "Perfect Rigid Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/item=76570",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76570?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.455153+00:00",
+      "sha256": "a6301cedf98557904c5b15f746a7491022fcd70259e7726f9b430ade096ba8a1",
+      "status": "retrieved"
+    },
+    "item:76571": {
+      "kind": "item",
+      "id": 76571,
+      "name": "Perfect Stormy Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/item=76571",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76571?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.580653+00:00",
+      "sha256": "d66373744ba68ce53b40562561582e46fccd113ed9e31eb14980f2f6e31980c8",
+      "status": "retrieved"
+    },
+    "item:76572": {
+      "kind": "item",
+      "id": 76572,
+      "name": "Perfect Sparkling Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/item=76572",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76572?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.586653+00:00",
+      "sha256": "88df601b6fc43b743c67b318f6877d4df1e6daae3ed6aaf99ad088808fc18658",
+      "status": "retrieved"
+    },
+    "item:76573": {
+      "kind": "item",
+      "id": 76573,
+      "name": "Perfect Solid Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/item=76573",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76573?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.642652+00:00",
+      "sha256": "60d0db7d6e174af82d87c94269dd9dc351c946a72c43a53b8069362ce0560901",
+      "status": "retrieved"
+    },
+    "item:76574": {
+      "kind": "item",
+      "id": 76574,
+      "name": "Perfect Misty Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76574",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76574?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.705151+00:00",
+      "sha256": "68472ab8628e84d5cfac1521ea01e094820f44fbf1ab800b0205a0efa5c3ed1b",
+      "status": "retrieved"
+    },
+    "item:76575": {
+      "kind": "item",
+      "id": 76575,
+      "name": "Perfect Piercing Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76575",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76575?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.786154+00:00",
+      "sha256": "99458a6144e70ebe703369a43450d394409668828a54e2e49795c0903144f173",
+      "status": "retrieved"
+    },
+    "item:76576": {
+      "kind": "item",
+      "id": 76576,
+      "name": "Perfect Lightning Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76576",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76576?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.795151+00:00",
+      "sha256": "996dafae9c52869edfcc90b06ce991ae7dfeea641331b13de09ee8f6dad3fe91",
+      "status": "retrieved"
+    },
+    "item:76577": {
+      "kind": "item",
+      "id": 76577,
+      "name": "Perfect Sensei's Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76577",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76577?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.851653+00:00",
+      "sha256": "d0428da5473bc03942af829782747cd5f75ebdd2bdfee7b5c789bd4a5e3890b9",
+      "status": "retrieved"
+    },
+    "item:76578": {
+      "kind": "item",
+      "id": 76578,
+      "name": "Perfect Effulgent Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76578",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76578?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:42.990653+00:00",
+      "sha256": "96f28ad92c2ab0d89698aebbd53db1b7e5e4b883ed61526d96add03271163e6d",
+      "status": "retrieved"
+    },
+    "item:76579": {
+      "kind": "item",
+      "id": 76579,
+      "name": "Perfect Zen Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76579",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76579?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.026651+00:00",
+      "sha256": "280647b21e6599fdec242785b896f5d35ad39680684db47e3311f9e5a8f49257",
+      "status": "retrieved"
+    },
+    "item:76580": {
+      "kind": "item",
+      "id": 76580,
+      "name": "Perfect Balanced Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76580",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76580?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.004653+00:00",
+      "sha256": "3170fe04e337f96f34f8adcfde7cb2bf725b964c857878749605117b08c8cfc6",
+      "status": "retrieved"
+    },
+    "item:76581": {
+      "kind": "item",
+      "id": 76581,
+      "name": "Perfect Vivid Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76581",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76581?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.026152+00:00",
+      "sha256": "32c63f0d9441ec3cf2c50f0908a52529bb84b4a5ada486981f6b2c410752aa1a",
+      "status": "retrieved"
+    },
+    "item:76582": {
+      "kind": "item",
+      "id": 76582,
+      "name": "Perfect Turbid Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76582",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76582?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.198151+00:00",
+      "sha256": "87f39854ccdf5405079b73bad73dc66b04e7871b3c7b0d3f149c1fdd46e1f9a8",
+      "status": "retrieved"
+    },
+    "item:76583": {
+      "kind": "item",
+      "id": 76583,
+      "name": "Perfect Radiant Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76583",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76583?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.222661+00:00",
+      "sha256": "482babfcf8e6fdbef7c2d120ed09e3159992c3887494a8426524cc5afd201176",
+      "status": "retrieved"
+    },
+    "item:76584": {
+      "kind": "item",
+      "id": 76584,
+      "name": "Perfect Shattered Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76584",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76584?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.236155+00:00",
+      "sha256": "7f005d3b8a24f52cca8c057bdf4eb33813f612508238679818452e72136966cc",
+      "status": "retrieved"
+    },
+    "item:76585": {
+      "kind": "item",
+      "id": 76585,
+      "name": "Perfect Energized Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76585",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76585?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.227652+00:00",
+      "sha256": "3c701a6fa929041b77539f16bbd8437825b0d96784c0a13a58bbf98fd95a07bc",
+      "status": "retrieved"
+    },
+    "item:76587": {
+      "kind": "item",
+      "id": 76587,
+      "name": "Perfect Regal Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76587",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76587?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.415657+00:00",
+      "sha256": "4f9ea8d387fa58efc660851999bec9b5d3bfc3be3ce31b705b65baf06ede0f4b",
+      "status": "retrieved"
+    },
+    "item:76588": {
+      "kind": "item",
+      "id": 76588,
+      "name": "Perfect Forceful Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76588",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76588?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.463652+00:00",
+      "sha256": "2fe22ddcd3237441ad488311ae3590260d54d6be25f10d331f320e19ee4b376b",
+      "status": "retrieved"
+    },
+    "item:76590": {
+      "kind": "item",
+      "id": 76590,
+      "name": "Perfect Puissant Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76590",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76590?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.426652+00:00",
+      "sha256": "bbbc8da3235799b7bc9209374d0cecd0d336c85d3f9eb88e4f150400ccc6ce6b",
+      "status": "retrieved"
+    },
+    "item:76591": {
+      "kind": "item",
+      "id": 76591,
+      "name": "Perfect Steady Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=76591",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76591?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.451651+00:00",
+      "sha256": "71920f79fe3e4beb13cd3898814c9a36f4a9fbb6d706cbd94edaf7d786b12ef8",
+      "status": "retrieved"
+    },
+    "item:76592": {
+      "kind": "item",
+      "id": 76592,
+      "name": "Perfect Deadly Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76592",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76592?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.618653+00:00",
+      "sha256": "fdf42310e5dd5ce2634b102cfae18f0b888e0cd4d4b7124f037972e41e356187",
+      "status": "retrieved"
+    },
+    "item:76593": {
+      "kind": "item",
+      "id": 76593,
+      "name": "Perfect Crafty Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76593",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76593?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.630153+00:00",
+      "sha256": "61ebe682e1705f3b6f5d9503c0b7e5601e7ba2573be213f4977df0eea530f879",
+      "status": "retrieved"
+    },
+    "item:76594": {
+      "kind": "item",
+      "id": 76594,
+      "name": "Perfect Potent Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76594",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76594?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.682654+00:00",
+      "sha256": "72e59cf42af19accf4ef30c75304c4236292a1c7f5bb91b4d894127d55d9c309",
+      "status": "retrieved"
+    },
+    "item:76595": {
+      "kind": "item",
+      "id": 76595,
+      "name": "Perfect Inscribed Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76595",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76595?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.665152+00:00",
+      "sha256": "aef0ca967e4fe3fbf56a05440c62924ac445a80c20cf4791ad21f925879d5f8d",
+      "status": "retrieved"
+    },
+    "item:76596": {
+      "kind": "item",
+      "id": 76596,
+      "name": "Perfect Polished Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76596",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76596?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.819651+00:00",
+      "sha256": "8d1d3593489291261043c16757135b51ef1847594dc8473997d3e06f952d6845",
+      "status": "retrieved"
+    },
+    "item:76597": {
+      "kind": "item",
+      "id": 76597,
+      "name": "Perfect Resolute Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76597",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76597?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.824151+00:00",
+      "sha256": "3699de2882af019fd1089d3c058043cdd9aed7909260d7f53074c9072e04019a",
+      "status": "retrieved"
+    },
+    "item:76598": {
+      "kind": "item",
+      "id": 76598,
+      "name": "Perfect Stalwart Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76598",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76598?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.893653+00:00",
+      "sha256": "efa98cc141bcdd94c32e97f0082e0d0b11097732969643c358ddbc871776bda3",
+      "status": "retrieved"
+    },
+    "item:76599": {
+      "kind": "item",
+      "id": 76599,
+      "name": "Perfect Champion's Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76599",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76599?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:43.914652+00:00",
+      "sha256": "c0171f72278a23f7b321352a88b86afd946491c777313db48411c55b88bb59c4",
+      "status": "retrieved"
+    },
+    "item:76600": {
+      "kind": "item",
+      "id": 76600,
+      "name": "Perfect Deft Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76600",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76600?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.023653+00:00",
+      "sha256": "3239758ae6932cf47ee62df3d51ca5e6d1a6ac98a853df8c515b7e0144c1e958",
+      "status": "retrieved"
+    },
+    "item:76601": {
+      "kind": "item",
+      "id": 76601,
+      "name": "Perfect Wicked Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76601",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76601?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.026158+00:00",
+      "sha256": "f9d9f621a46245602e1b46e52e387f83b7dc3e49b4c132185536f63e9ce25f27",
+      "status": "retrieved"
+    },
+    "item:76602": {
+      "kind": "item",
+      "id": 76602,
+      "name": "Perfect Reckless Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76602",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76602?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.161154+00:00",
+      "sha256": "b1e711b42e2a8e57ff4f95b7a536f8fe20bce26661bbfd6760a5bd718e3f310f",
+      "status": "retrieved"
+    },
+    "item:76603": {
+      "kind": "item",
+      "id": 76603,
+      "name": "Perfect Fierce Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76603",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76603?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.117151+00:00",
+      "sha256": "e61c482d1bdee32648bb4478954de904b11bba0db827fb95c020205e54dbc1ac",
+      "status": "retrieved"
+    },
+    "item:76604": {
+      "kind": "item",
+      "id": 76604,
+      "name": "Perfect Adept Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76604",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76604?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.248653+00:00",
+      "sha256": "ab7ab2e68847047a6f5fca079bee3e38cfa12fab04f13aa1e467f0f5a4bde7d3",
+      "status": "retrieved"
+    },
+    "item:76605": {
+      "kind": "item",
+      "id": 76605,
+      "name": "Perfect Keen Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76605",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76605?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.218152+00:00",
+      "sha256": "0f7553a5221718b0160af038393c764b8a435bc0629396fcc763bb05fb414b92",
+      "status": "retrieved"
+    },
+    "item:76606": {
+      "kind": "item",
+      "id": 76606,
+      "name": "Perfect Artful Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76606",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76606?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.311155+00:00",
+      "sha256": "b4ae15f5c5a90d50c5c3a214c3f88676c8bab923e1f1dd35b57c650b8521038c",
+      "status": "retrieved"
+    },
+    "item:76607": {
+      "kind": "item",
+      "id": 76607,
+      "name": "Perfect Fine Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76607",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76607?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.358155+00:00",
+      "sha256": "70591aa016f58efc78af5b081a748f9629a93afbce12df26f9f93069c4edf8c0",
+      "status": "retrieved"
+    },
+    "item:76608": {
+      "kind": "item",
+      "id": 76608,
+      "name": "Perfect Skillful Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76608",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76608?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.417655+00:00",
+      "sha256": "3c18dd4dba06003cbef9d41f9b6affba23fbbddcb08c8170e16fd48255ad125f",
+      "status": "retrieved"
+    },
+    "item:76609": {
+      "kind": "item",
+      "id": 76609,
+      "name": "Perfect Lucent Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76609",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76609?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.456654+00:00",
+      "sha256": "c1668781457a5048e0e1927dae5dc86dc8d0808c1f8a447f7ae33515cc45f22c",
+      "status": "retrieved"
+    },
+    "item:76610": {
+      "kind": "item",
+      "id": 76610,
+      "name": "Perfect Tenuous Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76610",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76610?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.550153+00:00",
+      "sha256": "d1980e062967c73aaedda7c0ecfb809eaaeeaefe17ae9d4fe18389de6fce306b",
+      "status": "retrieved"
+    },
+    "item:76611": {
+      "kind": "item",
+      "id": 76611,
+      "name": "Perfect Willful Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76611",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76611?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.553653+00:00",
+      "sha256": "4ca8ca4ca34e1f43bc5140c7abd9933f9e4a78945ebdc8d8840e3bd4e5a94a94",
+      "status": "retrieved"
+    },
+    "item:76612": {
+      "kind": "item",
+      "id": 76612,
+      "name": "Perfect Splendid Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76612",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76612?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.616654+00:00",
+      "sha256": "8272e6ab9ac64c7abe5d1fd1382a59df63b940cb1c5928bdd32d3efd94f2a9d7",
+      "status": "retrieved"
+    },
+    "item:76613": {
+      "kind": "item",
+      "id": 76613,
+      "name": "Perfect Resplendent Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/item=76613",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76613?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.713652+00:00",
+      "sha256": "040b00e3a0c87360c27f6aa3e43c7c0245ba2ebfa086e0a1ffb15cfa7b4883c2",
+      "status": "retrieved"
+    },
+    "item:76614": {
+      "kind": "item",
+      "id": 76614,
+      "name": "Perfect Glinting Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76614",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76614?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.771157+00:00",
+      "sha256": "519410e84c6f694194e9f1a2e34291f600717c6e85213a61e115bbe039be0306",
+      "status": "retrieved"
+    },
+    "item:76615": {
+      "kind": "item",
+      "id": 76615,
+      "name": "Perfect Accurate Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76615",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76615?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.762152+00:00",
+      "sha256": "dd09c4f306da9076d06a1842c0f333fa9f32f4e0c1abc3bb13fa0d2f34bc5fb1",
+      "status": "retrieved"
+    },
+    "item:76616": {
+      "kind": "item",
+      "id": 76616,
+      "name": "Perfect Veiled Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76616",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76616?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.829154+00:00",
+      "sha256": "57c4565fa06739e7bdd91b5fbf01c38c7ce06bbdb0a725d797339a10ccc4b513",
+      "status": "retrieved"
+    },
+    "item:76617": {
+      "kind": "item",
+      "id": 76617,
+      "name": "Perfect Retaliating Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76617",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76617?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.915654+00:00",
+      "sha256": "039ae1775f1b53b3b91bcaa72b0e341951279b8dd1514696c6b99c1ce81bedf7",
+      "status": "retrieved"
+    },
+    "item:76618": {
+      "kind": "item",
+      "id": 76618,
+      "name": "Perfect Etched Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76618",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76618?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.968159+00:00",
+      "sha256": "acacd26f75458647e933e1830bca8f8b287ebf3fecc71bd96ffa38b8c72b73d0",
+      "status": "retrieved"
+    },
+    "item:76619": {
+      "kind": "item",
+      "id": 76619,
+      "name": "Perfect Mysterious Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76619",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76619?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:44.975152+00:00",
+      "sha256": "f5976c6b48cf05ec88335fed0b1e9267d9e884312df61144ce015448cb605953",
+      "status": "retrieved"
+    },
+    "item:76620": {
+      "kind": "item",
+      "id": 76620,
+      "name": "Perfect Purified Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76620",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76620?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.114154+00:00",
+      "sha256": "a0edc068b8e78b8b59c2bce682980bdcb78b8326a8bcbbeafa6a16423a5d3d8b",
+      "status": "retrieved"
+    },
+    "item:76621": {
+      "kind": "item",
+      "id": 76621,
+      "name": "Perfect Shifting Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76621",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76621?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.146654+00:00",
+      "sha256": "9edbe631d4dfb7271767db2ebf810dd5cb34bbfd175d60f386d71d8cfa9cde05",
+      "status": "retrieved"
+    },
+    "item:76622": {
+      "kind": "item",
+      "id": 76622,
+      "name": "Perfect Guardian's Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76622",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76622?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.148151+00:00",
+      "sha256": "f0c199897ff104cd647658b40ea961c1c6ec19ddb87dba6c342603241a1dd62a",
+      "status": "retrieved"
+    },
+    "item:76623": {
+      "kind": "item",
+      "id": 76623,
+      "name": "Perfect Timeless Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76623",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76623?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.233655+00:00",
+      "sha256": "f1325b9d95a4c852eddd2d9be8d0612eb4a43a0e161839f850c2360355ed024e",
+      "status": "retrieved"
+    },
+    "item:76624": {
+      "kind": "item",
+      "id": 76624,
+      "name": "Perfect Defender's Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76624",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76624?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.311653+00:00",
+      "sha256": "6cee943fcae62e81e2fddacd54764f1b4b914f386c1cc65f1f7bc763514bed64",
+      "status": "retrieved"
+    },
+    "item:76625": {
+      "kind": "item",
+      "id": 76625,
+      "name": "Perfect Sovereign Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=76625",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76625?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.358652+00:00",
+      "sha256": "adffde9a0fcb76e06ac558f7c397cd8a1209360fa81af9c6d2671242f6870010",
+      "status": "retrieved"
+    },
+    "item:76626": {
+      "kind": "item",
+      "id": 76626,
+      "name": "Perfect Delicate Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/item=76626",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76626?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.362151+00:00",
+      "sha256": "7bb6f4b110c12894d1f2e14ed0c4b5668cabf4f5854dc81aa4dea301ec5bc5b6",
+      "status": "retrieved"
+    },
+    "item:76627": {
+      "kind": "item",
+      "id": 76627,
+      "name": "Perfect Precise Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/item=76627",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76627?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.638652+00:00",
+      "sha256": "2704745aa49b344544db7156fdef11c44d90e64d0a6fcc35ce4866b7004aaf62",
+      "status": "retrieved"
+    },
+    "item:76628": {
+      "kind": "item",
+      "id": 76628,
+      "name": "Perfect Brilliant Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/item=76628",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76628?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.379152+00:00",
+      "sha256": "f10e5a3b4102aaf2975ebf53011e77b8ec5fdbed34fbdc129d7a32cb07e871f5",
+      "status": "retrieved"
+    },
+    "item:76629": {
+      "kind": "item",
+      "id": 76629,
+      "name": "Perfect Flashing Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/item=76629",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76629?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.549151+00:00",
+      "sha256": "ace96d825c1a21dadc26c9135b324944fc70be8dd46b7e2f3c03eddb74492abe",
+      "status": "retrieved"
+    },
+    "item:76630": {
+      "kind": "item",
+      "id": 76630,
+      "name": "Perfect Bold Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/item=76630",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76630?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.564654+00:00",
+      "sha256": "2efd262e5760c60c1506d82dfc659bbde597ef4356f584f5a354a628e9ae99f3",
+      "status": "retrieved"
+    },
+    "item:76631": {
+      "kind": "item",
+      "id": 76631,
+      "name": "Perfect Smooth Sunstone",
+      "pageUrl": "https://www.wowhead.com/item=76631",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76631?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.615653+00:00",
+      "sha256": "1ad364f97a354be9eeb3efb583dd13b138585e428fa365633e5490e3a9753887",
+      "status": "retrieved"
+    },
+    "item:76632": {
+      "kind": "item",
+      "id": 76632,
+      "name": "Perfect Subtle Sunstone",
+      "pageUrl": "https://www.wowhead.com/item=76632",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76632?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.801152+00:00",
+      "sha256": "ca8f3819fd99a028c18012d2b71bea2bd853cc43d272cf232e5a879df91d4b21",
+      "status": "retrieved"
+    },
+    "item:76633": {
+      "kind": "item",
+      "id": 76633,
+      "name": "Perfect Quick Sunstone",
+      "pageUrl": "https://www.wowhead.com/item=76633",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76633?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.770653+00:00",
+      "sha256": "08668fcc98e9dc3e894c89a32f539e3afff77388b446a6cdbdf48d07c1d96184",
+      "status": "retrieved"
+    },
+    "item:76634": {
+      "kind": "item",
+      "id": 76634,
+      "name": "Perfect Fractured Sunstone",
+      "pageUrl": "https://www.wowhead.com/item=76634",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76634?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.843152+00:00",
+      "sha256": "65f3367dab1c9c11a6d002179bba3dffddb2c389608ff0a4e4f31e4104a4e6d5",
+      "status": "retrieved"
+    },
+    "item:76635": {
+      "kind": "item",
+      "id": 76635,
+      "name": "Perfect Mystic Sunstone",
+      "pageUrl": "https://www.wowhead.com/item=76635",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/76635?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:45.899155+00:00",
+      "sha256": "b0cc8d49ea99509e8087aeaf94685f656a99019e5dcab11dfee3ae1a9ccdafb0",
+      "status": "retrieved"
+    },
+    "item:79010": {
+      "kind": "item",
+      "id": 79010,
+      "name": "Snow Lily",
+      "pageUrl": "https://www.wowhead.com/item=79010",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79010?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:51.573151+00:00",
+      "sha256": "4b58d1be488b13e31d8cf21f393f8ed038ea8c6a1b5d599f163cb48195375469",
+      "status": "retrieved"
+    },
+    "item:79011": {
+      "kind": "item",
+      "id": 79011,
+      "name": "Fool's Cap",
+      "pageUrl": "https://www.wowhead.com/item=79011",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79011?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:51.595152+00:00",
+      "sha256": "f72e6b1cc388b68aae154dc9e277416fa41ed25193b0e2014ac118f65e625ce4",
+      "status": "retrieved"
+    },
+    "item:79101": {
+      "kind": "item",
+      "id": 79101,
+      "name": "Prismatic Scale",
+      "pageUrl": "https://www.wowhead.com/item=79101",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79101?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:51.616151+00:00",
+      "sha256": "6876d7d661d6028d26b5feb57991ec6c70e85f4e07b00715b71ce06d02bda589",
+      "status": "retrieved"
+    },
+    "item:79251": {
+      "kind": "item",
+      "id": 79251,
+      "name": "Shadow Pigment",
+      "pageUrl": "https://www.wowhead.com/item=79251",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79251?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:51.793152+00:00",
+      "sha256": "d5bee1d8180b40a8637ec408bb541c27afe6ded89957c9fc6faa982d6b22ed59",
+      "status": "retrieved"
+    },
+    "item:79253": {
+      "kind": "item",
+      "id": 79253,
+      "name": "Misty Pigment",
+      "pageUrl": "https://www.wowhead.com/item=79253",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79253?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:51.809155+00:00",
+      "sha256": "46b7bbbb902e98761a0d5b262bea5daf9e29bfe9fbfd8f76df5fc166ada63160",
+      "status": "retrieved"
+    },
+    "item:79868": {
+      "kind": "item",
+      "id": 79868,
+      "name": "Pandaren Pottery Shard",
+      "pageUrl": "https://www.wowhead.com/item=79868",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79868?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:54.376652+00:00",
+      "sha256": "d852be561ddeabaebd113d23ca1d6b495e3cbde381861c2e096d7e7c9f15645b",
+      "status": "retrieved"
+    },
+    "item:79869": {
+      "kind": "item",
+      "id": 79869,
+      "name": "Mogu Statue Piece",
+      "pageUrl": "https://www.wowhead.com/item=79869",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/79869?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:54.560652+00:00",
+      "sha256": "f63d2fe75d511a9dfb0a99bd0a7f786897336c9e1c7578dc7ea9a7984a044843",
+      "status": "retrieved"
+    },
+    "item:80433": {
+      "kind": "item",
+      "id": 80433,
+      "name": "Blood Spirit",
+      "pageUrl": "https://www.wowhead.com/item=80433",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/80433?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:54.537153+00:00",
+      "sha256": "7aa90f00ca29205f94877fd680b5727ecb0112a63bf415a276a25a96658a1262",
+      "status": "retrieved"
+    },
+    "item:83064": {
+      "kind": "item",
+      "id": 83064,
+      "name": "Spinefish",
+      "pageUrl": "https://www.wowhead.com/item=83064",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/83064?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:39:59.973656+00:00",
+      "sha256": "dc47b6c757a1f66b8d8470900506f3c7b2e5cde3866c540404cb587f8b8603d1",
+      "status": "retrieved"
+    },
+    "item:85506": {
+      "kind": "item",
+      "id": 85506,
+      "name": "Viseclaw Meat",
+      "pageUrl": "https://www.wowhead.com/item=85506",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/85506?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:01.203152+00:00",
+      "sha256": "ca6819e567e52099755097f111eb906cbc612b7527709a386528e094cbd1c653",
+      "status": "retrieved"
+    },
+    "item:86592": {
+      "kind": "item",
+      "id": 86592,
+      "name": "Hozen Peace Pipe",
+      "pageUrl": "https://www.wowhead.com/item=86592",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/86592?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:05.752153+00:00",
+      "sha256": "d2379505fe831e4ff9e199548ce1c362d85c4a1249a4f875d4f1e4821988953c",
+      "status": "retrieved"
+    },
+    "item:89112": {
+      "kind": "item",
+      "id": 89112,
+      "name": "Mote of Harmony",
+      "pageUrl": "https://www.wowhead.com/item=89112",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/89112?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:08.330152+00:00",
+      "sha256": "2eb81a1121f364df32644e1eda7c6457be7f1fb2c3242b891340acba834637ed",
+      "status": "retrieved"
+    },
+    "item:89639": {
+      "kind": "item",
+      "id": 89639,
+      "name": "Desecrated Herb",
+      "pageUrl": "https://www.wowhead.com/item=89639",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/89639?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:08.571153+00:00",
+      "sha256": "39f3dda00aa74ce3a2db13d27f88718aa07e785f81c2a8680a17dccf9d1e3fe8",
+      "status": "retrieved"
+    },
+    "item:89676": {
+      "kind": "item",
+      "id": 89676,
+      "name": "Perfect Tense Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=89676",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/89676?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:08.744654+00:00",
+      "sha256": "f9ddde00f3ac5ccfd83429a9f93f2d2f31ad326ae8b55d0f57e44e913905bb47",
+      "status": "retrieved"
+    },
+    "item:89679": {
+      "kind": "item",
+      "id": 89679,
+      "name": "Perfect Assassin's Roguestone",
+      "pageUrl": "https://www.wowhead.com/item=89679",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/89679?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:08.952155+00:00",
+      "sha256": "6f4e1d51e5707a0fa11120881f2713787047318b6776482f93785996387e4fd5",
+      "status": "retrieved"
+    },
+    "item:90407": {
+      "kind": "item",
+      "id": 90407,
+      "name": "Sparkling Shard",
+      "pageUrl": "https://www.wowhead.com/item=90407",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/90407?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:09.472652+00:00",
+      "sha256": "aea05533430e0b21257d735c87f1b985e428bb87c3c15fc4bf5f33944c96147a",
+      "status": "retrieved"
+    },
+    "item:92426": {
+      "kind": "item",
+      "id": 92426,
+      "name": "Sealed Tome of the Lost Legion",
+      "pageUrl": "https://www.wowhead.com/item=92426",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/92426?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:09.537652+00:00",
+      "sha256": "ef6379556b3e66baf394000eba0f81e3112c906beebd5358a40a68a18ff36a23",
+      "status": "retrieved"
+    },
+    "item:93707": {
+      "kind": "item",
+      "id": 93707,
+      "name": "Perfect Nimble Alexandrite",
+      "pageUrl": "https://www.wowhead.com/item=93707",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/93707?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:18.660153+00:00",
+      "sha256": "cee9543406f9b8b5d6a8cd6adbac7e78a959fd5319138faaf5fd506c34719cfb",
+      "status": "retrieved"
+    },
+    "item:94288": {
+      "kind": "item",
+      "id": 94288,
+      "name": "Giant Dinosaur Bone",
+      "pageUrl": "https://www.wowhead.com/item=94288",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/94288?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:19.765153+00:00",
+      "sha256": "4956f4841663e2d72ed58200c6d02ce3f6ca13d2b09441ef724edd307dcdd560",
+      "status": "retrieved"
+    },
+    "item:94289": {
+      "kind": "item",
+      "id": 94289,
+      "name": "Haunting Spirit",
+      "pageUrl": "https://www.wowhead.com/item=94289",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/94289?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:19.797652+00:00",
+      "sha256": "540ff29207d907cccdbe92450e992f86f6bab71979dd4d842799ee0b6576f7d2",
+      "status": "retrieved"
+    },
+    "item:95373": {
+      "kind": "item",
+      "id": 95373,
+      "name": "Mantid Amber Sliver",
+      "pageUrl": "https://www.wowhead.com/item=95373",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/95373?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:20.822152+00:00",
+      "sha256": "595cc8c56d910015adc39031ae5cc31a5f0b34e63e0fd09eb6bf2eea8a4d6a47",
+      "status": "retrieved"
+    },
+    "spell:107598": {
+      "kind": "spell",
+      "id": 107598,
+      "name": "Balanced Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107598",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107598?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:37.573152+00:00",
+      "sha256": "addc181e91fc60bec5bc3edbd1023f1aca01c7c461e52af17709446549dd5de3",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107599": {
+      "kind": "spell",
+      "id": 107599,
+      "name": "Effulgent Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107599",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107599?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:37.743154+00:00",
+      "sha256": "ffc41b5d8a27d1864c59666769ccac70222c9fdf70db089108d8c7733b66ea8f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107600": {
+      "kind": "spell",
+      "id": 107600,
+      "name": "Energized Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107600",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107600?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:37.757652+00:00",
+      "sha256": "94e168d4defd12339bb561d9e810a28a3aa03ff0b730457b1c22aa8c471eea4f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107601": {
+      "kind": "spell",
+      "id": 107601,
+      "name": "Forceful Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107601",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107601?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:37.745654+00:00",
+      "sha256": "18829e80829fdc946540d5dd8e3fcea9ae08bea979f611f8d6de4d52c6255e9d",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107604": {
+      "kind": "spell",
+      "id": 107604,
+      "name": "Lightning Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107604",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107604?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:37.988653+00:00",
+      "sha256": "683886e10ea26df604fd5f5a7c69af89c47c69bae0929f8000be3b037a074a5a",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107605": {
+      "kind": "spell",
+      "id": 107605,
+      "name": "Misty Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107605",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107605?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.011152+00:00",
+      "sha256": "4a2c0b0b96addfb0485bc6b7701ccf19d5adcdbe2034ad66825eaaca98632263",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107606": {
+      "kind": "spell",
+      "id": 107606,
+      "name": "Nimble Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107606",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107606?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:37.966654+00:00",
+      "sha256": "ec2e32c0927461374e7457f7dd5fbebe4975d2892c5a9050e44026dc560260e4",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107607": {
+      "kind": "spell",
+      "id": 107607,
+      "name": "Piercing Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107607",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107607?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.005655+00:00",
+      "sha256": "b8a91ba9eca79650d4d5031a30879d40608884d36e7d56ba77de453ce91abf02",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107608": {
+      "kind": "spell",
+      "id": 107608,
+      "name": "Puissant Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107608",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107608?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.250655+00:00",
+      "sha256": "1eb4a30cadfb7d248a445baec377b7b26c867dd8b2e63a294ac6da3a0ea8e5b0",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107609": {
+      "kind": "spell",
+      "id": 107609,
+      "name": "Radiant Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107609",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107609?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.210152+00:00",
+      "sha256": "7320d544f529f46d641c7dc015689a35b471a4b2bda7bd6c94520695a8284780",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107610": {
+      "kind": "spell",
+      "id": 107610,
+      "name": "Regal Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107610",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107610?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.233153+00:00",
+      "sha256": "8fe70cfb2c21e35b17b6fb64c3daca9b299a23de12f13e02f2ffc933f9453e38",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107611": {
+      "kind": "spell",
+      "id": 107611,
+      "name": "Sensei's Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107611",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107611?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.287655+00:00",
+      "sha256": "1d8ddc7c01af56ee462a53ca77cc96b22f6e7e3be5dba43a668a87e42946ce49",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107612": {
+      "kind": "spell",
+      "id": 107612,
+      "name": "Shattered Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107612",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107612?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.427154+00:00",
+      "sha256": "6a57d44f0b37b9b51afcc76534831e7578586230adc1c0a97e247ee3e73a584d",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107613": {
+      "kind": "spell",
+      "id": 107613,
+      "name": "Steady Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107613",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107613?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.450653+00:00",
+      "sha256": "ce4b2c8fc1aa5efda5e6f1dc7d79755bc97762f9eb4a9b57ebd2b0b284a21249",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107614": {
+      "kind": "spell",
+      "id": 107614,
+      "name": "Turbid Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107614",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107614?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.473154+00:00",
+      "sha256": "9a718348e59272d45a1a64f574a51895ac0f32ab03c31003894c5ffffb63021f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107615": {
+      "kind": "spell",
+      "id": 107615,
+      "name": "Vivid Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107615",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107615?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.512153+00:00",
+      "sha256": "92f0c053245839e7a2ce23b658d7a719c1eb0ed71d8da88ab71e4e8169951b73",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107616": {
+      "kind": "spell",
+      "id": 107616,
+      "name": "Zen Alexandrite",
+      "pageUrl": "https://www.wowhead.com/spell=107616",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107616?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.644153+00:00",
+      "sha256": "2846d497615a87ba653cc96c282a73aa6b4db98568ec85e0e18e4eb88729e68f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76137,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107617": {
+      "kind": "spell",
+      "id": 107617,
+      "name": "Rigid Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/spell=107617",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107617?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.683155+00:00",
+      "sha256": "c24962122c0fab56fda46cc40ec7c09b59d318bdb28784793264f963ae0c2ad2",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76133,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107619": {
+      "kind": "spell",
+      "id": 107619,
+      "name": "Solid Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/spell=107619",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107619?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.690655+00:00",
+      "sha256": "2f078fd12cae10e12791a97c38f14c4c82489d53a69fa6963f1ba7a02c0f631f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76133,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107620": {
+      "kind": "spell",
+      "id": 107620,
+      "name": "Sparkling Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/spell=107620",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107620?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.809651+00:00",
+      "sha256": "b7604afe8b79387cab55eea69c47735fc3a217560ab69c46851b199118a5ea89",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76133,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107621": {
+      "kind": "spell",
+      "id": 107621,
+      "name": "Stormy Lapis Lazuli",
+      "pageUrl": "https://www.wowhead.com/spell=107621",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107621?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.038652+00:00",
+      "sha256": "8703cce9ef3781508b792980505bd6b84df76bfeb97444ae6f0858a149371474",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76133,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107622": {
+      "kind": "spell",
+      "id": 107622,
+      "name": "Bold Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/spell=107622",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107622?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.886152+00:00",
+      "sha256": "e7e3e32c429827c3027177975217607140e09f531952185ca77d1a7fdc385574",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76136,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107623": {
+      "kind": "spell",
+      "id": 107623,
+      "name": "Brilliant Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/spell=107623",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107623?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:38.900153+00:00",
+      "sha256": "28b5b1ce8cf9012066c80ee1d3cd790fc89b41db184a2b3899f5d8e0dbf12bea",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76136,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107624": {
+      "kind": "spell",
+      "id": 107624,
+      "name": "Delicate Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/spell=107624",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107624?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.035153+00:00",
+      "sha256": "c20d18421b58f6b303013b9a6292e7e944eb225aba0feb710d4bc712d80fb254",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76136,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107625": {
+      "kind": "spell",
+      "id": 107625,
+      "name": "Flashing Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/spell=107625",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107625?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.107151+00:00",
+      "sha256": "0873f8f2220c93071fb0625aa53575a5b296fb2cdd4527fbf307d78fae7d730c",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76136,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107626": {
+      "kind": "spell",
+      "id": 107626,
+      "name": "Precise Pandarian Garnet",
+      "pageUrl": "https://www.wowhead.com/spell=107626",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107626?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.123152+00:00",
+      "sha256": "978a6e64400e4f071e642b1a695000416439a3ab8dde8a0f4059a7f5e6fba0ad",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76136,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107627": {
+      "kind": "spell",
+      "id": 107627,
+      "name": "Accurate Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107627",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107627?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.310653+00:00",
+      "sha256": "dd6d0152e9b8650da193476d193af6ecf35dcce533c97c5add45119009862c68",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107628": {
+      "kind": "spell",
+      "id": 107628,
+      "name": "Defender's Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107628",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107628?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.316652+00:00",
+      "sha256": "eaafaaa630070618d6a1da28e0cad09af0bc711d51857deeafc42717201a0fad",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107630": {
+      "kind": "spell",
+      "id": 107630,
+      "name": "Etched Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107630",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107630?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.328155+00:00",
+      "sha256": "ad32ece27cd708d9f98e2bd17a5e8c428c6c19855e6af11e7e9f352e9618ed87",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107631": {
+      "kind": "spell",
+      "id": 107631,
+      "name": "Glinting Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107631",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107631?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.345152+00:00",
+      "sha256": "7ef5fc4f3a8c3ee827a5eda003b3c835c0507b8ed8ba18366aa8d118efce6be1",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107632": {
+      "kind": "spell",
+      "id": 107632,
+      "name": "Guardian's Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107632",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107632?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.516653+00:00",
+      "sha256": "7ef8a2a0034bf0f0c7add7187c4d19c100f935ba5a20740e93e5d76b1ad657ca",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107633": {
+      "kind": "spell",
+      "id": 107633,
+      "name": "Mysterious Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107633",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107633?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.534653+00:00",
+      "sha256": "e0c79db6eb036f59a889f7340974f0fd9c142f2b60ac1683e2d1d619824827a8",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107634": {
+      "kind": "spell",
+      "id": 107634,
+      "name": "Purified Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107634",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107634?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.592153+00:00",
+      "sha256": "19375189eb0c5f3fa25e78ff3baba04e1934c0c2e600d6c26a35c99eba47eaf5",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107635": {
+      "kind": "spell",
+      "id": 107635,
+      "name": "Retaliating Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107635",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107635?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.559651+00:00",
+      "sha256": "4face67000129a8b549912a8aaf171c26cb3d9d0bf4fd84f238c266f8338ab84",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107636": {
+      "kind": "spell",
+      "id": 107636,
+      "name": "Shifting Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107636",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107636?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.738153+00:00",
+      "sha256": "8763b87ea32790d2c403b26cbded96d6e311386a166f997dea487172a4ddab72",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107637": {
+      "kind": "spell",
+      "id": 107637,
+      "name": "Sovereign Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107637",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107637?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.769653+00:00",
+      "sha256": "e251db5efddf506b31da2e0c25fac3210d4e45760b1f69ef563297f911d52c87",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107638": {
+      "kind": "spell",
+      "id": 107638,
+      "name": "Timeless Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107638",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107638?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.794154+00:00",
+      "sha256": "7b156aeeb653e99fd41fb9f449563a6be7abc9a29e6361c49ab6df3790cf6954",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107639": {
+      "kind": "spell",
+      "id": 107639,
+      "name": "Veiled Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=107639",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107639?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.833151+00:00",
+      "sha256": "b8eae49835847f85910d1ef0a3caa9e81df8968b997a295ddf88bba98e346872",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107640": {
+      "kind": "spell",
+      "id": 107640,
+      "name": "Fractured Sunstone",
+      "pageUrl": "https://www.wowhead.com/spell=107640",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107640?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:39.955153+00:00",
+      "sha256": "9f0f4228e98c1ba560204f2e94d1e4df2debee86f9af6c67a3555ba0bb5f6894",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76134,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107641": {
+      "kind": "spell",
+      "id": 107641,
+      "name": "Mystic Sunstone",
+      "pageUrl": "https://www.wowhead.com/spell=107641",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107641?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.020653+00:00",
+      "sha256": "c8b661d7c3605634929852dadd4301673c980828e96d2fe4bebbb055a42c693e",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76134,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107642": {
+      "kind": "spell",
+      "id": 107642,
+      "name": "Quick Sunstone",
+      "pageUrl": "https://www.wowhead.com/spell=107642",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107642?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.014654+00:00",
+      "sha256": "55e600a978f09d7f533fb0fa6cb1ef300b5e1aa9a416d8cbcab4c5396b214d6d",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76134,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107643": {
+      "kind": "spell",
+      "id": 107643,
+      "name": "Smooth Sunstone",
+      "pageUrl": "https://www.wowhead.com/spell=107643",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107643?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.099652+00:00",
+      "sha256": "b1b4c2766e3b2874a845bdc7cd1debe22e8af2fb87cd0379a340122f3e181975",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76134,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107644": {
+      "kind": "spell",
+      "id": 107644,
+      "name": "Subtle Sunstone",
+      "pageUrl": "https://www.wowhead.com/spell=107644",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107644?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.152653+00:00",
+      "sha256": "a956df9939f438c2375574d1938a025f8c7faa35ae0d5619518453af753d8f5f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76134,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107645": {
+      "kind": "spell",
+      "id": 107645,
+      "name": "Adept Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107645",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107645?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.227653+00:00",
+      "sha256": "b9e5f49de35fcb8c1fce42ab3acaa6aad7d71ccd07a65249ff707db42088141f",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107646": {
+      "kind": "spell",
+      "id": 107646,
+      "name": "Artful Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107646",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107646?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.220153+00:00",
+      "sha256": "df63c9c12303f4a7b5f04a1009d00006e1a0a4a0e2986d6a83e147650da08a09",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107647": {
+      "kind": "spell",
+      "id": 107647,
+      "name": "Champion's Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107647",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107647?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.412700+00:00",
+      "sha256": "1d09b876e28c84a14b68de2c34f5fcfbd7c6aa7caef3d1e4844e1d0a95d00e1b",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107648": {
+      "kind": "spell",
+      "id": 107648,
+      "name": "Crafty Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107648",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107648?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.366152+00:00",
+      "sha256": "7a0a9f660ba91d78d87b6cf8acce5b771bb230d6181e9e52a3133f849dc61abb",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107649": {
+      "kind": "spell",
+      "id": 107649,
+      "name": "Deadly Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107649",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107649?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.470653+00:00",
+      "sha256": "3cba40c01328b7ca2984b0bc50fe922ca42093513dace712e23ddc06a7bd844b",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107650": {
+      "kind": "spell",
+      "id": 107650,
+      "name": "Deft Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107650",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107650?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.461153+00:00",
+      "sha256": "a949fd59df843ad563d64c05ce9a01f31eae5b9e4bb6bd97ee9efdfc60a08ed4",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107651": {
+      "kind": "spell",
+      "id": 107651,
+      "name": "Fierce Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107651",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107651?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.586153+00:00",
+      "sha256": "5d6ce4f4d4ccf2f6ba3b363b32d10dbc262245d35a8d93cdb3c65ac4fc3268ad",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107652": {
+      "kind": "spell",
+      "id": 107652,
+      "name": "Fine Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107652",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107652?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.618153+00:00",
+      "sha256": "4375262e805565e50c5a64a9c6087b344c88e3dc10a371fe51f73dd4c836c762",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107653": {
+      "kind": "spell",
+      "id": 107653,
+      "name": "Inscribed Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107653",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107653?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.690152+00:00",
+      "sha256": "15c7c5b3438bdd8de653602e4f645384a32ebcaa5eec0b7a4f673313bfa26f11",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107654": {
+      "kind": "spell",
+      "id": 107654,
+      "name": "Keen Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107654",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107654?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.702656+00:00",
+      "sha256": "7b534eea6749616b2b836a102bd84af7c2e63c850d888d77f9e915f553450054",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107655": {
+      "kind": "spell",
+      "id": 107655,
+      "name": "Lucent Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107655",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107655?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.787653+00:00",
+      "sha256": "a282c1bc19e3f927e4e01f2ae24a89a86c7aeb4bc075b057b0eb2fc18e9155c3",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107656": {
+      "kind": "spell",
+      "id": 107656,
+      "name": "Polished Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107656",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107656?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.848658+00:00",
+      "sha256": "f4d9d94d58be16f67fffda51ad43474aa605e75e7fe4f1af5818cc230e51794a",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107657": {
+      "kind": "spell",
+      "id": 107657,
+      "name": "Potent Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107657",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107657?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.902652+00:00",
+      "sha256": "286ad12dd84337b35703ddd081a40c54e534f740346cfcc4b58ed276a2a9fd39",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107658": {
+      "kind": "spell",
+      "id": 107658,
+      "name": "Reckless Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107658",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107658?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:40.928652+00:00",
+      "sha256": "ac026acb34d93cb5eb6ed3892565b47403ebe064565ee99ac5d5d02f920517a2",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107659": {
+      "kind": "spell",
+      "id": 107659,
+      "name": "Resolute Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107659",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107659?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.010153+00:00",
+      "sha256": "0c9f88b54514508af3f51b7417f0562bbe12def4ef1264f170604bedc3a99a20",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107660": {
+      "kind": "spell",
+      "id": 107660,
+      "name": "Resplendent Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107660",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107660?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.044652+00:00",
+      "sha256": "e8ef2ab7e5a32bbfae8f058bf6b0378be6e5f6764b28b2390d81e30df61d5e39",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107661": {
+      "kind": "spell",
+      "id": 107661,
+      "name": "Skillful Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107661",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107661?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.126655+00:00",
+      "sha256": "b59e0063469bfe84df953f98797b168ae38ba775c1fe321ae38f4692e7a196fb",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107662": {
+      "kind": "spell",
+      "id": 107662,
+      "name": "Splendid Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107662",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107662?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.173653+00:00",
+      "sha256": "80c285470d94e03cf30d0a4e79a5052916afb44e7ad265887a43039f8bdffa3a",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107663": {
+      "kind": "spell",
+      "id": 107663,
+      "name": "Stalwart Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107663",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107663?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.235152+00:00",
+      "sha256": "150e88b3a9447fb7a84e821f9986112f6ebae1a4c738e90c4676a230f8343eb1",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107665": {
+      "kind": "spell",
+      "id": 107665,
+      "name": "Tenuous Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107665",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107665?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.289655+00:00",
+      "sha256": "3aed11f6cd79bf6bd1056b84bc1af78d9987ee380f2698e160c7c69c5251ed7c",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107666": {
+      "kind": "spell",
+      "id": 107666,
+      "name": "Wicked Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107666",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107666?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.342152+00:00",
+      "sha256": "2d0b79dad5308b251015c511eb66458e41b9976fcae7ab5f3ef64565b6862f3a",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:107667": {
+      "kind": "spell",
+      "id": 107667,
+      "name": "Willful Tiger Opal",
+      "pageUrl": "https://www.wowhead.com/spell=107667",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/107667?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:40:41.408652+00:00",
+      "sha256": "79dcf6116066654f284cec5b25dc94ade9f04c7c0fdf0caab66c38bbb87fe0d1",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76130,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:130655": {
+      "kind": "spell",
+      "id": 130655,
+      "name": "Tense Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=130655",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/130655?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:41:02.359153+00:00",
+      "sha256": "9e1a323fbb79f0b789b8c32e184f5d7496cb41e4472afdde104526188dfff835",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    },
+    "spell:130656": {
+      "kind": "spell",
+      "id": 130656,
+      "name": "Assassin's Roguestone",
+      "pageUrl": "https://www.wowhead.com/spell=130656",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/spell/130656?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T07:41:02.377655+00:00",
+      "sha256": "0f2e90adbe9b7a9df33ad27b7cfb13c02e84bddaf0eb64cbe8aa11820dc86fb2",
+      "status": "retrieved",
+      "reagents": [
+        {
+          "itemID": 76135,
+          "quantity": 1
+        }
+      ]
+    }
+  }
+}

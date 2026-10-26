@@ -460,7 +460,7 @@ function GoldTracker:DispatchConfiguredAlert(message, displayID, soundID, color)
     end
 
     if showChat then
-        self:Print(message)
+        self:Print(message, "alerts")
     end
 end
 

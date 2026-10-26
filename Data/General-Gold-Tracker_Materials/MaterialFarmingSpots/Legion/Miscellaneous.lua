@@ -1076,24 +1076,6 @@ for _, record in ipairs(DISCOVERIES) do
     })
 end
 
--- Random cards are real sale products; the spell's placeholder is not.
--- Costs for a random attempt stay in the research archive, not on every possible card.
-for _, item in ipairs((NS.FarmingItems and NS.FarmingItems.items) or {}) do
-    if item.expansion == "legion" and item.randomOutput and item.sourceSpellID == 191659 then
-        Register({
-            itemID = item.itemID, itemName = item.itemName, expansion = "legion",
-            professions = { "inscription" }, category = "Darkmoon Card",
-            isRoute = false, auctionable = true, randomOutput = true,
-            sourceSpellID = 191659,
-            sourceUrls = { "https://www.wowhead.com/item=" .. item.itemID,
-                "https://www.wowhead.com/spell=191659/darkmoon-card-of-the-legion" },
-            summary = "One possible random Legion card. Sell individually or assemble the eight matching cards into the named Darkmoon trinket.",
-            tips = { "One random card per craft; no guaranteed per-card composition is assigned." },
-            spots = {},
-        })
-    end
-end
-
 -- Bound blood/Argus materials remain explicit support for saleable finished crafts.
 for _, itemID in ipairs({ 124124, 151568 }) do
     local item = Items[itemID]

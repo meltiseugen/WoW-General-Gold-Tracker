@@ -100,6 +100,7 @@ local function tab_buttons()
         farms = button(),
         drops = button(),
         favorites = button(),
+        alts = button(),
         inventory = button(),
         priceAlerts = button(),
     }
@@ -140,8 +141,9 @@ describe("UI/ExplorerWindow", function()
             CreateRareFarmingWindow = function(self)
                 self.rareFarmingFrame = rare_frame
             end,
-            SetRareFarmingWindowView = function(_, view_id)
+            SetRareFarmingWindowView = function(self, view_id)
                 selected_view = view_id
+                self:RefreshRareFarmingLibraryWindow()
             end,
             RefreshRareFarmingLibraryWindow = function()
                 refreshed_library = refreshed_library + 1
@@ -206,7 +208,29 @@ describe("UI/ExplorerWindow", function()
             labels[#labels + 1] = tab.label
         end
 
-        assert.same({ "Favorites", "Alerts", "Rares", "Instances", "Drops", "Materials", "Farms", "Bags" }, labels)
+        assert.same({ "Favorites", "Alts", "Market Watch", "Rares", "Instances", "Drops", "Materials", "Farms", "Bags" }, labels)
+    end)
+
+    it("embeds Alts and hides it when switching to another tab", function()
+        local alt_frame, rare_frame = frame(), frame()
+        local refreshed = 0
+        local addon = load_explorer({
+            db = {},
+            explorerFrame = { contentFrame = frame(), tabButtons = tab_buttons() },
+            CreateAltsWindow = function(self) self.altsFrame = alt_frame end,
+            RefreshAltsWindow = function() refreshed = refreshed + 1 end,
+            CreateRareFarmingWindow = function(self) self.rareFarmingFrame = rare_frame end,
+            SetRareFarmingWindowView = function() end,
+        })
+        addon:SetExplorerTab("alts")
+        assert.equals("alts", addon.db.explorerTab)
+        assert.is_true(addon.explorerFrame.tabButtons.alts.selected)
+        assert.equals(addon.explorerFrame.contentFrame, alt_frame.parent)
+        assert.is_true(alt_frame.shown)
+        assert.equals(1, refreshed)
+        addon:SetExplorerTab("favorites")
+        assert.is_true(alt_frame.hidden)
+        assert.is_true(rare_frame.shown)
     end)
 
     it("removes the Bags tab tooltip", function()

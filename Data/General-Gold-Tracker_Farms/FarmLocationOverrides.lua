@@ -4,8 +4,7 @@ local _, NS = ...
 -- Catalog route and had no matching MaterialFarmingSpots entry.  The coordinates
 -- are normalized UI-map coordinates researched from the relevant Wowhead item
 -- pages on 2026-10-07; item-mapper results are used where available, while
--- Darkmoon, Deviate Fish, and the two Eternal element farms use a useful
--- zone-level pin at their known fishing/elemental grounds.  They are
+-- Some farms use a zone-level pin at their known fishing/elemental grounds. They are
 -- intentionally pins, not routes: only Herb and Mining farms render lines.
 
 local catalog = NS.FarmCatalog
@@ -14,7 +13,6 @@ if type(catalog) ~= "table" or type(catalog.farms) ~= "table" or type(catalog.by
 end
 
 local locations = {
-    ["catalog:gathering:fishing:darkmoondaggermaw"] = { 407, "Darkmoon Island", 0.500, 0.740, "Darkmoon Island fishing water", 124669 },
     ["catalog:gathering:fishing:capeofstranglethornfish"] = { 210, "The Cape of Stranglethorn", 0.285, 0.690, "Cape of Stranglethorn fishing water", 6362 },
     ["catalog:gathering:fishing:crystalsongforestfish"] = { 127, "Crystalsong Forest", 0.139, 0.165, "Crystalsong Forest fishing water", 41814 },
     ["catalog:gathering:fishing:feralasfish"] = { 69, "Feralas", 0.439, 0.115, "Feralas fishing water", 21153 },

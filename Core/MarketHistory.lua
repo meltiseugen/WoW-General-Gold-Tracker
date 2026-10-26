@@ -15,6 +15,9 @@ local SNAPSHOT_SOURCES = {
     auctioningNormal = "AuctioningOpNormal",
     auctioningMax = "AuctioningOpMax",
 }
+local DISPLAYED_PRICE_FIELDS = {
+    "unitValue", "value", "marketValue", "historicalValue", "regionMarketValue", "averageValue",
+}
 
 -- Dense saved arrays avoid a large hash allocation for every historical sample.
 -- The shared metatable preserves named-field access throughout graphs/insights.
@@ -915,6 +918,14 @@ function GoldTracker:NormalizeMarketHistory()
     end
 
     local store = self.db.marketHistory
+    if not store.displayCaptureVersion then
+        -- Retire the old default, which silently discarded item graph histories
+        -- as the user browsed catalogs. Preserve other explicitly chosen caps.
+        if tonumber(self.db.marketHistoryMaxItems) == 500 then
+            self.db.marketHistoryMaxItems = 0
+        end
+        store.displayCaptureVersion = 1
+    end
     if self.normalizedMarketHistory ~= store then
         for _, history in pairs(store.items) do
             for index, snapshot in ipairs(type(history) == "table" and history.snapshots or {}) do
@@ -938,7 +949,12 @@ function GoldTracker:GetMarketHistorySampleCount(itemLink)
 end
 
 function GoldTracker:GetMarketHistorySourceSnapshot(itemLink, itemID, initialSnapshot)
-    local snapshot = CompactMarketSnapshot(initialSnapshot)
+    -- Never share a mutable sample with a row or an earlier saved observation.
+    local copy = {}
+    for key, value in pairs(type(initialSnapshot) == "table" and initialSnapshot or {}) do
+        copy[key] = value
+    end
+    local snapshot = CompactMarketSnapshot(copy)
     if type(self.GetTSMRawCustomValue) ~= "function"
         and not (type(TSM_API) == "table" and type(TSM_API.GetCustomPriceValue) == "function") then
         return snapshot
@@ -1007,7 +1023,7 @@ function GoldTracker:PruneMarketHistory(now)
     end
 
     local maxItems = tonumber(self.db and self.db.marketHistoryMaxItems) or self.DEFAULTS.marketHistoryMaxItems
-    if itemCount <= maxItems then
+    if maxItems <= 0 or itemCount <= maxItems then
         return
     end
 
@@ -1042,6 +1058,7 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
     end
 
     local now = time()
+    local interval = self:GetMarketHistorySnapshotIntervalSeconds()
     local dateKey = date("%Y-%m-%d", now)
     local hourKey = date("%Y-%m-%d %H", now)
     local hour = tonumber(date("%H", now)) or 0
@@ -1053,29 +1070,34 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
         local itemLink = GetMarketHistoryDisplayItemLink(item)
         local itemID = tonumber(item and item.itemID)
         local itemKey = self:GetMarketHistoryItemKey(itemLink, itemID)
-        if itemKey then
-            local history = marketHistory.items[itemKey]
-            if type(history) ~= "table" then
-                addedHistory = true
-                history = {
-                    itemKey = itemKey,
-                    itemLink = itemLink,
-                    itemID = itemID and math.floor(itemID + 0.5) or nil,
-                    itemName = GetMarketHistoryDisplayItemName(item),
-                    itemQuality = item.itemQuality,
-                    firstSeen = now,
-                    snapshots = {},
-                }
-                marketHistory.items[itemKey] = history
+        local history = itemKey and marketHistory.items[itemKey]
+        local previous = history and GetLatestSnapshot(history)
+        -- Check before source queries. Repeated renders must neither move the
+        -- timestamp nor overwrite the observation that starts this interval.
+        if itemKey and (not previous or now - (tonumber(previous.timestamp) or 0) >= interval) then
+            local initialSnapshot = {}
+            local rowSnapshot = type(item.marketHistorySnapshot) == "table" and item.marketHistorySnapshot
+            -- Timestamped row snapshots may have come from an older saved scan.
+            -- Only use untimestamped metrics produced by the current row builder.
+            for field in pairs(SNAPSHOT_SOURCES) do
+                initialSnapshot[field] = rowSnapshot and not rowSnapshot.timestamp and rowSnapshot[field] or nil
             end
-
-            history.itemLink = itemLink or history.itemLink
-            history.itemID = itemID and math.floor(itemID + 0.5) or history.itemID
-            history.itemName = GetMarketHistoryDisplayItemName(item) or history.itemName
-            history.itemQuality = item.itemQuality or history.itemQuality
-            history.lastSeen = now
-
-            local initialSnapshot = type(item.marketHistorySnapshot) == "table" and item.marketHistorySnapshot or nil
+            initialSnapshot.dbMarket = FloorNumber(item.marketValue) or initialSnapshot.dbMarket
+            initialSnapshot.dbHistorical = FloorNumber(item.historicalValue) or initialSnapshot.dbHistorical
+            initialSnapshot.dbRegionMarketAvg = FloorNumber(item.regionMarketValue) or initialSnapshot.dbRegionMarketAvg
+            initialSnapshot.dbRegionSaleAvg = FloorNumber(item.averageValue) or initialSnapshot.dbRegionSaleAvg
+            initialSnapshot.dbRegionSaleRate = tonumber(item.regionSaleRate) or initialSnapshot.dbRegionSaleRate
+            initialSnapshot.dbRegionSoldPerDay = tonumber(item.regionSoldPerDay) or initialSnapshot.dbRegionSoldPerDay
+            local selectedValue = FloorNumber(item.unitValue or item.value)
+            local selectedSource = self.VALUE_SOURCE_BY_ID and self.VALUE_SOURCE_BY_ID[item.valueSourceID]
+            if selectedValue and selectedValue > 0 then
+                for field, tsmKey in pairs(SNAPSHOT_SOURCES) do
+                    if (selectedSource and selectedSource.tsmKey == tsmKey)
+                        or item.valueSourceID == "TSM_" .. string.upper(tsmKey) then
+                        initialSnapshot[field] = selectedValue
+                    end
+                end
+            end
             local snapshot = self:GetMarketHistorySourceSnapshot(itemLink, itemID, initialSnapshot)
             snapshot.date = dateKey
             snapshot.hourKey = hourKey
@@ -1086,33 +1108,72 @@ function GoldTracker:RecordInventoryMarketSnapshots(items)
             snapshot.selectedUnitValue = FloorNumber(item.unitValue or item.value)
             snapshot.quantity = FloorNumber(item.quantity) or 1
             snapshot.totalValue = FloorNumber(item.totalValue or item.value)
-            snapshot.dbMarket = snapshot.dbMarket or FloorNumber(item.marketValue)
-            snapshot.dbHistorical = snapshot.dbHistorical or FloorNumber(item.historicalValue)
-            snapshot.dbRegionMarketAvg = snapshot.dbRegionMarketAvg or FloorNumber(item.regionMarketValue)
-            snapshot.dbRegionSaleAvg = snapshot.dbRegionSaleAvg or FloorNumber(item.averageValue)
-            snapshot.dbRegionSaleRate = snapshot.dbRegionSaleRate or tonumber(item.regionSaleRate)
-            snapshot.dbRegionSoldPerDay = snapshot.dbRegionSoldPerDay or tonumber(item.regionSoldPerDay)
-            item.marketHistorySnapshot = snapshot
+            local hasPrice = (tonumber(snapshot.selectedUnitValue) or 0) > 0
+            for field in pairs(SNAPSHOT_SOURCES) do
+                if field ~= "dbRegionSaleRate" and field ~= "dbRegionSoldPerDay"
+                    and (tonumber(snapshot[field]) or 0) > 0 then
+                    hasPrice = true
+                end
+            end
+            if hasPrice then
+                if type(history) ~= "table" then
+                    addedHistory = true
+                    history = {
+                        itemKey = itemKey,
+                        itemLink = itemLink,
+                        itemID = itemID and math.floor(itemID + 0.5) or nil,
+                        itemName = GetMarketHistoryDisplayItemName(item),
+                        itemQuality = item.itemQuality,
+                        firstSeen = now,
+                        snapshots = {},
+                    }
+                    marketHistory.items[itemKey] = history
+                end
 
-            local snapshots = history.snapshots
-            local lastSnapshot = snapshots[#snapshots]
-            if lastSnapshot and lastSnapshot.hourKey == hourKey then
-                snapshots[#snapshots] = snapshot
-            else
+                history.itemLink = itemLink or history.itemLink
+                history.itemID = itemID and math.floor(itemID + 0.5) or history.itemID
+                history.itemName = GetMarketHistoryDisplayItemName(item) or history.itemName
+                history.itemQuality = item.itemQuality or history.itemQuality
+                history.lastSeen = now
+
+                local snapshots = history.snapshots
                 snapshots[#snapshots + 1] = snapshot
+                local maxSnapshots = tonumber(self.db.marketHistoryMaxSnapshotsPerItem)
+                    or self.DEFAULTS.marketHistoryMaxSnapshotsPerItem
+                while #snapshots > maxSnapshots do
+                    table.remove(snapshots, 1)
+                end
+                touched = true
             end
-            local maxSnapshots = tonumber(self.db.marketHistoryMaxSnapshotsPerItem)
-                or self.DEFAULTS.marketHistoryMaxSnapshotsPerItem
-            while #snapshots > maxSnapshots do
-                table.remove(snapshots, 1)
-            end
-            touched = true
         end
     end
 
-    if touched and (addedHistory or now >= (self.marketHistoryNextPruneAt or 0)) then
+    local hasItemCap = (tonumber(self.db.marketHistoryMaxItems) or self.DEFAULTS.marketHistoryMaxItems or 0) > 0
+    if touched and ((addedHistory and hasItemCap) or now >= (self.marketHistoryNextPruneAt or 0)) then
         self:PruneMarketHistory(now)
     end
+end
+
+function GoldTracker:GetMarketHistorySnapshotIntervalSeconds()
+    local minutes = tonumber(self.db and self.db.marketHistorySnapshotIntervalMinutes)
+        or tonumber(self.DEFAULTS and self.DEFAULTS.marketHistorySnapshotIntervalMinutes) or 60
+    return math.max(1, math.min(1440, minutes)) * 60
+end
+
+-- UI callers pass their already-valued rows, including cached lists. Ignore
+-- dividers and loading placeholders so they cannot consume an item's interval.
+function GoldTracker:RecordDisplayedItemMarketSnapshots(rows)
+    if type(rows) ~= "table" then return end
+    if rows.itemID or rows.itemLink then rows = { rows } end
+    local pricedRows = {}
+    for _, row in ipairs(rows) do
+        local hasPrice = false
+        for _, field in ipairs(DISPLAYED_PRICE_FIELDS) do
+            if (tonumber(row[field]) or 0) > 0 then hasPrice = true; break end
+        end
+        if hasPrice then pricedRows[#pricedRows + 1] = row end
+    end
+    return self:RecordDiscoveredItemMarketSnapshots(pricedRows)
 end
 
 local function AddMarketHistoryCandidate(candidates, seen, item)
@@ -1895,13 +1956,13 @@ end
 function GoldTracker:PrintMarketHistoryDebug(query)
     query = self:Trim(query or "")
     if query == "" then
-        self:Print("Usage: /gt market <item link, item name, itemID, or item string>")
+        self:Print("Usage: /gt market <item link, item name, itemID, or item string>", "commands")
         return
     end
 
     local itemKey, history = FindMarketHistoryByQuery(self, query)
     if type(history) ~= "table" or type(history.snapshots) ~= "table" or #history.snapshots == 0 then
-        self:Print("No saved market history for " .. query .. ". Discover the item through loot, bags, or a farming scan to record it.")
+        self:Print("No saved market history for " .. query .. ". Discover the item through loot, bags, or a farming scan to record it.", "commands")
         return
     end
 
@@ -1917,11 +1978,11 @@ function GoldTracker:PrintMarketHistoryDebug(query)
         tostring(displayName),
         #snapshots,
         #snapshots == 1 and "" or "s"
-    ))
+    ), "commands")
     if type(insight) == "table" then
-        self:Print(insight.summary or "Collecting local market history.")
+        self:Print(insight.summary or "Collecting local market history.", "commands")
         if type(insight.detail) == "string" and insight.detail ~= "" and insight.detail ~= insight.summary then
-            self:Print(insight.detail)
+            self:Print(insight.detail, "commands")
         end
     end
 
@@ -1935,6 +1996,6 @@ function GoldTracker:PrintMarketHistoryDebug(query)
             FormatMarketHistoryMoney(self, snapshot.dbRecent),
             FormatMarketHistoryDecimal(snapshot.dbRegionSoldPerDay, 2),
             FormatMarketHistoryDecimal(snapshot.dbRegionSaleRate, 3)
-        ))
+        ), "commands")
     end
 end

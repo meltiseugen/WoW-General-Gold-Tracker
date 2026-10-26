@@ -1,0 +1,240 @@
+{
+  "date": "2026-10-25",
+  "client_data_build": "12.1.5.70529",
+  "problem": "Stormheim template parchment and its northwest frame covered Highmountain; faded replacement edges also leaked old continent art.",
+  "changes": [
+    "Derive revealed zone interiors by comparing native complete revealed and base paintings.",
+    "Assign shared painting territory by physical-space signed distance to sibling interiors; preserve disconnected islands and phase-specific artwork.",
+    "Apply the same territory to base and revealed layers; omit the old generic secondary corner crop for known territories.",
+    "Replace coarse continent art with a matching original ocean field during the shared detail transition, and retire the old art completely.",
+    "Round nested city painting edges while leaving standalone paintings and continuous terrain intact."
+  ],
+  "reference_research": {
+    "addon": "OpenMap v0.7.1-beta and WOWIgnoredOpenMapClassic",
+    "files": [
+      "OpenMap/Map/Stitch.lua",
+      "OpenMap/Data/Retail/Client.lua",
+      "OpenMap/Media/Textures/Retail/NOTICE.md",
+      "WOWIgnoredOpenMapClassic/Map/Stitch.lua"
+    ],
+    "finding": "Retail territory masks constrain both base and revealed paintings; Classic can protect interior layers above neighbouring halos. Backdrops and city paintings have separate masks.",
+    "use": "Behavioural research only. No reference addon code, masks, textures, coordinates, or generated data are inputs."
+  },
+  "asset_provenance": "map-art-masks-2026-10-24.json",
+  "code_sha256": {
+    "UI/Maps/ArtMaskIndex.lua": "de63c1d6e7e8245ca939eadc7cea0a28ef145905225c6b82fe75c51dfd7e704d",
+    "UI/Maps/Geometry.lua": "b50de8628503b0c0b4cf46e3dbe24eca2cf6e6b899fcde666720822a5344669d",
+    "UI/Maps/InteractiveMap.lua": "80044c695a914e0a0f96979c5b307a2f0cfb809341f5647a91f2e5f644b4bb78",
+    "UI/Maps/MapRenderer.lua": "836bfe6ea56f237592b8cad7c392372ca462b4d298f97d03d8df6d5b8dda0359",
+    "UI/Maps/MapScene.lua": "68968b676fee86db50b5d2d0d07ad0d4546052d58cd84c64247a6ce9afc16a1e",
+    "UI/Maps/MapSource.lua": "ae0e756b1a5a157b42c192cf60e556c4b1741a0f3542739bd8154d52a0f2277e",
+    "UI/Maps/OceanIndex.lua": "e6fe4086bc0f796efda5e8fece6fe18cd2494be5722030e900e477bcf2615018",
+    "tools/generate_map_art_masks.py": "fd164c1715f3a15d24baa112ebe1a34d5a9dfbe468b49c5e78e34c13095e7e47",
+    "tools/map_art_ownership.py": "3bc1412b63da65133d59304b0370655adefac8891d9c79ccfa39cf8447287701",
+    "tools/map_mask_texture.py": "0ed1c954126634b3f85a3c980bd29f10556b7d50bb9fad27378314499dbcc8a2",
+    "tools/generate_map_ocean.py": "8bf5e0a20d4820bb58210c968e32ed1db2c2bba05928574c847e658886c63359",
+    "tools/generate_map_edge_mask.py": "23467e4dac75a7113cfec42014b3ae016ed2613e366e59229a309b3d9a56ca64",
+    "tools/preview_interactive_map.py": "755a410f513b127e635f48b85acb233bcfba4251484f1fc78254691090f4f7df",
+    "tests/ui/interactive_map_spec.lua": "380a8c65564b4b2d3e45d29f132c0108115cf4e25fe3d7dc1c586d285438db43",
+    "tests/test_map_art_masks.py": "765e87e33d9392c470adb22978948df9f642349ab5cd65280dc3902b51a4e08e"
+  },
+  "locality_mask_sha256": "c87876dd975f707383f3f4192c6c467c90ea3acdcb3008abc9ba7147a81d3b33",
+  "validation": {
+    "lua51_focused_harness": {
+      "passed": 107,
+      "failed": 0,
+      "native_busted": false
+    },
+    "python_map_tests": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    "lua51_syntax": {
+      "files": 8,
+      "passed": true
+    },
+    "manifest": {
+      "manifests": 8,
+      "runtime_lua_files": 276,
+      "passed": true
+    },
+    "continent_audit": {
+      "scenes": 19,
+      "zoom_states": 133,
+      "maximum_regions": 2199,
+      "budget_reached": false,
+      "report_sha256": "debf1ad4ecc610c7fdf9909928b535b50b0d395b3571117a1043e61ef716c7b1",
+      "cases": [
+        {
+          "mapID": 12,
+          "focusMapID": 10
+        },
+        {
+          "mapID": 13,
+          "focusMapID": 37
+        },
+        {
+          "mapID": 101,
+          "focusMapID": 100
+        },
+        {
+          "mapID": 113,
+          "focusMapID": 115
+        },
+        {
+          "mapID": 424,
+          "focusMapID": 376
+        },
+        {
+          "mapID": 572,
+          "focusMapID": 535
+        },
+        {
+          "mapID": 619,
+          "focusMapID": 680
+        },
+        {
+          "mapID": 875,
+          "focusMapID": 862
+        },
+        {
+          "mapID": 876,
+          "focusMapID": 895
+        },
+        {
+          "mapID": 905,
+          "focusMapID": 830
+        },
+        {
+          "mapID": 948,
+          "focusMapID": 207
+        },
+        {
+          "mapID": 1550,
+          "focusMapID": 1533
+        },
+        {
+          "mapID": 1978,
+          "focusMapID": 2022
+        },
+        {
+          "mapID": 2274,
+          "focusMapID": 2248
+        },
+        {
+          "mapID": 2274,
+          "focusMapID": 2214
+        },
+        {
+          "mapID": 2274,
+          "focusMapID": 2371
+        },
+        {
+          "mapID": 2537,
+          "focusMapID": 2395
+        },
+        {
+          "mapID": 2537,
+          "focusMapID": 2413
+        },
+        {
+          "mapID": 2537,
+          "focusMapID": 2405
+        }
+      ]
+    },
+    "global_audit": {
+      "scenes": 11,
+      "zoom_states": 77,
+      "maximum_regions": 2194,
+      "budget_reached": false,
+      "report_sha256": "688f1c6c8b3f9dcc4a68533728c82f999d448389feca220dd418b2988bfc9c44",
+      "cases": [
+        {
+          "mapID": 947,
+          "focusMapID": 10
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 37
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 115
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 376
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 680
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 862
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 895
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 2022
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 2248
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 2214
+        },
+        {
+          "mapID": 947,
+          "focusMapID": 2395
+        }
+      ]
+    },
+    "offline_visuals": {
+      "continent_focus_cases_at_zoom_2": 19,
+      "broken_isles_zoom_states": 7,
+      "images_sha256": {
+        ".local/interactive-map-preview/ownership-final-broken/zoom-01.00.png": "9cd290599d8449e7061a709f98126f48d5326907fee9640d3c029cb3d0ac0d21",
+        ".local/interactive-map-preview/ownership-final-broken/zoom-01.40.png": "88fad35d4109ecfbe9e83b0f1c79eaabad521183d26067bb67e6038c36a23731",
+        ".local/interactive-map-preview/ownership-final-broken/zoom-01.50.png": "72a39c831b7748661947ed0cf48d4e7ba7a560532ace565ec10ccc3ea9b4c19a",
+        ".local/interactive-map-preview/ownership-final-broken/zoom-01.60.png": "106ca5502018c0b86348246debd5444755fb3ddb647f2380c41c09f8f847ac14",
+        ".local/interactive-map-preview/ownership-final-broken/zoom-02.00.png": "1988e3665c74484e7d049c650fc3409134b3649a01fa615b315e0143f51d9c37",
+        ".local/interactive-map-preview/ownership-final-broken/zoom-04.00.png": "bc339fe39fb7434a8203aa7eac1fd588496fb9411573e0b9edbe41dc95f2fbb1",
+        ".local/interactive-map-preview/ownership-final-broken/zoom-12.00.png": "3299dccfbe8aad48bc9cc438b919bf9df0e6b3013ef4691f7f9e8d64e898b6ef",
+        ".local/interactive-map-preview/ownership-final-all/101-100/zoom-02.00.png": "4640c31764662cde1d6cc7b05a0d35c3eb8bcccb89e01003c58c18fcf5aed398",
+        ".local/interactive-map-preview/ownership-final-all/113-115/zoom-02.00.png": "565451e47b865740ba1b9b1c5e8fa32fb62ff0e99b73f2dedd703d986fce1df4",
+        ".local/interactive-map-preview/ownership-final-all/12-10/zoom-02.00.png": "c5c244c20ce1e0679bb65f40392459329d2240030406eaa551ad6e839270e6bd",
+        ".local/interactive-map-preview/ownership-final-all/13-37/zoom-02.00.png": "bd1e86f680b6be50d1580256899ac573745f0d10214b7ee2292625f2787418ad",
+        ".local/interactive-map-preview/ownership-final-all/1550-1533/zoom-02.00.png": "bdb9dc3eaacc8da1a9c793fc14e106568cbfc1d86d71f1c484de00a43792482a",
+        ".local/interactive-map-preview/ownership-final-all/1978-2022/zoom-02.00.png": "592e3799aed636f76277c8d1d05c6c4bea50018585e57fb53870a034ea343c0c",
+        ".local/interactive-map-preview/ownership-final-all/2274-2214/zoom-02.00.png": "b76b55a333b0438d0f807490768ea3d8465210ccfd5ef8622461087d550a9075",
+        ".local/interactive-map-preview/ownership-final-all/2274-2248/zoom-02.00.png": "d68b3c96576361859f9a4d925fa72a6749953592c38465650a6131b079e37f12",
+        ".local/interactive-map-preview/ownership-final-all/2274-2371/zoom-02.00.png": "339c8b5177f9da2b6be343c17299efd433e88326a65787797a40af13216ee3cf",
+        ".local/interactive-map-preview/ownership-final-all/2537-2395/zoom-02.00.png": "843e586c3179ec63ef050d7e84c944001bef96959f9033c75423f10d32d070ee",
+        ".local/interactive-map-preview/ownership-final-all/2537-2405/zoom-02.00.png": "c4069ad7215e24a7dfe59b63a7448925daf30f6f48b26ae945d29e83ee62ce32",
+        ".local/interactive-map-preview/ownership-final-all/2537-2413/zoom-02.00.png": "8a8291ac9e55c6ac472a55bd9658ef43e2c90c91e59fab765889f9b8507ec554",
+        ".local/interactive-map-preview/ownership-final-all/424-376/zoom-02.00.png": "d3f45608b97c4b533489a8880c00dcb38eaef34c3166ae283d6e74f7928e5925",
+        ".local/interactive-map-preview/ownership-final-all/572-535/zoom-02.00.png": "8b509616c45bfb476b0b85e5579e1a5864a5633170b9d6150dc59fe38852ef04",
+        ".local/interactive-map-preview/ownership-final-all/619-680/zoom-02.00.png": "9225cad7a787e2903778f358afec6fe129bb88e1c355c48e6f575b62ff05e16f",
+        ".local/interactive-map-preview/ownership-final-all/875-862/zoom-02.00.png": "df015020fe81b43193666e81aa62d8e696e431c84e4295420cf25cf7fbb29b56",
+        ".local/interactive-map-preview/ownership-final-all/876-895/zoom-02.00.png": "f54b5d90a0bbab64ba3ed2fe5620dbfed93a3979afa8003fb341f528ab2d9aea",
+        ".local/interactive-map-preview/ownership-final-all/905-830/zoom-02.00.png": "2b1dd69ae02fca4007b653869c0c86b4b25c481e310881b6521df7642a098128",
+        ".local/interactive-map-preview/ownership-final-all/948-207/zoom-02.00.png": "202797c71fceb2989c58984a9ee438133bc19e4a71a5945ef78404c1f3598539"
+      },
+      "comparison": ".local/interactive-map-preview/ownership-final-broken/before-after.jpg"
+    }
+  },
+  "limitations": [
+    "Lua fixtures and Pillow rasterization do not validate native WoW rendering, performance, or live phase conditions.",
+    "The reported Stormheim/Highmountain overlap is removed in the offline reproduction. Native painted text and peripheral parchment within retained artwork can still remain; this is not replacement RGB artwork.",
+    "Unknown or outline-free art retains conservative fallback masks. Separate-world diagram maps keep their native geographic/inset placement.",
+    "Restart WoW to discover new texture assets, then verify map alignment, transitions, panning, reset and coexistence with OpenMap enabled and disabled."
+  ]
+}

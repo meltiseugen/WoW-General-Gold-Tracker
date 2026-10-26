@@ -207,16 +207,6 @@ for _, entry in ipairs({
         })
 end
 
-local pearlSources = { ITEM_URL .. "108739", ITEM_URL .. "108738" }
-local pearlTips = {
-    "Enter the cave near 22,9 in northern Frostfire Ridge and fish the Giant Draenor Clam treasure pool near 21.8,9.7.",
-    "Open the bound Giant Draenor Clam for the tradeable Pretty Draenor Pearl toy. Sell the pearl before learning it.",
-    "This is a once-per-character treasure (quest 34907), not an endlessly repeatable clam farm. Check treasure completion before travelling.",
-}
-Add(108739, "Pretty Draenor Pearl", { "fishing" }, "Toy",
-    "Tradeable toy inside the bound Giant Draenor Clam fishing treasure. One treasure per character; the clam itself cannot be auctioned.", pearlSources,
-    { Pin("pretty-pearl-cave", 525, "Frostfire Ridge", "Giant Draenor Clam cave pool", 0.218, 0.097, pearlSources, pearlTips, "fishing-treasure") }, pearlTips)
-
 local medallionSources = { ITEM_URL .. "128315", "https://www.wowhead.com/npc=95053/deathtalon", "https://www.cymre.com/2015/05/22/tanaan-jungle-rares/" }
 local medallionTips = {
     "Kill the four Hellbane rares: Deathtalon, Doomroller, Terrorfist and Vengeance. Each has a chance to drop a tradeable Medallion of the Legion.",
@@ -248,20 +238,6 @@ Add(251766, "Shadowmoon Lumber", { "miscellaneous" }, "Warband Housing Lumber",
         "Draenor trees became harvestable in the Midnight pre-patch; older advice to exchange Outland lumber predates that change.",
         "Scout wooded areas as nodes become available. No fixed node positions or guaranteed per-hour yield are asserted.",
     }, false)
-
-for _, item in ipairs((NS.FarmingItems and NS.FarmingItems.items) or {}) do
-    if item.expansion == "warlords" and item.tag == "Darkmoon Card" then
-        Add(item.itemID, item.itemName, { "inscription" }, "Darkmoon Card",
-            "Tradeable possible result of Darkmoon Card of Draenor. A craft does not guarantee this specific card; collect the eight matching cards to assemble a deck.",
-            { "https://www.wowhead.com/spell=163294" }, nil, {
-                "Each attempt consumes the recipe's War Paints and Sorcerous Water and yields a random card. War Paints bind on pickup.",
-                "Do not value every possible card as if each attempt produced it. Specific cards deliberately have no deterministic component cost.",
-                "Complete decks open directly into their matching trinket; a Darkmoon Faire hand-in is not required for these Draenor decks.",
-            })
-        Items[item.itemID].randomOutput = true
-        Items[item.itemID].sourceSpellID = 163294
-    end
-end
 
 -- Existing specialty farms are also point options; preserve their supplied
 -- sources/coordinates and keep the separately maintained ore/herb routes intact.

@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from catalog_exclusions import excluded_product
+
 
 GATHERING_MODULES = {
     "Mining": "Mining",
@@ -51,7 +53,7 @@ DROP_MODULES = {
     ],
 }
 
-DROP_CATEGORY_ORDER = ("transmogs", "openWorldInstances", "mounts", "toys", "pets", "raidPets")
+DROP_CATEGORY_ORDER = ("transmogs", "openWorldInstances", "mounts", "toys", "pets", "raidPets", "recipes", "cosmetics")
 
 # The first Farms catalog contains repeatable gold farms. Collectibles remain
 # in their dedicated static catalogs until Farms supports attempts and lockouts.
@@ -639,6 +641,8 @@ def get_location(table: LuaTable, environment: dict[str, Any], farm_key: str) ->
 
 
 def emit_drops_snapshot(categories: dict[str, list[dict[str, Any]]], source_version: str) -> str:
+    categories = {key: [row for row in rows if not excluded_product(row)]
+                  for key, rows in categories.items()}
     total = sum(len(rows) for rows in categories.values())
     lines = [
         "local _, NS = ...",
@@ -705,7 +709,8 @@ def build_drops_snapshot(source_root: Path) -> tuple[dict[str, list[dict[str, An
             flatten_assignment(path, value, environment)
 
     farms_root = source_root / "Data" / "retail" / "Results" / "Farms"
-    categories: dict[str, list[dict[str, Any]]] = {category: [] for category in DROP_MODULES}
+    # Recipes.lua and Cosmetics.lua supply curated products after this snapshot.
+    categories: dict[str, list[dict[str, Any]]] = {category: [] for category in DROP_CATEGORY_ORDER}
     missing_farm_refs: list[str] = []
     for category, sources in DROP_MODULES.items():
         for module_relative_path, farm_filename in sources:
@@ -771,12 +776,29 @@ def build_drops_snapshot(source_root: Path) -> tuple[dict[str, list[dict[str, An
                         "money": money,
                     })
 
+    # GGT's curated toy additions are retained alongside the upstream snapshot.
+    if not any(row["item_id"] == 108739 for row in categories["toys"]):
+        categories["toys"].append({
+            "record_id": "toys:PrettyDraenorPearl:1",
+            "farm_id": "PrettyDraenorPearl",
+            "farm_name": "Pretty Draenor Pearl",
+            "item_id": 108739,
+            "quantity": 1,
+            "content_id": 6,
+            "expansion": "warlords",
+            "expansion_label": "Warlords of Draenor",
+            "location_id": None,
+            "location_label": "Frostfire Ridge",
+        })
+
     if missing_farm_refs:
         print("Skipped undefined drop farm references: " + ", ".join(missing_farm_refs))
     return categories, source_version
 
 
 def emit_snapshot(farms: list[dict[str, Any]], source_version: str) -> str:
+    farms = [{**farm, "results": [row for row in farm["results"] if not excluded_product(row)]}
+             for farm in farms if not excluded_product(farm)]
     route_count = sum(len(farm["routes"]) for farm in farms)
     point_count = sum(len(route["points"]) for farm in farms for route in farm["routes"])
     lines = [
@@ -859,6 +881,7 @@ def emit_snapshot(farms: list[dict[str, Any]], source_version: str) -> str:
         "end",
         "",
         "local farmingCatalog = NS.FarmingItems and NS.FarmingItems.items",
+        "local dropsOnlyItemIDs = NS.FarmingItems and NS.FarmingItems.dropsOnlyItemIDs or {}",
         "local catalogIDs = {}",
         "for _, item in ipairs(farmingCatalog or {}) do",
         "    catalogIDs[tonumber(item and item.itemID)] = true",
@@ -895,7 +918,7 @@ def emit_snapshot(farms: list[dict[str, Any]], source_version: str) -> str:
         "",
         "for farmIndex, farm in ipairs(farms) do",
         "    local itemID = tonumber(farm.itemID)",
-        "    if itemID and #farm.routes > 0 then",
+        "    if itemID and not dropsOnlyItemIDs[itemID] and #farm.routes > 0 then",
         "        -- Route lines are only for Herb and Mining gathering circuits.",
         "        local isRoute = farm.category == \"Mining\" or farm.category == \"Herb\"",
         "        local professions = professionsByCategory[farm.category] or { \"miscellaneous\" }",
@@ -1217,6 +1240,8 @@ def build_catalog_indexes(farms: list[dict[str, Any]]) -> dict[str, dict[Any, li
 
 
 def emit_farm_catalog(farms: list[dict[str, Any]], source_version: str) -> str:
+    farms = [{**farm, "targets": [row for row in farm["targets"] if not excluded_product(row)]}
+             for farm in farms if not excluded_product(farm)]
     indexes = build_catalog_indexes(farms)
     target_count = sum(len(farm["targets"]) for farm in farms)
     unique_item_count = len(indexes["byItemID"])

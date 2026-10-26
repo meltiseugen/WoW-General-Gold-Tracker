@@ -23,7 +23,7 @@ local TWW_MINING_SPOTS = {
             .. "every ore node on the loop.",
         tips = {
             "Use Finesse-focused gathering gear when farming for volume.",
-            "Use Phial of Truesight and Darkmoon Firewater when available.",
+            "Use Phial of Truesight when available.",
             "Object pins cluster around the western Isle of Dorn slopes, so loop the ridge instead of "
                 .. "crossing the full zone.",
             "Mine Webbed deposits too because they can replace normal ore spawns and may add Weavercloth.",
@@ -271,7 +271,7 @@ local MIDNIGHT_GATHERING_TIPS = {
     "Deftness helps avoid being interrupted in dense Midnight zones.",
     "Finesse is the best default stat when the goal is more base materials per hour.",
     "Perception is most useful when the target is a rare side gather such as Dazzling Thorium or Nocturnal Lotus.",
-    "Darkmoon Firewater and the relevant Midnight tea or phial make long farming sessions smoother.",
+    "The relevant Midnight tea or phial make long farming sessions smoother.",
 }
 
 local MIDNIGHT_EVERSONG_HERB_ORE_COORDS = {

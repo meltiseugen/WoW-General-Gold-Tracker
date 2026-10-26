@@ -1,0 +1,264 @@
+{
+  "date": "2026-10-25",
+  "build": "12.1.5.70529",
+  "scope": "Only the 15 marked Northrend rendering defects, including the requested ZulDrak DrakTharon border.",
+  "background_policy": {
+    "native_continent_textures_retained": true,
+    "overview_byte_identical": true,
+    "overview_sha256": "e472a0fde1c701141a57b120340b8d78a63fefbe0f9b3a41c925bce6c153c816",
+    "full_ocean_replacement_removed": true,
+    "local_stencil_pixel_fraction_upper_bound": 0.0511383056640625,
+    "other_mask_records_unchanged": 196,
+    "note": "Native continent art remains the background at full opacity. Only reviewed marked-fragment stencils receive local restoration beneath the zone art; nothing rebuilds the surrounding ocean."
+  },
+  "independence": {
+    "inputs": "Native Blizzard CSVs and textures plus original reviewed annotations. No reference addon code, geometry, artwork or generated data are inputs.",
+    "reference_review": [
+      "OpenMap/Data/Retail/Client.lua sea=false policy",
+      "OpenMap/Map/Stitch.lua native backdrop placement and zone ownership behavior"
+    ],
+    "texture_restoration_technique": "Independently authored local context matching, minimum-cut patch joins and gradient integration; Efros and Freeman image-quilting research informed the method.",
+    "primary_research": "https://people.eecs.berkeley.edu/~efros/research/quilting.html"
+  },
+  "asset_receipt": "docs/research/map-art-masks-2026-10-24.json",
+  "asset_receipt_sha256": "c10fc7d6260e8744afe62c88ea954f0e903ee5eec5a5bd0813cb3176aeae6716",
+  "code_sha256": {
+    "UI/Maps/ArtMaskIndex.lua": "0d3d974c08d7be23af14e68d8a6fff8daff01e5bc040fb479dac866a369f1b03",
+    "UI/Maps/Geometry.lua": "b50de8628503b0c0b4cf46e3dbe24eca2cf6e6b899fcde666720822a5344669d",
+    "UI/Maps/InteractiveMap.lua": "80044c695a914e0a0f96979c5b307a2f0cfb809341f5647a91f2e5f644b4bb78",
+    "UI/Maps/MapRenderer.lua": "1e481196e5085e9809f3fa611e30682d9f465fac37a61bc3680dbe21c3e52074",
+    "UI/Maps/MapScene.lua": "68968b676fee86db50b5d2d0d07ad0d4546052d58cd84c64247a6ce9afc16a1e",
+    "UI/Maps/MapSource.lua": "0693168938db3faa4130da75496fa5e2be352a68ed606cf8534dd876e501d856",
+    "UI/Maps/OceanIndex.lua": "e6fe4086bc0f796efda5e8fece6fe18cd2494be5722030e900e477bcf2615018",
+    "tests/ui/interactive_map_spec.lua": "f386cd9b8b68e071a8db853c8e41c95467a3347a4bb698dd47142e839ea100ef",
+    "tools/generate_map_art_masks.py": "0f809bf70ea05c3884aebf32846ca6715887990e36b38c12cc5267534a8eb410",
+    "tools/map_art_ownership.py": "b150efe79f62608ea996ce524d84f64e3d83c573ab2f7175b34f555d01ede3e0",
+    "tools/map_art_labels.py": "8d97e105d6e9160cc140059b8ad2ebc07c9bbcd6c6a9b85666b67a8b430247a8",
+    "tools/map_art_backgrounds.py": "082602f567aa9f79351097482944bb18d4d096e09c58c5445a36357b181bb869",
+    "tools/map_texture_repair.py": "cdf169f6b608bef364846bbde490632ea811bab194246859cf9ac296d0dd341e",
+    "tools/map_art_adjustments.json": "a6f96264cb552dadba9bb37da3927b21e6e91fe71bfef49c6a462f37acc67856",
+    "tests/test_map_art_masks.py": "18078a93160bac53a4f32431fc34345a51c77aced9c89c52c59632d0a31f65b6",
+    "docs/interactive-maps.md": "8c4948996dfd8138e064ae1111056aadb49193006f39efde7f4662b42e08775e",
+    "tools/README.md": "b128b24bc30b1c92e24217e1d4eb40ab4f33a8e0e910e880ddc2424632a2461d"
+  },
+  "validation": {
+    "focused_lua51_harness": {
+      "passed": 113,
+      "failed": 0,
+      "native_busted": false
+    },
+    "python_map_tests": {
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    "lua51_syntax_files": 8,
+    "manifest": {
+      "manifests": 8,
+      "runtime_lua_files": 276,
+      "passed": true
+    },
+    "audits": {
+      "northrend-details-continents-audit": {
+        "scenes": 19,
+        "states": 133,
+        "maximum_regions": 2199,
+        "budget_reached": false,
+        "sha256": "2132e85953c33ec36bdd39787c5126976a3ee0bb12afb4f8b945a2247425285d"
+      },
+      "northrend-details-global-audit": {
+        "scenes": 11,
+        "states": 77,
+        "maximum_regions": 2194,
+        "budget_reached": false,
+        "sha256": "60d11d5d0aefcaaa018f8178bd9d74fa4c583e4941d8eb744c7c76e754b98041"
+      }
+    },
+    "marked_area_previews": [
+      {
+        "issue": "01-wintergrasp-spike",
+        "focusMapID": 123,
+        "focusPoint": [
+          0.98,
+          0.2
+        ],
+        "fix": "Cover the obsolete Icecrown spike with native Wintergrasp ridge art beneath the real zone paintings.",
+        "before_sha256": "eaebe0f86c7b99634740523625e9be332f28771c7368357ac63aae0eb28396e3",
+        "after_sha256": "67398bd8412980bc7a0451cde717ffb2431be420a66581ab8e54d276f349e9a3"
+      },
+      {
+        "issue": "02-coldarra-north",
+        "focusMapID": 114,
+        "focusPoint": [
+          0.24,
+          0.02
+        ],
+        "fix": "Remove the oversized coarse Nexus fragment and prevent Sholazar frame art crossing Coldarra.",
+        "before_sha256": "462dff315901df320dc9e20e398609932a29f0fde361c6f692bff5db055183b2",
+        "after_sha256": "6c94163ef34fd847ade99eb57fb30bfd6242f3aebffabfffa17ed8c98cce94c6"
+      },
+      {
+        "issue": "03-riplash-south",
+        "focusMapID": 114,
+        "focusPoint": [
+          0.52,
+          0.96
+        ],
+        "fix": "Repair only the duplicate coarse Riplash coast; remove clipped zone-art ornaments and retain the complete Riplash caption.",
+        "before_sha256": "0034601045e7607c78bef3dc16dcbc81e9138cc305914a21d2dd8c7641107ca0",
+        "after_sha256": "693bb8345fc6dbcc8bf3d1ae582553d64dab5af7b611cef461dacee5252c9966"
+      },
+      {
+        "issue": "04-kamagua-edge",
+        "focusMapID": 117,
+        "focusPoint": [
+          0.13,
+          0.7
+        ],
+        "fix": "Exclude the Howling frame portrait and repair the marked obsolete Kamagua coast fragment.",
+        "before_sha256": "0ff2dbb76178128542c8fab8109a32bd50b594d5a8763318e58ce4000e8f6229",
+        "after_sha256": "df0ccde9569e94b1b5fe14364a9d369bdc8fc5c9c7cddf434f50a43696b301bf"
+      },
+      {
+        "issue": "05-explorers-ship",
+        "focusMapID": 117,
+        "focusPoint": [
+          0.89,
+          0.68
+        ],
+        "fix": "Remove the clipped decorative ship beyond Explorers League Outpost.",
+        "before_sha256": "6c3034c49e1e7796f416c2b1b2133f4d243d6f5e63b50eeb0030c9a0d348d112",
+        "after_sha256": "03f9dd596b8366362c0e86a710385ab6d8a38f889ff15e1a594b405c76bc1459"
+      },
+      {
+        "issue": "06-vengeance-plane",
+        "focusMapID": 117,
+        "focusPoint": [
+          0.8,
+          0.24
+        ],
+        "fix": "Remove automatic label detection that wrongly redrew a metallic frame ornament as a white plane.",
+        "before_sha256": "ebcd930d5b636869d94340a4b89514616cea90d6642aef7be7d30019e358bbb8",
+        "after_sha256": "b0a9ef5e5d33a76ce379b85cf531274b543621b78072b6a0329e0c28b2a349d5"
+      },
+      {
+        "issue": "07-howling-north-band",
+        "focusMapID": 117,
+        "focusPoint": [
+          0.5,
+          0.13
+        ],
+        "fix": "Keep the complete Howling mountain band rather than splitting its art at a horizontal territory seam.",
+        "before_sha256": "9096736804b9397037dbf5000cd7a89b820d12d60e959043ecf711f1d3efcaf1",
+        "after_sha256": "1eac127ff615ef3fdfa3c28031a75326a4565f2d2864a2d51fe82f468c496f3f"
+      },
+      {
+        "issue": "08-venture-sea",
+        "focusMapID": 116,
+        "focusPoint": [
+          0.28,
+          0.94
+        ],
+        "fix": "Restore the marked obsolete coastline and coarse islands at Venture Bay using local native texture context.",
+        "before_sha256": "6576bb1b7e3fabf9f2483100c4f449efc313bb8f9ed0a878515982e063255b6b",
+        "after_sha256": "10d10f9ffafc9abfef5a028984f14653832f9238fc7198ceaff8dafcc2326604"
+      },
+      {
+        "issue": "09-landing-channel",
+        "focusMapID": 170,
+        "focusPoint": [
+          0.5,
+          0.55
+        ],
+        "fix": "Keep the Hrothgar island while removing marked coarse debris and the old coast fragment from its channel.",
+        "before_sha256": "acb39fd45817880214c888e8e6a6da323440e4a86cd002a9e9d2ec805759c58f",
+        "after_sha256": "7e295502bb50246032094f2fdf4357ff1f4ccd0d17a924ae7b8027f11ae1f6d1"
+      },
+      {
+        "issue": "10-onslaught-sea",
+        "focusMapID": 118,
+        "focusPoint": [
+          0.07,
+          0.45
+        ],
+        "fix": "Repair the marked coarse Onslaught coastline; retain the entire Onslaught Harbor caption.",
+        "before_sha256": "daf3565cc5114831bf13fc0bfc33bbd7685642c4f6f9ae1bc2ed92d8b5b5de35",
+        "after_sha256": "66d5f0f9094918f3ea6fac21c0766fe741e6fdfd01677a56c278258841dd3a14"
+      },
+      {
+        "issue": "11-dragonblight-south",
+        "focusMapID": 115,
+        "focusPoint": [
+          0.47,
+          0.92
+        ],
+        "fix": "Repair the obsolete coarse Dragonblight southern shoreline beneath the detailed coast.",
+        "before_sha256": "91169dab3ddcce0c6482d1aa195fecc7d56de9695974fb90e80ab4d32a0a0b54",
+        "after_sha256": "164b850c47aff60c9f4ac38e69dbd0a3e8517ff78d664ad1e02da47e0549fd33"
+      },
+      {
+        "issue": "12-silverbrook-label",
+        "focusMapID": 116,
+        "focusPoint": [
+          0.29,
+          0.3
+        ],
+        "fix": "Retain the whole Silverbrook caption above neighboring paintings.",
+        "before_sha256": "1fbb66dc823b3c78aa884bdcbbb1cfc5ef5ccef56cf388e5bc2b6f4cad170ad1",
+        "after_sha256": "68d4cfd7bb98412eddb6657238cabaf870a01851f41ce41d283dd985a387d4df"
+      },
+      {
+        "issue": "13-draktharon-structure",
+        "focusMapID": 121,
+        "focusPoint": [
+          0.28,
+          0.94
+        ],
+        "fix": "Use the requested ZulDrak walls and ground for the whole DrakTharon model, keep one name above it, and cover its duplicate caption throughout the terrain fade.",
+        "before_sha256": "2ebe765904a705abd27ee2033b5293be15f7e55dc9c6317c63a6c8f7cffc08e0",
+        "after_sha256": "478c3ba1a2e816344e13cfdb37de47c2d6631e55005519448a0d90b4fcc5937e"
+      },
+      {
+        "issue": "14-apothecary-label",
+        "focusMapID": 117,
+        "focusPoint": [
+          0.25,
+          0.2
+        ],
+        "fix": "Retain the complete Apothecary Camp label and the camp painting around it.",
+        "before_sha256": "26fb12c7a044e1ae94b0ac1e2f9b37f2a9734ff7712fef22bd91fd7db5609528",
+        "after_sha256": "33da4473ad9cc8c485df3d027a4657bbb92327ca9e2179359c6cb7c0bcf2a859"
+      },
+      {
+        "issue": "15-bloodmoon-coast",
+        "focusMapID": 116,
+        "focusPoint": [
+          0.87,
+          0.2
+        ],
+        "fix": "Keep Grizzly Hills ThorModan and Bloodmoon painting together and repair the marked coarse outer coast.",
+        "before_sha256": "81953c2b5290b1039bcb4e3f59e769be0d07b97313c2f18ac673560ed21073bf",
+        "after_sha256": "aa744b1e8816577d2b98dda9b70725c174445f0914458d3cdbe302deeb654d24"
+      }
+    ],
+    "painting_inspection_method": "Same camera and zoom 5 before/after. A saved copy of the current renderer hides terrain only for seam inspection; production terrain is checked separately.",
+    "painting_renderer_sha256": "c12e034f44d7869de72314fd96941562e7d18c3e1903bad07823e0115b48985a",
+    "production_previews": {
+      "zoom-01.00.png": "e472a0fde1c701141a57b120340b8d78a63fefbe0f9b3a41c925bce6c153c816",
+      "zoom-02.00.png": "63d9c501a8baf672e79945b00c47dcf2cb8f9f4ecb32031e69567d149d12ddf1",
+      "zoom-03.00.png": "80f7fc5b91d32f846890ce721690f2c6395016c82a41e9b74c1a1d670cbf01f1",
+      "zoom-04.00.png": "35ee32e82f9ee56e138ba24e23378c345b76feb9ba8e20d19b5e6f01e7c3ea15",
+      "zoom-05.00.png": "17f905d58678079b781a6e406089ed8a0e8f5e52d4c010030248e63be9fb54b0",
+      "zoom-08.00.png": "54ba8e2ff3dda7ef9f46006cbb66ca23e85667470a5af9a6a8aa23ea87732754"
+    },
+    "production_report_sha256": "936561fe0a1116e22dab3a44d68c41c850c1245bd99c466e1981c87b6db8c5ef",
+    "gallery": ".local/interactive-map-preview/northrend-detail-after/review.html",
+    "gallery_sha256": "5143061e3ebd3633d6f0cd09221c9735d94bebd19d1a358a62a3594ab77664ec"
+  },
+  "limitations": [
+    "Offline Lua fixtures and Pillow rasters do not verify native WoW GPU blending, active phases, resize behavior or runtime performance.",
+    "Full native WoW restart and in-game inspection of all 15 marked spots and map interactions remain pending.",
+    "Local art annotations and restoration assets are build-specific."
+  ],
+  "copyright": "Map art is \u00a9 Blizzard Entertainment"
+}

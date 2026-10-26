@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -251,6 +254,7 @@ local function BuildHistoryText()
         "Click a column header to sort by that column only.",
         "Shift-click more headers to add secondary and tertiary sorting.",
         "Numbers beside active headers show their sorting priority; Shift-click an active header to reverse its direction.",
+        "Shift-right-click a header to remove that column from the sort order. Other sorting levels stay active.",
     })
 
     AddSection(lines, "Diagnosis", {
@@ -266,6 +270,18 @@ local function BuildValueSourcesText(addon)
     local lines = {}
     lines[#lines + 1] = "VALUE SOURCES"
     lines[#lines + 1] = ""
+
+    AddSection(lines, "Realm setup: compare prices across realms", {
+        "1. In WoW's AddOns list, enable TradeSkillMaster, TradeSkillMaster_AppHelper, and General Gold Tracker - TSM Realm Prices.",
+        "2. Open the TSM Desktop Application. In Settings > General, add the Retail realms you want to compare in your region.",
+        "3. Restart the TSM Desktop Application after adding realms and wait for their price data to download.",
+        "4. Return to WoW and type /reload, then open an armour, weapon, mount, pet, or toy item's details and select Realm prices.",
+        "GGT automatically lists the realms downloaded by TSM. You do not need to select them again in GGT.",
+        "Downloads made while you are playing appear after a reload. If a newly added realm is still missing, completely restart WoW after the download finishes.",
+        "These are downloaded price snapshots, not live auction searches. Hover a value to see its snapshot time; -- means that price is unavailable.",
+        "Region sell rate is TSM's sale-rate average for your region, shared across the realm rows. TSM does not provide a separate realm sale rate in these downloads.",
+        "The optional TSM Realm Prices module can be disabled in AddOns. Reload afterward to release GGT's retained realm data; the rest of GGT remains usable.",
+    })
 
     AddSection(lines, "How values work", {
         "General Gold Tracker asks TradeSkillMaster for the selected custom price source.",
@@ -371,7 +387,7 @@ function GoldTracker:CreateHelpWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerHelpFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerHelpFrame", UIParent)
     frame:SetSize(660, 520)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame:SetFrameStrata("DIALOG")
@@ -533,4 +549,10 @@ function GoldTracker:ToggleHelpWindow(tabKey)
     else
         self:OpenHelpWindow(tabKey)
     end
+end
+
+function GoldTracker:OpenTSMRealmSetupHelp()
+    self:OpenHelpWindow("values")
+    -- Always reveal the setup steps, even if this Help page was scrolled before.
+    self:SelectHelpTab("values")
 end

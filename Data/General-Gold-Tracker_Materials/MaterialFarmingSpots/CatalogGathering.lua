@@ -15898,25 +15898,6 @@ local farms = {
         },
     },
     {
-        recordID = "Fishing:DarkmoonDaggermaw:226",
-        farmID = "DarkmoonDaggermaw",
-        category = "Fishing",
-        activityID = 4,
-        contentID = 4,
-        expansion = "cataclysm",
-        name = "Darkmoon Daggermaw",
-        itemID = 124669,
-        itemIDInferred = false,
-        recordedSeconds = 3600,
-        durationInferred = true,
-        rawCopper = nil,
-        results = {
-            { itemID = 124669, quantity = 316 },
-        },
-        routes = {
-        },
-    },
-    {
         recordID = "Fishing:PockedBonefish:227",
         farmID = "PockedBonefish",
         category = "Fishing",
@@ -17642,7 +17623,6 @@ local farms = {
             { itemID = 220135, quantity = 21 },
             { itemID = 220143, quantity = 4 },
             { itemID = 225768, quantity = 1 },
-            { itemID = 222657, quantity = 1 },
             { itemID = 211474, quantity = 8 },
         },
         routes = {
@@ -19452,19 +19432,11 @@ local farms = {
             { itemID = 237017, quantity = 20 },
             { itemID = 237018, quantity = 33 },
             { itemID = 236965, quantity = 70 },
-            { itemID = 245845, quantity = 1 },
-            { itemID = 245859, quantity = 1 },
             { itemID = 265800, quantity = 2 },
-            { itemID = 245833, quantity = 1 },
             { itemID = 237015, quantity = 13 },
             { itemID = 258922, quantity = 1 },
-            { itemID = 245843, quantity = 2 },
-            { itemID = 245852, quantity = 1 },
             { itemID = 258951, quantity = 1 },
-            { itemID = 245844, quantity = 1 },
             { itemID = 258933, quantity = 1 },
-            { itemID = 245849, quantity = 1 },
-            { itemID = 245840, quantity = 1 },
             { itemID = 258916, quantity = 1 },
         },
         routes = {
@@ -22858,7 +22830,7 @@ end
 NS.CatalogGatheringData = {
     dataVersion = 1,
     sourceVersion = "v4.3.1",
-    farmCount = 415,
+    farmCount = 414,
     routeCount = 317,
     pointCount = 10872,
     farms = farms,
@@ -22871,6 +22843,7 @@ if type(materialItems) ~= "table" then
 end
 
 local farmingCatalog = NS.FarmingItems and NS.FarmingItems.items
+local dropsOnlyItemIDs = NS.FarmingItems and NS.FarmingItems.dropsOnlyItemIDs or {}
 local catalogIDs = {}
 for _, item in ipairs(farmingCatalog or {}) do
     catalogIDs[tonumber(item and item.itemID)] = true
@@ -22915,7 +22888,7 @@ end
 
 for farmIndex, farm in ipairs(farms) do
     local itemID = tonumber(farm.itemID)
-    if itemID and #farm.routes > 0 then
+    if itemID and not dropsOnlyItemIDs[itemID] and #farm.routes > 0 then
         -- Map route lines are reserved for gathering circuits.  Catalog also
         -- supplies fishing, skinning, cloth, miscellaneous, and mixed-farm
         -- point sets; keep those as pins without joining them into a route.

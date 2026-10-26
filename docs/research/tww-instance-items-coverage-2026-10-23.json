@@ -1,0 +1,55 @@
+{
+  "liveGameTested": false,
+  "filterCombinations": 236,
+  "lost": [],
+  "added": [
+    {
+      "itemName": "Ringing Deeps Ingot",
+      "itemID": 221754,
+      "expansion": "warWithin"
+    },
+    {
+      "itemName": "Gloomfathom Hide",
+      "itemID": 221757,
+      "expansion": "warWithin"
+    },
+    {
+      "itemName": "Vial of Kaheti Oils",
+      "itemID": 221756,
+      "expansion": "warWithin"
+    },
+    {
+      "itemName": "Petrified Root",
+      "itemID": 251285,
+      "expansion": "midnight"
+    },
+    {
+      "itemName": "Profaned Tinderbox",
+      "itemID": 221758,
+      "expansion": "warWithin"
+    },
+    {
+      "itemName": "Viridian Charmcap",
+      "itemID": 221763,
+      "expansion": "warWithin"
+    }
+  ],
+  "beforeCount": 77,
+  "afterCount": 83,
+  "scope": "Shared Instance items classification across all expansions and profession browsing options; TWW pet migration verified separately",
+  "researchedAt": "2026-10-23",
+  "retainedPreviousGroupItems": 77,
+  "twwDelveReagentsAdded": 5,
+  "otherDelveReagentsAdded": 1,
+  "normalExpandedRowsShared": true,
+  "petMoved": {
+    "itemID": 223487,
+    "speciesID": 4482,
+    "name": "Writhing Transmutagen",
+    "destination": "Drops > Pets",
+    "materialsRecordsRemoved": true,
+    "cageable": true,
+    "saleMethod": "item-or-cage",
+    "fixedPinInvented": false
+  }
+}

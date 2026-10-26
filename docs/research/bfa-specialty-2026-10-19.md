@@ -1,5 +1,7 @@
 # Battle for Azeroth specialty discovery and composed crafting
 
+Catalog target exclusions were refreshed on 2026-10-23; removed products are pruned from this archive. Counts below describe the original dated research run. See the [current Materials cleanup and map audit](bfa-missing-map-audit-2026-10-23.md).
+
 Researched **2026-10-19** for Retail. This pass adds **682 catalog entries**: **674 saleable products** and **eight required bound support inputs**. The BfA catalog now contains **754 entries**. It records **625 composed recipes**: 622 newly cataloged outputs plus compositions for the three existing bound inputs Expulsom, Hydrocore and Sanguicell. The additions also include 32 individually identified random Darkmoon cards and 28 specialty/support records. There are **22 current housing decor recipes** among the compositions.
 
 Every new catalog row, research record and source pin has `isRoute = false`. Existing non-ore/herb BfA entries are also explicitly non-route. The two BfA herb/ore modules, their supplied imports and their catalog flags are unchanged from the start of this pass. No raw ore, herb, vendor-only product or vendor-only ingredient row was added. Existing herbs and ores remain legitimate ingredients of crafted products.
@@ -39,7 +41,6 @@ Every new catalog row, research record and source pin has `isRoute = false`. Exi
 | [Zandalari Idol](https://www.wowhead.com/item=154989) / [Etched Drust Bone](https://www.wowhead.com/item=154990) | Auctionable archaeology keystones from matching-culture surveys. Dig sites rotate, so no permanent node geometry is invented. Bound fragments and artifact rewards are not counted as sale products. |
 | Pigments | Ultramarine, Crimson, Viridescent and Maroon Pigment are processed sale products. Milling has random results; no deterministic herb-to-pigment composition or additional herb farm is introduced. Their inks are composed crafts. |
 | [Five tradeable mount drops](https://www.wowhead.com/guide/mount-collecting-battle-for-azeroth) | Goldenmane's Reins, Chewed-On Reins of the Terrified Pack Mule, Reins of a Tamed Bloodfeaster, Captured Dune Scavenger and Great Sea Ray. Documented camp/water markers are scouting anchors. The unused item is saleable; learning it consumes that sale product. No guaranteed kill count or hourly mount yield is recorded. |
-| [Battle-Scarred Augment Rune](https://www.wowhead.com/item=160053) | Saleable mission/reward product. War Campaign follower missions vary and are timed, not outdoor repeatable farms. Current level restrictions matter. No historical sale price is imported. |
 
 ## Housing and bound support
 

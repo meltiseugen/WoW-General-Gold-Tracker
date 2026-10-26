@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -919,6 +922,9 @@ local function EnsureInstanceTransmogRowPriceData(addon, frame, row)
     row.valueSourceWasFallback = prices.valueSourceWasFallback == true
     row.transmogRequestedValueSourceID = requestedValueSourceID
     row.transmogPricesLoaded = true
+    if type(addon.RecordDisplayedItemMarketSnapshots) == "function" then
+        addon:RecordDisplayedItemMarketSnapshots(row)
+    end
 end
 
 local function EnsureInstanceTransmogRowData(addon, frame, row)
@@ -1878,12 +1884,12 @@ end
 function GoldTracker:OpenInstanceFarmingMap(row)
     local mapOptions = self:BuildInstanceFarmingMapOptions(row)
     if #mapOptions == 0 then
-        self:Print("No instance map details are available for this row yet.")
+        self:Print("No instance map details are available for this row yet.", "warnings")
         return false
     end
 
     if type(self.OpenStandaloneMapWindow) ~= "function" then
-        self:Print("The map window is not loaded yet.")
+        self:Print("The map window is not loaded yet.", "warnings")
         return false
     end
 
@@ -2281,6 +2287,9 @@ function GoldTracker:RefreshInstanceFarmingWindowControls()
         return
     end
     local scanning = frame.scanState ~= nil
+    if frame.progressBackdrop then
+        frame.progressBackdrop:SetShown(scanning and frame.progressComplete ~= true)
+    end
     local source = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()
     UIDropDownMenu_SetSelectedValue(frame.valueSourceDropdown, source.id)
     UIDropDownMenu_SetText(frame.valueSourceDropdown, source.label)
@@ -2924,7 +2933,7 @@ function GoldTracker:FinishInstanceFarmingScan()
     ))
     self:RefreshInstanceFarmingWindowControls()
     self:RefreshInstanceFarmingWindow(true)
-    self:Print(string.format("Instance farming scan complete: %d items found.", #frame.lastResults))
+    self:Print(string.format("Instance farming scan complete: %d items found.", #frame.lastResults), "scans")
 end
 
 function GoldTracker:CancelInstanceFarmingScan()
@@ -3107,7 +3116,7 @@ function GoldTracker:RescanCurrentInstanceFarmingSelection()
     self:StartInstanceFarmingScan()
 end
 
-function GoldTracker:ToggleInstanceFarmingSort(sortKey)
+function GoldTracker:ToggleInstanceFarmingSort(sortKey, mouseButton)
     local frame = self.instanceFarmingFrame
     if not frame then
         return
@@ -3120,6 +3129,7 @@ function GoldTracker:ToggleInstanceFarmingSort(sortKey)
         and normalizedSortKey ~= "tracked"
     self:ToggleTableSortCriterion(frame, normalizedSortKey, defaultAscending, {
         validKeys = SORT_KEYS,
+        mouseButton = mouseButton,
     })
     if frame.instanceFarmingViewID ~= "transmogs" or frame.transmogFlatList ~= true then
         EnsureInstanceLocationGroupingSort(self, frame)
@@ -3759,6 +3769,10 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
     end
     frame.displayRows = displayRows
 
+    if type(self.RecordDisplayedItemMarketSnapshots) == "function" then
+        self:RecordDisplayedItemMarketSnapshots(itemRows)
+    end
+
     local scrollFrame = frame.scrollFrame
     local visibleRows = GetInstanceFarmingVisibleRows(frame)
     if scrollToTop then
@@ -4050,8 +4064,7 @@ function GoldTracker:CreateInstanceTransmogExpandedWindow()
     local frame = CreateFrame(
         "Frame",
         "GoldTrackerInstanceTransmogExpandedFrame",
-        UIParent,
-        "BasicFrameTemplateWithInset"
+        UIParent
     )
     frame:SetSize(TRANSMOG_EXPANDED_WINDOW_WIDTH, TRANSMOG_EXPANDED_WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
@@ -4149,7 +4162,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
         return
     end
 
-    local frame = CreateFrame("Frame", "GoldTrackerInstanceFarmingFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerInstanceFarmingFrame", UIParent)
     frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("DIALOG")
@@ -4479,6 +4492,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
     progressBackdrop:SetPoint("TOPRIGHT", helpText, "BOTTOMRIGHT", 0, -8)
     progressBackdrop:SetHeight(14)
     frame.progressBackdrop = progressBackdrop
+    progressBackdrop:Hide()
     local progressBar = CreateFrame("StatusBar", nil, progressBackdrop)
     progressBar:SetAllPoints(progressBackdrop)
     progressBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -4646,9 +4660,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
         averageValue = frame.averageHeaderButton,
     }
     for sortKey, button in pairs(frame.sortHeaders) do
-        button:SetScript("OnClick", function()
-            self:ToggleInstanceFarmingSort(sortKey)
-        end)
+        self:BindTableSortHeaderClick(button, self.ToggleInstanceFarmingSort, sortKey)
     end
 
     local scrollFrame = CreateFrame("ScrollFrame", "GoldTrackerInstanceFarmingResultsScrollFrame", listPanel, "FauxScrollFrameTemplate")
@@ -4724,7 +4736,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
             return
         end
         if frame.scanState then
-            self:Print("Instance farming scan continues in the background. Reopen the window to watch progress, or use Stop before closing next time.")
+            self:Print("Instance farming scan continues in the background. Reopen the window to watch progress, or use Stop before closing next time.", "scans")
         end
     end)
 
