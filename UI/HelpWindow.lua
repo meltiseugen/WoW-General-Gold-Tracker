@@ -1,558 +1,295 @@
 local _, NS = ...
+local GoldTracker = NS.GoldTracker
+local Theme = NS.JanisTheme
 local function CreateFrame(...)
     return (NS.CreateThemedFrame or _G.CreateFrame)(...)
 end
-local GoldTracker = NS.GoldTracker
-local Theme = NS.JanisTheme
 
-local HELP_MIN_WIDTH = 560
-local HELP_MIN_HEIGHT = 390
-local HELP_MAX_WIDTH = 980
-local HELP_MAX_HEIGHT = 820
+local MIN_WIDTH, MIN_HEIGHT = 760, 480
+local MAX_WIDTH, MAX_HEIGHT = 1320, 960
+local SIDEBAR_WIDTH = 202
 
-local function CreateHelpPanel(parent, bg, border)
-    return Theme:CreatePanel(parent, bg, border)
+local function Text(parent, font, color)
+    local text = parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlight")
+    text:SetJustifyH("LEFT")
+    text:SetWordWrap(true)
+    text:SetTextColor(unpack(Theme:GetColor(color or "text")))
+    if text.SetSpacing then text:SetSpacing(2) end
+    return text
 end
 
-local function CreateHelpButton(parent, width, height, text, paletteKey)
-    return Theme:CreateButton(parent, width, height, text, paletteKey)
+local function Scroll(parent)
+    local scroll = CreateFrame("ScrollFrame", nil, parent, "UIPanelScrollFrameTemplate")
+    scroll:EnableMouseWheel(true)
+    scroll:SetScript("OnMouseWheel", function(self, delta)
+        self:SetVerticalScroll(math.max(0, math.min(self:GetVerticalScrollRange(), self:GetVerticalScroll() - delta * 44)))
+    end)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(1, 1)
+    scroll:SetScrollChild(content)
+    return scroll, content
 end
 
-local VALUE_SOURCE_HELP = {
-    TSM_DBMARKET = {
-        meaning = "TSM's market value for the item on your realm/faction economy.",
-        bestFor = "General local market estimates that are less jumpy than the cheapest current auction.",
-        watchFor = "Can lag behind sudden price changes.",
-    },
-    TSM_DBRECENT = {
-        meaning = "TSM's more recent local market value.",
-        bestFor = "Reacting faster to current market movement.",
-        watchFor = "Usually more volatile than Market Value or historical sources.",
-    },
-    TSM_DBREGIONMARKETAVG = {
-        meaning = "TSM's region-wide market average.",
-        bestFor = "Rare or thinly traded items where your realm has few auctions.",
-        watchFor = "May not match what buyers are actually paying on your realm.",
-    },
-    TSM_DBMINBUYOUT = {
-        meaning = "TSM's current minimum buyout.",
-        bestFor = "Mirroring the cheapest visible auction. This is the addon's default primary source.",
-        watchFor = "Can swing sharply, can be manipulated by one very low auction, and can be missing when the item is not posted.",
-    },
-    TSM_DBHISTORICAL = {
-        meaning = "TSM's historical local price.",
-        bestFor = "Stable realm-based estimates that smooth short-term spikes.",
-        watchFor = "Reacts slowly when an item's value genuinely changes.",
-    },
-    TSM_DBREGIONHISTORICAL = {
-        meaning = "TSM's region-wide historical price.",
-        bestFor = "Stable fallback pricing for slow-moving or rare items.",
-        watchFor = "Less specific to your realm's actual auction house.",
-    },
-    TSM_DBREGIONSALEAVG = {
-        meaning = "TSM's region-wide average sale price.",
-        bestFor = "Sale-realistic pricing when sold-price history matters more than listing price.",
-        watchFor = "May be unavailable or stale for items with low sale volume.",
-    },
-    TSM_AUCTIONINGOPMIN = {
-        meaning = "The minimum price from the item's assigned TSM Auctioning operation.",
-        bestFor = "Respecting the hard floor from your own TSM posting rules.",
-        watchFor = "Depends on the item having a matching TSM group and Auctioning operation.",
-    },
-    TSM_AUCTIONINGOPNORMAL = {
-        meaning = "The normal price from the item's assigned TSM Auctioning operation.",
-        bestFor = "Using your own TSM pricing rules as the main estimate. This is the addon's default fallback source.",
-        watchFor = "Only works well when your TSM groups and operations are configured.",
-    },
-    TSM_AUCTIONINGOPMAX = {
-        meaning = "The maximum price from the item's assigned TSM Auctioning operation.",
-        bestFor = "Using the optimistic ceiling from your TSM posting rules.",
-        watchFor = "Can overstate practical session value if your max price is intentionally aggressive.",
-    },
-    TSM_CRAFTING = {
-        meaning = "TSM's crafting cost/value for the item.",
-        bestFor = "Crafted items where material cost is more useful than auction price.",
-        watchFor = "Is not a buyer-facing sale price and depends on usable TSM crafting/material data.",
-    },
-}
-
-local HELP_TABS = {
-    { key = "overview", label = "Overview" },
-    { key = "session", label = "Session" },
-    { key = "loot", label = "Loot" },
-    { key = "history", label = "History" },
-    { key = "values", label = "Value Sources" },
-}
-
-local HELP_TAB_BY_KEY = {}
-for _, tab in ipairs(HELP_TABS) do
-    HELP_TAB_BY_KEY[tab.key] = tab
-end
-
-local function AddLines(lines, ...)
-    for index = 1, select("#", ...) do
-        lines[#lines + 1] = select(index, ...)
-    end
-end
-
-local function AddSection(lines, title, bullets)
-    lines[#lines + 1] = title
-    for _, bullet in ipairs(bullets or {}) do
-        lines[#lines + 1] = "- " .. bullet
-    end
-    lines[#lines + 1] = ""
-end
-
-local function BuildOverviewText(addon)
-    local currentSource = addon:GetCurrentValueSource()
-    local fallbackSource = addon:GetFallbackValueSource()
-    local currentSourceLabel = currentSource and currentSource.label or "Unknown"
-    local fallbackSourceLabel = fallbackSource and fallbackSource.label or "None"
-
-    local lines = {}
-    lines[#lines + 1] = "GENERAL GOLD TRACKER"
-    lines[#lines + 1] = ""
-
-    AddSection(lines, "What it tracks", {
-        "Raw gold looted during the current session.",
-        "Auction-house value for tracked item loot.",
-        "Vendor value for tracked items when Blizzard provides one.",
-        "Highlight count for loot entries that meet your configured threshold.",
-    })
-
-    AddSection(lines, "Main totals", {
-        "Current Session: raw looted gold plus auction-house item value.",
-        "Raw Total: direct money loot plus vendor value.",
-        "AH Value: item value returned by your selected TSM source.",
-        "Session / h, AH / h, and Raw / h: totals divided by elapsed session time.",
-    })
-
-    AddSection(lines, "Current configuration", {
-        "Primary value source: " .. currentSourceLabel,
-        "Fallback value source: " .. fallbackSourceLabel,
-        "Options controls value sources, highlight threshold, item quality filtering, alerts, history behavior, and experimental tools.",
-    })
-
-    return table.concat(lines, "\n")
-end
-
-local function BuildSessionText()
-    local lines = {}
-    lines[#lines + 1] = "SESSION WINDOW"
-    lines[#lines + 1] = ""
-
-    AddSection(lines, "Session controls", {
-        "Start Session begins tracking.",
-        "Stop Session ends the active session without clearing saved history.",
-        "X hides the window and does not stop the active session.",
-        "Options can auto-start sessions on first tracked loot, world entry, reload, or zone changes.",
-    })
-
-    AddSection(lines, "Header buttons", {
-        "- minimizes the window into the compact session view.",
-        "_ reduces the window to the tiny total-only view.",
-        "<3 restores the normal session window from compact or tiny mode.",
-        "X hides the window.",
-    })
-
-    AddSection(lines, "Utility buttons", {
-        "Options: addon settings.",
-        "Bags: auctionable inventory view.",
-        "Rares: rare-drop farming view.",
-        "Instances: dungeon and raid BoE farming view.",
-        "Mats: farmable materials and consumable inputs by expansion and profession.",
-        "History: saved session history when history is enabled.",
-        "Diag: runtime diagnostics when diagnostics are enabled.",
-        "?: this guide.",
-    })
-
-    AddSection(lines, "Window modes", {
-        "Maximized: full session summary plus loot stream controls.",
-        "Minimized: Session Total, Raw Total, Session / h, and the latest highlighted item when one exists.",
-        "Tiny: current session total plus the window controls only.",
-        "/gt: opens the tracker in the mode selected in Options.",
-    })
-
-    return table.concat(lines, "\n")
-end
-
-local function BuildLootText()
-    local lines = {}
-    lines[#lines + 1] = "LOOT, HIGHLIGHTS, AND SOURCES"
-    lines[#lines + 1] = ""
-
-    AddSection(lines, "Loot Stream", {
-        "Lists recent tracked item and money events.",
-        "Shows time, item, value, and source information.",
-        "Can be collapsed when you only need the summary panel.",
-        "Filtered or vendor-only items can still appear with reason labels such as Soulbound, Below min quality, or Vendor only.",
-    })
-
-    AddSection(lines, "Highlights", {
-        "A highlighted item is a loot entry whose total value meets or exceeds your configured threshold.",
-        "The highlight counter is the number of highlighted loot entries in the current session.",
-        "The Last Highlight area shows the most recent highlighted item when the window has room for it.",
-        "Compact mode shows the item and stack value on one row, with per-unit value below.",
-    })
-
-    AddSection(lines, "Loot source tracking", {
-        "Attempts to attach mobs, units, zones, or instance context to loot.",
-        "Feeds the loot stream, history details, and source-aware saved sessions.",
-        "Can be adjusted from Options when you need a simpler tracking setup.",
-    })
-
-    AddSection(lines, "Item filtering", {
-        "Quality filtering can prevent lower-quality items from being valued as auctionable loot.",
-        "Raw gold is still tracked separately even when item filtering excludes an item.",
-    })
-
-    return table.concat(lines, "\n")
-end
-
-local function BuildHistoryText()
-    local lines = {}
-    lines[#lines + 1] = "HISTORY, BAGS, AND DIAGNOSTICS"
-    lines[#lines + 1] = ""
-
-    AddSection(lines, "Session History", {
-        "Stores completed sessions for later review.",
-        "Shows totals, item breakdowns, loot sources, value sources, and saved diagnosis snapshots.",
-        "Can resume a saved session back into the active tracker.",
-    })
-
-    AddSection(lines, "Resume Session", {
-        "Restores saved totals into the active tracker.",
-        "Keeps reconstructed highlighted loot available for the main and compact windows.",
-        "Does not require the original session to still be running.",
-    })
-
-    AddSection(lines, "Auctionable Inventory", {
-        "Scans bags for items the addon can value through TSM.",
-        "Helps compare possible posting value without needing to loot the item during a session.",
-    })
-
-    AddSection(lines, "Rare Farming", {
-        "Scans RareScanner rare-drop data on demand.",
-        "Shows rare drops above your chosen TSM value threshold.",
-        "Uses a generated snapshot of RareScanner's curated loot table plus runtime RareScanner saved loot when available.",
-    })
-
-    AddSection(lines, "Dungeon & Raid Farming", {
-        "Scans bundled instance and boss loot data on demand.",
-        "Shows likely auctionable drops above your chosen TSM value threshold.",
-        "Supports saved scans, favorites, background scanning, and item price history details.",
-    })
-
-    AddSection(lines, "Materials Farming", {
-        "Shows a curated list of profession materials and common consumable inputs.",
-        "Filters by expansion, profession, and TSM value source.",
-        "Uses bundled item IDs for the material taxonomy and asks TSM for the selected value.",
-        "Add a saved custom material with /gt addmat <itemID> <expansionID> <professionID> [tag].",
-    })
-
-    AddSection(lines, "Table sorting", {
-        "Click a column header to sort by that column only.",
-        "Shift-click more headers to add secondary and tertiary sorting.",
-        "Numbers beside active headers show their sorting priority; Shift-click an active header to reverse its direction.",
-        "Shift-right-click a header to remove that column from the sort order. Other sorting levels stay active.",
-    })
-
-    AddSection(lines, "Diagnosis", {
-        "Experimental troubleshooting view.",
-        "Shows event counters, tracking pipeline counters, and timing data.",
-        "Enable it in Options > Experimental when you need to inspect loot event processing.",
-    })
-
-    return table.concat(lines, "\n")
-end
-
-local function BuildValueSourcesText(addon)
-    local lines = {}
-    lines[#lines + 1] = "VALUE SOURCES"
-    lines[#lines + 1] = ""
-
-    AddSection(lines, "Realm setup: compare prices across realms", {
-        "1. In WoW's AddOns list, enable TradeSkillMaster, TradeSkillMaster_AppHelper, and General Gold Tracker - TSM Realm Prices.",
-        "2. Open the TSM Desktop Application. In Settings > General, add the Retail realms you want to compare in your region.",
-        "3. Restart the TSM Desktop Application after adding realms and wait for their price data to download.",
-        "4. Return to WoW and type /reload, then open an armour, weapon, mount, pet, or toy item's details and select Realm prices.",
-        "GGT automatically lists the realms downloaded by TSM. You do not need to select them again in GGT.",
-        "Downloads made while you are playing appear after a reload. If a newly added realm is still missing, completely restart WoW after the download finishes.",
-        "These are downloaded price snapshots, not live auction searches. Hover a value to see its snapshot time; -- means that price is unavailable.",
-        "Region sell rate is TSM's sale-rate average for your region, shared across the realm rows. TSM does not provide a separate realm sale rate in these downloads.",
-        "The optional TSM Realm Prices module can be disabled in AddOns. Reload afterward to release GGT's retained realm data; the rest of GGT remains usable.",
-    })
-
-    AddSection(lines, "How values work", {
-        "General Gold Tracker asks TradeSkillMaster for the selected custom price source.",
-        "The addon stores the copper value TSM returns for each item.",
-        "The addon does not calculate TSM market data itself.",
-    })
-
-    AddSection(lines, "Primary and fallback sources", {
-        "Primary source is used first.",
-        "Fallback source is used when the primary source returns no usable value.",
-        "Fallback can be disabled in Options.",
-    })
-
-    for _, source in ipairs(addon.VALUE_SOURCES or {}) do
-        local help = VALUE_SOURCE_HELP[source.id] or {}
-        lines[#lines + 1] = source.label
-        lines[#lines + 1] = "- Meaning: " .. (help.meaning or "TSM value source.")
-        lines[#lines + 1] = "- Best for: " .. (help.bestFor or "When that TSM source matches how you want session loot valued.")
-        lines[#lines + 1] = "- Watch for: " .. (help.watchFor or "Availability depends on TSM data for the item.")
-        lines[#lines + 1] = ""
-    end
-
-    AddSection(lines, "Practical setup notes", {
-        "Use Min Buyout when you want the tracker to follow today's cheapest listing.",
-        "Use Market Value or Historical Price when you prefer smoother local market estimates.",
-        "Use region sources when local auctions are sparse or easy to manipulate.",
-        "Use Auctioning operation sources when your TSM groups already encode your preferred sell price rules.",
-        "Use Region Sale Avg when sale history matters more than listing price.",
-        "Use Crafting Cost when crafting cost is the relevant value for your workflow.",
-    })
-
-    return table.concat(lines, "\n")
-end
-
-local HELP_TEXT_BUILDERS = {
-    overview = BuildOverviewText,
-    session = BuildSessionText,
-    loot = BuildLootText,
-    history = BuildHistoryText,
-    values = BuildValueSourcesText,
-}
-
-local function ApplyTabVisualState(button, isSelected)
-    if not button then
-        return
-    end
-
-    if type(button.SetSelected) == "function" then
-        button:SetSelected(isSelected == true)
-    else
-        button:SetEnabled(isSelected ~= true)
+local function SaveReadingPosition(frame)
+    if frame.renderedTopicKey then
+        frame.scrollPositions[frame.renderedTopicKey] = frame.scrollFrame:GetVerticalScroll()
     end
 end
 
 function GoldTracker:UpdateHelpWindow()
     local frame = self.helpFrame
-    if not frame or not frame.bodyText then
-        return
+    if not frame then return end
+
+    local matches = self:SearchHelpTopics(frame.searchInput:GetText(), frame.topics)
+    frame.matchingTopics = matches
+    local visible, selected = {}, nil
+    for _, topic in ipairs(matches) do
+        visible[topic.key] = true
+        if topic.key == frame.selectedTabKey then selected = topic end
+    end
+    if not selected and matches[1] then
+        selected = matches[1]
+        frame.selectedTabKey = selected.key
     end
 
-    local selectedKey = frame.selectedTabKey or "overview"
-    if not HELP_TAB_BY_KEY[selectedKey] then
-        selectedKey = "overview"
-        frame.selectedTabKey = selectedKey
-    end
-
-    for _, tab in ipairs(HELP_TABS) do
-        ApplyTabVisualState(frame.tabButtons and frame.tabButtons[tab.key], tab.key == selectedKey)
-    end
-
-    local builder = HELP_TEXT_BUILDERS[selectedKey] or BuildOverviewText
-    frame.bodyText:SetText(builder(self))
-
-    if frame.scrollContent and frame.scrollFrame then
-        local innerWidth = math.max(1, math.floor((frame.scrollFrame:GetWidth() or 1) - 8))
-        local visibleHeight = math.max(1, math.floor(frame.scrollFrame:GetHeight() or 1))
-        frame.scrollContent:SetWidth(innerWidth)
-        frame.bodyText:SetWidth(innerWidth)
-        local contentHeight = math.max(visibleHeight, math.floor((frame.bodyText:GetStringHeight() or 0) + 24))
-        frame.scrollContent:SetHeight(contentHeight)
-        if frame.scrollFrame.UpdateScrollChildRect then
-            frame.scrollFrame:UpdateScrollChildRect()
+    local navY, lastGroup = 0, nil
+    local navWidth = math.max(1, frame.topicScroll:GetWidth() - 2)
+    frame.topicContent:SetWidth(navWidth)
+    for _, group in pairs(frame.groupLabels) do group:Hide() end
+    for _, topic in ipairs(frame.topics) do
+        local button = frame.tabButtons[topic.key]
+        if visible[topic.key] then
+            if lastGroup ~= topic.group then
+                local group = frame.groupLabels[topic.group]
+                group:ClearAllPoints()
+                group:SetPoint("TOPLEFT", frame.topicContent, "TOPLEFT", 4, -navY - 6)
+                group:SetWidth(navWidth - 8)
+                group:Show()
+                navY = navY + group:GetStringHeight() + 16
+                lastGroup = topic.group
+            end
+            button:ClearAllPoints()
+            button:SetPoint("TOPLEFT", frame.topicContent, "TOPLEFT", 0, -navY)
+            button:SetWidth(navWidth)
+            button.helpOffset = navY
+            if button.SetSelected then button:SetSelected(selected == topic) end
+            button:Show()
+            navY = navY + 30
+        else
+            button:Hide()
         end
     end
-end
+    frame.topicContent:SetHeight(math.max(1, navY))
+    frame.topicScroll:UpdateScrollChildRect()
+    frame.topicScroll:SetVerticalScroll(math.min(frame.topicScroll:GetVerticalScroll(), frame.topicScroll:GetVerticalScrollRange()))
+    frame.resultCount:SetText(string.format("%d / %d topics", #matches, #frame.topics))
 
-function GoldTracker:SelectHelpTab(tabKey)
-    local frame = self.helpFrame
-    if not frame then
-        return
+    if frame.renderedTopicKey ~= (selected and selected.key) then SaveReadingPosition(frame) end
+    local width = math.max(1, frame.scrollFrame:GetWidth() - 4)
+    frame.scrollContent:SetWidth(width)
+    local y = 0
+    for _, card in ipairs(frame.sectionCards) do card:Hide() end
+    if selected then
+        frame.heading:SetText(selected.label)
+        frame.summary:SetText(selected.summary)
+        for index, section in ipairs(selected.sections) do
+            local card = frame.sectionCards[index]
+            if not card then
+                card = Theme:CreatePanel(frame.scrollContent, "section", "chromeBorder")
+                card.title = Text(card, "GameFontNormal", "titleText")
+                card.body = Text(card)
+                frame.sectionCards[index] = card
+            end
+            card:ClearAllPoints()
+            card:SetPoint("TOPLEFT", frame.scrollContent, "TOPLEFT", 0, -y)
+            card:SetWidth(width)
+            card.title:ClearAllPoints()
+            card.title:SetPoint("TOPLEFT", card, "TOPLEFT", 14, -12)
+            card.title:SetWidth(width - 28)
+            card.title:SetText(section.title)
+            card.body:ClearAllPoints()
+            card.body:SetPoint("TOPLEFT", card.title, "BOTTOMLEFT", 0, -9)
+            card.body:SetWidth(width - 28)
+            card.body:SetText(table.concat(section.bullets, "\n\n"))
+            local height = math.ceil(card.title:GetStringHeight() + card.body:GetStringHeight() + 35)
+            card:SetHeight(height)
+            card:Show()
+            y = y + height + 12
+        end
+    else
+        frame.heading:SetText("No matching topics")
+        frame.summary:SetText("Try fewer words, a feature name, or a task such as bank, resume, or fallback. Clear search to see the full guide.")
     end
 
-    frame.selectedTabKey = HELP_TAB_BY_KEY[tabKey] and tabKey or "overview"
-    if frame.scrollFrame then
-        frame.scrollFrame:SetVerticalScroll(0)
+    -- Anchor the article below the measured summary so narrow windows can wrap.
+    frame.scrollFrame:ClearAllPoints()
+    frame.scrollFrame:SetPoint("TOPLEFT", frame.summary, "BOTTOMLEFT", 0, -14)
+    frame.scrollFrame:SetPoint("BOTTOMRIGHT", frame.bodyPanel, "BOTTOMRIGHT", -28, 14)
+    frame.scrollContent:SetHeight(math.max(1, y))
+    frame.scrollFrame:UpdateScrollChildRect()
+    local nextKey = selected and selected.key
+    local position = nextKey == frame.renderedTopicKey and frame.scrollFrame:GetVerticalScroll()
+        or (nextKey and frame.scrollPositions[nextKey]) or 0
+    frame.scrollFrame:SetVerticalScroll(math.max(0, math.min(position, frame.scrollFrame:GetVerticalScrollRange())))
+    frame.renderedTopicKey = nextKey
+end
+
+function GoldTracker:SelectHelpTab(tabKey, resetScroll)
+    local frame = self.helpFrame
+    if not frame then return end
+    SaveReadingPosition(frame)
+    frame.selectedTabKey = frame.topicByKey[tabKey] and tabKey or "overview"
+    if resetScroll then
+        frame.scrollPositions[frame.selectedTabKey] = 0
+        frame.renderedTopicKey = nil
     end
     self:UpdateHelpWindow()
 end
 
 function GoldTracker:CreateHelpWindow()
-    if self.helpFrame then
-        return
-    end
-
+    if self.helpFrame then return end
     local addon = self
     local frame = CreateFrame("Frame", "GoldTrackerHelpFrame", UIParent)
-    frame:SetSize(660, 520)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    frame:SetSize(math.min(960, UIParent:GetWidth() - 32), math.min(700, UIParent:GetHeight() - 32))
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("DIALOG")
-    if frame.SetToplevel then
-        frame:SetToplevel(true)
-    end
+    frame:SetToplevel(true)
+    frame:SetClampedToScreen(true)
     frame:SetMovable(true)
     frame:SetResizable(true)
-    if frame.SetResizeBounds then
-        frame:SetResizeBounds(HELP_MIN_WIDTH, HELP_MIN_HEIGHT, HELP_MAX_WIDTH, HELP_MAX_HEIGHT)
-    else
-        if frame.SetMinResize then
-            frame:SetMinResize(HELP_MIN_WIDTH, HELP_MIN_HEIGHT)
-        end
-        if frame.SetMaxResize then
-            frame:SetMaxResize(HELP_MAX_WIDTH, HELP_MAX_HEIGHT)
-        end
-    end
+    frame:SetResizeBounds(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT)
     frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnMouseDown", function(self)
-        self:Raise()
-    end)
-    frame:SetScript("OnDragStart", function(self)
-        self:Raise()
-        self:StartMoving()
-    end)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
-    frame.selectedTabKey = "overview"
-    frame.tabButtons = {}
-
-    local chrome = Theme:ApplyWindowChrome(frame, "Guide", {
-        closeButtonKey = "helpCloseButton",
-    })
+    frame.selectedTabKey, frame.scrollPositions = "overview", {}
+    frame.tabButtons, frame.groupLabels, frame.sectionCards = {}, {}, {}
+    frame.topicByKey = {}
+    local chrome = Theme:ApplyWindowChrome(frame, "Help & gold guide", { closeButtonKey = "helpCloseButton" })
     Theme:RegisterSpecialFrame("GoldTrackerHelpFrame")
 
-    local panel = CreateHelpPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
-    panel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
-    panel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
-    frame.helpPanel = panel
+    local drag = CreateFrame("Frame", nil, frame)
+    drag:SetPoint("TOPLEFT", chrome, "TOPLEFT", 8, -4)
+    drag:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -44, -4)
+    drag:SetHeight(36)
+    drag:EnableMouse(true)
+    drag:RegisterForDrag("LeftButton")
+    drag:SetScript("OnDragStart", function() frame:Raise(); frame:StartMoving() end)
+    drag:SetScript("OnDragStop", function() frame:StopMovingOrSizing() end)
+    frame:SetScript("OnMouseDown", function() frame:Raise() end)
 
-    local tabRow = CreateFrame("Frame", nil, panel)
-    tabRow:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -14)
-    tabRow:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -14, -14)
-    tabRow:SetHeight(24)
-    frame.tabRow = tabRow
+    local searchLabel = Text(chrome, "GameFontNormal", "titleText")
+    searchLabel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 18, -54)
+    searchLabel:SetText("Search the guide")
+    local search = CreateFrame("EditBox", nil, chrome, "InputBoxTemplate")
+    search:SetPoint("TOPLEFT", chrome, "TOPLEFT", 166, -48)
+    search:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -180, -48)
+    search:SetHeight(26)
+    search:SetAutoFocus(false)
+    search:SetMaxLetters(100)
+    frame.searchInput = search
+    local clear = Theme:CreateButton(chrome, 52, 26, "Clear", "neutral")
+    clear:SetPoint("LEFT", search, "RIGHT", 8, 0)
+    clear:SetScript("OnClick", function() search:SetText(""); search:ClearFocus() end)
+    frame.clearSearchButton = clear
+    frame.resultCount = Text(chrome, "GameFontHighlightSmall", "textMuted")
+    frame.resultCount:SetPoint("LEFT", clear, "RIGHT", 12, 0)
+    frame.resultCount:SetWidth(100)
 
-    local previousButton
-    for _, tab in ipairs(HELP_TABS) do
-        local tabKey = tab.key
-        local buttonWidth = tabKey == "values" and 112 or 84
-        local button = CreateHelpButton(tabRow, buttonWidth, 24, tab.label, "neutral")
-        button:SetText(tab.label)
-        if previousButton then
-            button:SetPoint("LEFT", previousButton, "RIGHT", 8, 0)
-        else
-            button:SetPoint("TOPLEFT", tabRow, "TOPLEFT", 0, 0)
+    local sidebar = Theme:CreatePanel(frame, "panel", "chromeBorder")
+    sidebar:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -84)
+    sidebar:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", 12, 42)
+    sidebar:SetWidth(SIDEBAR_WIDTH)
+    frame.topicScroll, frame.topicContent = Scroll(sidebar)
+    frame.topicScroll:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 8, -8)
+    frame.topicScroll:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", -25, 8)
+
+    local body = Theme:CreatePanel(frame, "body", "chromeBorder")
+    body:SetPoint("TOPLEFT", sidebar, "TOPRIGHT", 10, 0)
+    body:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 42)
+    frame.bodyPanel = body
+    frame.heading = Text(body, "GameFontNormalLarge", "titleText")
+    frame.heading:SetPoint("TOPLEFT", body, "TOPLEFT", 16, -14)
+    frame.heading:SetPoint("TOPRIGHT", body, "TOPRIGHT", -16, -14)
+    frame.summary = Text(body, "GameFontHighlight", "textSoft")
+    frame.summary:SetPoint("TOPLEFT", frame.heading, "BOTTOMLEFT", 0, -8)
+    frame.summary:SetPoint("TOPRIGHT", frame.heading, "BOTTOMRIGHT", 0, -8)
+    frame.scrollFrame, frame.scrollContent = Scroll(body)
+    frame.scrollFrame:SetPoint("TOPLEFT", frame.summary, "BOTTOMLEFT", 0, -14)
+    frame.scrollFrame:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", -28, 14)
+
+    local footer = Text(chrome, "GameFontHighlightSmall", "textMuted")
+    footer:SetPoint("BOTTOMLEFT", chrome, "BOTTOMLEFT", 18, 17)
+    footer:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -32, 17)
+    footer:SetText("Search names and full topic text. Scroll each pane independently. Hover ? in Options for individual setting help.")
+
+    frame.topics = self:GetHelpTopicDefinitions()
+    for _, topic in ipairs(frame.topics) do
+        frame.topicByKey[topic.key] = topic
+        local topicKey = topic.key
+        if not frame.groupLabels[topic.group] then
+            local label = Text(frame.topicContent, "GameFontNormalSmall", "textMuted")
+            label:SetText(topic.group)
+            frame.groupLabels[topic.group] = label
         end
-        button:SetScript("OnClick", function()
-            addon:SelectHelpTab(tabKey)
-        end)
-        frame.tabButtons[tabKey] = button
-        previousButton = button
+        local button = Theme:CreateButton(frame.topicContent, 160, 28, topic.label, "neutral")
+        button:SetScript("OnClick", function() search:ClearFocus(); addon:SelectHelpTab(topicKey) end)
+        frame.tabButtons[topic.key] = button
     end
-
-    local tabsUnderline = panel:CreateTexture(nil, "ARTWORK")
-    tabsUnderline:SetColorTexture(1, 0.82, 0, 0.35)
-    tabsUnderline:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -48)
-    tabsUnderline:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -14, -48)
-    tabsUnderline:SetHeight(1)
-
-    local bodyPanel = CreateHelpPanel(panel, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.08 })
-    bodyPanel:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -60)
-    bodyPanel:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -14, 14)
-    frame.bodyPanel = bodyPanel
-
-    local scrollFrame = CreateFrame("ScrollFrame", nil, bodyPanel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -12)
-    scrollFrame:SetPoint("BOTTOMRIGHT", bodyPanel, "BOTTOMRIGHT", -26, 12)
-    scrollFrame:EnableMouseWheel(true)
-    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
-        local step = 40
-        local nextScroll = self:GetVerticalScroll() - (delta * step)
-        local maxScroll = self:GetVerticalScrollRange()
-        if nextScroll < 0 then
-            nextScroll = 0
-        elseif nextScroll > maxScroll then
-            nextScroll = maxScroll
+    search:SetScript("OnTextChanged", function()
+        local query = search:GetText()
+        if not frame.searching and query:find("%S") then
+            frame.preSearchKey = frame.selectedTabKey
+            frame.searching = true
+        elseif frame.searching and not query:find("%S") then
+            frame.searching = false
+            SaveReadingPosition(frame)
+            frame.selectedTabKey = frame.preSearchKey or "overview"
         end
-        self:SetVerticalScroll(nextScroll)
-    end)
-    frame.scrollFrame = scrollFrame
-
-    local scrollContent = CreateFrame("Frame", nil, scrollFrame)
-    scrollContent:SetSize(1, 1)
-    scrollFrame:SetScrollChild(scrollContent)
-    frame.scrollContent = scrollContent
-
-    local bodyText = scrollContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    bodyText:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 0, 0)
-    bodyText:SetJustifyH("LEFT")
-    bodyText:SetJustifyV("TOP")
-    bodyText:SetTextColor(0.88, 0.92, 1.0)
-    if type(bodyText.SetSpacing) == "function" then
-        bodyText:SetSpacing(4)
-    end
-    bodyText:SetText("")
-    frame.bodyText = bodyText
-
-    local function RefreshHelpAfterResize()
+        frame.topicScroll:SetVerticalScroll(0)
         addon:UpdateHelpWindow()
-    end
-
+    end)
+    search:SetScript("OnEscapePressed", function() search:SetText(""); search:ClearFocus() end)
+    search:SetScript("OnEnterPressed", function() search:ClearFocus() end)
     Theme:CreateResizeButton(frame, {
-        minWidth = HELP_MIN_WIDTH,
-        minHeight = HELP_MIN_HEIGHT,
-        maxWidth = HELP_MAX_WIDTH,
-        maxHeight = HELP_MAX_HEIGHT,
-        onResizeStop = function()
-            RefreshHelpAfterResize()
-        end,
+        minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, maxWidth = MAX_WIDTH, maxHeight = MAX_HEIGHT,
+        onResizeStop = function() addon:UpdateHelpWindow() end,
     })
-
     frame:SetScript("OnSizeChanged", function()
-        if frame.isManualResizing then
-            return
-        end
-        RefreshHelpAfterResize()
+        if not frame.isManualResizing then addon:UpdateHelpWindow() end
     end)
-
-    frame:SetScript("OnShow", function()
-        addon:UpdateHelpWindow()
+    frame:SetScript("OnShow", function() addon:UpdateHelpWindow() end)
+    frame:SetScript("OnHide", function()
+        SaveReadingPosition(frame)
+        search:ClearFocus()
+        frame:StopMovingOrSizing()
     end)
-
     self.helpFrame = frame
 end
 
 function GoldTracker:OpenHelpWindow(tabKey)
     self:CreateHelpWindow()
-    if not self.helpFrame then
-        return
+    local frame = self.helpFrame
+    -- Refresh small text definitions so the current-pricing note follows settings.
+    frame.topics = self:GetHelpTopicDefinitions()
+    for _, topic in ipairs(frame.topics) do frame.topicByKey[topic.key] = topic end
+    if tabKey then
+        frame.searchInput:SetText("")
+        self:SelectHelpTab(tabKey, true)
+        local button = frame.tabButtons[frame.selectedTabKey]
+        if button then
+            frame.topicScroll:SetVerticalScroll(math.max(0, math.min(button.helpOffset or 0, frame.topicScroll:GetVerticalScrollRange())))
+        end
     end
-
-    self.helpFrame.selectedTabKey = HELP_TAB_BY_KEY[tabKey] and tabKey or self.helpFrame.selectedTabKey or "overview"
-    self.helpFrame:Show()
-    self.helpFrame:Raise()
+    frame:Show()
+    frame:Raise()
     self:UpdateHelpWindow()
 end
 
 function GoldTracker:ToggleHelpWindow(tabKey)
     self:CreateHelpWindow()
-    if not self.helpFrame then
-        return
-    end
-
-    if self.helpFrame:IsShown() then
-        self.helpFrame:Hide()
-    else
-        self:OpenHelpWindow(tabKey)
-    end
+    if self.helpFrame:IsShown() then self.helpFrame:Hide() else self:OpenHelpWindow(tabKey) end
 end
 
 function GoldTracker:OpenTSMRealmSetupHelp()
+    -- Explicit entry points clear search and reveal the setup steps at the top.
     self:OpenHelpWindow("values")
-    -- Always reveal the setup steps, even if this Help page was scrolled before.
-    self:SelectHelpTab("values")
 end

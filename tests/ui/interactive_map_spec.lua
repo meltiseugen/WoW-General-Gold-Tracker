@@ -86,20 +86,116 @@ local function terrain(map)
 end
 
 describe("Interactive map", function()
-    it("uses one native painting without a stitched scene or terrain when the flag is off", function()
+    it("includes reviewed outdoor paintings omitted from child enumeration and excludes scenario copies", function()
+        with_map(function(addon, map, options)
+            local nativeInfo, nativeWorld = C_Map.GetMapInfo, C_Map.GetWorldPosFromMapPos
+            local nativeChildren, nativeRect = C_Map.GetMapChildrenInfo, C_Map.GetMapRectOnMap
+            local orphans = {
+                [5] = { mapID = 5, mapType = 6, parentMapID = 1, name = "Outdoor" },
+                [6] = { mapID = 6, mapType = 6, parentMapID = 1, name = "Scenario" },
+                [7] = { mapID = 7, mapType = 6, parentMapID = 1, name = "Unreviewed" },
+            }
+            C_Map.GetMapInfo = function(id) return orphans[id] or nativeInfo(id) end
+            C_Map.GetMapChildrenInfo = function()
+                local children = nativeChildren()
+                for _, id in ipairs({ 6, 7 }) do children[#children + 1] = orphans[id] end
+                return children
+            end
+            C_Map.GetMapRectOnMap = function(id, root)
+                if orphans[id] then return .1, .3, .1, .3 end
+                return nativeRect(id, root)
+            end
+            C_Map.GetWorldPosFromMapPos = function(id, point)
+                if orphans[id] then
+                    local world, position = nativeWorld(1, point)
+                    return id == 6 and 99 or world, position
+                end
+                return nativeWorld(id, point)
+            end
+            addon.MapOutdoorZones = { [5] = true, [6] = true }
+            options.key = "outdoor-orphans"
+            options.revision = options.revision + 1
+            options.revealAll = true
+            map:SetSubject(options)
+            assert.equals(3, map.source.byID[5].mapType)
+            assert.equals(6, map.source.byID[5].apiMapType)
+            assert.is_nil(map.source.byID[6])
+            assert.is_nil(map.source.byID[7])
+        end)
+    end)
+
+    it("refits the initial zone after layout and preserves zoom after a user adjusts it", function()
+        with_map(function(addon, map, options)
+            map.viewport:SetSize(1, 1)
+            options.key = "first-layout"
+            map:SetSubject(options)
+            map.viewport:SetSize(940, 380)
+            map:Resize()
+            local node = map.source.byID[2]
+            local l, t = addon.MapGeometry.ToScreen(map.view, node.rect.l, node.rect.t)
+            local r, b = addon.MapGeometry.ToScreen(map.view, node.rect.r, node.rect.b)
+            assert.is_true(l >= -0.00001 and t >= -0.00001)
+            assert.is_true(r <= 940.00001 and b <= 380.00001)
+            map.viewport.scripts.OnMouseWheel(nil, 2)
+            map:Animate(1)
+            local zoom = map.view.zoom
+            map:Stop()
+            map.viewport:SetSize(800, 420)
+            map:Resize()
+            close(zoom, map.view.zoom)
+            map:Reset()
+            assert.is_false(map.viewAdjusted)
+        end)
+    end)
+
+    it("centers the subject without changing zoom and safely ignores missing positions", function()
+        with_map(function(addon, map, options)
+            addon.MapGeometry.ZoomAt(map.view, 12, 300, 200)
+            local zoom = map.view.zoom
+            map:CenterOnSubject()
+            local node = map.source.byID[2]
+            local x, y = addon.MapGeometry.ToScreen(map.view,
+                node.rect.l + options.x * (node.rect.r - node.rect.l), node.rect.t + options.y * (node.rect.b - node.rect.t))
+            close(map.view.width / 2, x)
+            close(map.view.height / 2, y)
+            close(zoom, map.view.zoom)
+            options.x = nil
+            map:CenterOnSubject()
+            close(zoom, map.view.zoom)
+        end)
+    end)
+
+    it("always fully reveals the native painting without a stitched scene or terrain when the flag is off", function()
         with_map(function(addon, map, options, calls)
             assert.is_true(map.standard)
             assert.equals(2, map.source.rootID)
             assert.equals(1, #map.source.nodes)
             assert.equals(0, calls.children)
             assert.is_nil(calls.art[1])
+            -- Classic maps stay revealed even when the caller omits the policy
+            -- or explicitly disables it, and never read character discoveries.
+            for _, policy in ipairs({ "unset", "disabled" }) do
+                options.revealAll = nil
+                if policy == "disabled" then options.revealAll = false end
+                options.getExploration = function() error("Classic maps must not read character discoveries") end
+                options.revision = options.revision + 1
+                map:SetSubject(options)
+                local found = {}
+                for _, group in pairs(map.renderer.groups) do
+                    for i = 1, group.used do found[group.pool[i].texture.texture] = true end
+                end
+                assert.is_true(found[201])
+                assert.is_true(found[7002])
+                assert.is_true(found[7003])
+                assert.is_nil(found[7001])
+            end
             addon.MapScene.Build = function() error("Standard maps must not build a stitched scene") end
             map.source.Tiles = function() error("Standard maps must not decode terrain") end
             addon.MapArtMasks = { [200] = true }
             addon.MapGeometry.ZoomAt(map.view, 64, 400, 250)
             map:Render()
             assert.equals(0, map.renderer.terrainCount)
-            assert.equals(0, calls.data)
+            assert.equals(1, calls.data)
             for _, group in pairs(map.renderer.groups) do
                 if group.used > 0 then
                     assert.equals("standard", group.kind)
@@ -134,6 +230,58 @@ describe("Interactive map", function()
             assert.equals(1, calls.data)
             assert.equals(0, map.renderer.terrainCount)
             assert.equals(0, #map.source.decodedOrder)
+        end, false)
+    end)
+
+    it("keeps every reveal piece above the covered base painting in the client draw order", function()
+        with_map(function(_, map, options)
+            options.revealAll = true
+            options.getExploration = function() error("Revealed maps must not read character discoveries") end
+            for _, mapID in ipairs({ 2, 3, 2 }) do
+                options.key, options.mapID = "reveal-layers:" .. mapID, mapID
+                map:SetSubject(options)
+                local group = map.renderer.groups[1]
+                local baseDepth, revealDepth, count = nil, nil, 0
+                for index = 1, group.used do
+                    local texture = group.pool[index].texture
+                    assert.equals("ARTWORK", texture.layer)
+                    if texture.texture == 7002 or texture.texture == 7003 then
+                        revealDepth = math.min(revealDepth or 7, texture.subLevel)
+                        count = count + 1
+                    else
+                        baseDepth = math.max(baseDepth or -8, texture.subLevel)
+                    end
+                end
+                assert.equals(2, count)
+                assert.is_true(revealDepth > baseDepth,
+                    "Covered map tiles must never share the reveal pieces' draw depth")
+            end
+        end, false)
+    end)
+
+    it("resets draw depth when a pooled reveal texture becomes a base tile on another map", function()
+        with_map(function(_, map, options)
+            options.getArt = function()
+                return { artID = 200, width = 512, height = 256, tileWidth = 256, tileHeight = 256,
+                    textures = { 501, 502 } }
+            end
+            options.key = "small-painting"
+            map:SetSubject(options)
+            local cell = map.renderer.groups[1].pool[3]
+            assert.equals(7002, cell.texture.texture)
+            assert.equals(1, cell.texture.subLevel)
+
+            options.getArt = function()
+                local textures = {}
+                for index = 1, 12 do textures[index] = 500 + index end
+                return { artID = 200, width = 1024, height = 768, tileWidth = 256, tileHeight = 256,
+                    textures = textures }
+            end
+            options.key = "large-painting"
+            map:SetSubject(options)
+            assert.equals(cell, map.renderer.groups[1].pool[3])
+            assert.equals(503, cell.texture.texture)
+            assert.equals(0, cell.texture.subLevel)
         end, false)
     end)
 
@@ -389,6 +537,31 @@ describe("Interactive map", function()
         end)
     end)
 
+    it("keeps Kalimdor and Outland's native oceans behind detailed zones using shipped metadata", function()
+        with_map(function(addon, map, options)
+            options.revealAll = true
+            map:SetSubject(options)
+            loader.load_module("UI/Maps/ArtMaskIndex.lua", addon)
+            loader.load_module("UI/Maps/OceanIndex.lua", addon)
+            for _, artID in ipairs({ 13, 106 }) do
+                map.source.root.art.artID = artID
+                for _, zoom in ipairs({ 1, 1.5, 2, 4 }) do
+                    addon.MapGeometry.ZoomAt(map.view, zoom, 400, 250)
+                    map:Render()
+                    local native = false
+                    for _, group in pairs(map.renderer.groups) do
+                        if group.kind == "backdrop" then assert.equals(0, group.used) end
+                        if group.kind == "background" and group.mapID == 1 and group.used > 0 then
+                            native = true
+                            for i = 1, group.used do assert.equals(1, group.pool[i].texture.alpha) end
+                        end
+                    end
+                    assert.is_true(native)
+                end
+            end
+        end)
+    end)
+
     it("retains the original continent ocean through its complete detail transition", function()
         with_map(function(addon, map, options)
             addon.MapArtMasks = { [100] = true }
@@ -521,6 +694,53 @@ describe("Interactive map", function()
                 end
             end
             assert.is_true(captionIndex ~= nil and terrainIndex > captionIndex)
+        end)
+    end)
+
+    it("keeps road joins below whole labels and terrain, and releases them when reveal rendering stops", function()
+        with_map(function(addon, map, options)
+            local repair = { file = "200-0", rect = { .2, .2, .3, .3 }, uv = { 0, 1, 0, 1 } }
+            addon.MapRoadLinks = { [200] = { repair } }
+            addon.MapLabelMoves = { [200] = { repair } }
+            options.revealAll = true
+            map:SetSubject(options)
+            addon.MapGeometry.ZoomAt(map.view, 2, 400, 250)
+            map:Render()
+            local roadIndex, labelIndex, roadTexture, labelTexture
+            for index, group in pairs(map.renderer.groups) do
+                if group.used > 0 and group.kind == "roads" then
+                    roadIndex = math.max(roadIndex or 0, index)
+                    roadTexture = group.pool[1].texture
+                    assert.is_truthy(roadTexture.texture:find("RoadLinks", 1, true))
+                elseif group.used > 0 and group.kind == "moved-labels" then
+                    labelIndex = math.min(labelIndex or index, index)
+                    labelTexture = group.pool[1].texture
+                    assert.is_truthy(labelTexture.texture:find("LabelMoves", 1, true))
+                end
+            end
+            assert.is_true(roadIndex ~= nil and labelIndex > roadIndex)
+            addon.MapGeometry.ZoomAt(map.view, 40, 400, 250)
+            local node = map.source.byID[2]
+            map.view.x = node.rect.l + .25 * (node.rect.r - node.rect.l)
+            map.view.y = node.rect.t + .25 * (node.rect.b - node.rect.t)
+            addon.MapGeometry.Constrain(map.view)
+            map:Render()
+            assert.is_nil(labelTexture.texture)
+            local terrainIndex
+            for index, group in pairs(map.renderer.groups) do
+                if group.used > 0 and group.kind == "terrain" then terrainIndex = index end
+                if group.used > 0 and group.kind == "roads" then
+                    roadIndex = index
+                    for i = 1, group.used do assert.equals(1, group.pool[i].texture.alpha) end
+                end
+            end
+            assert.is_true(terrainIndex ~= nil and terrainIndex > roadIndex)
+            options.revealAll, options.revision = false, options.revision + 1
+            map:SetSubject(options)
+            assert.is_nil(roadTexture.texture)
+            for _, group in pairs(map.renderer.groups) do
+                if group.kind == "roads" or group.kind == "moved-labels" then assert.equals(0, group.used) end
+            end
         end)
     end)
 

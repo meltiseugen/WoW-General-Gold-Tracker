@@ -22,8 +22,10 @@ class MapPreviewDataTests(unittest.TestCase):
         write("UiMap", "ID,Name_lang,Type,ParentUiMapID", [
             (1, "Geographic", 2, 0), (2, "Zone", 3, 1), (3, "Diagram", 2, 1),
             (4, "Diagram zone", 3, 3), (6, "Mixed", 2, 0), (7, "Inset", 3, 6),
-            (8, "Cycle A", 3, 9), (9, "Cycle B", 3, 8)])
-        write("UiMapXMapArt", "UiMapID,UiMapArtID,PhaseID", [(i, 10, 0) for i in (1, 2, 3, 4, 6, 7, 8, 9)])
+            (8, "Cycle A", 3, 9), (9, "Cycle B", 3, 8),
+            (327, "Outdoor orphan", 6, 1), (10, "Scenario", 6, 1),
+            (11, "Dungeon", 4, 1), (12, "Unreviewed orphan", 6, 1)])
+        write("UiMapXMapArt", "UiMapID,UiMapArtID,PhaseID", [(i, 10, 0) for i in (1, 2, 3, 4, 6, 7, 8, 9, 327, 10, 11, 12)])
         write("UiMapArt", "ID,UiMapArtStyleID", [(10, 1)])
         write("UiMapArtStyleLayer", "UiMapArtStyleID,LayerIndex,LayerWidth,LayerHeight,TileWidth,TileHeight", [(1, 0, 1000, 650, 256, 256)])
         write("UiMapArtTile", "UiMapArtID,LayerIndex,RowIndex,ColIndex,FileDataID", [(10, 0, 0, 0, 123)])
@@ -34,13 +36,29 @@ class MapPreviewDataTests(unittest.TestCase):
             (2, 0, 7, 0, 0, 1, 1, 400, 800, 800, 1600),
             (4, 0, 9, 0, 0, 1, 1, 0, 0, 100, 100),
             (6, 0, 8, .5, 0, 1, .5, 0, 0, 1000, 2000),
-            (7, 0, 8, 0, 0, 1, 1, 0, 0, 1000, 2000)])
+            (7, 0, 8, 0, 0, 1, 1, 0, 0, 1000, 2000),
+            (327, 0, 7, 0, 0, 1, 1, 400, 800, 800, 1600),
+            (10, 0, 99, 0, 0, 1, 1, 400, 800, 800, 1600),
+            (11, 0, 7, 0, 0, 1, 1, 400, 800, 800, 1600),
+            (12, 0, 7, 0, 0, 1, 1, 400, 800, 800, 1600)])
         write("UiMapLink", "ChildUiMapID,ParentUiMapID,PlayerConditionID,UiMin_0,UiMin_1,UiMax_0,UiMax_1", [
             (3, 1, 0, .6, .2, .9, .5), (4, 3, 0, .1, .2, .7, .8), (7, 1, 123, 0, 0, 1, 1)])
         self.maps = DATA.ClientMaps(self.path)
 
     def test_geographic_zone_coordinates_match_the_parent(self):
         self.assertEqual([.2, .6, .2, .6], self.maps.rect(2, 1))
+
+    def test_reviewed_outdoor_orphans_share_the_continent_but_scenarios_do_not(self):
+        self.maps.outdoor_orphans.add(10)
+        self.assertTrue(self.maps.is_outdoor(327))
+        for map_id in (10, 11, 12):
+            self.assertFalse(self.maps.is_outdoor(map_id))
+        fixture = self.maps.fixture(1)
+        self.assertIn(327, fixture)
+        for map_id in (10, 11, 12):
+            self.assertNotIn(map_id, fixture)
+        self.assertEqual(6, fixture[327]['mapType'])
+        self.assertEqual([.2, .6, .2, .6], fixture[327]['rect'])
 
     def test_diagram_links_compose_through_nested_continents(self):
         for actual, expected in zip(self.maps.rect(4, 1), [.63, .81, .26, .44]):

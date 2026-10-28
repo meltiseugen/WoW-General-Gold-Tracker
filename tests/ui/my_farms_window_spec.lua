@@ -125,6 +125,124 @@ describe("UI/MyFarmsWindow route run button", function()
     end)
 end)
 
+describe("UI/MyFarmsWindow actions menu", function()
+    it("only renders options when the menu opens, without building routes, resolving maps, or opening windows", function()
+        local addon = load_my_farms({ db = {} })
+        loader.load_module("Core/FarmRoutePlanner.lua", addon)
+        local farm = addon:CreateCustomFarm("Planned farm", false)
+        farm.routePlan = { order = { "saved-stop" } }
+        local menu, anchor, initialize, toggles = {}, {}, nil, 0
+        addon.myFarmsFrame = { selectedFarmID = farm.id, farmActionsMenu = menu }
+        local function unexpected() error("Opening the menu must only render its options") end
+        for _, method in ipairs({
+            "BuildCustomFarmRoutePlanOverview", "BuildCustomFarmRoutePlan", "GetCustomFarmSteps",
+            "ResolveCustomFarmEntryMapOption", "LoadCatalog", "OpenFarmRoutePlanWindow",
+            "OpenCustomFarmRoutePlanOverview", "OpenStandaloneMapWindow", "RefreshMyFarmsWindow",
+        }) do addon[method] = unexpected end
+        local entries = {}
+        loader.with_globals({
+            UIDropDownMenu_Initialize = function(target, callback)
+                assert.equals(menu, target)
+                initialize = callback
+                callback(nil, 1)
+            end,
+            ToggleDropDownMenu = function(_, _, target, button)
+                assert.equals(menu, target)
+                assert.equals(anchor, button)
+                toggles = toggles + 1
+                initialize(nil, 1)
+            end,
+            UIDropDownMenu_CreateInfo = function() return {} end,
+            UIDropDownMenu_AddButton = function(info) entries[info.text] = info end,
+            C_Map = setmetatable({}, { __index = unexpected }),
+        }, function()
+            addon:OpenMyFarmsActionsMenu(anchor)
+            assert.equals(1, toggles)
+            assert.is_false(entries["Open route plan"].disabled)
+            assert.is_false(entries["Overview map"].disabled)
+            assert.is_false(entries["Replan route"].disabled)
+            assert.is_false(entries.Rename.disabled)
+            assert.is_false(entries["Delete..."].disabled)
+        end)
+    end)
+
+    it("explains unavailable route actions and preserves rename/delete confirmation for the selected farm", function()
+        local addon = load_my_farms({ db = {} })
+        local farm = addon:CreateCustomFarm("First farm", false)
+        local other = addon:CreateCustomFarm("Other farm", false)
+        addon.HasCustomFarmRoutePlan = function() return false end
+        addon.BuildCustomFarmRoutePlanOverview = function() error("An unplanned farm must not build an overview") end
+        local entries, popup, closed = {}, nil, false
+        loader.with_globals({
+            UIDropDownMenu_CreateInfo = function() return {} end,
+            UIDropDownMenu_AddButton = function(info) entries[info.text] = info end,
+            CloseDropDownMenus = function() closed = true end,
+            StaticPopup_Show = function(key, name, _, id) popup = { key = key, name = name, id = id } end,
+        }, function()
+            addon:PopulateMyFarmsActionsMenu(farm.id, 1)
+            assert.is_true(entries["Open route plan"].disabled)
+            assert.is_true(entries["Overview map"].disabled)
+            assert.is_string(entries["Open route plan"].tooltipText)
+            assert.is_true(entries["Overview map"].tooltipWhileDisabled)
+            assert.is_nil(entries["Replan route"])
+            assert.is_nil(popup)
+            addon.myFarmsFrame = { selectedFarmID = other.id }
+            entries.Rename.func()
+            assert.equals("GGT_RENAME_CUSTOM_FARM", popup.key)
+            assert.equals(farm.id, popup.id)
+            entries["Delete..."].func()
+            assert.equals("GGT_DELETE_CUSTOM_FARM", popup.key)
+            assert.equals(farm.id, popup.id)
+            assert.equals(farm.name, popup.name)
+            assert.equals(farm, addon:GetCustomFarmByID(farm.id))
+            assert.is_true(closed)
+        end)
+    end)
+
+    it("defers route actions until selected and reports overview problems at that point", function()
+        local addon = load_my_farms({ db = {} })
+        loader.load_module("Core/FarmRoutePlanner.lua", addon)
+        local farm = addon:CreateCustomFarm("Route farm", false)
+        local opened, recalculated, refreshes, overviewID, warning
+        addon.HasCustomFarmRoutePlan = function() return true end
+        addon.BuildCustomFarmRoutePlanOverview = function(_, id)
+            overviewID = id
+            return nil, "No route stops have map data."
+        end
+        addon.Print = function(_, message) warning = message end
+        addon.OpenFarmRoutePlanWindow = function(_, id) opened = id end
+        addon.BuildCustomFarmRoutePlan = function(_, id, recalculate) recalculated = { id, recalculate } end
+        addon.RefreshMyFarmsWindow = function() refreshes = (refreshes or 0) + 1 end
+        local entries = {}
+        loader.with_globals({
+            UIDropDownMenu_CreateInfo = function() return {} end,
+            UIDropDownMenu_AddButton = function(info) entries[info.text] = info end,
+            CloseDropDownMenus = function() end,
+        }, function()
+            addon:PopulateMyFarmsActionsMenu(farm.id, 1)
+            assert.is_false(entries["Open route plan"].disabled)
+            assert.is_false(entries["Overview map"].disabled)
+            assert.is_nil(opened)
+            assert.is_nil(overviewID)
+            assert.is_nil(recalculated)
+            assert.is_nil(refreshes)
+            assert.is_nil(warning)
+            entries["Open route plan"].func()
+            assert.equals(farm.id, opened)
+            assert.is_nil(overviewID)
+            assert.is_nil(recalculated)
+            entries["Overview map"].func()
+            assert.equals(farm.id, overviewID)
+            assert.equals("No route stops have map data.", warning)
+            assert.is_nil(recalculated)
+            entries["Replan route"].func()
+            assert.equals(farm.id, recalculated[1])
+            assert.is_true(recalculated[2])
+            assert.equals(1, refreshes)
+        end)
+    end)
+end)
+
 describe("UI/MyFarmsWindow character suggestions", function()
     it("shows profession reasons under Suggestions and rejects a choice newly marked as Bank", function()
         local addon = load_my_farms({ db = {

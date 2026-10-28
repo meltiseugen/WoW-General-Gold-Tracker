@@ -79,6 +79,24 @@ def pack_corner(painting: Image.Image, alpha: Image.Image):
     return padded, rect, uv
 
 
+def match_frame_edges(alpha: Image.Image, frame: Image.Image, bounds: Image.Image):
+    """Fill the diagonal holes while retaining the painting's straight border.
+
+    Recover that border from the mask's intact middle row/column. Account for
+    the existing painting underneath, so the two layers do not double its fade.
+    """
+    w, h = frame.size
+    horizontal = frame.crop((0, h // 2, w, h // 2 + 1)).resize(frame.size)
+    vertical = frame.crop((w // 2, 0, w // 2 + 1, h)).resize(frame.size)
+    rectangle = ImageChops.multiply(horizontal, vertical)
+    def coverage(image):
+        return np.asarray(image.resize(alpha.size, Image.Resampling.BILINEAR), dtype=np.float32) / 255
+    original = coverage(frame) * coverage(bounds)
+    wanted = coverage(rectangle) * coverage(bounds)
+    fill = np.clip((wanted - original) / np.maximum(1 - original, 1 / 255), 0, 1)
+    return Image.fromarray(np.uint8(np.rint(np.asarray(alpha) * fill)))
+
+
 def corner_tiles(painting: Image.Image, alpha: Image.Image, corner: str, limit=1024):
     """Keep native pixels while avoiding large transparent texture allocations."""
     l, t, r, b = alpha.getbbox()
@@ -107,7 +125,7 @@ def digest(path: Path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def generate(directory: Path, output: Path, index: Path, receipt: Path, recipe_path: Path):
+def generate(directory: Path, output: Path, index: Path, receipt: Path, recipe_path: Path, art_ids=None):
     recipe = json.loads(recipe_path.read_text())
     maps = ClientMaps(directory)
     media = output.parent
@@ -116,8 +134,18 @@ def generate(directory: Path, output: Path, index: Path, receipt: Path, recipe_p
     bounds = read_texture(bounds_path).getchannel('A')
     records, inputs = {}, {}
     previous = json.loads(receipt.read_text()) if receipt.exists() else {}
+    selected = {str(art) for art in art_ids or ()}
+    if selected:
+        if previous.get('build') != recipe['build']:
+            raise ValueError('A focused rebuild requires a receipt from the same client build')
+        if selected - recipe['art'].keys():
+            raise ValueError(f'Unknown corner artwork: {sorted(selected - recipe["art"].keys())}')
+        records = dict(previous.get('art', {}))
+        inputs = dict(previous.get('native_texture_sha256', {}))
     output.mkdir(parents=True, exist_ok=True)
     for art_text, corners in recipe['art'].items():
+        if selected and art_text not in selected:
+            continue
         art = int(art_text)
         layer = maps.layers[maps.styles[art]]
         painting = Image.new('RGBA', (int(layer['LayerWidth']), int(layer['LayerHeight'])))
@@ -134,6 +162,8 @@ def generate(directory: Path, output: Path, index: Path, receipt: Path, recipe_p
             erased = erasure_mask(painting.size, frame, bounds, settings)
             restored = repair_texture(painting, erased, sample)
             alpha = corner_alpha(painting.size, corner)
+            if settings.get('match_frame_edges'):
+                alpha = match_frame_edges(alpha, frame, bounds)
             probes = settings.get('preserve_probes', [])
             for point in probes:
                 pixel = tuple(point)
@@ -193,5 +223,6 @@ if __name__ == '__main__':
     parser.add_argument('--index', type=Path, default=Path('UI/Maps/CornerFillIndex.lua'))
     parser.add_argument('--receipt', type=Path, default=Path('docs/research/map-corners-2026-10-25.json'))
     parser.add_argument('--recipe', type=Path, default=Path('tools/map_corner_fills.json'))
+    parser.add_argument('--arts', type=int, nargs='+', help='Rebuild only these artworks; retain other same-build corner assets')
     args = parser.parse_args()
-    generate(args.input, args.output, args.index, args.receipt, args.recipe)
+    generate(args.input, args.output, args.index, args.receipt, args.recipe, args.arts)

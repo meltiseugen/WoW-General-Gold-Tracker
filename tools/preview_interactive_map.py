@@ -22,6 +22,11 @@ class TextureFetchError(RuntimeError):
     pass
 
 
+def draw_depth(texture):
+    layers = {"BACKGROUND": 0, "BORDER": 1, "ARTWORK": 2, "OVERLAY": 3, "HIGHLIGHT": 4}
+    return layers.get(texture.layer, 2), int(texture.subLevel or 0)
+
+
 def preview(root: Path, output: Path, download: bool, outland: bool = False,
             kalimdor: bool = False, renderer: Path | None = None, azeroth: bool = False,
             continent: int | None = None, focus: int | None = None, audit_only: bool = False,
@@ -191,6 +196,21 @@ def preview(root: Path, output: Path, download: bool, outland: bool = False,
             weights.setdefault(int(entry.state.context.mapID), set()).add(round(float(entry.alpha), 9))
         if any(len(values) != 1 for values in weights.values()): raise AssertionError("Unsynchronized zone transition")
         active = [g for _, g in sorted(map_view.renderer.groups.items()) if g.used]
+        painting_layers = {}
+        if standard_map:
+            # Creation order in the software preview hid native draw-depth
+            # collisions between the covered painting and its reveal pieces.
+            art = map_view.source.root.art
+            base_ids = {int(fid) for _, fid in art.textures.items()}
+            pieces = map_view.source.Exploration(map_view.source, map_view.source.root)
+            reveal_ids = {int(piece.fileID) for _, piece in pieces.items()}
+            for role, ids in (("base", base_ids), ("revealed", reveal_ids)):
+                depths = {draw_depth(g.pool[i].texture) for g in active
+                          for i in range(1, int(g.used) + 1) if g.pool[i].texture.texture in ids}
+                if depths: painting_layers[role] = sorted(depths)
+            if (painting_layers.get("base") and painting_layers.get("revealed")
+                    and min(painting_layers["revealed"]) <= max(painting_layers["base"])):
+                raise AssertionError("Revealed map pieces share or fall below the covered painting's draw depth")
         passes = [(g.kind, int(g.mapID), int(g.used)) for g in active]
         base_layers = [i for i, g in enumerate(active) if g.kind == "base"]
         detail_layers = [i for i, g in enumerate(active) if g.kind == "detail"]
@@ -200,7 +220,7 @@ def preview(root: Path, output: Path, download: bool, outland: bool = False,
         stage = {"name": name, "zoom": float(map_view.view.zoom), "regions": int(map_view.renderer.used),
                  "terrainPieces": int(map_view.renderer.terrainCount), "passes": passes,
                  "synchronizedContexts": {k: next(iter(v)) for k, v in weights.items()},
-                 "budgetReached": bool(map_view.renderer.regionBudgetReached)}
+                 "budgetReached": bool(map_view.renderer.regionBudgetReached), "paintingLayers": painting_layers}
         report["stages"].append(stage)
         if stage["budgetReached"]:
             raise AssertionError(f"{root_id}/{zone_id} {name}: renderer omitted visible regions at its texture limit")
@@ -218,8 +238,8 @@ def preview(root: Path, output: Path, download: bool, outland: bool = False,
                 list(pool.map(fetch_texture, wanted))
         image = Image.new("RGBA", (1000, 650), (51, 41, 26, 255))
         for _, group in sorted(map_view.renderer.groups.items()):
-            for i in range(1, int(group.used) + 1):
-                tex = group.pool[i].texture
+            textures = [group.pool[i].texture for i in range(1, int(group.used) + 1)]
+            for tex in sorted(textures, key=draw_depth):
                 if not tex.shown: continue
                 point = tex.points[1]
                 x, y = round(point[4]), round(-point[5])

@@ -1,0 +1,185 @@
+{
+  "build": "12.1.5.70529",
+  "root_map": 12,
+  "continent_art": 13,
+  "reported_areas": [
+    "mountains between southern Feralas, Silithus and northern UnGoro",
+    "western and southern UnGoro rim above Uldum"
+  ],
+  "cause": "Reveal-difference cores exclude mountains already drawn in native base artwork, leaving enlarged continent art visible in the gaps.",
+  "fix": "Reviewed native ridge ownership in arts 74 and 83; rebuild adjacent shared masks. Exclude the baked-in SILITHUS neighbour title from the UnGoro margin.",
+  "annotations": {
+    "74": {
+      "reach": 20,
+      "seam": 8,
+      "strict_frame": false,
+      "priority": [
+        [
+          [
+            0.55,
+            0.69
+          ],
+          [
+            0.76,
+            0.66
+          ],
+          [
+            0.92,
+            0.71
+          ],
+          [
+            0.94,
+            0.8
+          ],
+          [
+            0.7,
+            0.81
+          ],
+          [
+            0.69,
+            0.86
+          ],
+          [
+            0.57,
+            0.85
+          ]
+        ]
+      ]
+    },
+    "83": {
+      "reach": 20,
+      "seam": 8,
+      "strict_frame": false,
+      "priority": [
+        [
+          [
+            0.17,
+            0.13
+          ],
+          [
+            0.29,
+            0.07
+          ],
+          [
+            0.73,
+            0.07
+          ],
+          [
+            0.83,
+            0.16
+          ],
+          [
+            0.87,
+            0.3
+          ],
+          [
+            0.87,
+            0.71
+          ],
+          [
+            0.79,
+            0.85
+          ],
+          [
+            0.72,
+            0.94
+          ],
+          [
+            0.3,
+            0.94
+          ],
+          [
+            0.13,
+            0.9
+          ],
+          [
+            0.07,
+            0.72
+          ],
+          [
+            0.07,
+            0.36
+          ],
+          [
+            0.17,
+            0.23
+          ],
+          [
+            0.31,
+            0.23
+          ],
+          [
+            0.31,
+            0.13
+          ]
+        ]
+      ],
+      "cutouts": [
+        [
+          [
+            0.05,
+            0.1
+          ],
+          [
+            0.28,
+            0.1
+          ],
+          [
+            0.28,
+            0.19
+          ],
+          [
+            0.05,
+            0.19
+          ]
+        ]
+      ]
+    }
+  },
+  "preservation": {
+    "native_ocean_and_contour_unchanged": true,
+    "corner_fills_unchanged": true,
+    "overview_pixel_identical": true,
+    "runtime_lua_unchanged": true,
+    "selected_phase_textures_preserved": true
+  },
+  "asset_sha256": {
+    "UI/Maps/Media/ArtMasks/1343.blp": "81f4f8388cc97c2671220e6c8e8ce926dd1eb89bdb52e88326bc60f6ce1212c1",
+    "UI/Maps/Media/ArtMasks/260.blp": "81f4f8388cc97c2671220e6c8e8ce926dd1eb89bdb52e88326bc60f6ce1212c1",
+    "UI/Maps/Media/ArtMasks/289.blp": "3ab8e99f79b57a59ae7435a04540a0bba353e0e80c6ccbf38f64f0f00d5045be",
+    "UI/Maps/Media/ArtMasks/69.blp": "83048fde93459c4298e2a0666dec4fc176a15dc423245c8c10afdb5436b45ffa",
+    "UI/Maps/Media/ArtMasks/74.blp": "dc7e17f7877f239738abae303b18c376f1169138a1dc6da127feaaa4f8d592fa",
+    "UI/Maps/Media/ArtMasks/76.blp": "28c8a5ae9734fc0d61b86d99162f49bfac715e550c78615c1998db36215579df",
+    "UI/Maps/Media/ArtMasks/83.blp": "50df96b62bce408702a47cd898aa8f5f828f37f7e61cfd3c1325dc48f3df7931",
+    "UI/Maps/Media/ArtMasks/86.blp": "4d59eca8d0fb645872bd56f6af3cb4c8c6d7bd69166b7ca597d92d274ea83567",
+    "UI/Maps/Media/ArtMasks/962.blp": "4d59eca8d0fb645872bd56f6af3cb4c8c6d7bd69166b7ca597d92d274ea83567"
+  },
+  "policy_sha256": "53fcdd1b2110901b68ebb07053dfb9d6b6bdfd6981517477b4ebdc1f8d60e486",
+  "source_metadata_sha256": {
+    "UiMap.csv": "c07589d908b00d7d079e9e88b8c50d80ae8bd36631a661615bd7e636e5bbb7b3",
+    "UiMapArt.csv": "4007c26df8db966191e12376d8f3ec86d24ec636776a38c86113cac04f5d5848",
+    "UiMapArtStyleLayer.csv": "a682384554520220f7a9255d8f5f89c644e89d2fa707de80d81f00973cf05b9b",
+    "UiMapAssignment.csv": "69cacfcfe8ddda76b36b10fbfb96ebb313c0c429788a41f053352273ba819e8b",
+    "UiMapLink.csv": "6c9fe798330475d0fc5a2da62c65237ac6a0b34394aee5b10a8687f25b1deb6a",
+    "UiMapXMapArt.csv": "9fb1ba6466e44889959cb2dc7ac6a91e0fb9ee77ae96c52106543625d9c239e0",
+    "WorldMapOverlay.csv": "a30553a7669133009ea67deb818976b36b3c56fa85e37e3f317adab9693cbc11",
+    "WorldMapOverlayTile.csv": "63b48bb99b11d7f44f88323694af08015195fce2ecf59a7b84ecc22f87984b14"
+  },
+  "validation": {
+    "python_map_checks": 58,
+    "lua_interactive_map_checks": 48,
+    "audited_zoom_states": 14,
+    "manifest": "8 manifests, 284 runtime Lua files",
+    "visual_previews": [
+      "continent overview and transition",
+      "default southern Kalimdor zone artwork",
+      "wounded Silithus and assault Uldum artwork",
+      "Global Map at zoom 12"
+    ],
+    "limits": [
+      "Offline previews and audits do not establish native WoW rendering or performance.",
+      "Global terrain raster at zoom 18 was unavailable because cached texture 207990.blp is missing; terrain stages passed renderer audits without rasterization."
+    ]
+  },
+  "copyright": "Map art is copyright Blizzard Entertainment; distributed changes are independently authored alpha masks."
+}

@@ -10,6 +10,7 @@ local function widget(_, _, parent)
     end
     function frame:RegisterForDrag(...) self.dragButtons = { ... } end
     function frame:SetAllPoints(target) self.allPoints = target end
+    function frame:SetParent(target) self.parent = target end
     function frame:SetFontObject(font) self.font = font end
     function frame:SetFont(path, size, flags) self.fontPath, self.fontSize, self.fontFlags = path, size, flags end
     function frame:SetPoint(...) self.points[#self.points + 1] = { ... } end

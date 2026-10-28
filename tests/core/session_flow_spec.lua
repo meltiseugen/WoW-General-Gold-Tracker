@@ -42,18 +42,18 @@ describe("Core/SessionFlow location transition policy", function()
         assert.equals("New Zone", decision.currentName)
     end)
 
-    it("builds instance transition metadata for entering or leaving an instance", function()
+    it("splits both instance entry and exit only in instance mode", function()
         local addon = load_flow()
 
         local entering = addon:GetSessionLocationTransitionDecision(
             { active = true, locationKey = "zone:1", zoneName = "Old Zone", isInstanced = false },
             { locationKey = "instance:2", instanceName = "Dungeon", isInstanced = true },
-            false
+            "instance"
         )
         local leaving = addon:GetSessionLocationTransitionDecision(
             { active = true, locationKey = "instance:2", instanceName = "Dungeon", isInstanced = true },
             { locationKey = "zone:3", zoneName = "Outside", isInstanced = false },
-            true
+            "instance"
         )
 
         assert.equals("instance", entering.transitionLabel)
@@ -62,5 +62,17 @@ describe("Core/SessionFlow location transition policy", function()
         assert.equals("instance", leaving.transitionLabel)
         assert.equals("instance-switch", leaving.saveReason)
         assert.equals("Dungeon", leaving.previousName)
+    end)
+
+    it("keeps instance entry and exit in a continuous session", function()
+        local addon = load_flow()
+        assert.is_nil(addon:GetSessionLocationTransitionDecision(
+            { active = true, locationKey = "zone:1", isInstanced = false },
+            { locationKey = "instance:2", isInstanced = true }, "continuous"
+        ))
+        assert.is_nil(addon:GetSessionLocationTransitionDecision(
+            { active = true, locationKey = "instance:2", isInstanced = true },
+            { locationKey = "zone:1", isInstanced = false }, "continuous"
+        ))
     end)
 end)

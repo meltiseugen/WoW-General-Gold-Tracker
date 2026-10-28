@@ -124,6 +124,7 @@ function M.with_ui(callback, width, skin)
     }, function()
         assert(loadfile("Libs/JanisTheme-1.0/JanisTheme-1.0.lua"))()
         assert(loadfile("Core/Namespace.lua"))("General-Gold-Tracker", ns)
+        assert(loadfile("Core/Modules.lua"))("General-Gold-Tracker", ns)
         local addon = ns.GoldTracker
         assert(loadfile("Core/Alerts.lua"))("General-Gold-Tracker", ns)
         addon.db = clone(addon.DEFAULTS)

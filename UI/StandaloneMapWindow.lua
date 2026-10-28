@@ -708,8 +708,7 @@ local function ApplyConfiguredMapPinIcon(texture, addon)
         iconOption = addon:GetMapPinIconOption()
     end
     iconOption = type(iconOption) == "table" and iconOption or {
-        atlas = "VignetteLoot",
-        texture = "Interface\\Icons\\INV_Misc_Map02",
+        atlas = "QuestObjective",
     }
 
     -- Prefer the concrete file texture. SetAtlas can succeed without producing
@@ -2321,12 +2320,22 @@ function GoldTracker:AddStandaloneMapToCustomFarm()
     return self:RequestAddToCustomFarm(row, row.farmingSourceType, mapSource)
 end
 
-local function RefreshStandaloneAddToFarmButton(frame)
+function GoldTracker:RefreshStandaloneMapCustomFarmAddButton()
+    local frame = self.standaloneMapFrame
     local button = frame and frame.addToFarmButton
     if not button then
         return
     end
-    local row, reason = GoldTracker:GetStandaloneMapCustomFarmRow()
+    local showAdd = self:GetActiveCustomFarm() ~= nil
+    button:SetShown(showAdd)
+    if frame.statusText and frame.body then
+        frame.statusText:ClearAllPoints()
+        frame.statusText:SetPoint("BOTTOMLEFT", frame.body, "BOTTOMLEFT", 18, 18)
+        frame.statusText:SetPoint("BOTTOMRIGHT", frame.body, "BOTTOMRIGHT",
+            showAdd and -(ADD_TO_FARM_BUTTON_WIDTH + 30) or -18, 18)
+    end
+    if not showAdd then return end
+    local row, reason = self:GetStandaloneMapCustomFarmRow()
     button:SetAlpha(row and 1 or 0.5)
     button.tooltipText = reason
 end
@@ -2468,7 +2477,7 @@ function GoldTracker:RefreshStandaloneMapWindow()
     RefreshStandaloneMapDropdown(frame)
     RefreshMapDisplayModeButton(frame)
     RefreshStandaloneWaypointButton(frame)
-    RefreshStandaloneAddToFarmButton(frame)
+    self:RefreshStandaloneMapCustomFarmAddButton()
     frame.mapTitle:SetText(GetStandaloneMapToolbarTitle(frame))
     RefreshStandaloneMapDetails(frame)
     RefreshStandaloneMapHeader(frame)
@@ -3029,7 +3038,11 @@ function GoldTracker:OpenStandaloneMapWindow(options)
     frame.originalMapID = frame.mapID
     frame.originalMapPins = frame.mapPins
     frame:Show()
-    frame:Raise()
+    if Theme and type(Theme.BringManagedWindowToFront) == "function" then
+        Theme:BringManagedWindowToFront(frame)
+    else
+        frame:Raise()
+    end
     self:RefreshStandaloneMapWindow()
 end
 

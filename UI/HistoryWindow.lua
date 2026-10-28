@@ -1,2638 +1,607 @@
 local _, NS = ...
-local function CreateFrame(...)
-    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+local GoldTracker, Theme = NS.GoldTracker, NS.JanisTheme
+local Constants, Model = NS.HistoryConstants, NS.HistorySessionModel
+local formatter = NS.HistoryFormatter:New(GoldTracker)
+local service = NS.HistoryDataService:New(GoldTracker)
+local dates = NS.HistoryDateFilter:New()
+local ALL = Constants.DETAILS_LOCATION_FILTER_ALL
+local DETAILS_LOCATION_FILTER_ALL = ALL
+local SORT_KEYS = { duration=true, sessionTotal=true, sessionTotalRaw=true, highlights=true, rate=true, date=true }
+local ITEM_FILTERS = { {key="all",label="All loot"}, {key="auction",label="Auction-valued"}, {key="vendor",label="Vendor-only"}, {key="bound",label="Bound"} }
+local STYLE_FILTERS = { {key="all",label="All styles"}, {key="crafting",label="Crafting reagents"}, {key="armorWeapons",label="Armor & weapons"}, {key="other",label="Other items"} }
+local function CreateFrame(...) return (NS.CreateThemedFrame or _G.CreateFrame)(...) end
+local function Color(key) return (Theme.colors and Theme.colors[key]) or {0.85,0.85,0.85,1} end
+local function Text(parent, value, size, color, justify)
+    local t=parent:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
+    t:SetText(value or ""); t:SetJustifyH(justify or "LEFT"); t:SetWordWrap(false)
+    t:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",size or 12,"")
+    t:SetTextColor(unpack(Color(color or "text")))
+    return t
 end
-local GoldTracker = NS.GoldTracker
-local HistoryConstants = NS.HistoryConstants
-local HistoryDateFilter = NS.HistoryDateFilter
-local HistorySessionModel = NS.HistorySessionModel
-local HistoryFormatter = NS.HistoryFormatter
-local HistoryDataService = NS.HistoryDataService
-local Theme = NS.JanisTheme
-
-local RENAME_DIALOG_KEY = "GOLDTRACKER_RENAME_HISTORY_SESSION"
-local SPLIT_DIALOG_KEY = "GOLDTRACKER_SPLIT_HISTORY_SESSION"
-local ROW_HEIGHT = HistoryConstants.ROW_HEIGHT
-local ROW_SPACING = HistoryConstants.ROW_SPACING
-local DETAILS_LOCATION_FILTER_ALL = HistoryConstants.DETAILS_LOCATION_FILTER_ALL
-local HISTORY_DATE_FILTER_ALL = HistoryConstants.DATE_FILTER_ALL
-local HISTORY_DATE_FILTER_OPTIONS = HistoryConstants.DATE_FILTER_OPTIONS
-local HISTORY_WINDOW_MIN_WIDTH = 920
-local HISTORY_WINDOW_MAX_WIDTH = 1600
-local HISTORY_WINDOW_MIN_HEIGHT = 610
-local HISTORY_WINDOW_DEFAULT_HEIGHT = 610
-local HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT = 620
-local HISTORY_WINDOW_VERTICAL_CHROME_INSET = 66
-local HISTORY_SORT_KEYS = {
-    highlights = true,
-    sessionTotal = true,
-    sessionTotalRaw = true,
-    duration = true,
-}
-local LOCATION_TABLE_MIN_VISIBLE_ROWS = 3
-local DETAILS_GAP_LOCATION_TABLE_TO_FILTER = 10
-local DETAILS_GAP_FILTER_TO_SUMMARY = 12
-local DETAILS_GAP_SUMMARY_TO_ITEMS = 6
-local DETAILS_LOCATION_COLUMN_GAP = 12
-local DETAILS_LOCATION_MIN_LOCATION_WIDTH = 260
-local DETAILS_LOCATION_TIME_MIN_WIDTH = 190
-local DETAILS_LOCATION_TIME_PREFERRED_WIDTH = 230
-local DETAILS_LOCATION_HIGHLIGHTS_WIDTH = 90
-local DETAILS_LOCATION_DURATION_WIDTH = 72
-local DETAILS_ITEMS_ROW_SPACING = 2
-local DETAILS_ITEMS_COLUMN_GAP = 12
-local DETAILS_ITEMS_VALUE_MIN_WIDTH = 170
-local DETAILS_ITEMS_VALUE_MAX_WIDTH = 280
-local DETAILS_ITEMS_SOURCE_MIN_WIDTH = 140
-local DETAILS_ITEMS_MIN_ITEM_WIDTH = 260
-local DETAILS_CONTROLS_LOCATION_LABEL_WIDTH = 54
-local DETAILS_CONTROLS_LOCATION_DROPDOWN_WIDTH = 230
-local DETAILS_CONTROLS_STYLE_LABEL_WIDTH = 34
-local DETAILS_CONTROLS_STYLE_DROPDOWN_WIDTH = 160
-local DETAILS_CONTROLS_BUTTON_GAP = 8
-local DETAILS_CONTROLS_FILTER_TO_BUTTON_GAP = 12
-local DETAILS_CONTROLS_SINGLE_ROW_HEIGHT = 24
-local DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT = 52
-local HISTORY_SORT_ICON_SIZE = 10
-local historyDateFilter = HistoryDateFilter:New()
-local historyFormatter = HistoryFormatter:New(GoldTracker)
-local historyDataService = HistoryDataService:New(GoldTracker, DETAILS_LOCATION_FILTER_ALL)
-
-local function CreateHistoryPanel(parent, bg, border)
-    return Theme:CreatePanel(parent, bg, border)
-end
-
-local function CreateHistoryButton(parent, width, height, text, paletteKey)
-    return Theme:CreateButton(parent, width, height, text, paletteKey)
-end
-
-local function CreateHistorySortHeaderButton(parent, width, label, justifyH)
-    local button = CreateFrame("Button", nil, parent)
-    button:SetSize(width, 18)
-
-    local text = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    text:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-    text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -14, 0)
-    text:SetJustifyH(justifyH or "LEFT")
-    text:SetWordWrap(false)
-    text:SetText(label or "")
-    button.text = text
-    button.sortLabel = label or ""
-
-    local sortIcon = button:CreateTexture(nil, "ARTWORK")
-    sortIcon:SetSize(HISTORY_SORT_ICON_SIZE, HISTORY_SORT_ICON_SIZE)
-    sortIcon:SetPoint("RIGHT", button, "RIGHT", 0, 0)
-    sortIcon:Hide()
-    button.sortIcon = sortIcon
-
-    return button
-end
-
-local function RegisterHistoryPopupFrame(frameName)
-    Theme:RegisterSpecialFrame(frameName)
-end
-
-local function BringHistoryPopupToFront(frame)
-    Theme:BringToFront(frame, GoldTracker and GoldTracker.historyFrame)
-end
-
-local function CreateHistoryPopupChrome(frame, titleText)
-    return Theme:ApplyWindowChrome(frame, titleText, {
-        chromeColor = "popupChrome",
-        closeButtonKey = "popupCloseButton",
-    })
-end
-
-local function NewHistorySessionModel(session)
-    return HistorySessionModel:New(GoldTracker, session, DETAILS_LOCATION_FILTER_ALL)
-end
-
-local function SessionMatchesDateFilter(session, filterKey)
-    return historyDateFilter:MatchesTimestamp(NewHistorySessionModel(session):GetReferenceTimestamp(), filterKey)
-end
-
-local function GetDialogEditBox(dialog)
-    if not dialog then
-        return nil
-    end
-    if dialog.GetEditBox and type(dialog.GetEditBox) == "function" then
-        return dialog:GetEditBox()
-    end
-    return dialog.editBox or dialog.EditBox
-end
-
-local function EnsureRenameDialogRegistered()
-    if StaticPopupDialogs[RENAME_DIALOG_KEY] then
-        return
-    end
-
-    StaticPopupDialogs[RENAME_DIALOG_KEY] = {
-        text = "Rename session",
-        button1 = ACCEPT,
-        button2 = CANCEL,
-        hasEditBox = true,
-        maxLetters = 120,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-        OnShow = function(dialog)
-            local editBox = GetDialogEditBox(dialog)
-            if not editBox then
-                return
-            end
-            local session = GoldTracker:GetHistorySessionByID(dialog.data)
-            if session then
-                editBox:SetText(session.name or "")
-                editBox:HighlightText()
-            else
-                editBox:SetText("")
-            end
-        end,
-        OnAccept = function(dialog)
-            local editBox = GetDialogEditBox(dialog)
-            if not editBox then
-                return
-            end
-            GoldTracker:RenameHistorySession(dialog.data, editBox:GetText())
-        end,
-        EditBoxOnEnterPressed = function(editBox)
-            local dialog = editBox:GetParent()
-            if dialog and dialog.button1 then
-                dialog.button1:Click()
-            end
-        end,
-        EditBoxOnEscapePressed = function(editBox)
-            editBox:GetParent():Hide()
-        end,
-    }
-end
-
-local function FormatSessionSummary(addon, session)
-    return historyFormatter:FormatSessionSummary(session)
-end
-
-local function FormatSessionTotal(addon, session)
-    return historyFormatter:FormatSessionTotal(session)
-end
-
-local function FormatSessionTotalRaw(addon, session)
-    return historyFormatter:FormatSessionTotalRaw(session)
-end
-
-local function FormatSessionDuration(session)
-    local model = NewHistorySessionModel(session)
-    return model:FormatDurationMinutesLabel(model:GetDurationSeconds(session))
-end
-
-local function FormatHistoryTimestamp(timestamp)
-    local normalized = tonumber(timestamp)
-    if not normalized or normalized <= 0 then
-        return nil
-    end
-
-    return date("%Y-%m-%d %H:%M", normalized)
-end
-
-local function BuildHistoryResumeSummaryRows(session)
-    local rows = {}
-    if type(session) ~= "table" then
-        return rows
-    end
-
-    if session.wasResumed == true then
-        local count = math.max(0, math.floor((tonumber(session.resumeCount) or 0) + 0.5))
-        local value = count > 1 and string.format("Yes, %d times", count) or "Yes"
-        local resumedAtText = FormatHistoryTimestamp(session.resumedAt)
-        if resumedAtText then
-            value = string.format("%s, last %s", value, resumedAtText)
-        end
-        rows[#rows + 1] = { label = "Resumed", value = value }
-    end
-
-    if session.resumedFromHistory == true then
-        local sourceCount = #(session.resumedFromHistorySessionIDs or {})
-        local value = sourceCount > 1 and string.format("Yes, %d source sessions", sourceCount) or "Yes"
-        local lastResumedAtText = FormatHistoryTimestamp(session.lastResumedFromHistoryAt or session.resumedFromHistoryAt)
-        if lastResumedAtText then
-            value = string.format("%s, last %s", value, lastResumedAtText)
-        end
-        rows[#rows + 1] = { label = "Resumed from history", value = value }
-    end
-
-    return rows
-end
-
-local function TruncateSessionNameKeepingDate(addon, fullName, nameFontString)
-    return historyFormatter:TruncateSessionNameKeepingDate(fullName, nameFontString)
-end
-
-local function EnsureSplitDialogRegistered()
-    if StaticPopupDialogs[SPLIT_DIALOG_KEY] then
-        return
-    end
-
-    StaticPopupDialogs[SPLIT_DIALOG_KEY] = {
-        text = "Split this session into separate rows per location?\nThis action cannot be undone.",
-        button1 = ACCEPT,
-        button2 = CANCEL,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-        OnAccept = function(dialog)
-            local splitEntries, reason = GoldTracker:SplitHistorySessionByLocation(dialog.data)
-            if splitEntries and #splitEntries > 0 then
-                GoldTracker:Print(string.format("Split session into %d location rows.", #splitEntries), "history")
-            elseif reason == "single-location" then
-                GoldTracker:Print("Session has only one location; nothing to split.", "history")
-            else
-                GoldTracker:Print("Unable to split this session.", "warnings")
-            end
-        end,
-    }
-end
-
-local function BuildHistoryLocationOptions(session)
-    return NewHistorySessionModel(session):BuildHistoryLocationOptions(session)
-end
-
-local function BuildLocationDetailsRowsForSelection(session, selectedLocationKey)
-    return NewHistorySessionModel(session):BuildLocationDetailsRowsForSelection(selectedLocationKey, session)
-end
-
-local function BuildHistoryRowTitleAndSubtitle(session)
-    return NewHistorySessionModel(session):BuildRowTitleAndSubtitle(session)
-end
-
-local function BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
-    return historyDataService:BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
-end
-
-local function BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
-    return historyDataService:BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
-end
-
-local function BuildHistorySessionStyleOptions(addon, session)
-    local options = {
-        { id = addon.SESSION_STYLE_ALL_ID or "all", label = "All" },
-    }
-    local sessionStyleID = addon.NormalizeSessionStyleFilter
-        and addon:NormalizeSessionStyleFilter(session and session.sessionStyleFilter)
-        or "all"
-    if sessionStyleID ~= (addon.SESSION_STYLE_ALL_ID or "all") then
-        options[#options + 1] = {
-            id = sessionStyleID,
-            label = addon.GetSessionStyleLabel and addon:GetSessionStyleLabel(sessionStyleID) or sessionStyleID,
-        }
-    end
-    return options
-end
-
-local function EscapeCSVValue(value)
-    local text = tostring(value or "")
-    text = text:gsub("\r", " "):gsub("\n", " ")
-    if text:find('[",]') then
-        text = '"' .. text:gsub('"', '""') .. '"'
-    end
-    return text
-end
-
-local function ClampHistoryValue(value, minValue, maxValue)
-    value = tonumber(value) or 0
-    minValue = tonumber(minValue) or value
-    maxValue = tonumber(maxValue) or value
-    if maxValue < minValue then
-        maxValue = minValue
-    end
-    if value < minValue then
-        return minValue
-    end
-    if value > maxValue then
-        return maxValue
-    end
-    return value
-end
-
-local function GetHistoryDetailsAvailableItemWidth(frame)
-    if not frame then
-        return 0
-    end
-    local width = 0
-    if frame.detailsItemsScrollFrame then
-        width = tonumber(frame.detailsItemsScrollFrame:GetWidth()) or 0
-    end
-    if width <= 1 and frame.detailsContainer then
-        width = (tonumber(frame.detailsContainer:GetWidth()) or 0) - 46
-    end
-    return math.max(1, width - 6)
-end
-
-local function GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
-    local availableWidth = GetHistoryDetailsAvailableItemWidth(frame)
-    local textWidth = math.max(1, availableWidth - 8 - (DETAILS_ITEMS_COLUMN_GAP * 2))
-    local preferredItem = math.max(DETAILS_ITEMS_MIN_ITEM_WIDTH, tonumber(preferredItemWidth) or 0)
-    local preferredValue = math.max(DETAILS_ITEMS_VALUE_MIN_WIDTH, tonumber(preferredValueWidth) or 0)
-    local preferredSource = math.max(DETAILS_ITEMS_SOURCE_MIN_WIDTH, tonumber(preferredSourceWidth) or 0)
-
-    local valueWidth = ClampHistoryValue(
-        math.max(preferredValue, math.floor(textWidth * 0.18)),
-        DETAILS_ITEMS_VALUE_MIN_WIDTH,
-        DETAILS_ITEMS_VALUE_MAX_WIDTH
-    )
-    local sourceWidth = math.max(preferredSource, math.floor(textWidth * 0.30))
-    local itemWidth = math.max(preferredItem, textWidth - valueWidth - sourceWidth)
-
-    local totalWidth = itemWidth + valueWidth + sourceWidth
-    if totalWidth > textWidth then
-        local overflow = totalWidth - textWidth
-        local shrinkableSource = math.max(0, sourceWidth - DETAILS_ITEMS_SOURCE_MIN_WIDTH)
-        local sourceShrink = math.min(shrinkableSource, overflow)
-        sourceWidth = sourceWidth - sourceShrink
-        overflow = overflow - sourceShrink
-
-        if overflow > 0 then
-            local shrinkableValue = math.max(0, valueWidth - DETAILS_ITEMS_VALUE_MIN_WIDTH)
-            local valueShrink = math.min(shrinkableValue, overflow)
-            valueWidth = valueWidth - valueShrink
-        end
-    end
-
-    return {
-        itemWidth = math.max(1, math.floor(itemWidth + 0.5)),
-        valueWidth = math.max(1, math.floor(valueWidth + 0.5)),
-        sourceWidth = math.max(1, math.floor(sourceWidth + 0.5)),
-        availableWidth = availableWidth,
-    }
-end
-
-local function GetHistoryDetailsPreferredItemColumnWidths(frame)
-    local preferredItemWidth = DETAILS_ITEMS_MIN_ITEM_WIDTH
-    local preferredValueWidth = DETAILS_ITEMS_VALUE_MIN_WIDTH
-    local preferredSourceWidth = DETAILS_ITEMS_SOURCE_MIN_WIDTH
-    if not frame then
-        return preferredItemWidth, preferredValueWidth, preferredSourceWidth
-    end
-
-    preferredItemWidth = Theme:GetRequiredTextColumnWidth(
-        frame.detailsItemRows,
-        "itemText",
-        preferredItemWidth,
-        { padding = 8 }
-    )
-    for _, row in ipairs(frame.detailsItemRows or {}) do
-        if row:IsShown() then
-            if row.sourceText and type(row.sourceText.GetStringWidth) == "function" then
-                preferredSourceWidth = math.max(preferredSourceWidth, math.ceil((row.sourceText:GetStringWidth() or 0) + 8))
-            end
-            if row.valueText and type(row.valueText.GetStringWidth) == "function" then
-                preferredValueWidth = math.max(preferredValueWidth, math.ceil((row.valueText:GetStringWidth() or 0) + 10))
-            end
-        end
-    end
-
-    return preferredItemWidth, preferredValueWidth, preferredSourceWidth
-end
-
-local function ApplyHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
-    if not frame then
-        return
-    end
-
-    local layout = GetHistoryDetailsItemsColumnLayout(frame, preferredItemWidth, preferredValueWidth, preferredSourceWidth)
-    if frame.detailsItemsContent then
-        local contentWidth = 8
-            + layout.itemWidth
-            + layout.valueWidth
-            + layout.sourceWidth
-            + (DETAILS_ITEMS_COLUMN_GAP * 2)
-        frame.detailsItemsContent:SetWidth(math.max(layout.availableWidth, contentWidth))
-    end
-    if frame.itemsItemHeaderText and frame.itemsHeaderText then
-        frame.itemsItemHeaderText:ClearAllPoints()
-        frame.itemsItemHeaderText:SetPoint("TOPLEFT", frame.itemsHeaderText, "BOTTOMLEFT", 0, -4)
-        frame.itemsItemHeaderText:SetWidth(layout.itemWidth)
-    end
-    if frame.itemsValueHeaderText and frame.itemsItemHeaderText then
-        frame.itemsValueHeaderText:ClearAllPoints()
-        frame.itemsValueHeaderText:SetPoint("TOPLEFT", frame.itemsItemHeaderText, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
-        frame.itemsValueHeaderText:SetWidth(layout.valueWidth)
-    end
-    if frame.itemsSourceHeaderText then
-        frame.itemsSourceHeaderText:ClearAllPoints()
-        if frame.itemsValueHeaderText then
-            frame.itemsSourceHeaderText:SetPoint("TOPLEFT", frame.itemsValueHeaderText, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
-        elseif frame.itemsItemHeaderText then
-            frame.itemsSourceHeaderText:SetPoint("TOPLEFT", frame.itemsItemHeaderText, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
-        end
-        frame.itemsSourceHeaderText:SetWidth(layout.sourceWidth)
-    end
-    if frame.itemsHeaderUnderline and frame.itemsItemHeaderText and frame.itemsSourceHeaderText then
-        frame.itemsHeaderUnderline:ClearAllPoints()
-        frame.itemsHeaderUnderline:SetPoint("TOPLEFT", frame.itemsItemHeaderText, "BOTTOMLEFT", 0, -4)
-        frame.itemsHeaderUnderline:SetPoint("TOPRIGHT", frame.itemsSourceHeaderText, "BOTTOMRIGHT", 0, -4)
-    end
-    for _, row in ipairs(frame.detailsItemRows or {}) do
-        if row.itemText then
-            row.itemText:ClearAllPoints()
-            row.itemText:SetPoint("LEFT", row, "LEFT", 4, 0)
-            row.itemText:SetWidth(layout.itemWidth)
-        end
-        if row.valueText then
-            row.valueText:ClearAllPoints()
-            row.valueText:SetPoint("LEFT", row, "LEFT", 4 + layout.itemWidth + DETAILS_ITEMS_COLUMN_GAP, 0)
-            row.valueText:SetWidth(layout.valueWidth)
-        end
-        if row.sourceText then
-            row.sourceText:ClearAllPoints()
-            row.sourceText:SetPoint(
-                "LEFT",
-                row,
-                "LEFT",
-                4 + layout.itemWidth + DETAILS_ITEMS_COLUMN_GAP + layout.valueWidth + DETAILS_ITEMS_COLUMN_GAP,
-                0
-            )
-            row.sourceText:SetWidth(layout.sourceWidth)
-        end
+local function FitText(text, value, preferred, minimum)
+    local size=preferred
+    text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",size,"")
+    text:SetText(value)
+    while size>minimum and text:GetStringWidth()>text:GetWidth() do
+        size=size-1; text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",size,"")
     end
 end
-
-local function GetHistoryDetailsAvailableLocationWidth(frame)
-    if not frame then
-        return 0
-    end
-
-    local width = 0
-    if frame.locationTableScrollFrame then
-        width = (tonumber(frame.locationTableScrollFrame:GetWidth()) or 0) - 6
-    end
-    if width <= 1 and frame.locationTableFrame then
-        width = (tonumber(frame.locationTableFrame:GetWidth()) or 0) - 33
-    end
-    return math.max(1, width)
+local function Button(parent,width,label,fn,palette)
+    local b=Theme:CreateButton(parent,width,24,label,palette or "neutral")
+    b:SetScript("OnClick",fn); return b
 end
-
-local function ApplyHistoryLocationColumn(region, parent, leftOffset, width)
-    if not region or not parent then
-        return
-    end
-
-    region:ClearAllPoints()
-    region:SetPoint("TOPLEFT", parent, "TOPLEFT", leftOffset, 0)
-    region:SetWidth(width)
-end
-
-local function ApplyHistoryLocationTableColumnLayout(frame)
-    if not frame then
-        return
-    end
-
-    local availableWidth = GetHistoryDetailsAvailableLocationWidth(frame)
-    local fixedWidth = DETAILS_LOCATION_HIGHLIGHTS_WIDTH
-        + DETAILS_LOCATION_DURATION_WIDTH
-        + (DETAILS_LOCATION_COLUMN_GAP * 3)
-    local remainingWidth = math.max(1, availableWidth - fixedWidth)
-    local timeWidth = DETAILS_LOCATION_TIME_PREFERRED_WIDTH
-    if remainingWidth - timeWidth < DETAILS_LOCATION_MIN_LOCATION_WIDTH then
-        timeWidth = math.max(DETAILS_LOCATION_TIME_MIN_WIDTH, remainingWidth - DETAILS_LOCATION_MIN_LOCATION_WIDTH)
-    end
-    local locationWidth = math.max(1, remainingWidth - timeWidth)
-
-    local locationX = 0
-    local timeX = locationX + locationWidth + DETAILS_LOCATION_COLUMN_GAP
-    local highlightsX = timeX + timeWidth + DETAILS_LOCATION_COLUMN_GAP
-    local durationX = highlightsX + DETAILS_LOCATION_HIGHLIGHTS_WIDTH + DETAILS_LOCATION_COLUMN_GAP
-
-    if frame.locationTableContent then
-        frame.locationTableContent:SetWidth(math.max(1, availableWidth))
-    end
-
-    if frame.locationTableFrame then
-        ApplyHistoryLocationColumn(frame.locationHeaderText, frame.locationTableFrame, locationX, locationWidth)
-        ApplyHistoryLocationColumn(frame.timeFrameHeaderText, frame.locationTableFrame, timeX, timeWidth)
-        ApplyHistoryLocationColumn(frame.highlightsHeaderText, frame.locationTableFrame, highlightsX, DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
-        ApplyHistoryLocationColumn(frame.durationHeaderText, frame.locationTableFrame, durationX, DETAILS_LOCATION_DURATION_WIDTH)
-    end
-
-    for _, row in ipairs(frame.locationTableRows or {}) do
-        ApplyHistoryLocationColumn(row.locationText, row, locationX, locationWidth)
-        ApplyHistoryLocationColumn(row.timeFrameText, row, timeX, timeWidth)
-        ApplyHistoryLocationColumn(row.highlightsText, row, highlightsX, DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
-        ApplyHistoryLocationColumn(row.durationText, row, durationX, DETAILS_LOCATION_DURATION_WIDTH)
-    end
-end
-
-local function GetHistoryDetailsButtonWidth(button)
-    if not button then
-        return 0
-    end
-    return math.max(1, tonumber(button.layoutWidth) or (button.GetWidth and tonumber(button:GetWidth())) or 0)
-end
-
-local function IsHistoryDetailsButtonShown(button)
-    return button and (not button.IsShown or button:IsShown())
-end
-
-local function GetHistoryDetailsActionsWidth(frame)
-    local totalWidth = 0
-    local buttonCount = 0
-    for _, button in ipairs(frame.detailsActionButtons or {}) do
-        if IsHistoryDetailsButtonShown(button) then
-            if buttonCount > 0 then
-                totalWidth = totalWidth + DETAILS_CONTROLS_BUTTON_GAP
-            end
-            totalWidth = totalWidth + GetHistoryDetailsButtonWidth(button)
-            buttonCount = buttonCount + 1
-        end
-    end
-    return totalWidth, buttonCount
-end
-
-local function ApplyHistoryDetailsControlsLayout(frame)
-    local controlsFrame = frame and frame.detailsControlsFrame
-    if not controlsFrame then
-        return
-    end
-
-    local showStyleFilter = not frame.styleFilterDropdown
-        or not frame.styleFilterDropdown.IsShown
-        or frame.styleFilterDropdown:IsShown()
-    local filterWidth = DETAILS_CONTROLS_LOCATION_LABEL_WIDTH
-        - 6
-        + DETAILS_CONTROLS_LOCATION_DROPDOWN_WIDTH
-    if showStyleFilter then
-        filterWidth = filterWidth
-            + 8
-            + DETAILS_CONTROLS_STYLE_LABEL_WIDTH
-            - 6
-            + DETAILS_CONTROLS_STYLE_DROPDOWN_WIDTH
-    end
-
-    if frame.locationFilterLabelText then
-        frame.locationFilterLabelText:ClearAllPoints()
-        frame.locationFilterLabelText:SetPoint("TOPLEFT", controlsFrame, "TOPLEFT", 0, 0)
-        frame.locationFilterLabelText:SetWidth(DETAILS_CONTROLS_LOCATION_LABEL_WIDTH)
-    end
-    if frame.locationFilterDropdown then
-        frame.locationFilterDropdown:ClearAllPoints()
-        frame.locationFilterDropdown:SetPoint("LEFT", frame.locationFilterLabelText, "RIGHT", -6, -1)
-    end
-    if frame.styleFilterLabelText then
-        frame.styleFilterLabelText:ClearAllPoints()
-        if showStyleFilter then
-            frame.styleFilterLabelText:SetPoint("LEFT", frame.locationFilterDropdown, "RIGHT", 8, 1)
-            frame.styleFilterLabelText:SetWidth(DETAILS_CONTROLS_STYLE_LABEL_WIDTH)
-        else
-            frame.styleFilterLabelText:SetPoint("LEFT", frame.locationFilterDropdown, "RIGHT", 8, 1)
-        end
-    end
-    if frame.styleFilterDropdown then
-        frame.styleFilterDropdown:ClearAllPoints()
-        frame.styleFilterDropdown:SetPoint("LEFT", frame.styleFilterLabelText, "RIGHT", -6, -1)
-    end
-
-    local actionsWidth, actionCount = GetHistoryDetailsActionsWidth(frame)
-    if actionCount == 0 then
-        controlsFrame:SetHeight(DETAILS_CONTROLS_SINGLE_ROW_HEIGHT)
-        return
-    end
-
-    local controlsWidth = tonumber(controlsFrame:GetWidth()) or 0
-    if controlsWidth <= 1 and frame.detailsContainer then
-        controlsWidth = math.max(1, (tonumber(frame.detailsContainer:GetWidth()) or 0) - 36)
-    end
-    local useWrappedActions = controlsWidth < (filterWidth + DETAILS_CONTROLS_FILTER_TO_BUTTON_GAP + actionsWidth)
-    local rowY = useWrappedActions and -30 or 0
-    controlsFrame:SetHeight(useWrappedActions and DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT or DETAILS_CONTROLS_SINGLE_ROW_HEIGHT)
-
-    local previousButton = nil
-    for index = #(frame.detailsActionButtons or {}), 1, -1 do
-        local button = frame.detailsActionButtons[index]
-        if button then
-            button:ClearAllPoints()
-            if IsHistoryDetailsButtonShown(button) then
-                if previousButton then
-                    button:SetPoint("RIGHT", previousButton, "LEFT", -DETAILS_CONTROLS_BUTTON_GAP, 0)
-                elseif useWrappedActions then
-                    button:SetPoint("TOPRIGHT", controlsFrame, "TOPRIGHT", 0, rowY)
-                else
-                    button:SetPoint("RIGHT", controlsFrame, "RIGHT", 0, rowY)
-                end
-                previousButton = button
-            end
-        end
-    end
-end
-
-local function CompareHistorySessionsByRecency(a, b)
-    return historyDataService:CompareHistorySessionsByRecency(a, b)
-end
-
-local function GetHistorySortValue(session, sortKey)
-    return historyDataService:GetHistorySortValue(session, sortKey)
-end
-
-function GoldTracker:PromptRenameHistorySession(sessionID)
-    EnsureRenameDialogRegistered()
-    StaticPopup_Show(RENAME_DIALOG_KEY, nil, nil, sessionID)
-end
-
-function GoldTracker:PromptSplitHistorySession(sessionID)
-    local session = self:GetHistorySessionByID(sessionID)
-    if not session then
-        return
-    end
-
-    local locationOptions = BuildHistoryLocationOptions(session)
-    if #locationOptions <= 2 then
-        self:Print("Session has only one location; nothing to split.", "history")
-        return
-    end
-
-    EnsureSplitDialogRegistered()
-    StaticPopup_Show(SPLIT_DIALOG_KEY, nil, nil, sessionID)
-end
-
-function GoldTracker:HandleHistoryPageMouseWheel(delta)
-    if not self.historyFrame or self.historyFrame.view ~= "list" then
-        return
-    end
-
-    local scrollFrame = self.historyFrame.scrollFrame
-    if not scrollFrame then
-        return
-    end
-
-    local maxScroll = tonumber(scrollFrame:GetVerticalScrollRange()) or 0
-    if maxScroll <= 0 then
-        return
-    end
-
-    local currentScroll = tonumber(scrollFrame:GetVerticalScroll()) or 0
-    local step = math.max(24, math.floor((ROW_HEIGHT or 40) * 0.8))
-    local nextScroll = currentScroll - ((tonumber(delta) or 0) * step)
-    if nextScroll < 0 then
-        nextScroll = 0
-    elseif nextScroll > maxScroll then
-        nextScroll = maxScroll
-    end
-    scrollFrame:SetVerticalScroll(nextScroll)
-end
-
-function GoldTracker:CreateHistoryWindow()
-    if self.historyFrame then
-        return
-    end
-
-    local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerHistoryFrame", UIParent)
-    frame:SetSize(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_DEFAULT_HEIGHT)
-    frame:SetPoint("CENTER")
-    frame:SetFrameStrata("DIALOG")
-    if frame.SetToplevel then
-        frame:SetToplevel(true)
-    end
-    frame:SetMovable(true)
-    frame:SetResizable(true)
-    if frame.SetResizeBounds then
-        frame:SetResizeBounds(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_MIN_HEIGHT, HISTORY_WINDOW_MAX_WIDTH, 900)
-    else
-        if frame.SetMinResize then
-            frame:SetMinResize(HISTORY_WINDOW_MIN_WIDTH, HISTORY_WINDOW_MIN_HEIGHT)
-        end
-        if frame.SetMaxResize then
-            frame:SetMaxResize(HISTORY_WINDOW_MAX_WIDTH, 900)
-        end
-    end
-    frame:SetClampedToScreen(true)
-    frame:EnableMouse(true)
-    frame:EnableMouseWheel(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnMouseDown", function(self)
-        self:Raise()
-    end)
-    frame:SetScript("OnDragStart", function(self)
-        self:Raise()
-        self:StartMoving()
-    end)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-    frame:SetScript("OnMouseWheel", function(_, delta)
-        if frame.view == "list" then
-            addon:HandleHistoryPageMouseWheel(delta)
-        end
-    end)
-    frame:Hide()
-
-    local chrome, headerBar = Theme:ApplyWindowChrome(frame, "Session History", {
-        titleRightOffset = -142,
-        closeButtonKey = "historyCloseButton",
-    })
-    local closeButton = frame.historyCloseButton
-    Theme:RegisterSpecialFrame("GoldTrackerHistoryFrame")
-
-    local backButton = CreateHistoryButton(headerBar, 72, 22, "Back", "neutral")
-    backButton:SetSize(80, 22)
-    backButton:SetPoint("RIGHT", closeButton, "LEFT", -10, 0)
-    backButton:SetText("Back")
-    backButton:SetScript("OnClick", function()
-        addon:ShowHistoryListView()
-    end)
-    backButton:Hide()
-    frame.backButton = backButton
-
-    local listContainer = CreateHistoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
-    listContainer:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
-    listContainer:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
-    listContainer:EnableMouseWheel(true)
-    listContainer:SetScript("OnMouseWheel", function(_, delta)
-        addon:HandleHistoryPageMouseWheel(delta)
-    end)
-    frame.listContainer = listContainer
-    frame.selectedSessionIDs = {}
-    frame.currentPage = 1
-    frame.sortKey = frame.sortKey or nil
-    frame.sortAscending = frame.sortAscending == true
-    frame.sortCriteria = frame.sortCriteria or {}
-    frame.historyDateFilterKey = frame.historyDateFilterKey or HISTORY_DATE_FILTER_ALL
-
-    local mergeButton = CreateHistoryButton(listContainer, 120, 22, "Merge", "neutral")
-    mergeButton:SetSize(120, 22)
-    mergeButton:SetPoint("TOPRIGHT", listContainer, "TOPRIGHT", -154, -8)
-    mergeButton:SetText("Merge")
-    mergeButton:SetScript("OnClick", function()
-        local selectedIDs = addon:GetSelectedHistorySessionIDsInOrder()
-        if #selectedIDs < 2 then
-            return
-        end
-
-        local merged = addon:MergeHistorySessions(selectedIDs)
-        if merged then
-            addon:ClearHistorySelection()
-            addon:RefreshHistoryWindow()
-            addon:Print(string.format("Merged %d sessions into \"%s\".", #selectedIDs, merged.name or "Session"), "history")
-        end
-    end)
-    mergeButton:Hide()
-    frame.mergeButton = mergeButton
-
-    local bulkDeleteButton = CreateHistoryButton(listContainer, 120, 22, "Bulk Delete", "danger")
-    bulkDeleteButton:SetSize(120, 22)
-    bulkDeleteButton:SetPoint("LEFT", mergeButton, "RIGHT", 8, 0)
-    bulkDeleteButton:SetText("Bulk Delete")
-    bulkDeleteButton:SetScript("OnClick", function()
-        local selectedIDs = addon:GetSelectedHistorySessionIDsInOrder()
-        if #selectedIDs == 0 then
-            return
-        end
-
-        local removedCount = addon:DeleteHistorySessions(selectedIDs)
-        if removedCount > 0 then
-            addon:ClearHistorySelection()
-            addon:RefreshHistoryWindow()
-            addon:Print(string.format("Deleted %d history sessions.", removedCount), "history")
-        end
-    end)
-    bulkDeleteButton:Hide()
-    frame.bulkDeleteButton = bulkDeleteButton
-
-    local historyDateFilterLabel = listContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    historyDateFilterLabel:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 24, -14)
-    historyDateFilterLabel:SetTextColor(0.62, 0.66, 0.74)
-    historyDateFilterLabel:SetText("Filter")
-    frame.historyDateFilterLabelText = historyDateFilterLabel
-
-    local historyDateFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryDateFilterDropdown", listContainer, "UIDropDownMenuTemplate")
-    historyDateFilterDropdown:SetPoint("LEFT", historyDateFilterLabel, "RIGHT", -6, -2)
-    UIDropDownMenu_SetWidth(historyDateFilterDropdown, 150)
-    UIDropDownMenu_Initialize(historyDateFilterDropdown, function(_, level)
-        for _, option in ipairs(HISTORY_DATE_FILTER_OPTIONS) do
-            local info = UIDropDownMenu_CreateInfo()
-            local optionKey = option.key
-            info.text = option.label
-            info.value = optionKey
-            info.checked = (frame.historyDateFilterKey or HISTORY_DATE_FILTER_ALL) == optionKey
-            info.func = function()
-                frame.historyDateFilterKey = optionKey
-                frame.currentPage = 1
-                addon:ClearHistorySelection()
-                addon:RefreshHistoryWindow()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end)
-    frame.historyDateFilterDropdown = historyDateFilterDropdown
-
-    local hint = listContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hint:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 20, -40)
-    hint:SetText("Click a row for details. Use row checkboxes (or the header checkbox) for Merge/Bulk Delete, Pin to keep sessions on top, and Filter to limit by date.")
-    hint:Hide()
-    frame.listHintText = hint
-
-    local headerButton = CreateHistorySortHeaderButton(listContainer, 260, "Session name")
-    headerButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 36, -56)
-    headerButton:EnableMouse(false)
-    if headerButton.sortIcon then
-        headerButton.sortIcon:Hide()
-    end
-    frame.listHeaderButton = headerButton
-    frame.listHeaderText = headerButton.text
-
-    local selectPageCheckbox = CreateFrame("CheckButton", nil, listContainer, "UICheckButtonTemplate")
-    selectPageCheckbox:SetSize(22, 22)
-    selectPageCheckbox:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 8, -53)
-    selectPageCheckbox:SetChecked(false)
-    selectPageCheckbox:SetScript("OnClick", function(button)
-        addon:SetHistoryCurrentPageSelection(button:GetChecked() == true)
-    end)
-    frame.selectPageCheckbox = selectPageCheckbox
-
-    local summaryHeaderButton = CreateHistorySortHeaderButton(listContainer, 96, "Highlights")
-    summaryHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 302, -56)
-    addon:BindTableSortHeaderClick(summaryHeaderButton, addon.ToggleHistorySort, "highlights")
-    frame.summaryHeaderButton = summaryHeaderButton
-    frame.listSummaryHeaderText = summaryHeaderButton.text
-
-    local totalHeaderButton = CreateHistorySortHeaderButton(listContainer, 104, "Session Total")
-    totalHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 406, -56)
-    addon:BindTableSortHeaderClick(totalHeaderButton, addon.ToggleHistorySort, "sessionTotal")
-    frame.totalHeaderButton = totalHeaderButton
-
-    local totalRawHeaderButton = CreateHistorySortHeaderButton(listContainer, 106, "Raw Total")
-    totalRawHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 518, -56)
-    addon:BindTableSortHeaderClick(totalRawHeaderButton, addon.ToggleHistorySort, "sessionTotalRaw")
-    frame.totalRawHeaderButton = totalRawHeaderButton
-
-    local durationHeaderButton = CreateHistorySortHeaderButton(listContainer, 64, "Duration")
-    durationHeaderButton:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 632, -56)
-    addon:BindTableSortHeaderClick(durationHeaderButton, addon.ToggleHistorySort, "duration")
-    frame.durationHeaderButton = durationHeaderButton
-
-    local dividerColorR, dividerColorG, dividerColorB, dividerColorA = 1, 0.82, 0, 0.60
-    local function CreateHeaderDivider(x)
-        local divider = listContainer:CreateTexture(nil, "ARTWORK")
-        divider:SetColorTexture(dividerColorR, dividerColorG, dividerColorB, dividerColorA)
-        divider:SetSize(1, 18)
-        divider:SetPoint("TOPLEFT", listContainer, "TOPLEFT", x, -55)
-        return divider
-    end
-
-    frame.headerDividerNameSummary = CreateHeaderDivider(294)
-    frame.headerDividerSummaryTotal = CreateHeaderDivider(400)
-    frame.headerDividerTotalRaw = CreateHeaderDivider(512)
-    frame.headerDividerRawDuration = CreateHeaderDivider(626)
-
-    local headerUnderline = listContainer:CreateTexture(nil, "ARTWORK")
-    headerUnderline:SetColorTexture(1, 0.82, 0, 0.35)
-    headerUnderline:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 24, -72)
-    headerUnderline:SetPoint("TOPRIGHT", listContainer, "TOPRIGHT", -42, -72)
-    headerUnderline:SetHeight(1)
-    frame.headerUnderline = headerUnderline
-
-    local scrollFrame = CreateFrame("ScrollFrame", "GoldTrackerHistoryScrollFrame", listContainer, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", listContainer, "TOPLEFT", 0, -72)
-    scrollFrame:SetPoint("BOTTOMRIGHT", listContainer, "BOTTOMRIGHT", -30, 50)
-    scrollFrame:EnableMouseWheel(true)
-    scrollFrame:SetScript("OnMouseWheel", function(_, delta)
-        addon:HandleHistoryPageMouseWheel(delta)
-    end)
-    frame.scrollFrame = scrollFrame
-
-    local content = CreateFrame("Frame", nil, scrollFrame)
-    content:SetSize(1, 1)
-    scrollFrame:SetScrollChild(content)
-    content:EnableMouseWheel(true)
-    content:SetScript("OnMouseWheel", function(_, delta)
-        addon:HandleHistoryPageMouseWheel(delta)
-    end)
-    frame.content = content
-    frame.rows = {}
-    frame.visibleSessionIDs = {}
-
-    local emptyText = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    emptyText:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -8)
-    emptyText:SetText("No saved sessions.")
-    frame.emptyText = emptyText
-
-    local pinnedDivider = content:CreateTexture(nil, "ARTWORK")
-    pinnedDivider:SetColorTexture(1, 0.82, 0, 0.35)
-    pinnedDivider:SetHeight(1)
-    pinnedDivider:Hide()
-    frame.pinnedDivider = pinnedDivider
-
-    local prevPageButton = CreateHistoryButton(listContainer, 34, 20, "<", "neutral")
-    prevPageButton:SetSize(34, 20)
-    prevPageButton:SetPoint("BOTTOMLEFT", listContainer, "BOTTOMLEFT", 20, 20)
-    prevPageButton:SetText("<")
-    prevPageButton:SetScript("OnClick", function()
-        addon:SetHistoryPage((frame.currentPage or 1) - 1)
-    end)
-    frame.prevPageButton = prevPageButton
-
-    local nextPageButton = CreateHistoryButton(listContainer, 34, 20, ">", "neutral")
-    nextPageButton:SetSize(34, 20)
-    nextPageButton:SetPoint("LEFT", prevPageButton, "RIGHT", 6, 0)
-    nextPageButton:SetText(">")
-    nextPageButton:SetScript("OnClick", function()
-        addon:SetHistoryPage((frame.currentPage or 1) + 1)
-    end)
-    frame.nextPageButton = nextPageButton
-
-    local pageText = listContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    pageText:SetPoint("LEFT", nextPageButton, "RIGHT", 10, 0)
-    pageText:SetJustifyH("LEFT")
-    pageText:SetText("Page 1 / 1")
-    frame.pageText = pageText
-
-    local detailsContainer = CreateHistoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.10 })
-    detailsContainer:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
-    detailsContainer:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
-    detailsContainer:Hide()
-    frame.detailsContainer = detailsContainer
-
-    local sessionName = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    sessionName:SetPoint("TOPLEFT", detailsContainer, "TOPLEFT", 16, -16)
-    sessionName:SetPoint("TOPRIGHT", detailsContainer, "TOPRIGHT", -16, -16)
-    sessionName:SetJustifyH("LEFT")
-    frame.sessionNameText = sessionName
-
-    local locationTableFrame = CreateFrame("Frame", nil, detailsContainer)
-    locationTableFrame:SetPoint("TOPLEFT", sessionName, "BOTTOMLEFT", 0, -6)
-    locationTableFrame:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
-    locationTableFrame:SetHeight(20)
-    locationTableFrame:Hide()
-    frame.locationTableFrame = locationTableFrame
-
-    local locationColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    locationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, 0)
-    locationColumnHeader:SetWidth(DETAILS_LOCATION_MIN_LOCATION_WIDTH)
-    locationColumnHeader:SetJustifyH("LEFT")
-    if locationColumnHeader.SetWordWrap then
-        locationColumnHeader:SetWordWrap(false)
-    end
-    locationColumnHeader:SetText("Location")
-    frame.locationHeaderText = locationColumnHeader
-
-    local timeFrameColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    timeFrameColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_COLUMN_GAP, 0)
-    timeFrameColumnHeader:SetWidth(DETAILS_LOCATION_TIME_PREFERRED_WIDTH)
-    timeFrameColumnHeader:SetJustifyH("LEFT")
-    if timeFrameColumnHeader.SetWordWrap then
-        timeFrameColumnHeader:SetWordWrap(false)
-    end
-    timeFrameColumnHeader:SetText("Time frame")
-    frame.timeFrameHeaderText = timeFrameColumnHeader
-
-    local highlightsColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    highlightsColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 2), 0)
-    highlightsColumnHeader:SetWidth(DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
-    highlightsColumnHeader:SetJustifyH("LEFT")
-    if highlightsColumnHeader.SetWordWrap then
-        highlightsColumnHeader:SetWordWrap(false)
-    end
-    highlightsColumnHeader:SetText("Highlights")
-    frame.highlightsHeaderText = highlightsColumnHeader
-
-    local durationColumnHeader = locationTableFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    durationColumnHeader:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + DETAILS_LOCATION_HIGHLIGHTS_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 3), 0)
-    durationColumnHeader:SetWidth(DETAILS_LOCATION_DURATION_WIDTH)
-    durationColumnHeader:SetJustifyH("LEFT")
-    if durationColumnHeader.SetWordWrap then
-        durationColumnHeader:SetWordWrap(false)
-    end
-    durationColumnHeader:SetText("Duration")
-    frame.durationHeaderText = durationColumnHeader
-
-    local tableUnderline = locationTableFrame:CreateTexture(nil, "ARTWORK")
-    tableUnderline:SetColorTexture(1, 0.82, 0, 0.28)
-    tableUnderline:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, -16)
-    tableUnderline:SetPoint("TOPRIGHT", locationTableFrame, "TOPRIGHT", 0, -16)
-    tableUnderline:SetHeight(1)
-    frame.locationTableUnderline = tableUnderline
-
-    local locationTableScrollFrame = CreateFrame("ScrollFrame", nil, locationTableFrame, "UIPanelScrollFrameTemplate")
-    locationTableScrollFrame:SetPoint("TOPLEFT", locationTableFrame, "TOPLEFT", 0, -19)
-    locationTableScrollFrame:SetPoint("TOPRIGHT", locationTableFrame, "TOPRIGHT", -27, -19)
-    locationTableScrollFrame:SetHeight(1)
-    locationTableScrollFrame:EnableMouseWheel(true)
-    locationTableScrollFrame:SetScript("OnMouseWheel", function(self, delta)
-        local step = 24
-        local nextScroll = self:GetVerticalScroll() - (delta * step)
-        local maxScroll = self:GetVerticalScrollRange()
-        if nextScroll < 0 then
-            nextScroll = 0
-        elseif nextScroll > maxScroll then
-            nextScroll = maxScroll
-        end
-        self:SetVerticalScroll(nextScroll)
-    end)
-    frame.locationTableScrollFrame = locationTableScrollFrame
-
-    local locationTableContent = CreateFrame("Frame", nil, locationTableScrollFrame)
-    locationTableContent:SetSize(1, 1)
-    locationTableContent:SetPoint("TOPLEFT", locationTableScrollFrame, "TOPLEFT", 0, 0)
-    locationTableScrollFrame:SetScrollChild(locationTableContent)
-    frame.locationTableContent = locationTableContent
-
-    frame.locationTableRows = {}
-    frame.locationText = nil
-    frame.timeFrameText = nil
-    frame.locationDurationText = nil
-
-    local summaryTableFrame = CreateFrame("Frame", nil, detailsContainer)
-    summaryTableFrame:SetPoint("TOPLEFT", locationTableFrame, "BOTTOMLEFT", 0, -(DETAILS_GAP_LOCATION_TABLE_TO_FILTER + DETAILS_GAP_FILTER_TO_SUMMARY))
-    summaryTableFrame:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
-    summaryTableFrame:SetHeight(16)
-    summaryTableFrame:Hide()
-    frame.summaryTableFrame = summaryTableFrame
-    frame.summaryRows = {}
-    frame.summaryText = nil
-    frame.sourceText = nil
-
-    local detailsControlsFrame = CreateFrame("Frame", nil, detailsContainer)
-    detailsControlsFrame:SetPoint("TOPLEFT", locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
-    detailsControlsFrame:SetPoint("RIGHT", detailsContainer, "RIGHT", -20, 0)
-    detailsControlsFrame:SetHeight(DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT)
-    frame.detailsControlsFrame = detailsControlsFrame
-
-    local locationFilterLabel = detailsControlsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    locationFilterLabel:SetPoint("TOPLEFT", detailsControlsFrame, "TOPLEFT", 0, 0)
-    locationFilterLabel:SetWidth(DETAILS_CONTROLS_LOCATION_LABEL_WIDTH)
-    locationFilterLabel:SetText("Location")
-    frame.locationFilterLabelText = locationFilterLabel
-
-    local locationFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryLocationFilterDropdown", detailsControlsFrame, "UIDropDownMenuTemplate")
-    locationFilterDropdown:SetPoint("LEFT", locationFilterLabel, "RIGHT", -6, -1)
-    UIDropDownMenu_SetWidth(locationFilterDropdown, 210)
-    UIDropDownMenu_Initialize(locationFilterDropdown, function(_, level)
-        for _, option in ipairs(frame.detailsLocationOptions or {}) do
-            local info = UIDropDownMenu_CreateInfo()
-            local optionKey = option.key
-            info.text = option.label
-            info.value = optionKey
-            info.checked = (frame.detailsLocationFilterKey or DETAILS_LOCATION_FILTER_ALL) == optionKey
-            info.func = function()
-                frame.detailsLocationFilterKey = optionKey
-                addon:RefreshHistoryDetailsWindow()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end)
-    frame.locationFilterDropdown = locationFilterDropdown
-    frame.detailsLocationOptions = {
-        { key = DETAILS_LOCATION_FILTER_ALL, label = "All" },
-    }
-    frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
-
-    local styleFilterLabel = detailsControlsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    styleFilterLabel:SetPoint("LEFT", locationFilterDropdown, "RIGHT", 8, 1)
-    styleFilterLabel:SetWidth(DETAILS_CONTROLS_STYLE_LABEL_WIDTH)
-    styleFilterLabel:SetText("Style")
-    frame.styleFilterLabelText = styleFilterLabel
-
-    local styleFilterDropdown = CreateFrame("Frame", "GoldTrackerHistoryStyleFilterDropdown", detailsControlsFrame, "UIDropDownMenuTemplate")
-    styleFilterDropdown:SetPoint("LEFT", styleFilterLabel, "RIGHT", -6, -1)
-    UIDropDownMenu_SetWidth(styleFilterDropdown, 140)
-    UIDropDownMenu_Initialize(styleFilterDropdown, function(_, level)
-        for _, option in ipairs(frame.detailsStyleOptions or {}) do
-            local info = UIDropDownMenu_CreateInfo()
-            local optionID = option.id
-            info.text = option.label
-            info.value = optionID
-            info.checked = (frame.detailsStyleFilterID or addon.SESSION_STYLE_ALL_ID or "all") == optionID
-            info.func = function()
-                frame.detailsStyleFilterID = optionID
-                addon:RefreshHistoryDetailsWindow()
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
-    end)
-    frame.styleFilterDropdown = styleFilterDropdown
-    frame.detailsStyleOptions = {
-        { id = addon.SESSION_STYLE_ALL_ID or "all", label = "All" },
-    }
-    frame.detailsStyleFilterID = addon.SESSION_STYLE_ALL_ID or "all"
-
-    local splitButton = CreateHistoryButton(detailsControlsFrame, 92, 22, "Split", "neutral")
-    splitButton:SetSize(92, 22)
-    splitButton:SetPoint("LEFT", styleFilterDropdown, "RIGHT", 12, 2)
-    splitButton.layoutWidth = 92
-    splitButton:SetText("Split")
-    splitButton:SetScript("OnClick", function()
-        if frame.selectedSessionID then
-            addon:PromptSplitHistorySession(frame.selectedSessionID)
-        end
-    end)
-    splitButton:Hide()
-    frame.splitButton = splitButton
-
-    local exportButton = CreateHistoryButton(detailsControlsFrame, 84, 22, "Export", "neutral")
-    exportButton:SetSize(84, 22)
-    exportButton:SetPoint("LEFT", splitButton, "RIGHT", 8, 0)
-    exportButton.layoutWidth = 84
-    exportButton:SetText("Export")
-    exportButton:SetScript("OnClick", function()
-        if frame.selectedSessionID then
-            addon:OpenHistorySessionExport(frame.selectedSessionID)
-        end
-    end)
-    frame.exportButton = exportButton
-
-    local breakdownButton = CreateHistoryButton(detailsControlsFrame, 112, 22, "Breakdown", "neutral")
-    breakdownButton:SetSize(112, 22)
-    breakdownButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
-    breakdownButton.layoutWidth = 112
-    breakdownButton:SetText("Breakdown")
-    breakdownButton:SetScript("OnClick", function()
-        if frame.selectedSessionID then
-            addon:OpenHistoryLootBreakdownWindow(frame.selectedSessionID)
-        end
-    end)
-    frame.breakdownButton = breakdownButton
-
-    local diagnosisButton = CreateHistoryButton(detailsControlsFrame, 92, 22, "Diagnosis", "neutral")
-    diagnosisButton:SetSize(92, 22)
-    diagnosisButton:SetPoint("LEFT", breakdownButton, "RIGHT", 8, 0)
-    diagnosisButton.layoutWidth = 92
-    diagnosisButton:SetText("Diagnosis")
-    diagnosisButton:SetScript("OnClick", function()
-        if frame.selectedSessionID then
-            addon:OpenHistoryDiagnosisWindow(frame.selectedSessionID)
-        end
-    end)
-    frame.diagnosisSessionButton = diagnosisButton
-
-    local resumeSessionButton = CreateHistoryButton(detailsControlsFrame, 112, 22, "Resume", "primary")
-    resumeSessionButton:SetSize(112, 22)
-    resumeSessionButton:SetPoint("LEFT", diagnosisButton, "RIGHT", 8, 0)
-    resumeSessionButton.layoutWidth = 112
-    resumeSessionButton:SetText("Resume")
-    resumeSessionButton:SetScript("OnClick", function()
-        if frame.selectedSessionID then
-            addon:ResumeHistorySession(frame.selectedSessionID)
-        end
-    end)
-    frame.resumeSessionButton = resumeSessionButton
-    frame.detailsActionButtons = {
-        splitButton,
-        exportButton,
-        breakdownButton,
-        diagnosisButton,
-        resumeSessionButton,
-    }
-
-    local itemsHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    itemsHeader:SetPoint("TOPLEFT", summaryTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_SUMMARY_TO_ITEMS)
-    itemsHeader:SetText("Items")
-    frame.itemsHeaderText = itemsHeader
-
-    local itemsItemHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemsItemHeader:SetPoint("TOPLEFT", itemsHeader, "BOTTOMLEFT", 0, -4)
-    itemsItemHeader:SetText("Item")
-    frame.itemsItemHeaderText = itemsItemHeader
-
-    local itemsSourceHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemsSourceHeader:SetPoint("TOPLEFT", itemsItemHeader, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP + DETAILS_ITEMS_VALUE_MIN_WIDTH + DETAILS_ITEMS_COLUMN_GAP, 0)
-    itemsSourceHeader:SetWidth(DETAILS_ITEMS_SOURCE_MIN_WIDTH)
-    itemsSourceHeader:SetJustifyH("LEFT")
-    itemsSourceHeader:SetText("From")
-    frame.itemsSourceHeaderText = itemsSourceHeader
-
-    local itemsValueHeader = detailsContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemsValueHeader:SetPoint("TOPLEFT", itemsItemHeader, "TOPRIGHT", DETAILS_ITEMS_COLUMN_GAP, 0)
-    itemsValueHeader:SetWidth(DETAILS_ITEMS_VALUE_MIN_WIDTH)
-    itemsValueHeader:SetJustifyH("RIGHT")
-    itemsValueHeader:SetText("Value")
-    frame.itemsValueHeaderText = itemsValueHeader
-
-    local itemsUnderline = detailsContainer:CreateTexture(nil, "ARTWORK")
-    itemsUnderline:SetColorTexture(1, 0.82, 0, 0.35)
-    itemsUnderline:SetPoint("TOPLEFT", itemsItemHeader, "BOTTOMLEFT", 0, -4)
-    itemsUnderline:SetPoint("TOPRIGHT", itemsSourceHeader, "BOTTOMRIGHT", 0, -4)
-    itemsUnderline:SetHeight(1)
-    frame.itemsHeaderUnderline = itemsUnderline
-
-    local itemsScrollFrame = CreateFrame("ScrollFrame", nil, detailsContainer, "UIPanelScrollFrameTemplate")
-    itemsScrollFrame:SetPoint("TOPLEFT", itemsItemHeader, "BOTTOMLEFT", 0, -8)
-    itemsScrollFrame:SetPoint("BOTTOMRIGHT", detailsContainer, "BOTTOMRIGHT", -30, 20)
-    itemsScrollFrame:EnableMouseWheel(true)
-    itemsScrollFrame:SetScript("OnMouseWheel", function(self, delta)
-        local step = math.max(18, math.floor(self:GetHeight() * 0.12))
-        local nextScroll = (tonumber(self:GetVerticalScroll()) or 0) - ((tonumber(delta) or 0) * step)
-        local maxScroll = tonumber(self:GetVerticalScrollRange()) or 0
-        if nextScroll < 0 then
-            nextScroll = 0
-        elseif nextScroll > maxScroll then
-            nextScroll = maxScroll
-        end
-        self:SetVerticalScroll(nextScroll)
-    end)
-    frame.detailsItemsScrollFrame = itemsScrollFrame
-
-    local itemsContent = CreateFrame("Frame", nil, itemsScrollFrame)
-    itemsContent:SetSize(1, 1)
-    itemsScrollFrame:SetScrollChild(itemsContent)
-    frame.detailsItemsContent = itemsContent
-    frame.detailsItemRows = {}
-
-    local itemsEmptyText = itemsContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    itemsEmptyText:SetPoint("TOPLEFT", itemsContent, "TOPLEFT", 4, -4)
-    itemsEmptyText:SetPoint("TOPRIGHT", itemsContent, "TOPRIGHT", -4, -4)
-    itemsEmptyText:SetJustifyH("LEFT")
-    itemsEmptyText:SetText("No tradable items matched the current quality filter.")
-    itemsEmptyText:Hide()
-    frame.detailsItemsEmptyText = itemsEmptyText
-
-    local function RefreshHistoryAfterResize()
-        if not addon.historyFrame or not frame:IsShown() then
-            return
-        end
-        if frame.view == "details" then
-            addon:RefreshHistoryDetailsWindow()
-        else
-            addon:RefreshHistoryWindow()
-        end
-    end
-
-    Theme:CreateResizeButton(frame, {
-        maximize = true,
-        minWidth = HISTORY_WINDOW_MIN_WIDTH,
-        minHeight = HISTORY_WINDOW_MIN_HEIGHT,
-        maxWidth = HISTORY_WINDOW_MAX_WIDTH,
-        maxHeight = 900,
-        onResizeStop = function()
-            RefreshHistoryAfterResize()
-        end,
-    })
-    if frame.maximizeButton then
-        frame.maximizeButton:ClearAllPoints()
-        frame.maximizeButton:SetPoint("RIGHT", backButton, "LEFT", -8, 0)
-    end
-
-    frame:SetScript("OnSizeChanged", function()
-        if frame.isManualResizing then
-            return
-        end
-        RefreshHistoryAfterResize()
-    end)
-
-    frame:SetScript("OnShow", function()
-        if frame.view == "details" then
-            addon:RefreshHistoryDetailsWindow()
-        else
-            addon:RefreshHistoryWindow()
-        end
-    end)
-
-    self.historyFrame = frame
-    self:ApplyHistoryDetailsFontSize()
-    self:ShowHistoryListView()
-end
-
-function GoldTracker:GetHistoryRow(index)
-    local frame = self.historyFrame
-    local row = frame.rows[index]
-    if row then
-        return row
-    end
-
-    row = CreateFrame("Button", nil, frame.content)
-    row:SetHeight(ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -((index - 1) * ROW_SPACING))
-    row:SetNormalFontObject(GameFontHighlight)
-    row:EnableMouseWheel(true)
-    row:SetScript("OnMouseWheel", function(_, delta)
-        self:HandleHistoryPageMouseWheel(delta)
-    end)
-
-    local bg = row:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints(true)
-    bg:SetColorTexture(1, 1, 1, 0.025)
-    row.bg = bg
-
-    local hl = row:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints(true)
-    hl:SetColorTexture(1, 0.82, 0.18, 0.07)
-    row.highlight = hl
-
-    local divider = row:CreateTexture(nil, "ARTWORK")
-    divider:SetColorTexture(1, 0.82, 0.18, 0.10)
-    divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 6, 0)
-    divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -6, 0)
-    divider:SetHeight(1)
-    row.divider = divider
-
-    local selectCheckbox = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
-    selectCheckbox:SetSize(22, 22)
-    selectCheckbox:SetPoint("LEFT", row, "LEFT", 10, 0)
-    row.selectCheckbox = selectCheckbox
-
-    local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    nameText:SetPoint("TOPLEFT", selectCheckbox, "TOPRIGHT", 0, -2)
-    nameText:SetWidth(260)
-    nameText:SetJustifyH("LEFT")
-    nameText:SetTextColor(0.92, 0.95, 1.0)
-    row.nameText = nameText
-
-    local subtitleText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    subtitleText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -2)
-    subtitleText:SetWidth(260)
-    subtitleText:SetJustifyH("LEFT")
-    subtitleText:SetTextColor(0.62, 0.66, 0.74)
-    if subtitleText.SetWordWrap then
-        subtitleText:SetWordWrap(false)
-    end
-    subtitleText:SetText("")
-    subtitleText:Hide()
-    row.subtitleText = subtitleText
-
-    local pinButton = CreateHistoryButton(row, 52, 20, "Pin", "neutral")
-    pinButton:SetSize(52, 20)
-    pinButton:SetPoint("RIGHT", row, "RIGHT", -126, 0)
-    pinButton:SetText("Pin")
-    row.pinButton = pinButton
-
-    local renameButton = CreateHistoryButton(row, 62, 20, "Rename", "neutral")
-    renameButton:SetSize(62, 20)
-    renameButton:SetPoint("RIGHT", row, "RIGHT", -64, 0)
-    renameButton:SetText("Rename")
-    row.renameButton = renameButton
-
-    local deleteButton = CreateHistoryButton(row, 56, 20, "Delete", "danger")
-    deleteButton:SetSize(56, 20)
-    deleteButton:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-    deleteButton:SetText("Delete")
-    row.deleteButton = deleteButton
-
-    local summaryText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    summaryText:SetPoint("LEFT", row, "LEFT", 302, 0)
-    summaryText:SetWidth(96)
-    summaryText:SetJustifyH("LEFT")
-    summaryText:SetTextColor(1.0, 0.82, 0.40)
-    row.summaryText = summaryText
-
-    local totalText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    totalText:SetPoint("LEFT", row, "LEFT", 406, 0)
-    totalText:SetPoint("RIGHT", row, "LEFT", 510, 0)
-    totalText:SetJustifyH("LEFT")
-    totalText:SetTextColor(0.66, 0.96, 0.72)
-    row.totalText = totalText
-
-    local totalRawText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    totalRawText:SetPoint("LEFT", row, "LEFT", 518, 0)
-    totalRawText:SetPoint("RIGHT", row, "LEFT", 624, 0)
-    totalRawText:SetJustifyH("LEFT")
-    totalRawText:SetTextColor(0.96, 0.86, 0.54)
-    row.totalRawText = totalRawText
-
-    local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    durationText:SetPoint("LEFT", row, "LEFT", 632, 0)
-    durationText:SetPoint("RIGHT", pinButton, "LEFT", -8, 0)
-    durationText:SetJustifyH("LEFT")
-    durationText:SetTextColor(0.68, 0.86, 1.0)
-    row.durationText = durationText
-
-    frame.rows[index] = row
-    return row
-end
-
-function GoldTracker:GetHistoryTotalsRow()
-    local frame = self.historyFrame
-    if not frame then
-        return nil
-    end
-
-    local row = frame.totalsRow
-    if row then
-        return row
-    end
-
-    row = CreateFrame("Frame", nil, frame.content)
-    row:SetHeight(ROW_HEIGHT)
-    row:EnableMouse(false)
-
-    local bg = row:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints(true)
-    bg:SetColorTexture(0.18, 0.14, 0.08, 0.78)
-    row.bg = bg
-
-    local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    label:SetPoint("LEFT", row, "LEFT", 36, 0)
-    label:SetPoint("RIGHT", row, "RIGHT", -10, 0)
-    label:SetJustifyH("LEFT")
-    label:SetTextColor(1.0, 0.94, 0.72)
-    label:SetText("")
-    row.text = label
-
-    row:Hide()
-    frame.totalsRow = row
-    return row
-end
-
-function GoldTracker:GetHistoryLocationDetailsRow(index)
-    local frame = self.historyFrame
-    if not frame or not frame.locationTableFrame then
-        return nil
-    end
-
-    frame.locationTableRows = frame.locationTableRows or {}
-    local row = frame.locationTableRows[index]
-    if row then
-        return row
-    end
-
-    row = CreateFrame("Frame", nil, frame.locationTableContent or frame.locationTableFrame)
-    row:SetHeight(16)
-
-    local locationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    locationText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    locationText:SetWidth(DETAILS_LOCATION_MIN_LOCATION_WIDTH)
-    locationText:SetJustifyH("LEFT")
-    locationText:SetTextColor(0.92, 0.95, 1.0)
-    if locationText.SetJustifyV then
-        locationText:SetJustifyV("TOP")
-    end
-    if locationText.SetWordWrap then
-        locationText:SetWordWrap(true)
-    end
-    row.locationText = locationText
-
-    local timeFrameText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    timeFrameText:SetPoint("TOPLEFT", row, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_COLUMN_GAP, 0)
-    timeFrameText:SetWidth(DETAILS_LOCATION_TIME_PREFERRED_WIDTH)
-    timeFrameText:SetJustifyH("LEFT")
-    timeFrameText:SetTextColor(0.72, 0.76, 0.84)
-    if timeFrameText.SetJustifyV then
-        timeFrameText:SetJustifyV("TOP")
-    end
-    if timeFrameText.SetWordWrap then
-        timeFrameText:SetWordWrap(true)
-    end
-    row.timeFrameText = timeFrameText
-
-    local highlightsText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    highlightsText:SetPoint("TOPLEFT", row, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 2), 0)
-    highlightsText:SetWidth(DETAILS_LOCATION_HIGHLIGHTS_WIDTH)
-    highlightsText:SetJustifyH("LEFT")
-    highlightsText:SetTextColor(1.0, 0.82, 0.40)
-    if highlightsText.SetJustifyV then
-        highlightsText:SetJustifyV("TOP")
-    end
-    if highlightsText.SetWordWrap then
-        highlightsText:SetWordWrap(false)
-    end
-    row.highlightsText = highlightsText
-
-    local durationText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    durationText:SetPoint("TOPLEFT", row, "TOPLEFT", DETAILS_LOCATION_MIN_LOCATION_WIDTH + DETAILS_LOCATION_TIME_PREFERRED_WIDTH + DETAILS_LOCATION_HIGHLIGHTS_WIDTH + (DETAILS_LOCATION_COLUMN_GAP * 3), 0)
-    durationText:SetWidth(DETAILS_LOCATION_DURATION_WIDTH)
-    durationText:SetJustifyH("LEFT")
-    durationText:SetTextColor(0.68, 0.86, 1.0)
-    if durationText.SetJustifyV then
-        durationText:SetJustifyV("TOP")
-    end
-    if durationText.SetWordWrap then
-        durationText:SetWordWrap(false)
-    end
-    row.durationText = durationText
-
-    local rowDivider = row:CreateTexture(nil, "ARTWORK")
-    rowDivider:SetColorTexture(1, 0.82, 0, 0.22)
-    rowDivider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
-    rowDivider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
-    rowDivider:SetHeight(1)
-    rowDivider:Hide()
-    row.divider = rowDivider
-
-    frame.locationTableRows[index] = row
-    return row
-end
-
-function GoldTracker:GetHistoryDetailsSummaryRow(index)
-    local frame = self.historyFrame
-    if not frame or not frame.summaryTableFrame then
-        return nil
-    end
-
-    frame.summaryRows = frame.summaryRows or {}
-    local row = frame.summaryRows[index]
-    if row then
-        return row
-    end
-
-    row = CreateFrame("Frame", nil, frame.summaryTableFrame)
-    row:SetHeight(16)
-
-    local labelText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    labelText:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    labelText:SetWidth(230)
-    labelText:SetJustifyH("LEFT")
-    labelText:SetTextColor(0.62, 0.66, 0.74)
-    if labelText.SetJustifyV then
-        labelText:SetJustifyV("TOP")
-    end
-    if labelText.SetWordWrap then
-        labelText:SetWordWrap(false)
-    end
-    row.labelText = labelText
-
-    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    valueText:SetPoint("TOPLEFT", row, "TOPLEFT", 236, 0)
-    valueText:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
-    valueText:SetJustifyH("LEFT")
-    valueText:SetTextColor(0.92, 0.95, 1.0)
-    if valueText.SetJustifyV then
-        valueText:SetJustifyV("TOP")
-    end
-    if valueText.SetWordWrap then
-        valueText:SetWordWrap(false)
-    end
-    row.valueText = valueText
-
-    frame.summaryRows[index] = row
-    return row
-end
-
-function GoldTracker:GetHistoryDetailsItemRow(index)
-    local frame = self.historyFrame
-    if not frame or not frame.detailsItemsContent then
-        return nil
-    end
-
-    frame.detailsItemRows = frame.detailsItemRows or {}
-    local row = frame.detailsItemRows[index]
-    if row then
-        return row
-    end
-
-    row = CreateFrame("Button", nil, frame.detailsItemsContent)
-    row:SetHeight(18)
-    row:EnableMouse(true)
-
-    local background = row:CreateTexture(nil, "BACKGROUND")
-    background:SetAllPoints(row)
-    background:SetColorTexture(1, 1, 1, 0.022)
-    row.background = background
-
-    local hover = row:CreateTexture(nil, "HIGHLIGHT")
-    hover:SetAllPoints(row)
-    hover:SetColorTexture(1, 0.82, 0.18, 0.06)
-    row.hover = hover
-
-    local itemText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    itemText:SetPoint("LEFT", row, "LEFT", 4, 0)
-    itemText:SetJustifyH("LEFT")
-    itemText:SetWordWrap(false)
-    row.itemText = itemText
-
-    local sourceText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sourceText:SetPoint("LEFT", row, "LEFT", 4 + DETAILS_ITEMS_MIN_ITEM_WIDTH + DETAILS_ITEMS_COLUMN_GAP + DETAILS_ITEMS_VALUE_MIN_WIDTH + DETAILS_ITEMS_COLUMN_GAP, 0)
-    sourceText:SetWidth(DETAILS_ITEMS_SOURCE_MIN_WIDTH)
-    sourceText:SetJustifyH("LEFT")
-    sourceText:SetWordWrap(false)
-    row.sourceText = sourceText
-
-    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    valueText:SetPoint("LEFT", row, "LEFT", 4 + DETAILS_ITEMS_MIN_ITEM_WIDTH + DETAILS_ITEMS_COLUMN_GAP, 0)
-    valueText:SetWidth(DETAILS_ITEMS_VALUE_MIN_WIDTH)
-    valueText:SetJustifyH("RIGHT")
-    valueText:SetWordWrap(false)
-    row.valueText = valueText
-
-    local divider = row:CreateTexture(nil, "ARTWORK")
-    divider:SetColorTexture(1, 0.82, 0, 0.18)
-    divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
-    divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
-    divider:SetHeight(1)
-    divider:Hide()
-    row.divider = divider
-
-    self:CreateItemTooltipTarget(row, itemText, nil, function(self, target)
-        local hasItemLink = type(self.itemLink) == "string" and self.itemLink ~= ""
-        local hasLootSourceText = type(self.lootSourceText) == "string" and self.lootSourceText ~= ""
-        if not hasItemLink and not hasLootSourceText then
-            return
-        end
-
-        GameTooltip:SetOwner(target, "ANCHOR_CURSOR")
-        GameTooltip:ClearLines()
-        if hasItemLink then
-            GameTooltip:SetHyperlink(self.itemLink)
-        end
-        if hasLootSourceText then
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("From", 1.0, 0.82, 0.18)
-            GameTooltip:AddLine(self.lootSourceText, 0.66, 0.84, 1.0, true)
-        end
-        if type(GoldTracker.AddFarmActionTooltip) == "function" then
-            GoldTracker:AddFarmActionTooltip(GameTooltip, self)
+local function CreateHistoryPanel(parent,bg,border) return Theme:CreatePanel(parent,bg or "panel",border or "goldBorder") end
+local function Tip(target,title,body)
+    target:SetScript("OnEnter",function(self)
+        GameTooltip:SetOwner(self,"ANCHOR_RIGHT"); GameTooltip:SetText(type(title)=="function" and title() or title)
+        local detail=type(body)=="function" and body() or body
+        if detail and detail~="" then
+            local color=Color("textSoft")
+            GameTooltip:AddLine(detail,color[1],color[2],color[3],true)
         end
         GameTooltip:Show()
     end)
-    row:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" then
-            if type(GoldTracker.HandleFarmActionClick) == "function" and GoldTracker:HandleFarmActionClick(self, button) then
-                return
-            end
-            GoldTracker:HandleModifiedItemClickIfModified(self)
+    target:SetScript("OnLeave",function() GameTooltip:Hide() end)
+end
+local function Anchor(widget,parent,x,y,width,height)
+    widget:ClearAllPoints(); widget:SetPoint("TOPLEFT",parent,"TOPLEFT",x,-y)
+    if width then widget:SetWidth(math.max(1,width)) end
+    if height then widget:SetHeight(math.max(1,height)) end
+end
+local function Scroll(parent)
+    local scroll=CreateFrame("ScrollFrame",nil,parent,"UIPanelScrollFrameTemplate")
+    local content=CreateFrame("Frame",nil,scroll); content:SetSize(1,1); scroll:SetScrollChild(content)
+    content:SetPoint("TOPLEFT",scroll,"TOPLEFT",0,0)
+    scroll:EnableMouseWheel(true)
+    scroll:SetScript("OnMouseWheel",function(self,delta)
+        self:SetVerticalScroll(math.max(0,math.min(self:GetVerticalScrollRange(),self:GetVerticalScroll()-delta*42)))
+    end)
+    return scroll,content
+end
+local function Dropdown(parent,width,choices,get,set)
+    local d=CreateFrame("Frame",nil,parent,"UIDropDownMenuTemplate")
+    UIDropDownMenu_SetWidth(d,width)
+    UIDropDownMenu_Initialize(d,function(_,level)
+        for _, choice in ipairs(type(choices)=="function" and choices() or choices) do
+            local option=choice; local info=UIDropDownMenu_CreateInfo()
+            info.text,info.value,info.checked=option.label,option.key,get()==option.key
+            info.func=function() set(option.key); CloseDropDownMenus() end
+            UIDropDownMenu_AddButton(info,level)
         end
     end)
-
-    frame.detailsItemRows[index] = row
-    return row
+    d.refresh=function()
+        local value=get(); local label
+        for _, option in ipairs(type(choices)=="function" and choices() or choices) do if option.key==value then label=option.label end end
+        UIDropDownMenu_SetSelectedValue(d,value); UIDropDownMenu_SetText(d,label or "All")
+    end
+    return d
+end
+local function ModelFor(session) return Model:New(GoldTracker,session) end
+local function Money(value) return GoldTracker:FormatMoney(math.max(0,tonumber(value) or 0)) end
+local function Rate(value,duration)
+    if not duration or duration<=0 then return "--" end
+    return GoldTracker:FormatMoneyPerHour(value,duration)
+end
+local function Date(ts) return tonumber(ts) and ts>0 and date("%Y-%m-%d %H:%M",ts) or "Unknown" end
+local function Header(parent,label,key)
+    local b=CreateFrame("Button",nil,parent); b:SetHeight(20)
+    b.text=Text(b,label,12,"titleText"); b.text:SetPoint("LEFT",b,"LEFT",0,0); b.text:SetPoint("RIGHT",b,"RIGHT",-14,0)
+    b.sortIcon=b:CreateTexture(nil,"ARTWORK"); b.sortIcon:SetSize(10,10); b.sortIcon:SetPoint("RIGHT"); b.sortIcon:Hide()
+    b.sortLabel=label
+    if key then GoldTracker:BindTableSortHeaderClick(b,GoldTracker.ToggleHistorySort,key) end
+    return b
+end
+local function Row(parent)
+    local r=CreateFrame("Button",nil,parent)
+    r.bg=r:CreateTexture(nil,"BACKGROUND"); r.bg:SetAllPoints(r)
+    r.hover=r:CreateTexture(nil,"HIGHLIGHT"); r.hover:SetAllPoints(r)
+    local c=Color("rowSelected"); r.hover:SetColorTexture(c[1],c[2],c[3],0.12)
+    return r
+end
+local function RegisterHistoryPopupFrame(name) Theme:RegisterSpecialFrame(name) end
+local function BringHistoryPopupToFront(frame) Theme:BringToFront(frame,GoldTracker.historyFrame) end
+local function CreateHistoryPopupChrome(frame,title) return Theme:ApplyWindowChrome(frame,title,{closeButtonKey="popupCloseButton"}) end
+local function EscapeCSVValue(value)
+    local text=tostring(value or ""):gsub("\r"," "):gsub("\n"," ")
+    return text:find('[",]') and ('"'..text:gsub('"','""')..'"') or text
+end
+local function BuildHistoryDetailsSummary(session,location,style) return service:BuildHistoryDetailsSummary(session,location,style) end
+local function BuildVisibleHistoryItems(session,location,style)
+    local f=GoldTracker.historyFrame
+    local itemView=f and f.view=="details" and f.selectedSessionID==session.id and f.detailsItemFilter or "all"
+    return service:BuildVisibleHistoryItems(session,location,style,itemView)
 end
 
-function GoldTracker:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
-    local frame = self.historyFrame
-    if not frame or not frame.detailsItemsContent then
-        return
-    end
-
-    ApplyHistoryDetailsItemsColumnLayout(frame)
-
-    local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
-    baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
-    local rowHeight = math.max(18, baseSize + 8)
-    local yOffset = 0
-
-    if frame.detailsItemsEmptyText then
-        frame.detailsItemsEmptyText:SetShown(type(items) ~= "table" or #items == 0)
-    end
-
-    if type(items) ~= "table" or #items == 0 then
-        for _, row in ipairs(frame.detailsItemRows or {}) do
-            row:Hide()
+function GoldTracker:PromptRenameHistorySession(id)
+    local key="GOLDTRACKER_RENAME_HISTORY_SESSION"
+    StaticPopupDialogs[key]={text="Rename session",button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=120,timeout=0,whileDead=true,hideOnEscape=true,
+        OnShow=function(dialog)
+            local edit=dialog.GetEditBox and dialog:GetEditBox() or dialog.editBox or dialog.EditBox
+            local session=GoldTracker:GetHistorySessionByID(dialog.data)
+            if edit then edit:SetText(session and ModelFor(session):BuildRowTitleAndSubtitle() or ""); edit:HighlightText() end
+        end,
+        OnAccept=function(dialog)
+            local edit=dialog.GetEditBox and dialog:GetEditBox() or dialog.editBox or dialog.EditBox
+            if edit then GoldTracker:RenameHistorySession(dialog.data,edit:GetText()) end
+        end,
+    }
+    StaticPopup_Show(key,nil,nil,id)
+end
+function GoldTracker:PromptSplitHistorySession(id)
+    local key="GOLDTRACKER_SPLIT_HISTORY_SESSION"
+    StaticPopupDialogs[key]={text="Split this recording into sessions for each main location? The original row will be replaced.",button1=ACCEPT,button2=CANCEL,timeout=0,whileDead=true,hideOnEscape=true,
+        OnAccept=function(dialog) GoldTracker:SplitHistorySessionByLocation(dialog.data) end}
+    StaticPopup_Show(key,nil,nil,id)
+end
+local function ConfirmHistoryAction(action,ids)
+    local key="GOLDTRACKER_HISTORY_ACTION"
+    StaticPopupDialogs[key]={text=action=="merge" and "Merge the selected sessions? Their source rows will be replaced." or "Delete the selected sessions? This cannot be undone.",
+        button1=ACCEPT,button2=CANCEL,timeout=0,whileDead=true,hideOnEscape=true,
+        OnAccept=function(dialog)
+            local data=dialog.data
+            if not data then return end
+            if data.action=="merge" then GoldTracker:MergeHistorySessions(data.ids) else GoldTracker:DeleteHistorySessions(data.ids) end
+            GoldTracker:ClearHistorySelection(); GoldTracker:RefreshHistoryWindow()
+        end}
+    StaticPopup_Show(key,nil,nil,{action=action,ids=ids})
+end
+function GoldTracker:OpenHistoryRowMenu(id,anchor)
+    local f=self.historyFrame; f.menuSessionID=id
+    UIDropDownMenu_Initialize(f.actionMenu,function(_,level)
+        local session=self:GetHistorySessionByID(f.menuSessionID)
+        if not session then return end
+        local function add(label,fn,disabled)
+            local info=UIDropDownMenu_CreateInfo(); info.text=label; info.notCheckable=true; info.disabled=disabled
+            info.func=function() CloseDropDownMenus(); fn() end; UIDropDownMenu_AddButton(info,level)
         end
-        frame.detailsItemsContent:SetHeight(1)
-        if frame.detailsItemsScrollFrame then
-            frame.detailsItemsContent:SetWidth(math.max(1, (frame.detailsItemsScrollFrame:GetWidth() or 0) - 6))
-            ApplyHistoryDetailsItemsColumnLayout(frame)
-            if frame.detailsItemsScrollFrame.UpdateScrollChildRect then
-                frame.detailsItemsScrollFrame:UpdateScrollChildRect()
-            end
-            frame.detailsItemsScrollFrame:SetVerticalScroll(0)
+        add(session.pinned and "Unpin" or "Pin",function() self:ToggleHistorySessionPinned(id) end)
+        add("Rename",function() self:PromptRenameHistorySession(id) end)
+        add("Export current view",function() self:OpenHistorySessionExport(id) end)
+        if not session.isFarm and session.recordType~="farm" then
+            add("Split by main location",function() self:PromptSplitHistorySession(id) end,#ModelFor(session):BuildHistoryLocationOptions()<3)
+            add("Diagnosis",function() self:OpenHistoryDiagnosisWindow(id) end,not self:IsDiagnosticsPanelEnabled())
         end
-        return
-    end
-
-    for index, item in ipairs(items) do
-        local row = self:GetHistoryDetailsItemRow(index)
-        if row then
-            local quantity = math.max(0, math.floor((tonumber(item and item.quantity) or 0) + 0.5))
-            local itemText = string.format("%s x%d", item and item.itemLink or "Unknown item", quantity)
-            if includeSourceLabel then
-                itemText = string.format("%s  [%s]", itemText, item.valueSourceLabel or "Unknown")
-            end
-
-            row.itemLink = item and item.itemLink or nil
-            row.lootSourceText = (type(item and item.lootSourceText) == "string" and item.lootSourceText ~= "") and item.lootSourceText or nil
-            row.itemText:SetText(itemText)
-            row.valueText:SetText(self:FormatMoney(tonumber(item and item.totalValue) or 0))
-            row.sourceText:SetText(row.lootSourceText or "")
-            row.itemText:SetTextColor(0.92, 0.95, 1.0)
-            row.valueText:SetTextColor(0.68, 0.96, 0.72)
-            row.sourceText:SetTextColor(0.66, 0.84, 1.0)
-            if row.background then
-                row.background:SetColorTexture(1, 1, 1, index % 2 == 0 and 0.045 or 0.022)
-            end
-
-            row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", frame.detailsItemsContent, "TOPLEFT", 0, -yOffset)
-            row:SetPoint("TOPRIGHT", frame.detailsItemsContent, "TOPRIGHT", 0, -yOffset)
-            row:SetHeight(rowHeight)
-            row.divider:SetShown(index < #items)
-            row:Show()
-
-            yOffset = yOffset + rowHeight
-            if index < #items then
-                yOffset = yOffset + DETAILS_ITEMS_ROW_SPACING
-            end
-        end
-    end
-
-    for index = (#items + 1), #(frame.detailsItemRows or {}) do
-        if frame.detailsItemRows[index] then
-            frame.detailsItemRows[index]:Hide()
-        end
-    end
-
-    frame.detailsItemsContent:SetHeight(math.max(1, yOffset))
-    if frame.detailsItemsScrollFrame then
-        frame.detailsItemsContent:SetWidth(math.max(1, (frame.detailsItemsScrollFrame:GetWidth() or 0) - 6))
-        ApplyHistoryDetailsItemsColumnLayout(frame, GetHistoryDetailsPreferredItemColumnWidths(frame))
-        if frame.detailsItemsScrollFrame.UpdateScrollChildRect then
-            frame.detailsItemsScrollFrame:UpdateScrollChildRect()
-        end
-        frame.detailsItemsScrollFrame:SetVerticalScroll(0)
-    end
+        add("Delete...",function() ConfirmHistoryAction("delete",{id}) end)
+    end)
+    ToggleDropDownMenu(1,nil,f.actionMenu,anchor,0,0)
 end
 
+function GoldTracker:CreateHistoryWindow()
+    if self.historyFrame then return end
+    local f=CreateFrame("Frame","GoldTrackerHistoryFrame",UIParent)
+    f:SetSize(1080,720); f:SetPoint("CENTER"); f:SetFrameStrata("DIALOG"); f:SetClampedToScreen(true)
+    f:SetMovable(true); f:SetResizable(true); f:SetResizeBounds(920,610,1600,1000)
+    f:EnableMouse(true); f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart",function(self) self:StartMoving() end); f:SetScript("OnDragStop",f.StopMovingOrSizing)
+    f:Hide(); f.view="list"; f.currentPage=1; f.sortCriteria={}; f.selectedSessionIDs={}; f.rows={}; f.detailRows={}
+    f.historyDateFilterKey=Constants.DATE_FILTER_ALL; f.characterFilter=ALL; f.historyLocationFilter=ALL; f.query=""
+    f.detailsTab="loot"; f.detailsLocationFilterKey=ALL; f.detailsStyleFilterID="all"; f.detailsItemFilter="all"
+    f.expandedItems={}; f.expandedLocations={}; f.listInfo={}
+    self.historyFrame=f
+    local chrome,bar=Theme:ApplyWindowChrome(f,"Session History",{titleRightOffset=-180,closeButtonKey="historyCloseButton"})
+    Theme:RegisterSpecialFrame("GoldTrackerHistoryFrame")
+    f.backButton=Button(bar,70,"Back",function() self:ShowHistoryListView() end)
+    f.backButton:SetPoint("RIGHT",f.historyCloseButton,"LEFT",-8,0); f.backButton:Hide()
+    f.actionMenu=CreateFrame("Frame",nil,f,"UIDropDownMenuTemplate")
+    local list=CreateHistoryPanel(f); list:SetPoint("TOPLEFT",chrome,"TOPLEFT",12,-54); list:SetPoint("BOTTOMRIGHT",chrome,"BOTTOMRIGHT",-12,12); f.listContainer=list
+    local function refilter() f.currentPage=1; f.selectedSessionIDs={}; self:RefreshHistoryWindow() end
+    f.search=CreateFrame("EditBox",nil,list,"InputBoxTemplate"); f.search:SetAutoFocus(false); f.search:SetMaxLetters(120)
+    f.search:SetFontObject(GameFontHighlightSmall)
+    f.search:SetScript("OnEscapePressed",function(edit) edit:SetText(""); edit:ClearFocus() end)
+    f.search:SetScript("OnTextChanged",function(edit) f.query=string.lower(edit:GetText() or ""); refilter() end)
+    f.searchHint=Text(list,"Search sessions or locations",12,"textMuted")
+    f.searchHint:SetPoint("LEFT",f.search,"LEFT",5,0)
+    f.historyDateFilterDropdown=Dropdown(list,128,function() return Constants.DATE_FILTER_OPTIONS end,function() return f.historyDateFilterKey end,function(key) f.historyDateFilterKey=key; refilter() end)
+    f.characterDropdown=Dropdown(list,144,function() return f.characterOptions or {} end,function() return f.characterFilter end,function(key) f.characterFilter=key; refilter() end)
+    f.historyLocationDropdown=Dropdown(list,170,function() return f.locationOptions or {} end,function() return f.historyLocationFilter end,function(key) f.historyLocationFilter=key; refilter() end)
+    Tip(f.search,"Search history","Matches the session name, character, and recorded locations. Escape clears search.")
+    f.selectionText=Text(list,"",12,"textMuted")
+    f.mergeButton=Button(list,110,"Merge",function() ConfirmHistoryAction("merge",self:GetSelectedHistorySessionIDsInOrder()) end)
+    f.bulkDeleteButton=Button(list,120,"Delete selected",function() ConfirmHistoryAction("delete",self:GetSelectedHistorySessionIDsInOrder()) end,"danger")
+    f.clearSelectionButton=Button(list,72,"Clear",function() self:ClearHistorySelection(); self:RefreshHistoryWindow() end)
+    f.listHeaderButton=Header(list,"Session",nil)
+    f.durationHeaderButton=Header(list,"Duration","duration"); f.totalHeaderButton=Header(list,"Estimated value","sessionTotal"); f.rateHeaderButton=Header(list,"Value / hour","rate")
+    f.sortHeaders={duration=f.durationHeaderButton,sessionTotal=f.totalHeaderButton,rate=f.rateHeaderButton}
+    f.selectPageCheckbox=CreateFrame("CheckButton",nil,list,"UICheckButtonTemplate"); f.selectPageCheckbox:SetSize(22,22)
+    f.selectPageCheckbox:SetScript("OnClick",function(b) self:SetHistoryCurrentPageSelection(b:GetChecked()==true) end)
+    Tip(f.selectPageCheckbox,"Select this page","Selects visible rows. The selection count includes other pages until you clear it or change a filter.")
+    f.scrollFrame,f.content=Scroll(list); f.scrollFrame:SetPoint("TOPLEFT",list,"TOPLEFT",8,-116); f.scrollFrame:SetPoint("BOTTOMRIGHT",list,"BOTTOMRIGHT",-28,50)
+    f.scrollFrame:SetScript("OnMouseWheel",function(_,delta) self:HandleHistoryPageMouseWheel(delta) end)
+    f.emptyText=Text(f.content,"No sessions match these filters.",14,"textMuted"); f.emptyText:SetPoint("TOPLEFT",f.content,"TOPLEFT",12,-16)
+    f.prevPageButton=Button(list,32,"<",function() self:SetHistoryPage(f.currentPage-1) end); f.prevPageButton:SetPoint("BOTTOMLEFT",list,"BOTTOMLEFT",14,14)
+    f.nextPageButton=Button(list,32,">",function() self:SetHistoryPage(f.currentPage+1) end); f.nextPageButton:SetPoint("LEFT",f.prevPageButton,"RIGHT",6,0)
+    f.pageText=Text(list,"",12,"textMuted"); f.pageText:SetPoint("LEFT",f.nextPageButton,"RIGHT",12,0)
+    f.listRateHint=Text(list,"",11,"textMuted","RIGHT"); f.listRateHint:SetPoint("BOTTOMRIGHT",list,"BOTTOMRIGHT",-16,20)
+    local details=CreateHistoryPanel(f); details:SetPoint("TOPLEFT",chrome,"TOPLEFT",12,-54); details:SetPoint("BOTTOMRIGHT",chrome,"BOTTOMRIGHT",-12,12); details:Hide(); f.detailsContainer=details
+    f.sessionNameText=Text(details,"",20,"text")
+    f.nameTooltip=CreateFrame("Frame",nil,details); f.nameTooltip:SetAllPoints(f.sessionNameText); f.nameTooltip:EnableMouse(true)
+    Tip(f.nameTooltip,function()
+        local session=self:GetHistorySessionByID(f.selectedSessionID)
+        return session and ModelFor(session):BuildRowTitleAndSubtitle() or "Session"
+    end,function()
+        local session=self:GetHistorySessionByID(f.selectedSessionID)
+        return session and (session.valueSourceLabel or "") or ""
+    end)
+    f.metadataText=Text(details,"",12,"textMuted"); f.metadataText:SetWordWrap(true)
+    f.resumeSessionButton=Button(details,96,"Resume",function() self:ResumeHistorySession(f.selectedSessionID); self:RefreshHistoryDetailsWindow() end,"primary")
+    Tip(f.resumeSessionButton,"Resume recording","Continues this history row in a new recording period. Any active session is saved first. The gap between recordings is excluded.")
+    f.detailsMenu=Button(details,30,"...",function(b) self:OpenHistoryRowMenu(f.selectedSessionID,b) end)
+    f.cards={}
+    for i=1,4 do
+        local card=CreateHistoryPanel(details); card.label=Text(card,"",11,"textMuted"); card.value=Text(card,"",16,"text"); card.note=Text(card,"",11,"textMuted")
+        Anchor(card.label,card,12,10); Anchor(card.value,card,12,29); Anchor(card.note,card,12,55)
+        card:EnableMouse(true); f.cards[i]=card
+    end
+    f.locationFilterDropdown=Dropdown(details,230,function() return f.detailsLocationOptions or {} end,function() return f.detailsLocationFilterKey end,function(key) f.detailsLocationFilterKey=key; f.expandedItems={}; self:ResetHistoryDetailsScroll(); self:RefreshHistoryDetailsWindow() end)
+    f.styleFilterDropdown=Dropdown(details,152,STYLE_FILTERS,function() return f.detailsStyleFilterID end,function(key) f.detailsStyleFilterID=key; self:ResetHistoryDetailsScroll(); self:RefreshHistoryDetailsWindow() end)
+    f.itemFilterDropdown=Dropdown(details,146,ITEM_FILTERS,function() return f.detailsItemFilter end,function(key) f.detailsItemFilter=key; self:ResetHistoryDetailsScroll(); self:RefreshHistoryDetailsWindow() end)
+    Tip(f.itemFilterDropdown,"Loot view","Filters the item table. The summary cards and Breakdown follow the selected location and style.")
+    f.tabButtons={}
+    for i,tab in ipairs({{id="loot",label="Loot"},{id="locations",label="Locations"},{id="breakdown",label="Breakdown"}}) do
+        local id=tab.id; local b=Button(details,108,tab.label,function() f.detailsTab=id; self:ResetHistoryDetailsScroll(); self:RefreshHistoryDetailsWindow() end)
+        f.tabButtons[id]=b; Anchor(b,details,16+(i-1)*116,224,108,26)
+    end
+    f.scopeText=Text(details,"",11,"textMuted","RIGHT")
+    f.body=CreateFrame("Frame",nil,details); f.body:SetPoint("TOPLEFT",details,"TOPLEFT",16,-262); f.body:SetPoint("BOTTOMRIGHT",details,"BOTTOMRIGHT",-16,16)
+    f.bodyHeaders={}
+    for i=1,5 do f.bodyHeaders[i]=Text(f.body,"",12,"titleText") end
+    f.detailsScroll,f.detailsContent=Scroll(f.body); f.detailsScroll:SetPoint("TOPLEFT",f.body,"TOPLEFT",0,-28); f.detailsScroll:SetPoint("BOTTOMRIGHT",f.body,"BOTTOMRIGHT",-16,0)
+    f.detailsEmpty=Text(f.detailsContent,"No loot matches this view.",14,"textMuted"); f.detailsEmpty:SetPoint("TOPLEFT",f.detailsContent,"TOPLEFT",8,-12)
+    Theme:CreateResizeButton(f,{maximize=true,minWidth=920,minHeight=610,maxWidth=1600,maxHeight=1000,onResizeStop=function() self:RefreshHistoryActiveView() end})
+    if f.maximizeButton then f.maximizeButton:ClearAllPoints(); f.maximizeButton:SetPoint("RIGHT",f.backButton,"LEFT",-8,0) end
+    f:SetScript("OnSizeChanged",function() if not f.isManualResizing then self:RefreshHistoryActiveView() end end)
+    f:SetScript("OnShow",function() self:RefreshHistoryActiveView() end)
+    self:ShowHistoryListView()
+end
+
+function GoldTracker:RefreshHistoryActiveView()
+    local f=self.historyFrame; if not f or f.refreshing then return end
+    if f.view=="details" then self:RefreshHistoryDetailsWindow() else self:RefreshHistoryWindow() end
+end
+function GoldTracker:ResetHistoryDetailsScroll()
+    local f=self.historyFrame; if f and f.detailsScroll then f.detailsScroll:SetVerticalScroll(0) end
+end
 function GoldTracker:GetSelectedHistorySessionIDsInOrder()
-    local frame = self.historyFrame
-    if not frame then
-        return {}
-    end
-
-    local selectedMap = frame.selectedSessionIDs or {}
-    local orderedSessions = self:GetDisplaySortedSessionHistory()
-    local selectedIDs = {}
-    for _, session in ipairs(orderedSessions) do
-        if selectedMap[session.id] then
-            selectedIDs[#selectedIDs + 1] = session.id
-        end
-    end
-    return selectedIDs
+    local ids={}; local f=self.historyFrame
+    for _,s in ipairs(self:GetDisplaySortedSessionHistory()) do if f.selectedSessionIDs[s.id] then ids[#ids+1]=s.id end end
+    return ids
 end
-
 function GoldTracker:ClearHistorySelection()
-    if not self.historyFrame then
-        return
-    end
-
-    self.historyFrame.selectedSessionIDs = {}
-    self.historyFrame.visibleSessionIDs = self.historyFrame.visibleSessionIDs or {}
-    if self.UpdateHistoryActionButtons then
-        self:UpdateHistoryActionButtons()
-    end
+    if self.historyFrame then self.historyFrame.selectedSessionIDs={} end
+    self:UpdateHistoryActionButtons()
 end
-
-function GoldTracker:UpdateHistoryPageSelectAllState()
-    local frame = self.historyFrame
-    if not frame or not frame.selectPageCheckbox then
-        return
-    end
-
-    local isListView = frame.view == "list"
-    frame.selectPageCheckbox:SetShown(isListView)
-    if not isListView then
-        frame.selectPageCheckbox:SetChecked(false)
-        return
-    end
-
-    local visibleSessionIDs = frame.visibleSessionIDs or {}
-    if #visibleSessionIDs == 0 then
-        frame.selectPageCheckbox:SetChecked(false)
-        frame.selectPageCheckbox:SetEnabled(false)
-        return
-    end
-
-    frame.selectPageCheckbox:SetEnabled(true)
-    local selectedMap = frame.selectedSessionIDs or {}
-    local allVisibleSelected = true
-    for _, sessionID in ipairs(visibleSessionIDs) do
-        if selectedMap[sessionID] ~= true then
-            allVisibleSelected = false
-            break
-        end
-    end
-    frame.selectPageCheckbox:SetChecked(allVisibleSelected)
-end
-
-function GoldTracker:SetHistoryCurrentPageSelection(shouldSelect)
-    local frame = self.historyFrame
-    if not frame then
-        return
-    end
-
-    local visibleSessionIDs = frame.visibleSessionIDs or {}
-    if #visibleSessionIDs == 0 then
-        self:UpdateHistoryPageSelectAllState()
-        return
-    end
-
-    local selectedMap = frame.selectedSessionIDs or {}
-    for _, sessionID in ipairs(visibleSessionIDs) do
-        if shouldSelect then
-            selectedMap[sessionID] = true
-        else
-            selectedMap[sessionID] = nil
-        end
-    end
-    frame.selectedSessionIDs = selectedMap
+function GoldTracker:SetHistoryCurrentPageSelection(selected)
+    local f=self.historyFrame
+    for _,id in ipairs(f.visibleSessionIDs or {}) do f.selectedSessionIDs[id]=selected and true or nil end
     self:RefreshHistoryWindow()
 end
-
+function GoldTracker:UpdateHistoryPageSelectAllState()
+    local f=self.historyFrame; if not f or not f.selectPageCheckbox then return end
+    local all=#(f.visibleSessionIDs or {})>0
+    for _,id in ipairs(f.visibleSessionIDs or {}) do if not f.selectedSessionIDs[id] then all=false end end
+    f.selectPageCheckbox:SetChecked(all)
+end
 function GoldTracker:UpdateHistoryActionButtons()
-    local frame = self.historyFrame
-    if not frame then
-        return
+    local f=self.historyFrame; if not f then return end
+    local count=0; local hasFarm=false
+    for id in pairs(f.selectedSessionIDs or {}) do
+        count=count+1; local s=self:GetHistorySessionByID(id); hasFarm=hasFarm or (s and (s.isFarm or s.recordType=="farm"))
     end
-
-    local selectedCount = 0
-    for _ in pairs(frame.selectedSessionIDs or {}) do
-        selectedCount = selectedCount + 1
-    end
-
-    local isListView = frame.view == "list"
-
-    if frame.bulkDeleteButton then
-        if isListView and selectedCount > 0 then
-            frame.bulkDeleteButton:SetText(selectedCount > 1 and string.format("Bulk Delete (%d)", selectedCount) or "Bulk Delete")
-            frame.bulkDeleteButton:Show()
-        else
-            frame.bulkDeleteButton:Hide()
-        end
-    end
-
-    if frame.mergeButton then
-        if isListView and selectedCount > 1 then
-            frame.mergeButton:SetText(string.format("Merge (%d)", selectedCount))
-            frame.mergeButton:Show()
-        else
-            frame.mergeButton:Hide()
-        end
-    end
-
+    if f.mergeButton then f.mergeButton:SetShown(count>1 and f.view=="list"); f.mergeButton:SetEnabled(not hasFarm) end
+    if f.bulkDeleteButton then f.bulkDeleteButton:SetShown(count>0 and f.view=="list") end
+    if f.clearSelectionButton then f.clearSelectionButton:SetShown(count>0 and f.view=="list") end
+    if f.selectionText then f.selectionText:SetText(count>0 and string.format("%d selected across pages",count) or "Click a session to inspect its loot and locations.") end
     self:UpdateHistoryPageSelectAllState()
 end
-
 function GoldTracker:GetDisplaySortedSessionHistory()
-    local ordered = {}
-
-    local frame = self.historyFrame
-    local filterKey = frame and frame.historyDateFilterKey or HISTORY_DATE_FILTER_ALL
-    for _, session in ipairs(self:GetSessionHistory()) do
-        if SessionMatchesDateFilter(session, filterKey) then
-            ordered[#ordered + 1] = session
-        end
+    local f=self.historyFrame; local result={}
+    local chars,locs={},{}; f.listInfo={}
+    for _,s in ipairs(self:GetSessionHistory()) do
+        local m=ModelFor(s); local title,subtitle=m:BuildRowTitleAndSubtitle(); local locations=m:BuildHistoryLocationOptions()
+        local info={title=title,subtitle=subtitle,duration=m:GetDurationSeconds(),rateDuration=m:GetRateDuration(),locations=locations}
+        info.search=string.lower(title.." "..subtitle)
+        for _,option in ipairs(locations) do if option.key~=ALL then locs[option.key]=option.label; info.search=info.search.." "..string.lower(option.label) end end
+        local character=s.savedBy or "Unknown character"; chars[character]=true
+        f.listInfo[s.id]=info
+        local locationMatch=f.historyLocationFilter==ALL
+        for _,option in ipairs(locations) do if option.key==f.historyLocationFilter then locationMatch=true end end
+        if dates:MatchesTimestamp(m:GetReferenceTimestamp(),f.historyDateFilterKey)
+            and (f.characterFilter==ALL or f.characterFilter==character) and locationMatch
+            and (f.query=="" or info.search:find(f.query,1,true)) then result[#result+1]=s end
     end
-
-    local sortCriteria = frame and self:GetTableSortCriteria(frame, "sortKey", "sortAscending", HISTORY_SORT_KEYS) or {}
-
-    table.sort(ordered, function(a, b)
-        local aPinned = a and a.pinned == true
-        local bPinned = b and b.pinned == true
-        if aPinned ~= bPinned then
-            return aPinned and not bPinned
+    f.characterOptions={{key=ALL,label="All characters"}}; f.locationOptions={{key=ALL,label="All locations"}}
+    local names={}; for name in pairs(chars) do names[#names+1]=name end; table.sort(names)
+    for _,name in ipairs(names) do f.characterOptions[#f.characterOptions+1]={key=name,label=name} end
+    local options={}; for key,label in pairs(locs) do options[#options+1]={key=key,label=label} end
+    table.sort(options,function(a,b) return a.label<b.label end); for _,option in ipairs(options) do f.locationOptions[#f.locationOptions+1]=option end
+    local criteria=self:GetTableSortCriteria(f,"sortKey","sortAscending",SORT_KEYS)
+    local function value(s,key)
+        local info=f.listInfo[s.id]
+        if key=="rate" then return info.rateDuration>0 and (s.totalValue or 0)*3600/info.rateDuration or 0 end
+        if key=="duration" then return info.duration end
+        if key=="date" then return s.startTime or s.savedAt or 0 end
+        return service:GetHistorySortValue(s,key)
+    end
+    table.sort(result,function(a,b)
+        if (a.pinned==true)~=(b.pinned==true) then return a.pinned==true end
+        for _,c in ipairs(criteria) do
+            local av,bv=value(a,c.key),value(b,c.key)
+            if av~=bv then if c.ascending then return av<bv else return av>bv end end
         end
-
-        for _, criterion in ipairs(sortCriteria) do
-            local aValue = GetHistorySortValue(a, criterion.key)
-            local bValue = GetHistorySortValue(b, criterion.key)
-            if aValue ~= bValue then
-                if criterion.ascending == true then
-                    return aValue < bValue
-                end
-                return aValue > bValue
-            end
-        end
-
-        return CompareHistorySessionsByRecency(a, b)
+        return service:CompareHistorySessionsByRecency(a,b)
     end)
-
-    return ordered
+    return result
 end
-
 function GoldTracker:UpdateHistorySortHeaderState()
-    if not self.historyFrame then
-        return
-    end
-
-    local frame = self.historyFrame
-    local criteria = self:GetTableSortCriteria(frame, "sortKey", "sortAscending", HISTORY_SORT_KEYS)
-    local showPriority = #criteria > 1
-    local headers = {
-        highlights = { button = frame.summaryHeaderButton, label = "Highlights" },
-        sessionTotal = { button = frame.totalHeaderButton, label = "Session Total" },
-        sessionTotalRaw = { button = frame.totalRawHeaderButton, label = "Raw Total" },
-        duration = { button = frame.durationHeaderButton, label = "Duration" },
-    }
-
-    for headerSortKey, header in pairs(headers) do
-        local button = header.button
-        if button and button.text then
-            self:AttachTableSortHeaderTooltip(button, header.label)
-            local criterion, priority = self:GetTableSortCriterion(criteria, headerSortKey)
-            button.text:SetText(showPriority and criterion and (header.label .. " " .. priority) or header.label)
-            if criterion then
-                button.text:SetTextColor(1, 1, 1)
-                if button.sortIcon then
-                    Theme:SetTexture(button.sortIcon, criterion.ascending and "sortAscending" or "sortDescending")
-                    button.sortIcon:Show()
-                end
-            else
-                button.text:SetTextColor(1, 0.82, 0)
-                if button.sortIcon then
-                    button.sortIcon:Hide()
-                end
-            end
+    local f=self.historyFrame; if not f then return end
+    local criteria=self:GetTableSortCriteria(f,"sortKey","sortAscending",SORT_KEYS)
+    local headers={duration={button=f.durationHeaderButton,label="Duration"},sessionTotal={button=f.totalHeaderButton,label="Estimated value"},
+        sessionTotalRaw={button=f.totalRawHeaderButton,label="Cash + vendor"},highlights={button=f.summaryHeaderButton,label="Highlights"},rate={button=f.rateHeaderButton,label="Value / hour"}}
+    for key,entry in pairs(headers) do
+        local b=entry.button
+        if b then
+            local c,priority=self:GetTableSortCriterion(criteria,key); b.text:SetText(entry.label..(#criteria>1 and c and (" "..priority) or ""))
+            self:AttachTableSortHeaderTooltip(b,entry.label)
+            if c then Theme:SetTexture(b.sortIcon,c.ascending and "sortAscending" or "sortDescending"); b.sortIcon:Show() else b.sortIcon:Hide() end
         end
     end
 end
-
-function GoldTracker:ToggleHistorySort(sortKey, mouseButton)
-    if not self.historyFrame then
-        return
-    end
-
-    local frame = self.historyFrame
-    if not HISTORY_SORT_KEYS[sortKey] then
-        return
-    end
-
-    self:ToggleTableSortCriterion(frame, sortKey, false, {
-        validKeys = HISTORY_SORT_KEYS,
-        mouseButton = mouseButton,
-        allowClear = true,
-    })
-
-    frame.currentPage = 1
-    self:RefreshHistoryWindow()
+function GoldTracker:ToggleHistorySort(key,mouseButton)
+    local f=self.historyFrame; if not f or not SORT_KEYS[key] then return end
+    self:ToggleTableSortCriterion(f,key,false,{validKeys=SORT_KEYS,mouseButton=mouseButton,allowClear=true})
+    f.currentPage=1; self:RefreshHistoryWindow()
 end
-
-function GoldTracker:GetHistoryPageCount(sessionCount)
-    local rowsPerPage = self:GetHistoryRowsPerPage()
-    local totalSessions = math.max(0, tonumber(sessionCount) or 0)
-    return math.max(1, math.ceil(totalSessions / rowsPerPage))
+function GoldTracker:GetHistoryVisibleRowsPerPage()
+    local scroll=self.historyFrame and self.historyFrame.scrollFrame
+    local available=scroll and scroll:GetHeight() or 0
+    return math.max(1,math.min(self:GetHistoryRowsPerPage(),math.floor(math.max(Constants.ROW_SPACING,available)/Constants.ROW_SPACING)))
 end
-
+function GoldTracker:GetHistoryPageCount(count) return math.max(1,math.ceil(count/self:GetHistoryVisibleRowsPerPage())) end
 function GoldTracker:SetHistoryPage(page)
-    if not self.historyFrame then
-        return
-    end
-
-    local frame = self.historyFrame
-    local totalPages = self:GetHistoryPageCount(#self:GetDisplaySortedSessionHistory())
-    local clampedPage = math.max(1, math.min(totalPages, math.floor(tonumber(page) or 1)))
-    if frame.currentPage == clampedPage then
-        return
-    end
-
-    frame.currentPage = clampedPage
-    self:RefreshHistoryWindow()
+    local f=self.historyFrame; f.currentPage=math.max(1,math.min(page,f.totalPages or 1)); f.scrollFrame:SetVerticalScroll(0); self:RefreshHistoryWindow()
 end
-
+function GoldTracker:HandleHistoryPageMouseWheel(delta) self:SetHistoryPage(self.historyFrame.currentPage-(delta>0 and 1 or -1)) end
+function GoldTracker:GetHistoryRow(index)
+    local f=self.historyFrame; if f.rows[index] then return f.rows[index] end
+    local r=Row(f.content); r.selectCheckbox=CreateFrame("CheckButton",nil,r,"UICheckButtonTemplate"); r.selectCheckbox:SetSize(22,22)
+    r:EnableMouseWheel(true); r:SetScript("OnMouseWheel",function(_,delta) self:HandleHistoryPageMouseWheel(delta) end)
+    r.pinButton=Button(r,28,"*",function() self:ToggleHistorySessionPinned(r.sessionID) end)
+    Tip(r.pinButton,"Pin session","Pinned sessions stay above the rest of history.")
+    r.menuButton=Button(r,28,"...",function(b) self:OpenHistoryRowMenu(r.sessionID,b) end)
+    r.nameText=Text(r,"",14,"text"); r.subtitleText=Text(r,"",11,"textMuted")
+    r.durationText=Text(r,"",13,"text"); r.totalText=Text(r,"",13,"text","RIGHT"); r.rateText=Text(r,"",13,"text","RIGHT")
+    r.selectCheckbox:SetScript("OnClick",function(b) f.selectedSessionIDs[r.sessionID]=b:GetChecked() and true or nil; self:RefreshHistoryWindow() end)
+    r:SetScript("OnClick",function() self:ShowHistoryDetailsView(r.sessionID) end)
+    Tip(r,function() local info=f.listInfo[r.sessionID]; return info and info.title or "Session" end,function()
+        local s=self:GetHistorySessionByID(r.sessionID); local m=ModelFor(s)
+        return (f.listInfo[r.sessionID] and f.listInfo[r.sessionID].subtitle or "").."\n"..m:GetTimingLabel().."\nCash + vendor alternative: "..formatter:FormatSessionTotalRaw(s)
+    end)
+    f.rows[index]=r; return r
+end
+function GoldTracker:RefreshHistoryWindow()
+    local f=self.historyFrame; if not f or f.view~="list" or f.refreshing then return end
+    f.refreshing=true
+    local history=self:GetDisplaySortedSessionHistory(); local size=self:GetHistoryVisibleRowsPerPage(); f.totalPages=self:GetHistoryPageCount(#history)
+    f.currentPage=math.max(1,math.min(f.currentPage,f.totalPages)); local first=(f.currentPage-1)*size+1; local last=math.min(#history,first+size-1)
+    local w=math.max(800,f.scrollFrame:GetWidth()-6); f.content:SetWidth(w)
+    local rateX=w-178; local valueX=rateX-172; local durationX=valueX-126; local nameWidth=durationX-76
+    Anchor(f.search,f.listContainer,22,18,math.max(180,f.listContainer:GetWidth()-596),24)
+    f.searchHint:SetWidth(f.search:GetWidth()-10); f.searchHint:SetHeight(18)
+    Anchor(f.historyDateFilterDropdown,f.listContainer,f.listContainer:GetWidth()-568,14)
+    Anchor(f.characterDropdown,f.listContainer,f.listContainer:GetWidth()-406,14)
+    Anchor(f.historyLocationDropdown,f.listContainer,f.listContainer:GetWidth()-228,14)
+    f.searchHint:SetShown(f.query=="")
+    Anchor(f.selectionText,f.listContainer,20,62,math.max(1,f.listContainer:GetWidth()-390),18)
+    Anchor(f.clearSelectionButton,f.listContainer,f.listContainer:GetWidth()-332,56)
+    Anchor(f.mergeButton,f.listContainer,f.listContainer:GetWidth()-252,56)
+    Anchor(f.bulkDeleteButton,f.listContainer,f.listContainer:GetWidth()-134,56)
+    Anchor(f.selectPageCheckbox,f.listContainer,12,90)
+    Anchor(f.listHeaderButton,f.listContainer,72,92,nameWidth,20)
+    Anchor(f.durationHeaderButton,f.listContainer,8+durationX,92,112,20)
+    Anchor(f.totalHeaderButton,f.listContainer,8+valueX,92,156,20)
+    Anchor(f.rateHeaderButton,f.listContainer,8+rateX,92,140,20)
+    for _,d in ipairs({f.historyDateFilterDropdown,f.characterDropdown,f.historyLocationDropdown}) do d.refresh() end
+    f.visibleSessionIDs={}; local count=0
+    local valid={}; for _,s in ipairs(history) do valid[s.id]=true end
+    for id in pairs(f.selectedSessionIDs) do if not valid[id] then f.selectedSessionIDs[id]=nil end end
+    for i=first,last do
+        local s=history[i]; count=count+1; local r=self:GetHistoryRow(count); r.sessionID=s.id; local info=f.listInfo[s.id]
+        Anchor(r,f.content,0,(count-1)*Constants.ROW_SPACING,w,Constants.ROW_HEIGHT)
+        r.bg:SetColorTexture(unpack(Color(f.selectedSessionIDs[s.id] and "rowSelected" or (count%2==0 and "rowEven" or "rowOdd"))))
+        for _,t in ipairs({r.nameText,r.durationText,r.totalText,r.rateText}) do
+            t:SetTextColor(unpack(Color(f.selectedSessionIDs[s.id] and "selectionTextSoft" or "text")))
+        end
+        r.subtitleText:SetTextColor(unpack(Color(f.selectedSessionIDs[s.id] and "selectionTextSoft" or "textMuted")))
+        Anchor(r.selectCheckbox,r,4,15); r.selectCheckbox:SetChecked(f.selectedSessionIDs[s.id]==true)
+        Anchor(r.pinButton,r,30,13,28,24); r.pinButton:SetAlpha(s.pinned and 1 or 0.45)
+        Anchor(r.nameText,r,64,8,nameWidth,18); r.nameText:SetText(info.title)
+        Anchor(r.subtitleText,r,64,30,w-106,14); r.subtitleText:SetText(info.subtitle)
+        Anchor(r.durationText,r,durationX,10,112,18); r.durationText:SetText(ModelFor(s):FormatDurationMinutesLabel(info.duration))
+        Anchor(r.totalText,r,valueX,10,156,18); r.totalText:SetText(Money(s.totalValue))
+        Anchor(r.rateText,r,rateX,10,140,18); r.rateText:SetText(Rate(s.totalValue,info.rateDuration))
+        Anchor(r.menuButton,r,w-32,13,28,24); r:Show(); f.visibleSessionIDs[#f.visibleSessionIDs+1]=s.id
+    end
+    for i=count+1,#f.rows do f.rows[i]:Hide() end
+    f.content:SetHeight(math.max(1,count*Constants.ROW_SPACING)); f.emptyText:SetShown(count==0)
+    f.prevPageButton:SetEnabled(f.currentPage>1); f.nextPageButton:SetEnabled(f.currentPage<f.totalPages)
+    f.pageText:SetText(string.format("Page %d / %d   |   %d-%d of %d sessions",f.currentPage,f.totalPages,#history>0 and first or 0,last,#history))
+    f.pageText:SetWidth(380); f.pageText:SetHeight(18)
+    f.listRateHint:SetText(self:IsActiveTimeForGoldPerHourEnabled() and "Rates: estimated active loot time" or "Rates: recorded time / legacy elapsed span")
+    f.listRateHint:SetWidth(320); f.listRateHint:SetHeight(18)
+    self:UpdateHistoryActionButtons(); self:UpdateHistorySortHeaderState(); f.refreshing=false
+end
 function GoldTracker:ShowHistoryListView()
-    if not self.historyFrame then
-        return
-    end
-
-    local frame = self.historyFrame
-    frame.view = "list"
-    frame.selectedSessionID = nil
-    frame.selectedSessionIDs = {}
-    if not frame.currentPage then
-        frame.currentPage = 1
-    end
-
-    if frame.headerTitleText then
-        frame.headerTitleText:SetText("Session History")
-    end
-
-    if frame.listContainer then
-        frame.listContainer:Show()
-    end
-    if frame.detailsContainer then
-        frame.detailsContainer:Hide()
-    end
-    if frame.splitButton then
-        frame.splitButton:Hide()
-    end
-    if frame.backButton then
-        frame.backButton:Hide()
-    end
-
-    self:UpdateHistoryActionButtons()
-
+    local f=self.historyFrame; if not f then return end
+    f.view="list"; f.selectedSessionID=nil; f.listContainer:Show(); f.detailsContainer:Hide(); f.backButton:Hide()
+    if f.headerTitleText then f.headerTitleText:SetText("Session History") end
     self:RefreshHistoryWindow()
 end
-
-function GoldTracker:ShowHistoryDetailsView(sessionID)
-    if not self.historyFrame then
-        return
-    end
-
-    local frame = self.historyFrame
-    frame.view = "details"
-    frame.selectedSessionID = sessionID
-    frame.detailsLocationFilterKey = DETAILS_LOCATION_FILTER_ALL
-    local session = self:GetHistorySessionByID(sessionID)
-    frame.detailsStyleFilterID = session
-        and self:NormalizeSessionStyleFilter(session.sessionStyleFilter)
-        or (self.SESSION_STYLE_ALL_ID or "all")
-    local _, currentHeight = frame:GetSize()
-    if (tonumber(currentHeight) or 0) <= HISTORY_WINDOW_DEFAULT_HEIGHT then
-        frame:SetHeight(HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT)
-    end
-
-    if frame.headerTitleText then
-        frame.headerTitleText:SetText("Session Details")
-    end
-
-    if frame.listContainer then
-        frame.listContainer:Hide()
-    end
-    if frame.detailsContainer then
-        frame.detailsContainer:Show()
-    end
-    if frame.backButton then
-        frame.backButton:Show()
-    end
-
-    self:UpdateHistoryActionButtons()
-
+function GoldTracker:ShowHistoryDetailsView(id)
+    local f=self.historyFrame; if not f then return end
+    f.view="details"; f.selectedSessionID=id; f.detailsTab="loot"; f.detailsLocationFilterKey=ALL; f.detailsStyleFilterID="all"; f.detailsItemFilter="all"
+    f.expandedItems={}; f.expandedLocations={}; self:ResetHistoryDetailsScroll()
+    f.listContainer:Hide(); f.detailsContainer:Show(); f.backButton:Show()
+    if f.headerTitleText then f.headerTitleText:SetText("Session Details") end
     self:RefreshHistoryDetailsWindow()
 end
 
-function GoldTracker:RefreshHistoryWindow()
-    if not self.historyFrame then
-        return
-    end
-
-    local frame = self.historyFrame
-    local selectedFilterKey = frame.historyDateFilterKey or HISTORY_DATE_FILTER_ALL
-    local selectedFilterLabel = nil
-    for _, option in ipairs(HISTORY_DATE_FILTER_OPTIONS) do
-        if option.key == selectedFilterKey then
-            selectedFilterLabel = option.label
-            break
+function GoldTracker:GetHistoryDetailRow(index)
+    local f=self.historyFrame; if f.detailRows[index] then return f.detailRows[index] end
+    local r=Row(f.detailsContent); r.cells={}
+    for i=1,5 do r.cells[i]=Text(r,"",12,"text") end
+    r.icon=r:CreateTexture(nil,"ARTWORK"); r.icon:SetSize(22,22)
+    r.note=Text(r,"",11,"textMuted"); r.note:SetWordWrap(true)
+    r.expand=Button(r,22,"+",function() if r.toggle then r.toggle() end end)
+    r:SetScript("OnClick",function(_,button)
+        if r.itemLink and GoldTracker.HandleFarmActionClick and GoldTracker:HandleFarmActionClick(r,button) then return end
+        if r.itemLink and HandleModifiedItemClick and HandleModifiedItemClick(r.itemLink) then return end
+        if r.activate then r.activate(button) end
+    end)
+    r:SetScript("OnEnter",function(self)
+        GameTooltip:SetOwner(self,"ANCHOR_RIGHT")
+        if self.itemLink then GameTooltip:SetHyperlink(self.itemLink) else GameTooltip:SetText(self.tooltipTitle or "Location") end
+        if self.tooltipBody then
+            local c=Color("textSoft"); GameTooltip:AddLine(self.tooltipBody,c[1],c[2],c[3],true)
         end
-    end
-    if not selectedFilterLabel then
-        selectedFilterKey = HISTORY_DATE_FILTER_ALL
-        selectedFilterLabel = "All time"
-        frame.historyDateFilterKey = selectedFilterKey
-    end
-    if frame.historyDateFilterDropdown then
-        UIDropDownMenu_SetSelectedValue(frame.historyDateFilterDropdown, selectedFilterKey)
-        UIDropDownMenu_SetText(frame.historyDateFilterDropdown, selectedFilterLabel)
-    end
-
-    local history = self:GetDisplaySortedSessionHistory()
-    local rowsPerPage = self:GetHistoryRowsPerPage()
-    local totalPages = self:GetHistoryPageCount(#history)
-    frame.currentPage = math.max(1, math.min(frame.currentPage or 1, totalPages))
-    local startIndex = ((frame.currentPage - 1) * rowsPerPage) + 1
-    local endIndex = math.min(#history, startIndex + rowsPerPage - 1)
-    local width = math.max(760, (frame.scrollFrame:GetWidth() or 650) - 24)
-    frame.content:SetWidth(width)
-
-    local selectedMap = frame.selectedSessionIDs or {}
-    local validIDs = {}
-    for _, session in ipairs(history) do
-        validIDs[session.id] = true
-    end
-    for selectedID in pairs(selectedMap) do
-        if not validIDs[selectedID] then
-            selectedMap[selectedID] = nil
-        end
-    end
-    frame.selectedSessionIDs = selectedMap
-
-    local renderedRows = 0
-    local visibleSessionIDs = {}
-    local dividerAfterRow = nil
-    local previousWasPinned = nil
-    for historyIndex = startIndex, endIndex do
-        local session = history[historyIndex]
-        renderedRows = renderedRows + 1
-        local currentIsPinned = session.pinned == true
-        if dividerAfterRow == nil and renderedRows > 1 and previousWasPinned and not currentIsPinned then
-            dividerAfterRow = renderedRows - 1
-        end
-        previousWasPinned = currentIsPinned
-        local sessionID = session.id
-        visibleSessionIDs[#visibleSessionIDs + 1] = sessionID
-        local row = self:GetHistoryRow(renderedRows)
-        local rowIndex = renderedRows
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -((renderedRows - 1) * ROW_SPACING))
-        row:SetPoint("TOPRIGHT", frame.content, "TOPRIGHT", 0, -((renderedRows - 1) * ROW_SPACING))
-        row:SetHeight(ROW_HEIGHT)
-        if row.bg then
-            if selectedMap[sessionID] then
-                row.bg:SetColorTexture(0.18, 0.14, 0.08, 0.78)
-            else
-                row.bg:SetColorTexture(1, 1, 1, rowIndex % 2 == 0 and 0.045 or 0.022)
-            end
-        end
-        if row.divider then
-            row.divider:SetShown(historyIndex < endIndex)
-        end
-        local rowTitleText, rowSubtitleText = BuildHistoryRowTitleAndSubtitle(session)
-        row.nameText:SetText(TruncateSessionNameKeepingDate(self, rowTitleText, row.nameText))
-        if row.subtitleText then
-            if type(rowSubtitleText) == "string" and rowSubtitleText ~= "" then
-                row.subtitleText:SetText(rowSubtitleText)
-                row.subtitleText:Show()
-            else
-                row.subtitleText:SetText("")
-                row.subtitleText:Hide()
-            end
-        end
-        row.summaryText:SetText(FormatSessionSummary(self, session))
-        row.totalText:SetText(FormatSessionTotal(self, session))
-        row.totalRawText:SetText(FormatSessionTotalRaw(self, session))
-        if row.durationText then
-            row.durationText:SetText(FormatSessionDuration(session))
-        end
-
-        row.selectCheckbox:SetChecked(selectedMap[sessionID] == true)
-        row.selectCheckbox:SetScript("OnClick", function(button)
-            if button:GetChecked() then
-                selectedMap[sessionID] = true
-            else
-                selectedMap[sessionID] = nil
-            end
-            if row.bg then
-                if selectedMap[sessionID] then
-                    row.bg:SetColorTexture(0.18, 0.14, 0.08, 0.78)
-                else
-                    row.bg:SetColorTexture(1, 1, 1, rowIndex % 2 == 0 and 0.045 or 0.022)
-                end
-            end
-            self:UpdateHistoryActionButtons()
-        end)
-
-        row.pinButton:SetText(session.pinned and "Unpin" or "Pin")
-        row.pinButton:SetScript("OnClick", function()
-            self:ToggleHistorySessionPinned(sessionID)
-        end)
-
-        row:SetScript("OnClick", function()
-            self:OpenHistorySessionDetails(sessionID)
-        end)
-        row.renameButton:SetScript("OnClick", function()
-            self:PromptRenameHistorySession(sessionID)
-        end)
-        row.deleteButton:SetScript("OnClick", function()
-            self:DeleteHistorySession(sessionID)
-        end)
-        row:Show()
-    end
-
-    frame.visibleSessionIDs = visibleSessionIDs
-
-    for i = renderedRows + 1, #frame.rows do
-        frame.rows[i]:Hide()
-    end
-
-    local showTotalsRow = selectedFilterKey ~= HISTORY_DATE_FILTER_ALL
-    local renderedRowsWithTotals = renderedRows
-    if showTotalsRow then
-        local totalRawGold = 0
-        local totalItemsValue = 0
-        local totalValue = 0
-        local totalHighlights = 0
-        for _, session in ipairs(history) do
-            totalRawGold = totalRawGold + (tonumber(session and session.rawGold) or 0)
-            totalItemsValue = totalItemsValue + (tonumber(session and session.itemsValue) or 0)
-            totalValue = totalValue + (tonumber(session and session.totalValue) or 0)
-            totalHighlights = totalHighlights + (tonumber(session and session.highlightItemCount) or 0)
-        end
-
-        local totalsRow = self:GetHistoryTotalsRow()
-        if totalsRow then
-            totalsRow:SetWidth(width)
-            totalsRow:ClearAllPoints()
-            totalsRow:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 0, -(renderedRows * ROW_SPACING))
-            totalsRow.text:SetText(string.format(
-                "Totals (%s): Sessions %d   Highlights %d   Raw %s   Items %s   Total %s",
-                selectedFilterLabel,
-                #history,
-                totalHighlights,
-                self:FormatMoney(totalRawGold),
-                self:FormatMoney(totalItemsValue),
-                self:FormatMoney(totalValue)
-            ))
-            totalsRow:SetHeight(ROW_HEIGHT)
-            totalsRow:Show()
-            renderedRowsWithTotals = renderedRows + 1
-        end
-    elseif frame.totalsRow then
-        frame.totalsRow:Hide()
-    end
-
-    local contentHeight = math.max(1, renderedRowsWithTotals * ROW_SPACING)
-    frame.content:SetHeight(contentHeight)
-    if frame.pinnedDivider then
-        if dividerAfterRow and dividerAfterRow > 0 then
-            local dividerY = -((dividerAfterRow * ROW_SPACING) - 2)
-            frame.pinnedDivider:ClearAllPoints()
-            frame.pinnedDivider:SetPoint("TOPLEFT", frame.content, "TOPLEFT", 24, dividerY)
-            frame.pinnedDivider:SetPoint("TOPRIGHT", frame.content, "TOPRIGHT", -42, dividerY)
-            frame.pinnedDivider:Show()
-        else
-            frame.pinnedDivider:Hide()
-        end
-    end
-    frame.scrollFrame:SetVerticalScroll(0)
-    if frame.emptyText then
-        if #history == 0 and selectedFilterKey ~= HISTORY_DATE_FILTER_ALL then
-            frame.emptyText:SetText("")
-        else
-            frame.emptyText:SetText("No saved sessions.")
-        end
-        frame.emptyText:SetShown(#history == 0 and not showTotalsRow)
-    end
-    if frame.prevPageButton then
-        frame.prevPageButton:SetEnabled(frame.currentPage > 1)
-        frame.prevPageButton:SetAlpha(frame.currentPage > 1 and 1 or 0.45)
-    end
-    if frame.nextPageButton then
-        frame.nextPageButton:SetEnabled(frame.currentPage < totalPages)
-        frame.nextPageButton:SetAlpha(frame.currentPage < totalPages and 1 or 0.45)
-    end
-    if frame.pageText then
-        local shownFrom = #history == 0 and 0 or startIndex
-        local shownTo = #history == 0 and 0 or endIndex
-        local pageLine = string.format("Page %d / %d   Showing %d-%d of %d", frame.currentPage, totalPages, shownFrom, shownTo, #history)
-        if selectedFilterKey ~= HISTORY_DATE_FILTER_ALL then
-            pageLine = string.format("%s   Filter: %s", pageLine, selectedFilterLabel)
-        end
-        frame.pageText:SetText(pageLine)
-    end
-    self:UpdateHistorySortHeaderState()
-    self:UpdateHistoryActionButtons()
+        if self.itemLink and GoldTracker.AddFarmActionTooltip then GoldTracker:AddFarmActionTooltip(GameTooltip,self) end
+        GameTooltip:Show()
+    end)
+    r:SetScript("OnLeave",function() GameTooltip:Hide() end)
+    f.detailRows[index]=r; return r
 end
-
-function GoldTracker:ApplyHistoryDetailsFontSize()
-    local frame = self.historyFrame
-    if not frame then
-        return
-    end
-
-    local baseSize = 12
-    if type(self.GetHistoryDetailsFontSize) == "function" then
-        baseSize = self:GetHistoryDetailsFontSize()
-    end
-    baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
-
-    local function ApplyFontSize(region, size, fallbackFontObject)
-        if not region or type(region.GetFont) ~= "function" or type(region.SetFont) ~= "function" then
-            return
-        end
-
-        local fontPath, _, fontFlags = region:GetFont()
-        if not fontPath and fallbackFontObject and type(fallbackFontObject.GetFont) == "function" then
-            fontPath, _, fontFlags = fallbackFontObject:GetFont()
-        end
-        if not fontPath then
-            fontPath = "Fonts\\FRIZQT__.TTF"
-        end
-
-        region:SetFont(fontPath, size, fontFlags)
-    end
-
-    ApplyFontSize(frame.sessionNameText, baseSize + 2, GameFontHighlight)
-    ApplyFontSize(frame.locationHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    ApplyFontSize(frame.timeFrameHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    ApplyFontSize(frame.highlightsHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    ApplyFontSize(frame.durationHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    for _, row in ipairs(frame.locationTableRows or {}) do
-        ApplyFontSize(row.locationText, baseSize, GameFontHighlightSmall)
-        ApplyFontSize(row.timeFrameText, baseSize, GameFontHighlightSmall)
-        ApplyFontSize(row.highlightsText, baseSize, GameFontHighlightSmall)
-        ApplyFontSize(row.durationText, baseSize, GameFontHighlightSmall)
-    end
-    for _, row in ipairs(frame.summaryRows or {}) do
-        ApplyFontSize(row.labelText, baseSize, GameFontHighlightSmall)
-        ApplyFontSize(row.valueText, baseSize, GameFontHighlightSmall)
-    end
-    ApplyFontSize(frame.itemsHeaderText, baseSize, GameFontNormal)
-    ApplyFontSize(frame.itemsItemHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    ApplyFontSize(frame.itemsValueHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    ApplyFontSize(frame.itemsSourceHeaderText, math.max(8, baseSize - 1), GameFontNormalSmall)
-    if frame.detailsItemsEmptyText then
-        ApplyFontSize(frame.detailsItemsEmptyText, baseSize, GameFontHighlightSmall)
-    end
-    for _, row in ipairs(frame.detailsItemRows or {}) do
-        ApplyFontSize(row.itemText, baseSize, GameFontHighlightSmall)
-        ApplyFontSize(row.valueText, baseSize, GameFontHighlightSmall)
-        ApplyFontSize(row.sourceText, baseSize, GameFontHighlightSmall)
-    end
-end
-
-function GoldTracker:OpenHistoryWindow()
-    if not self:IsSessionHistoryEnabled() then
-        self:Print("Session history is disabled. Enable it in options first.", "warnings")
-        return
-    end
-
-    self:CreateHistoryWindow()
-    self:ShowHistoryListView()
-    self.historyFrame:Show()
-    self.historyFrame:Raise()
-end
-
 function GoldTracker:RefreshHistoryDetailsWindow()
-    local frame = self.historyFrame
-    if not frame or frame.view ~= "details" then
-        return
-    end
-
-    self:ApplyHistoryDetailsFontSize()
-
-    local session = self:GetHistorySessionByID(frame.selectedSessionID)
-    if not session then
-        self:ShowHistoryListView()
-        return
-    end
-
-    local locationOptions = BuildHistoryLocationOptions(session)
-    frame.detailsLocationOptions = locationOptions
-    local selectedLocationKey = frame.detailsLocationFilterKey or DETAILS_LOCATION_FILTER_ALL
-    local selectedLocationLabel = "All"
-    local selectedLocationIsValid = false
-    for _, option in ipairs(locationOptions) do
-        if option.key == selectedLocationKey then
-            selectedLocationLabel = option.label
-            selectedLocationIsValid = true
-            break
-        end
-    end
-    if not selectedLocationIsValid then
-        selectedLocationKey = DETAILS_LOCATION_FILTER_ALL
-        frame.detailsLocationFilterKey = selectedLocationKey
-        selectedLocationLabel = "All"
-    end
-    if frame.locationFilterDropdown then
-        UIDropDownMenu_SetSelectedValue(frame.locationFilterDropdown, selectedLocationKey)
-        UIDropDownMenu_SetText(frame.locationFilterDropdown, selectedLocationLabel)
-    end
-    local styleOptions = BuildHistorySessionStyleOptions(self, session)
-    frame.detailsStyleOptions = styleOptions
-    local selectedStyleID = self:NormalizeSessionStyleFilter(frame.detailsStyleFilterID)
-    local selectedStyleLabel = "All"
-    local selectedStyleIsValid = false
-    for _, option in ipairs(styleOptions) do
-        if option.id == selectedStyleID then
-            selectedStyleLabel = option.label
-            selectedStyleIsValid = true
-            break
-        end
-    end
-    if not selectedStyleIsValid then
-        selectedStyleID = self.SESSION_STYLE_ALL_ID or "all"
-        frame.detailsStyleFilterID = selectedStyleID
-        selectedStyleLabel = "All"
-    end
-    if frame.styleFilterDropdown then
-        UIDropDownMenu_SetSelectedValue(frame.styleFilterDropdown, selectedStyleID)
-        UIDropDownMenu_SetText(frame.styleFilterDropdown, selectedStyleLabel)
-        frame.styleFilterDropdown:SetShown(#styleOptions > 1)
-    end
-    if frame.styleFilterLabelText then
-        frame.styleFilterLabelText:SetShown(#styleOptions > 1)
-    end
-    if frame.splitButton then
-        frame.splitButton:SetShown(#locationOptions > 2)
-    end
-    if frame.resumeSessionButton then
-        local isFarmHistory = session.recordType == "farm" or session.isFarm == true
-        local enabled = not isFarmHistory and self:IsResumeHistorySessionEnabled()
-        frame.resumeSessionButton:SetShown(not isFarmHistory)
-        frame.resumeSessionButton:SetEnabled(enabled)
-        frame.resumeSessionButton:SetAlpha(enabled and 1 or 0.45)
-    end
-    if frame.diagnosisSessionButton then
-        local hasDiagnosisSnapshot = type(session.diagnosisSnapshot) == "table"
-        frame.diagnosisSessionButton:SetEnabled(hasDiagnosisSnapshot)
-        frame.diagnosisSessionButton:SetAlpha(hasDiagnosisSnapshot and 1 or 0.45)
-    end
-
-    local filteredSummary = BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
-
-    local sessionName = session.name or "Session"
-    if session.wasResumed == true or session.resumedFromHistory == true then
-        sessionName = string.format("[Resumed] %s", sessionName)
-    end
-    frame.sessionNameText:SetText(sessionName)
-
-    local summaryDurationSeconds = tonumber(filteredSummary.duration) or 0
-    local summaryRawTotal = (tonumber(filteredSummary.rawGold) or 0) + (tonumber(filteredSummary.itemsRawGold) or 0)
-
-    local summaryRowsData = {
-        { label = "Duration", value = self:FormatDuration(filteredSummary.duration or 0) },
-        { label = "Saved by", value = session.savedBy or "Unknown" },
+    local f=self.historyFrame; if not f or f.view~="details" or f.refreshing then return end
+    local s=self:GetHistorySessionByID(f.selectedSessionID); if not s then self:ShowHistoryListView(); return end
+    f.refreshing=true
+    local model=ModelFor(s); local title=model:BuildRowTitleAndSubtitle(); local details=f.detailsContainer
+    local base=self:GetHistoryDetailsFontSize(); local w=details:GetWidth(); local bodyWidth=math.max(740,f.detailsScroll:GetWidth()-6)
+    local options=model:BuildHistoryLocationOptions(); f.detailsLocationOptions=options
+    local selectedLabel="All locations"; local found=f.detailsLocationFilterKey==ALL
+    for _,o in ipairs(options) do if o.key==f.detailsLocationFilterKey then selectedLabel=o.label; found=true end end
+    if not found then f.detailsLocationFilterKey=ALL end
+    local summary=service:BuildHistoryDetailsSummary(s,f.detailsLocationFilterKey,f.detailsStyleFilterID)
+    Anchor(f.sessionNameText,details,16,16,w-170,28); FitText(f.sessionNameText,title,base+4,14)
+    local pricing=#(s.valueSourceLabels or {})>1 and ("Mixed ("..#s.valueSourceLabels.." price sources)") or (s.valueSourceLabel or "Unknown")
+    f.metadataText:SetText(string.format("%s  |  %s - %s\nPricing: %s",s.savedBy or "Unknown character",Date(s.startTime),Date(s.stopTime or s.savedAt),pricing))
+    Anchor(f.metadataText,details,16,48,w-32,40)
+    f.metadataText:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",math.max(11,base-2),"")
+    Anchor(f.resumeSessionButton,details,w-150,16,96,24); Anchor(f.detailsMenu,details,w-46,16,30,24)
+    local canResume=self:IsResumeHistorySessionEnabled() and not s.isFarm and s.recordType~="farm"
+    local alreadyActive=self.session and self.session.active and self.session.historySessionID==s.id
+    f.resumeSessionButton:SetEnabled(canResume and not alreadyActive); f.resumeSessionButton:SetText(alreadyActive and "Recording" or "Resume")
+    local cardData={
+        {"Estimated value",Money(summary.totalValue),"Cash + auction estimates"},
+        {"Cash + vendor value",Money(summary.rawGold+summary.itemsRawGold),"Alternative valuation"},
+        {"Duration",self:FormatDuration(summary.duration),summary.timingLabel},
+        {"Value / hour",Rate(summary.totalValue,summary.rateDuration),summary.rateBasis},
     }
-    for _, row in ipairs(BuildHistoryResumeSummaryRows(session)) do
-        summaryRowsData[#summaryRowsData + 1] = row
+    local cardWidth=(w-62)/4
+    for i,card in ipairs(f.cards) do
+        Anchor(card,details,16+(i-1)*(cardWidth+10),94,cardWidth,80)
+        for _,label in ipairs({card.label,card.value,card.note}) do label:SetWidth(cardWidth-24) end
+        FitText(card.label,cardData[i][1],math.max(11,base-3),11)
+        FitText(card.value,cardData[i][2],base+2,12)
+        FitText(card.note,cardData[i][3],math.max(11,base-3),11)
+        Tip(card,cardData[i][1],cardData[i][2].."\n"..cardData[i][3])
     end
-    summaryRowsData[#summaryRowsData + 1] = { label = "Value source", value = session.valueSourceLabel or "Unknown" }
-    summaryRowsData[#summaryRowsData + 1] = { label = "Raw gold", value = self:FormatMoney(filteredSummary.rawGold or 0) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "Vendor items gold", value = self:FormatMoney(filteredSummary.itemsRawGold or 0) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "AH value", value = self:FormatMoney(filteredSummary.itemsValue or 0) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "Raw session total", value = self:FormatMoney(summaryRawTotal) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "Session Total", value = self:FormatMoney(filteredSummary.totalValue or 0) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "Session / hour", value = self:FormatMoneyPerHour(filteredSummary.totalValue or 0, summaryDurationSeconds) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "AH / hour", value = self:FormatMoneyPerHour(filteredSummary.itemsValue or 0, summaryDurationSeconds) }
-    summaryRowsData[#summaryRowsData + 1] = { label = "Raw / hour", value = self:FormatMoneyPerHour(summaryRawTotal, summaryDurationSeconds) }
-
-    -- Always show the complete per-location table; dropdown still filters summary and item list.
-    local locationRows = BuildLocationDetailsRowsForSelection(session, DETAILS_LOCATION_FILTER_ALL)
-    local hasLocationRows = type(locationRows) == "table" and #locationRows > 0
-
-    if hasLocationRows and frame.locationTableFrame then
-        for index = 1, #locationRows do
-            self:GetHistoryLocationDetailsRow(index)
+    Anchor(f.locationFilterDropdown,details,0,184); Anchor(f.styleFilterDropdown,details,266,184); Anchor(f.itemFilterDropdown,details,454,184)
+    for _,d in ipairs({f.locationFilterDropdown,f.styleFilterDropdown,f.itemFilterDropdown}) do d.refresh() end
+    f.itemFilterDropdown:SetShown(f.detailsTab=="loot")
+    Anchor(f.scopeText,details,378,232,w-394,16); f.scopeText:SetText("Scope: "..selectedLabel)
+    for id,b in pairs(f.tabButtons) do if b.SetSelected then b:SetSelected(id==f.detailsTab) end end
+    local columns
+    if f.detailsTab=="loot" then columns={{"Item",0,bodyWidth-410},{"Qty",bodyWidth-402,54},{"Value",bodyWidth-340,154},{"Source",bodyWidth-174,170}}
+    elseif f.detailsTab=="locations" then columns={{"Location",0,bodyWidth-428},{"Value",bodyWidth-416,156},{"Items",bodyWidth-248,60},{"Visits",bodyWidth-176,60},{"Time",bodyWidth-104,100}}
+    else columns={{"Breakdown",0,bodyWidth-230},{"Value / quantity",bodyWidth-218,210}} end
+    for i,h in ipairs(f.bodyHeaders) do
+        local c=columns[i]; h:SetShown(c~=nil); if c then Anchor(h,f.body,c[2],3,c[3],20); h:SetText(c[1]) end
+    end
+    f.detailsContent:SetWidth(bodyWidth)
+    local rendered,y=0,0
+    local function draw(cells,note,expanded)
+        rendered=rendered+1; local r=self:GetHistoryDetailRow(rendered)
+        r.itemLink=nil; r.activate=nil; r.toggle=nil; r.tooltipBody=nil; r.icon:Hide(); r.expand:Hide(); r.note:Hide()
+        local rowHeight=math.max(34,base+18)
+        if note then
+            r.note:SetText(note); Anchor(r.note,r,34,rowHeight,bodyWidth-46)
+            if expanded then rowHeight=rowHeight+math.max(18,r.note:GetStringHeight())+8; r.note:Show() end
         end
-        self:ApplyHistoryDetailsFontSize()
-        ApplyHistoryLocationTableColumnLayout(frame)
-
-        local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
-        baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
-        local rowSpacing = 4
-        local minRowHeight = math.max(12, baseSize + 3)
-        local yOffset = 0
-        local bodyHeight = 0
-        local minVisibleBodyHeight = 0
-
-        for index, rowData in ipairs(locationRows) do
-            local row = self:GetHistoryLocationDetailsRow(index)
-            if row then
-                local startText = rowData.timeFrameStart or "Unknown"
-                local endText = rowData.timeFrameEnd or ""
-                local timeFrameCellText = startText
-                if type(endText) == "string" and endText ~= "" then
-                    timeFrameCellText = string.format("%s\n%s", startText, endText)
-                end
-
-                row.locationText:SetText(rowData.location or "Unknown")
-                row.timeFrameText:SetText(timeFrameCellText)
-                row.highlightsText:SetText(tostring(math.max(0, math.floor((tonumber(rowData.highlights) or 0) + 0.5))))
-                row.durationText:SetText(rowData.duration or "<1m")
-
-                local rowHeight = math.max(
-                    minRowHeight,
-                    tonumber(row.locationText:GetStringHeight()) or minRowHeight,
-                    tonumber(row.timeFrameText:GetStringHeight()) or minRowHeight,
-                    tonumber(row.highlightsText:GetStringHeight()) or minRowHeight,
-                    tonumber(row.durationText:GetStringHeight()) or minRowHeight
-                ) + 2
-
-                row:ClearAllPoints()
-                row:SetPoint("TOPLEFT", frame.locationTableContent, "TOPLEFT", 0, -yOffset)
-                row:SetPoint("TOPRIGHT", frame.locationTableContent, "TOPRIGHT", 0, -yOffset)
-                row:SetHeight(rowHeight)
-                row:Show()
-                if row.divider then
-                    row.divider:SetShown(index < #locationRows)
-                end
-
-                bodyHeight = bodyHeight + rowHeight
-                if index <= LOCATION_TABLE_MIN_VISIBLE_ROWS then
-                    minVisibleBodyHeight = minVisibleBodyHeight + rowHeight
-                end
-                if index < #locationRows then
-                    bodyHeight = bodyHeight + rowSpacing
-                    yOffset = yOffset + rowHeight + rowSpacing
-                    if index < LOCATION_TABLE_MIN_VISIBLE_ROWS then
-                        minVisibleBodyHeight = minVisibleBodyHeight + rowSpacing
-                    end
-                else
-                    yOffset = yOffset + rowHeight
+        Anchor(r,f.detailsContent,0,y,bodyWidth,rowHeight)
+        r.bg:SetColorTexture(unpack(Color(rendered%2==0 and "rowEven" or "rowOdd")))
+        for i,t in ipairs(r.cells) do
+            t:SetShown(cells[i]~=nil)
+            if cells[i]~=nil and columns[i] then
+                Anchor(t,r,columns[i][2]+(i==1 and 32 or 0),8,columns[i][3]-(i==1 and 34 or 4),base+8)
+                t:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF",base,""); t:SetText(cells[i]); t:SetJustifyH((i==3 and f.detailsTab=="loot") and "RIGHT" or "LEFT")
+                if (f.detailsTab=="loot" and (i==2 or i==3)) or (f.detailsTab=="locations" and i>1) or (f.detailsTab=="breakdown" and i==2) then
+                    FitText(t,cells[i],base,10)
                 end
             end
         end
-
-        for index = (#locationRows + 1), #(frame.locationTableRows or {}) do
-            if frame.locationTableRows[index] then
-                if frame.locationTableRows[index].divider then
-                    frame.locationTableRows[index].divider:Hide()
-                end
-                frame.locationTableRows[index]:Hide()
-            end
+        r:Show(); y=y+rowHeight+3; return r
+    end
+    if f.detailsTab=="loot" then
+        local items=service:BuildVisibleHistoryItems(s,f.detailsLocationFilterKey,f.detailsStyleFilterID,f.detailsItemFilter)
+        for _,item in ipairs(items) do
+            local key=(item.itemLink or "unknown")..":"..(item.valueSourceLabel or "")
+            local note=table.concat(item.sources or {},"\n")
+            local kind=item.isSoulbound and "Bound" or (item.ahTracked and (item.valueSourceLabel or "Auction estimate") or "Vendor value")
+            note=kind..(note~="" and ("\n"..note) or "")
+            local value=item.ahTracked and item.totalValue or (item.vendorTotalValue or item.totalValue)
+            local r=draw({item.itemLink or "Unknown item",tostring(item.quantity or 0),Money(value),item.lootSourceText or kind},note,f.expandedItems[key])
+            r.itemLink=item.itemLink; r.tooltipBody=note.."\nClick to expand sources. Shift-click links the item."
+            local icon=C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(item.itemLink)
+            r.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark"); Anchor(r.icon,r,4,6,22,22); r.icon:Show()
+            r.activate=function() f.expandedItems[key]=not f.expandedItems[key]; self:RefreshHistoryDetailsWindow() end
         end
-
-        local scrollBodyHeight = bodyHeight
-        local maxVisibleBodyHeight = (minVisibleBodyHeight > 0) and minVisibleBodyHeight or bodyHeight
-        if #locationRows <= LOCATION_TABLE_MIN_VISIBLE_ROWS then
-            maxVisibleBodyHeight = bodyHeight
-        else
-            local detailsHeight = tonumber(frame.detailsContainer and frame.detailsContainer:GetHeight()) or 0
-            local sessionNameHeight = tonumber(frame.sessionNameText and frame.sessionNameText:GetStringHeight()) or (baseSize + 2)
-            local locationBodyTopOffset = 16 + sessionNameHeight + 6 + 19
-            local summaryMinRowHeight = math.max(12, baseSize + 2)
-            local summaryBodyHeight = (#summaryRowsData * (summaryMinRowHeight + 1)) + math.max(0, #summaryRowsData - 1)
-            local minItemsScrollHeight = math.max(80, baseSize * 4)
-            local reservedBelowLocationBody = DETAILS_GAP_LOCATION_TABLE_TO_FILTER
-                + DETAILS_CONTROLS_WRAPPED_ROW_HEIGHT
-                + DETAILS_GAP_FILTER_TO_SUMMARY
-                + summaryBodyHeight
-                + DETAILS_GAP_SUMMARY_TO_ITEMS
-                + (baseSize + 8)
-                + 4
-                + (baseSize + 4)
-                + 8
-                + minItemsScrollHeight
-                + 20
-            local availableBodyHeight = detailsHeight - locationBodyTopOffset - reservedBelowLocationBody
-            local defaultDetailsHeight = HISTORY_WINDOW_DETAILS_DEFAULT_HEIGHT - HISTORY_WINDOW_VERTICAL_CHROME_INSET
-            local resizeExtraHeight = math.max(0, detailsHeight - defaultDetailsHeight)
-            local desiredBodyHeight = maxVisibleBodyHeight + resizeExtraHeight
-
-            maxVisibleBodyHeight = math.min(bodyHeight, math.max(maxVisibleBodyHeight, desiredBodyHeight))
-            if availableBodyHeight > 0 then
-                maxVisibleBodyHeight = math.min(maxVisibleBodyHeight, math.max(minVisibleBodyHeight, availableBodyHeight))
-            end
+    elseif f.detailsTab=="locations" then
+        for _,location in ipairs(model:BuildLocationDetailsRowsForSelection(f.detailsLocationFilterKey,s,f.detailsStyleFilterID)) do
+            local lines={location.path or location.location}
+            if location.visits then
+                for _,visit in ipairs(location.intervals) do lines[#lines+1]=Date(visit.startTime).." - "..Date(visit.stopTime) end
+            else lines[#lines+1]="Visits were not recorded. Loot activity: "..location.timeFrame end
+            local note=table.concat(lines,"\n"); local key=location.key
+            local r=draw({location.location,Money(location.totalValue),tostring(location.quantity),location.visits and tostring(location.visits) or "--",location.duration},note,f.expandedLocations[key])
+            r.tooltipTitle=location.location; r.tooltipBody=note.."\nClick the row to view loot from this location."
+            r.expand:Show(); Anchor(r.expand,r,4,5,22,24); r.expand:SetText(f.expandedLocations[key] and "-" or "+")
+            r.toggle=function() f.expandedLocations[key]=not f.expandedLocations[key]; self:RefreshHistoryDetailsWindow() end
+            r.activate=function() f.detailsLocationFilterKey=key; f.detailsTab="loot"; self:ResetHistoryDetailsScroll(); self:RefreshHistoryDetailsWindow() end
         end
-
-        if frame.locationTableContent then
-            frame.locationTableContent:SetHeight(math.max(1, scrollBodyHeight))
-            ApplyHistoryLocationTableColumnLayout(frame)
-        end
-        if frame.locationTableScrollFrame then
-            frame.locationTableScrollFrame:SetHeight(math.max(1, maxVisibleBodyHeight))
-            if frame.locationTableScrollFrame.UpdateScrollChildRect then
-                frame.locationTableScrollFrame:UpdateScrollChildRect()
-            end
-            frame.locationTableScrollFrame:SetVerticalScroll(0)
-        end
-
-        frame.locationTableFrame:SetHeight(20 + math.max(1, maxVisibleBodyHeight) + 6)
-        frame.locationTableFrame:Show()
     else
-        for _, row in ipairs(frame.locationTableRows or {}) do
-            if row.divider then
-                row.divider:Hide()
-            end
-            row:Hide()
-        end
-        if frame.locationTableFrame then
-            frame.locationTableFrame:Hide()
-        end
-        if frame.locationTableContent then
-            frame.locationTableContent:SetHeight(1)
-        end
-        if frame.locationTableScrollFrame then
-            frame.locationTableScrollFrame:SetHeight(1)
-            frame.locationTableScrollFrame:SetVerticalScroll(0)
-        end
-    end
-
-    if frame.detailsControlsFrame then
-        frame.detailsControlsFrame:ClearAllPoints()
-        if hasLocationRows and frame.locationTableFrame then
-            frame.detailsControlsFrame:SetPoint("TOPLEFT", frame.locationTableFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
-        else
-            frame.detailsControlsFrame:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -DETAILS_GAP_LOCATION_TABLE_TO_FILTER)
-        end
-        frame.detailsControlsFrame:SetPoint("RIGHT", frame.detailsContainer, "RIGHT", -20, 0)
-        ApplyHistoryDetailsControlsLayout(frame)
-    end
-
-    if frame.summaryTableFrame then
-        frame.summaryTableFrame:ClearAllPoints()
-        if frame.detailsControlsFrame then
-            frame.summaryTableFrame:SetPoint("TOPLEFT", frame.detailsControlsFrame, "BOTTOMLEFT", 0, -DETAILS_GAP_FILTER_TO_SUMMARY)
-        else
-            frame.summaryTableFrame:SetPoint("TOPLEFT", frame.sessionNameText, "BOTTOMLEFT", 0, -8)
-        end
-        frame.summaryTableFrame:SetPoint("RIGHT", frame.detailsContainer, "RIGHT", -20, 0)
-
-        for index = 1, #summaryRowsData do
-            self:GetHistoryDetailsSummaryRow(index)
-        end
-        self:ApplyHistoryDetailsFontSize()
-
-        local baseSize = self.GetHistoryDetailsFontSize and self:GetHistoryDetailsFontSize() or 12
-        baseSize = math.max(8, math.min(24, math.floor((tonumber(baseSize) or 12) + 0.5)))
-        local rowSpacing = 1
-        local minRowHeight = math.max(12, baseSize + 2)
-        local yOffset = 0
-        local bodyHeight = 0
-
-        for index, rowData in ipairs(summaryRowsData) do
-            local row = self:GetHistoryDetailsSummaryRow(index)
-            if row then
-                row.labelText:SetText(string.format("%s:", rowData.label or ""))
-                row.valueText:SetText(rowData.value or "")
-
-                local rowHeight = math.max(
-                    minRowHeight,
-                    tonumber(row.labelText:GetStringHeight()) or minRowHeight,
-                    tonumber(row.valueText:GetStringHeight()) or minRowHeight
-                ) + 1
-
-                row:ClearAllPoints()
-                row:SetPoint("TOPLEFT", frame.summaryTableFrame, "TOPLEFT", 0, -yOffset)
-                row:SetPoint("TOPRIGHT", frame.summaryTableFrame, "TOPRIGHT", 0, -yOffset)
-                row:SetHeight(rowHeight)
-                row:Show()
-
-                bodyHeight = bodyHeight + rowHeight
-                if index < #summaryRowsData then
-                    bodyHeight = bodyHeight + rowSpacing
-                    yOffset = yOffset + rowHeight + rowSpacing
-                else
-                    yOffset = yOffset + rowHeight
-                end
+        local counts={all=0,auction=0,vendor=0,bound=0,reagent=0}
+        for _,item in ipairs(s.itemLoots or {}) do
+            if model:EntryMatchesLocation(item,f.detailsLocationFilterKey,s) and (f.detailsStyleFilterID=="all" or self:LootItemMatchesSessionStyle(item,f.detailsStyleFilterID)) then
+                local qty=tonumber(item.quantity) or 0; counts.all=counts.all+qty
+                local kind=item.isSoulbound and "bound" or (item.ahTracked and "auction" or "vendor"); counts[kind]=counts[kind]+qty
+                if item.isCraftingReagent then counts.reagent=counts.reagent+qty end
             end
         end
-
-        for index = (#summaryRowsData + 1), #(frame.summaryRows or {}) do
-            if frame.summaryRows[index] then
-                frame.summaryRows[index]:Hide()
-            end
-        end
-
-        frame.summaryTableFrame:SetHeight(math.max(1, bodyHeight))
-        frame.summaryTableFrame:Show()
+        local rows={{"Estimated value",Money(summary.totalValue)},{"Looted cash",Money(summary.rawGold)},{"Auction estimate",Money(summary.itemsValue)},
+            {"Vendor value of all loot",Money(summary.itemsRawGold)},{"Cash + vendor alternative",Money(summary.rawGold+summary.itemsRawGold)},
+            {"Total item quantity",counts.all},{"Auction-valued items",counts.auction},{"Vendor-only items",counts.vendor},{"Bound items",counts.bound},{"Crafting reagents (overlaps categories)",counts.reagent}}
+        for _,entry in ipairs(rows) do local r=draw({entry[1],tostring(entry[2])}); Anchor(r.cells[1],r,8,8,columns[1][3]-12,base+8) end
+        local r=draw({"Valuation notes",""},"Estimated value = looted cash + auction-valued loot. Vendor value is an alternative estimate, not an additional amount. Bound items are counted separately. Crafting reagents overlap the other item categories.",true)
+        Anchor(r.cells[1],r,8,8,columns[1][3]-12,base+8)
     end
-
-    local items, includeSourceLabel = BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
-    self:RefreshHistoryDetailsItemsTable(items, includeSourceLabel)
+    for i=rendered+1,#f.detailRows do f.detailRows[i]:Hide() end
+    f.detailsContent:SetHeight(math.max(1,y)); f.detailsEmpty:SetShown(rendered==0)
+    if f.detailsScroll.UpdateScrollChildRect then f.detailsScroll:UpdateScrollChildRect() end
+    f.detailsScroll:SetVerticalScroll(math.min(f.detailsScroll:GetVerticalScroll(),f.detailsScroll:GetVerticalScrollRange()))
+    f.refreshing=false
 end
+function GoldTracker:ApplyHistoryDetailsFontSize() self:RefreshHistoryActiveView() end
+function GoldTracker:OpenHistoryWindow()
+    self:CreateHistoryWindow(); self:ShowHistoryListView(); self.historyFrame:Show(); Theme:BringToFront(self.historyFrame)
+end
+function GoldTracker:OpenHistorySessionDetails(id) self:CreateHistoryWindow(); self:ShowHistoryDetailsView(id); self.historyFrame:Show(); Theme:BringToFront(self.historyFrame) end
+function GoldTracker:OpenHistoryLootBreakdownWindow(id)
+    self:CreateHistoryWindow(); local f=self.historyFrame
+    if f.selectedSessionID~=id or f.view~="details" then self:ShowHistoryDetailsView(id) end
+    f.detailsTab="breakdown"; self:ResetHistoryDetailsScroll(); f:Show(); self:RefreshHistoryDetailsWindow()
+end
+
+
+
 
 function GoldTracker:BuildHistorySessionCSV(sessionID)
     local frame = self.historyFrame
@@ -2653,7 +622,13 @@ function GoldTracker:BuildHistorySessionCSV(sessionID)
     local rows = {
         "section,key,value",
         string.format("session,id,%s", EscapeCSVValue(session.id)),
-        string.format("session,name,%s", EscapeCSVValue(session.name or "Session")),
+        string.format("session,name,%s", EscapeCSVValue(ModelFor(session):BuildRowTitleAndSubtitle())),
+        string.format("session,location_scope,%s", EscapeCSVValue(selectedLocationKey)),
+        string.format("session,style_scope,%s", EscapeCSVValue(selectedStyleID)),
+        string.format("session,item_view,%s", EscapeCSVValue(frame and frame.view == "details" and frame.detailsItemFilter or "all")),
+        string.format("session,timing_basis,%s", EscapeCSVValue(summary.timingLabel)),
+        string.format("session,rate_basis,%s", EscapeCSVValue(summary.rateBasis)),
+        string.format("session,rate_duration_seconds,%s", EscapeCSVValue(summary.rateDuration)),
         string.format("session,saved_by,%s", EscapeCSVValue(session.savedBy or "Unknown")),
         string.format("session,start_time,%s", EscapeCSVValue(date("%Y-%m-%d %H:%M:%S", tonumber(summary.startTime) or time()))),
         string.format("session,stop_time,%s", EscapeCSVValue(date("%Y-%m-%d %H:%M:%S", tonumber(summary.stopTime) or time()))),
@@ -2663,17 +638,19 @@ function GoldTracker:BuildHistorySessionCSV(sessionID)
         string.format("session,ah_value_copper,%s", EscapeCSVValue(math.floor(tonumber(summary.itemsValue) or 0))),
         string.format("session,total_value_copper,%s", EscapeCSVValue(math.floor(tonumber(summary.totalValue) or 0))),
         "",
-        "items,item_link,quantity,total_value_copper,value_source,loot_source",
+        "items,item_link,quantity,total_value_copper,value_source,loot_source,vendor_value_copper,valuation_kind",
     }
 
     for _, item in ipairs(items or {}) do
         rows[#rows + 1] = string.format(
-            "items,%s,%s,%s,%s,%s",
+            "items,%s,%s,%s,%s,%s,%s,%s",
             EscapeCSVValue(item.itemLink or ""),
             EscapeCSVValue(math.floor(tonumber(item.quantity) or 0)),
             EscapeCSVValue(math.floor(tonumber(item.totalValue) or 0)),
             EscapeCSVValue(item.valueSourceLabel or ""),
-            EscapeCSVValue(item.lootSourceText or "")
+            EscapeCSVValue(table.concat(item.sources or { item.lootSourceText or "" }, "; ")),
+            EscapeCSVValue(item.vendorTotalValue or 0),
+            EscapeCSVValue(item.isSoulbound and "bound" or (item.ahTracked and "auction" or "vendor"))
         )
     end
 
@@ -2708,7 +685,7 @@ function GoldTracker:CreateHistoryExportWindow()
 
     local chrome = CreateHistoryPopupChrome(frame, "History CSV Export")
 
-    local hintPanel = CreateHistoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
+    local hintPanel = CreateHistoryPanel(frame)
     hintPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
     hintPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -54)
     hintPanel:SetHeight(42)
@@ -2719,10 +696,10 @@ function GoldTracker:CreateHistoryExportWindow()
     hint:SetPoint("RIGHT", hintPanel, "RIGHT", -14, 0)
     hint:SetJustifyH("LEFT")
     hint:SetText("Select all (Ctrl+A) and copy (Ctrl+C).")
-    hint:SetTextColor(0.82, 0.86, 0.94)
+    hint:SetTextColor(unpack(Color("textSoft")))
     frame.exportHintText = hint
 
-    local bodyPanel = CreateHistoryPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
+    local bodyPanel = CreateHistoryPanel(frame)
     bodyPanel:SetPoint("TOPLEFT", hintPanel, "BOTTOMLEFT", 0, -10)
     bodyPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
     frame.exportBodyPanel = bodyPanel
@@ -2756,7 +733,7 @@ function GoldTracker:CreateHistoryExportWindow()
     editBox:SetAutoFocus(false)
     editBox:SetFontObject(GameFontHighlightSmall)
     if editBox.SetTextColor then
-        editBox:SetTextColor(0.88, 0.92, 1.0)
+        editBox:SetTextColor(unpack(Color("text")))
     end
     editBox:SetScript("OnEscapePressed", function()
         frame:Hide()
@@ -2797,233 +774,4 @@ function GoldTracker:OpenHistorySessionExport(sessionID)
     end
     frame.exportEditBox:SetFocus()
     frame.exportEditBox:HighlightText()
-end
-
-function GoldTracker:CreateHistoryLootBreakdownWindow()
-    if self.historyBreakdownFrame then
-        return
-    end
-
-    local frame = CreateFrame("Frame", "GoldTrackerHistoryBreakdownFrame", UIParent)
-    frame:SetSize(540, 480)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 220, 40)
-    frame:SetFrameStrata("FULLSCREEN_DIALOG")
-    if frame.SetToplevel then
-        frame:SetToplevel(true)
-    end
-    frame:SetMovable(true)
-    frame:SetClampedToScreen(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnMouseDown", function(self)
-        BringHistoryPopupToFront(self)
-    end)
-    frame:SetScript("OnDragStart", function(self)
-        BringHistoryPopupToFront(self)
-        self:StartMoving()
-    end)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-    frame:Hide()
-
-    local chrome = CreateHistoryPopupChrome(frame, "Loot Breakdown")
-
-    local contextPanel = CreateHistoryPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })
-    contextPanel:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -54)
-    contextPanel:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -12, -54)
-    contextPanel:SetHeight(64)
-    frame.breakdownContextPanel = contextPanel
-
-    local sessionNameText = contextPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    sessionNameText:SetPoint("TOPLEFT", contextPanel, "TOPLEFT", 14, -12)
-    sessionNameText:SetPoint("TOPRIGHT", contextPanel, "TOPRIGHT", -14, -12)
-    sessionNameText:SetJustifyH("LEFT")
-    sessionNameText:SetTextColor(1.0, 0.94, 0.72)
-    frame.breakdownSessionNameText = sessionNameText
-
-    local locationText = contextPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    locationText:SetPoint("TOPLEFT", sessionNameText, "BOTTOMLEFT", 0, -7)
-    locationText:SetPoint("TOPRIGHT", sessionNameText, "BOTTOMRIGHT", 0, -7)
-    locationText:SetJustifyH("LEFT")
-    locationText:SetTextColor(0.82, 0.86, 0.94)
-    frame.breakdownLocationText = locationText
-
-    local valuePanel = CreateHistoryPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
-    valuePanel:SetPoint("TOPLEFT", contextPanel, "BOTTOMLEFT", 0, -10)
-    valuePanel:SetPoint("TOPRIGHT", contextPanel, "BOTTOMRIGHT", 0, -10)
-    valuePanel:SetHeight(136)
-    frame.breakdownValuePanel = valuePanel
-
-    local valueTitle = valuePanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    valueTitle:SetPoint("TOPLEFT", valuePanel, "TOPLEFT", 14, -10)
-    valueTitle:SetTextColor(1.0, 0.82, 0.18)
-    valueTitle:SetText("Value Summary")
-    frame.breakdownValueTitle = valueTitle
-
-    local quantityPanel = CreateHistoryPanel(frame, { 0.04, 0.05, 0.07, 0.92 }, { 1.0, 0.82, 0.18, 0.10 })
-    quantityPanel:SetPoint("TOPLEFT", valuePanel, "BOTTOMLEFT", 0, -10)
-    quantityPanel:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 12)
-    frame.breakdownQuantityPanel = quantityPanel
-
-    local quantityTitle = quantityPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    quantityTitle:SetPoint("TOPLEFT", quantityPanel, "TOPLEFT", 14, -10)
-    quantityTitle:SetTextColor(1.0, 0.82, 0.18)
-    quantityTitle:SetText("Item Quantity")
-    frame.breakdownQuantityTitle = quantityTitle
-
-    local function CreateBreakdownRows(parent, count)
-        local rows = {}
-        local previousRow
-        for index = 1, count do
-            local row = CreateHistoryPanel(
-                parent,
-                index % 2 == 1 and { 0.07, 0.08, 0.11, 0.72 } or { 0.055, 0.065, 0.09, 0.60 },
-                { 1.0, 1.0, 1.0, 0.04 }
-            )
-            row:SetHeight(22)
-            row:SetPoint("LEFT", parent, "LEFT", 14, 0)
-            row:SetPoint("RIGHT", parent, "RIGHT", -14, 0)
-            if previousRow then
-                row:SetPoint("TOP", previousRow, "BOTTOM", 0, -4)
-            else
-                row:SetPoint("TOP", parent, "TOP", 0, -34)
-            end
-
-            local labelText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            labelText:SetPoint("LEFT", row, "LEFT", 8, 0)
-            labelText:SetPoint("RIGHT", row, "CENTER", -6, 0)
-            labelText:SetJustifyH("LEFT")
-            labelText:SetTextColor(0.78, 0.82, 0.90)
-            row.labelText = labelText
-
-            local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            valueText:SetPoint("LEFT", row, "CENTER", 6, 0)
-            valueText:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-            valueText:SetJustifyH("RIGHT")
-            valueText:SetTextColor(0.92, 0.96, 1.0)
-            row.valueText = valueText
-
-            rows[index] = row
-            previousRow = row
-        end
-        return rows
-    end
-
-    frame.breakdownValueRows = CreateBreakdownRows(valuePanel, 4)
-    frame.breakdownQuantityRows = CreateBreakdownRows(quantityPanel, 5)
-
-    RegisterHistoryPopupFrame("GoldTrackerHistoryBreakdownFrame")
-    self.historyBreakdownFrame = frame
-end
-
-function GoldTracker:OpenHistoryLootBreakdownWindow(sessionID)
-    local session = self:GetHistorySessionByID(sessionID)
-    if not session then
-        return
-    end
-
-    self:CreateHistoryLootBreakdownWindow()
-    local frame = self.historyBreakdownFrame
-    frame.selectedSessionID = sessionID
-
-    local selectedLocationKey = DETAILS_LOCATION_FILTER_ALL
-    if self.historyFrame and self.historyFrame.view == "details" and self.historyFrame.selectedSessionID == sessionID then
-        selectedLocationKey = self.historyFrame.detailsLocationFilterKey or DETAILS_LOCATION_FILTER_ALL
-    end
-
-    local model = NewHistorySessionModel(session)
-    local summary = BuildHistoryDetailsSummary(session, selectedLocationKey)
-    local data = {
-        ahTracked = 0,
-        soulbound = 0,
-        vendorOnly = 0,
-        craftingReagent = 0,
-        totalItems = 0,
-    }
-
-    for _, loot in ipairs(session.itemLoots or {}) do
-        if model:EntryMatchesLocation(loot, selectedLocationKey, session) then
-            local quantity = math.max(0, math.floor((tonumber(loot and loot.quantity) or 0) + 0.5))
-            data.totalItems = data.totalItems + quantity
-            if loot.isCraftingReagent == true then
-                data.craftingReagent = data.craftingReagent + quantity
-            end
-            if loot.isSoulbound == true then
-                data.soulbound = data.soulbound + quantity
-            elseif loot.ahTracked == true then
-                data.ahTracked = data.ahTracked + quantity
-            else
-                data.vendorOnly = data.vendorOnly + quantity
-            end
-        end
-    end
-
-    local locationLabel = "All"
-    if selectedLocationKey ~= DETAILS_LOCATION_FILTER_ALL and self.historyFrame and self.historyFrame.detailsLocationOptions then
-        for _, option in ipairs(self.historyFrame.detailsLocationOptions) do
-            if option.key == selectedLocationKey then
-                locationLabel = option.label
-                break
-            end
-        end
-    end
-
-    if frame.breakdownSessionNameText then
-        frame.breakdownSessionNameText:SetText(session.name or "Session")
-    end
-    if frame.breakdownLocationText then
-        frame.breakdownLocationText:SetText(string.format("Location: %s", locationLabel))
-    end
-
-    local valueRowsData = {
-        { label = "Total value", value = self:FormatMoney(tonumber(summary.totalValue) or 0), highlight = true },
-        { label = "Raw gold", value = self:FormatMoney(tonumber(summary.rawGold) or 0) },
-        { label = "AH value", value = self:FormatMoney(tonumber(summary.itemsValue) or 0) },
-        { label = "Vendor item value", value = self:FormatMoney(tonumber(summary.itemsRawGold) or 0) },
-    }
-    for index, rowData in ipairs(valueRowsData) do
-        local row = frame.breakdownValueRows and frame.breakdownValueRows[index]
-        if row then
-            row.labelText:SetText(rowData.label)
-            row.valueText:SetText(rowData.value)
-            if rowData.highlight then
-                row.valueText:SetTextColor(1.0, 0.94, 0.72)
-            else
-                row.valueText:SetTextColor(0.92, 0.96, 1.0)
-            end
-        end
-    end
-
-    local quantityRowsData = {
-        { label = "Total item quantity", value = string.format("%d", data.totalItems), highlight = true },
-        { label = "AH-tracked item quantity", value = string.format("%d", data.ahTracked) },
-        { label = "Vendor-only item quantity", value = string.format("%d", data.vendorOnly) },
-        { label = "Bound item quantity", value = string.format("%d", data.soulbound) },
-        { label = "Crafting reagent quantity", value = string.format("%d", data.craftingReagent) },
-    }
-    for index, rowData in ipairs(quantityRowsData) do
-        local row = frame.breakdownQuantityRows and frame.breakdownQuantityRows[index]
-        if row then
-            row.labelText:SetText(rowData.label)
-            row.valueText:SetText(rowData.value)
-            if rowData.highlight then
-                row.valueText:SetTextColor(1.0, 0.94, 0.72)
-            else
-                row.valueText:SetTextColor(0.92, 0.96, 1.0)
-            end
-        end
-    end
-
-    frame:Show()
-    BringHistoryPopupToFront(frame)
-end
-
-function GoldTracker:OpenHistorySessionDetails(sessionID)
-    local session = self:GetHistorySessionByID(sessionID)
-    if not session then
-        return
-    end
-
-    self:CreateHistoryWindow()
-    self:ShowHistoryDetailsView(sessionID)
-    self.historyFrame:Show()
 end

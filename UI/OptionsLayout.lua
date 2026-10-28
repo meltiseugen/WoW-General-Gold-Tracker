@@ -606,7 +606,7 @@ function GoldTracker:BuildOptionsWindow()
         if layingOut then return end
         layingOut = true
         -- Keep every page reachable at the minimum window height as well.
-        local navStep = math.min(36, (sidebar:GetHeight() - 88) / #pages)
+        local navStep = math.min(36, (sidebar:GetHeight() - 84) / #pages)
         for index, page in ipairs(pages) do
             page.button:ClearAllPoints()
             page.button:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 12, -76 - (index - 1) * navStep)

@@ -254,27 +254,15 @@ describe("Item details realm prices", function()
         end)
     end)
 
-    it("opens the shared setup guide at the top even when the module is disabled", function()
-        with_details(function(addon, ns, calls)
-            loader.load_module("UI/HelpWindow.lua", addon, { JanisTheme = ns.JanisTheme })
-            local text, scroll, shown
-            addon.helpFrame = {
-                selectedTabKey = "history",
-                bodyText = { SetText = function(_, value) text = value end },
-                scrollFrame = { SetVerticalScroll = function(_, value) scroll = value end },
-                Show = function() shown = true end,
-                Raise = function() end,
-            }
+    it("links to the shared setup guide even when the module is disabled", function()
+        with_details(function(addon, _, calls)
+            -- Real guide rendering and top-of-page behavior live in help_window_spec.lua.
+            local opened
+            addon.OpenTSMRealmSetupHelp = function() opened = true end
             addon.GetCapturedTSMRealms = function() return {} end
             addon:OpenInventoryItemDetailsWindow({ itemID = 6331, itemClassID = 4 })
             addon.inventoryItemDetailsFrame.realmPricesPanel.setupButton:GetScript("OnClick")()
-            assert.is_true(shown)
-            assert.equals("values", addon.helpFrame.selectedTabKey)
-            assert.equals(0, scroll)
-            assert.matches("Realm setup: compare prices across realms", text)
-            assert.matches("Settings > General", text)
-            assert.matches("/reload", text)
-            assert.matches("automatically lists the realms", text)
+            assert.is_true(opened)
             assert.equals(0, #calls)
         end)
     end)

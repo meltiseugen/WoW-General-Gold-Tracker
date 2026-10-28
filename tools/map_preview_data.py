@@ -6,6 +6,7 @@ their normalized placement. These fixtures cannot emulate player conditions.
 from __future__ import annotations
 
 import csv
+import json
 import math
 from collections import defaultdict
 from pathlib import Path
@@ -48,6 +49,8 @@ class ClientMaps:
             if row["PlayerConditionID"] == "0":
                 self.links.setdefault((int(row["ChildUiMapID"]), int(row["ParentUiMapID"])), row)
         self._worlds, self._rects = {}, {}
+        policy = json.loads(Path(__file__).with_name('map_art_adjustments.json').read_text())
+        self.outdoor_orphans = set(policy.get('outdoor_orphans', ()))
 
     def info(self, map_id):
         row = self.ui[map_id]
@@ -102,6 +105,17 @@ class ClientMaps:
         self._rects[key] = result
         return result
 
+    def is_outdoor(self, map_id):
+        """Zone art, plus reviewed orphan art physically on its own continent."""
+        row = self.ui[map_id]
+        if int(row['Type']) == 3:
+            return True
+        parent = int(row['ParentUiMapID'])
+        if map_id not in self.outdoor_orphans or int(row['Type']) != 6 or parent not in self.ui or int(self.ui[parent]['Type']) != 2:
+            return False
+        world, continent = self.world(map_id), self.world(parent)
+        return bool(world and continent and world['worldID'] == continent['worldID'])
+
     def descendants(self, root_id):
         result = []
         for map_id, row in self.ui.items():
@@ -109,7 +123,7 @@ class ClientMaps:
             while parent and parent not in seen and parent != root_id:
                 seen.add(parent)
                 parent = int(self.ui.get(parent, {}).get("ParentUiMapID", 0))
-            if parent == root_id and int(row["Type"]) in (2, 3): result.append(map_id)
+            if parent == root_id and (int(row["Type"]) == 2 or self.is_outdoor(map_id)): result.append(map_id)
         return sorted(result)
 
     def fixture(self, root_id, selected=None):

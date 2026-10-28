@@ -178,7 +178,7 @@ function GoldTracker:RefreshFarmRoutePlanWindow(recalculate)
     if frame.overviewButton then
         local overview, overviewReason = self:BuildCustomFarmRoutePlanOverview(farm.id)
         frame.overviewButton:SetEnabled(overview ~= nil)
-        frame.overviewButton.tooltipText = overview and "Show every planned stop on one numbered route map."
+        frame.overviewButton.tooltipText = overview and "Show numbered route stops. Choose a map when the route spans separate maps."
             or overviewReason
     end
     local contentWidth = frame.scrollFrame and (frame.scrollFrame:GetWidth() or 0) or 0

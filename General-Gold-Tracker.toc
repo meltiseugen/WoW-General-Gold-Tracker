@@ -10,6 +10,7 @@
 ## OptionalDeps: TradeSkillMaster, JanisTheme-1.0, RareScanner
 
 Core/Namespace.lua
+Core/Modules.lua
 Core/TSMRealmData.lua
 Core/CatalogLoader.lua
 Core/CustomFarms.lua
@@ -25,6 +26,7 @@ UI/VisualThemes.lua
 UI/Skinning.lua
 Core/Diagnostics.lua
 Core/Alerts.lua
+Core/SessionData.lua
 Core/History.lua
 Core/MarketHistory.lua
 Core/SessionFlow.lua
@@ -38,6 +40,7 @@ Data/CraftingFarmingLearned.lua
 Data/MaterialIndex.lua
 UI/MinimapButton.lua
 UI/MainWindow.lua
+UI/HelpContent.lua
 UI/HelpWindow.lua
 UI/ItemRealmPrices.lua
 UI/InventoryWindow.lua
@@ -67,6 +70,7 @@ UI/DiagnosisWindow.lua
 UI/OptionsPages.lua
 UI/OptionsLayout.lua
 UI/OptionsPanel.lua
+UI/WelcomeWindow.lua
 UI/MapAreaOverlay.lua
 UI/MinimapAreaFill.lua
 UI/FarmTrail.lua

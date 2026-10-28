@@ -19,8 +19,9 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
 from map_preview_data import ClientMaps, CONTINENT_CASES
 from map_mask_texture import read_texture, save_mask, save_texture
 from map_art_ownership import painting_frame, polygon_mask, revealed_core, signed_distance, territory
-from map_art_labels import label_masks
+from map_art_labels import label_masks, moved_label_patch
 from map_art_backgrounds import ridge_patch, caption_patch, heal_patch
+from map_road_links import road_patch
 
 BUILD = "12.1.5.70529"
 SIZE = 512
@@ -183,6 +184,8 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
     paintings, base_only, labels = {}, set(), {}
     backgrounds = dict(previous.get('native_backgrounds', {}))
     retouches = dict(previous.get('caption_repairs', {}))
+    road_links = dict(previous.get('road_links', {}))
+    label_moves = dict(previous.get('label_moves', {}))
     for map_id, art in sorted(arts):
         if not maps.overlays[art]: continue
         layer = maps.layers[maps.styles[art]]
@@ -219,7 +222,7 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
         solids[art] = solid
         masks[art] = soften(solid)
         records[art] = {"mapID": map_id, "kind": "overlay-silhouette"}
-        if nodes[map_id]['mapType'] == 3:
+        if maps.is_outdoor(map_id):
             core = revealed_core(base,revealed)
             if annotations.get(art, {}).get('core'):
                 core = polygon_mask(annotations[art]['core'])
@@ -232,6 +235,21 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
             masks[art] = frame_mask()
             records[art] = {'mapID': map_id, 'kind': 'base-painting'}
         print(f"Art {art}: {maps.ui[map_id]['Name_lang']}", flush=True)
+    # Reviewed phase variants can already contain most revealed land in their
+    # base painting. Their few changed overlays cannot define the whole coast.
+    # Reuse only explicitly matched native geography; render each variant's art.
+    context_arts = {art for _, art in arts}
+    for art, annotation in annotations.items():
+        if art not in context_arts or 'core_from_art' not in annotation:
+            continue
+        source_art = annotation['core_from_art']
+        if source_art not in cores:
+            raise ValueError(f'Art {art} requires native core art {source_art} in the same rebuild')
+        cores[art] = cores[source_art].copy()
+        solids[art] = cores[art].copy()
+        if art not in masks:
+            masks[art] = cores[art].copy()
+            base_only.add(art)
     # Compare siblings only: different floors, nested cities, and alternative
     # phases must not punch holes in each other's geographically separate art.
     for map_id, art in sorted(arts):
@@ -247,7 +265,7 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
         rect=physical_rect(node)
         competitors, exclusions = [], []
         for other_id,other in fixture.items():
-            if other_id == map_id or other['mapType'] != 3 or other['parentMapID'] != parent: continue
+            if other_id == map_id or not maps.is_outdoor(other_id) or other['parentMapID'] != parent: continue
             if other.get('worldID') != node.get('worldID'):continue
             rival=physical_rect(other)
             if max(abs(a-b) for a,b in zip(rect,rival)) < .00001:continue
@@ -271,7 +289,9 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
             cutout = polygon_mask(annotation['cutouts']).filter(ImageFilter.GaussianBlur(2))
             masks[art] = ImageChops.darker(masks[art], ImageChops.invert(cutout))
         records[art]={'mapID':map_id,'kind':'shared-painting-territory','neighbours':len(competitors)}
-        if art in paintings and art not in base_only:
+        if annotation.get('core_from_art'):
+            records[art]['core_art'] = annotation['core_from_art']
+        if art in paintings and art not in base_only and (annotation.get('labels') or annotation.get('suppress_labels')):
             original = masks[art]
             masks[art], label_mask, regions = label_masks(paintings[art], original,
                 annotation.get('labels', ()), annotation.get('suppress_labels', ()))
@@ -289,6 +309,21 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
                     (fr[2] - br[2]) / (br[3] - br[2]), (fr[3] - br[2]) / (br[3] - br[2])]
         masks[front], masks[back] = blend_landmark_masks(
             masks[front], masks[back], composite['outline'], relative, composite.get('feather', 2))
+    # A moved caption must never show in its old position during the detail
+    # crossfade. Apply this after composites so their foreground support cannot
+    # reopen the original glyphs. The local native repair supplies clean ground.
+    for art in masks:
+        moves = annotations.get(art, {}).get('label_moves', [])
+        if moves:
+            width, height = paintings[art].size
+            boxes = []
+            for move in moves:
+                l, t, r, b = move['source']
+                l, r = l - 4/width, r + 4/width
+                t, b = t - 4/height, b + 4/height
+                boxes.append([[l,t],[r,t],[r,b],[l,b]])
+            cut = polygon_mask(boxes).filter(ImageFilter.GaussianBlur(1))
+            masks[art] = ImageChops.darker(masks[art], ImageChops.invert(cut))
     # Geographic/diagram placement is used only where a child's complete silhouette
     # is known. Diagram maps retain their individual island/floor placement.
     for root in roots:
@@ -297,7 +332,7 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
         combined = Image.new("L", (SIZE, SIZE))
         fixture = maps.fixture(root)
         for map_id, node in fixture.items():
-            if map_id == root or node["mapType"] != 3: continue
+            if map_id == root or not maps.is_outdoor(map_id): continue
             solid = solids.get(node["artID"])
             if solid:
                 combined = ImageChops.lighter(combined, project(solid, node["rect"]))
@@ -376,7 +411,9 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
     base_only.update(art for art in previous.get('base_only', []) if art not in masks)
     repair_output = output.parent / 'CaptionRepairs'
     for art in masks:
-        repairs = annotations.get(art,{}).get('caption_repairs',[])
+        repairs = list(annotations.get(art,{}).get('caption_repairs',[]))
+        repairs += [{'target': move['source'], 'sample': move['sample']}
+                    for move in annotations.get(art,{}).get('label_moves',[])]
         old_repairs = retouches.pop(str(art), [])
         current_repairs = []
         if repairs:
@@ -394,6 +431,45 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
             path = repair_output / (old['file'] + '.blp')
             if old['file'] not in current_files and path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() == old['sha256']:
                 path.unlink()
+    road_output = output.parent / 'RoadLinks'
+    for art in masks:
+        old_links = road_links.pop(str(art), [])
+        current_links = []
+        for number, link in enumerate(annotations.get(art, {}).get('road_links', [])):
+            road_output.mkdir(parents=True, exist_ok=True)
+            image, rect, uv = road_patch(paintings[art], link['source_path'], link['target_path'],
+                                         link.get('width', 9), link.get('feather', 3))
+            name = f'{art}-{number}'
+            path = road_output / (name + '.blp')
+            save_texture(image, path)
+            current_links.append(link | {'file': name, 'rect': rect, 'uv': uv,
+                'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
+        if current_links:
+            road_links[str(art)] = current_links
+        current_files = {link['file'] for link in current_links}
+        for old in old_links:
+            path = road_output / (old['file'] + '.blp')
+            if old['file'] not in current_files and path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() == old['sha256']:
+                path.unlink()
+    move_output = output.parent / 'LabelMoves'
+    for art in masks:
+        old_moves = label_moves.pop(str(art), [])
+        current_moves = []
+        for number, move in enumerate(annotations.get(art, {}).get('label_moves', [])):
+            move_output.mkdir(parents=True, exist_ok=True)
+            image, rect, uv = moved_label_patch(paintings[art], move['source'], move['offset'], move.get('lines', ()))
+            name = f'{art}-{number}'
+            path = move_output / (name + '.blp')
+            save_texture(image, path)
+            current_moves.append(move | {'file': name, 'rect': rect, 'uv': uv,
+                'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
+        if current_moves:
+            label_moves[str(art)] = current_moves
+        current_files = {move['file'] for move in current_moves}
+        for old in old_moves:
+            path = move_output / (old['file'] + '.blp')
+            if old['file'] not in current_files and path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() == old['sha256']:
+                path.unlink()
     inputs = previous.get('texture_sha256', {}) | inputs
     all_art = sorted(int(art) for art in generated)
     # A quiet original paper field under cut-out art; never copy game RGB or
@@ -408,7 +484,9 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
         ImageDraw.Draw(bounds).rectangle((16,16,SIZE-17,SIZE-17),fill=255)
         save_mask(bounds.filter(ImageFilter.GaussianBlur(2)),output.parent/'BoundsFade.blp')
     index.write_text("-- Generated by tools/generate_map_art_masks.py; independently derived painting coverage.\n"
-                     "local _, NS = ...\nNS.GoldTracker.MapArtMasks = {\n" +
+                     "local _, NS = ...\nNS.GoldTracker.MapOutdoorZones = {\n" +
+                     "".join(f"    [{map_id}] = true,\n" for map_id in adjustments.get('outdoor_orphans', ())) +
+                     "}\nNS.GoldTracker.MapArtMasks = {\n" +
                      "".join(f"    [{art}] = true,\n" for art in all_art) + "}\nNS.GoldTracker.MapArtPaper = {\n" +
                      "".join(f"    [{art}] = true,\n" for art in sorted(papers)) + "}\nNS.GoldTracker.MapArtTerritories = {\n" +
                      "".join(f"    [{art}] = true,\n" for art in all_art if generated[str(art)]['kind']=='shared-painting-territory') + "}\nNS.GoldTracker.MapArtBaseOnly = {\n" +
@@ -422,11 +500,19 @@ def generate(directory, output, index, receipt, download=False, root_ids=None, a
                      ''.join(f'    [{art}] = {{\n'+''.join(
                          '        { file = "'+repair['file']+'", rect = { '+', '.join(map(str,repair['rect']))+
                          ' }, uv = { '+', '.join(map(str,repair['uv']))+' } },\n' for repair in records)+'    },\n'
-                         for art,records in sorted(retouches.items(),key=lambda row:int(row[0])))+'}\n', encoding="utf-8")
+                         for art,records in sorted(retouches.items(),key=lambda row:int(row[0])))+'}\nNS.GoldTracker.MapRoadLinks = {\n'+
+                     ''.join(f'    [{art}] = {{\n'+''.join(
+                         '        { file = "'+link['file']+'", rect = { '+', '.join(map(str,link['rect']))+
+                         ' }, uv = { '+', '.join(map(str,link['uv']))+' } },\n' for link in records)+'    },\n'
+                         for art,records in sorted(road_links.items(),key=lambda row:int(row[0])))+'}\nNS.GoldTracker.MapLabelMoves = {\n'+
+                     ''.join(f'    [{art}] = {{\n'+''.join(
+                         '        { file = "'+move['file']+'", rect = { '+', '.join(map(str,move['rect']))+
+                         ' }, uv = { '+', '.join(map(str,move['uv']))+' } },\n' for move in records)+'    },\n'
+                         for art,records in sorted(label_moves.items(),key=lambda row:int(row[0])))+'}\n', encoding="utf-8")
     receipt.write_text(json.dumps({"build": BUILD, "algorithm": "native-reveal-difference-ownership-v3",
         "size": SIZE, "format": "BLP2-BC3-mipmapped", "mask_count": len(generated), "masks": generated,
         "labels": label_records, "base_only": sorted(base_only),
-        "native_backgrounds": backgrounds, "caption_repairs":retouches,
+        "native_backgrounds": backgrounds, "caption_repairs":retouches, "road_links":road_links, "label_moves":label_moves,
         "annotations_sha256": hashlib.sha256(adjustment_path.read_bytes()).hexdigest(),
         "paper_sources": papers, "texture_sha256": inputs,
         **({'detail_backdrops': previous['detail_backdrops']} if 'detail_backdrops' in previous else {}),

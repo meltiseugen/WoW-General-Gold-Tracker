@@ -61,9 +61,31 @@ end
 
 function Map:Reset()
     self:Stop()
+    self.viewAdjusted = false
     if not self.initialRect then return end
     G.Fit(self.view, self.initialRect)
     self:Render()
+end
+
+function Map:CenterOnSubject()
+    local options, source = self.options, self.source
+    local node = source and source.byID and options and source.byID[options.mapID]
+    if not node or not options.x or not options.y then return end
+    self:Stop()
+    self.viewAdjusted = true
+    self.view.x = node.rect.l + options.x * (node.rect.r - node.rect.l)
+    self.view.y = node.rect.t + options.y * (node.rect.b - node.rect.t)
+    G.Constrain(self.view)
+    self:Render()
+end
+
+function Map:SetCompactFooter(compact)
+    self.compactFooter = compact == true
+    self.viewport:ClearAllPoints()
+    self.viewport:SetPoint("TOPLEFT", 10, -36)
+    self.viewport:SetPoint("BOTTOMRIGHT", -10, self.compactFooter and 28 or 48)
+    self.coordinates:ClearAllPoints()
+    self.coordinates:SetPoint("BOTTOMLEFT", 12, self.compactFooter and 10 or 28)
 end
 
 function Map:Resize()
@@ -71,8 +93,8 @@ function Map:Resize()
     if self.view.width == width and self.view.height == height then return end
     self.view.width, self.view.height = width, height
     if self.source then
-        if self.view.zoom == 1 then self.view.x, self.view.y = 0.5, 0.5 end
-        G.Constrain(self.view)
+        if not self.viewAdjusted and self.initialRect then G.Fit(self.view, self.initialRect)
+        else G.Constrain(self.view) end
         self:Render()
     end
 end
@@ -86,7 +108,7 @@ function Map:SetSubject(options)
     self.standard = standard
     self.subjectKey, self.revision, self.options = options.key, options.revision, options
     self.mapID, self.x, self.y, self.characterLocations = options.mapID, options.x, options.y, options.pins
-    if changed then self:Stop() end
+    if changed then self:Stop(); self.viewAdjusted = false end
     if styleChanged then self.renderer:Release() end
     if changed or not self.source then
         self.source = Source.New(options, standard)
@@ -157,6 +179,13 @@ function Map:Render()
     self.status:SetText(detail)
     self.coordinates:SetText(self.options.coordinateText or (self.options.x and self.options.y
         and string.format("%.2f, %.2f", self.options.x * 100, self.options.y * 100) or ""))
+    if self.compactFooter then
+        self.status:ClearAllPoints()
+        self.status:SetPoint("BOTTOMRIGHT", -12, 10)
+        self.status:SetJustifyH("RIGHT")
+        local available = self.view.width - self.coordinates:GetStringWidth() - 24
+        self.status:SetShown(available >= self.status:GetStringWidth())
+    end
 end
 
 function addon:CreateInteractiveMapCard(parent, heading)
@@ -206,6 +235,7 @@ function addon:CreateInteractiveMapCard(parent, heading)
     card.viewport:SetScript("OnSizeChanged", function() card:Resize() end)
     card.viewport:SetScript("OnMouseWheel", function(_, delta)
         if not card.hasMapArt or delta == 0 then return end
+        card.viewAdjusted = true
         local x, y = card:Cursor()
         local target = G.Clamp((card.animation and card.animation.target or card.view.zoom) * 1.28 ^ delta, 1, card.view.maxZoom)
         card.animation = { x = x, y = y, target = target }
@@ -213,6 +243,7 @@ function addon:CreateInteractiveMapCard(parent, heading)
     end)
     card.viewport:SetScript("OnMouseDown", function(_, button)
         if button ~= "LeftButton" or not card.hasMapArt then return end
+        card.viewAdjusted = true
         card.dragging, card.animation = true, nil
         card.dragX, card.dragY = card:Cursor()
         card:StartUpdates()

@@ -57,6 +57,7 @@ function HistoryDataService:SessionHasMultipleValueSources(session)
 end
 
 function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocationKey, selectedStyleID)
+    selectedLocationKey = selectedLocationKey or self.allLocationKey
     local summary = {
         rawGold = 0,
         itemsValue = 0,
@@ -144,10 +145,55 @@ function HistoryDataService:BuildHistoryDetailsSummary(session, selectedLocation
         summary.stopTime = summary.startTime
     end
 
+    summary.timingLabel = model:GetTimingLabel(session)
+    if selectedLocationKey ~= self.allLocationKey then
+        local intervals = {}
+        for _, visit in ipairs(session.locationVisits or {}) do
+            if selectedLocationKey == "loc:" .. tostring(visit.locationKey) then intervals[#intervals + 1] = visit end
+        end
+        if #intervals > 0 then
+            summary.duration = model:SumIntervals(intervals)
+            summary.timingLabel = "Recorded visits"
+        else
+            summary.timingLabel = "Loot activity span (legacy)"
+        end
+        summary.rateDuration = summary.duration
+        summary.rateBasis = summary.timingLabel
+        if self.addon.IsActiveTimeForGoldPerHourEnabled and self.addon:IsActiveTimeForGoldPerHourEnabled() then
+            local timestamps = {}
+            for _, loot in ipairs(session.itemLoots or {}) do
+                if model:EntryMatchesLocation(loot, selectedLocationKey, session)
+                    and (tonumber(loot.timestamp) or 0) > 0 then timestamps[#timestamps + 1] = loot.timestamp end
+            end
+            for _, money in ipairs(session.moneyLoots or {}) do
+                if model:EntryMatchesLocation(money, selectedLocationKey, session) and (tonumber(money.timestamp) or 0) > 0 then timestamps[#timestamps + 1] = money.timestamp end
+            end
+            table.sort(timestamps)
+            local active = 0
+            if #intervals == 0 then
+                for index = 2, #timestamps do active = active + math.min(90, timestamps[index] - timestamps[index - 1]) end
+            else
+                for _, visit in ipairs(intervals) do
+                    local previous = tonumber(visit.startTime) or 0
+                    for _, timestamp in ipairs(timestamps) do
+                        if timestamp >= previous and timestamp <= (tonumber(visit.stopTime) or previous) then
+                            active = active + math.min(90, timestamp - previous)
+                            previous = timestamp
+                        end
+                    end
+                end
+            end
+            summary.rateDuration = math.min(summary.duration, active)
+            summary.rateBasis = "Estimated active loot time"
+        end
+    else
+        summary.rateDuration, summary.rateBasis = model:GetRateDuration(session)
+    end
+
     return summary
 end
 
-function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID)
+function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKey, selectedStyleID, itemFilter)
     local byLink = {}
     local model = self:NewSessionModel(session)
     local styleID = self.addon and self.addon.NormalizeSessionStyleFilter
@@ -183,14 +229,16 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
         for _, entry in ipairs(session.itemLoots) do
             if entry
                 and model:EntryMatchesLocation(entry, selectedLocationKey, session)
-                and entry.ahTracked == true
-                and entry.isSoulbound ~= true
+                and (itemFilter == "all"
+                    or (itemFilter == "bound" and entry.isSoulbound == true)
+                    or (itemFilter == "vendor" and entry.ahTracked ~= true and entry.isSoulbound ~= true)
+                    or ((itemFilter == nil or itemFilter == "auction") and entry.ahTracked == true and entry.isSoulbound ~= true))
                 and (styleID == "all" or (
                     self.addon
                     and type(self.addon.LootItemMatchesSessionStyle) == "function"
                     and self.addon:LootItemMatchesSessionStyle(entry, styleID)
                 ))
-                and PassesQualityFilter(entry.itemQuality, entry.itemLink) then
+                and (itemFilter ~= nil or PassesQualityFilter(entry.itemQuality, entry.itemLink)) then
                 local sourceLabel = entry.valueSourceLabel or fallbackSourceLabel
                 local lootSourceText = nil
                 if includeLootSourceText then
@@ -202,10 +250,13 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
                 end
 
                 local key = entry.itemLink or "unknown"
+                if itemFilter then
+                    key = key .. "\001" .. (entry.isSoulbound and "bound" or (entry.ahTracked and "auction" or "vendor"))
+                end
                 if includeSourceLabel then
                     key = string.format("%s\001%s", key, sourceLabel)
                 end
-                if lootSourceText then
+                if lootSourceText and itemFilter == nil then
                     key = string.format("%s\001%s", key, lootSourceText)
                 end
 
@@ -218,12 +269,22 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
                         valueSourceLabel = sourceLabel,
                         itemQuality = tonumber(entry.itemQuality),
                         lootSourceText = lootSourceText,
+                        vendorTotalValue = 0,
+                        isSoulbound = entry.isSoulbound == true,
+                        ahTracked = entry.ahTracked == true and entry.isSoulbound ~= true,
+                        sources = {},
+                        sourcesSeen = {},
                     }
                     byLink[key] = item
                 end
 
                 item.quantity = item.quantity + (tonumber(entry.quantity) or 0)
                 item.totalValue = item.totalValue + (tonumber(entry.totalValue) or 0)
+                item.vendorTotalValue = item.vendorTotalValue + (tonumber(entry.vendorTotalValue) or 0)
+                if lootSourceText and not item.sourcesSeen[lootSourceText] then
+                    item.sourcesSeen[lootSourceText] = true
+                    item.sources[#item.sources + 1] = lootSourceText
+                end
                 if item.itemQuality == nil then
                     item.itemQuality = tonumber(entry.itemQuality)
                 end
@@ -235,6 +296,9 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
 
         local items = {}
         for _, item in pairs(byLink) do
+            if itemFilter then
+                item.lootSourceText = #item.sources > 1 and (#item.sources .. " sources") or item.sources[1]
+            end
             items[#items + 1] = item
         end
 
@@ -252,6 +316,7 @@ function HistoryDataService:BuildVisibleHistoryItems(session, selectedLocationKe
     if styleID ~= "all" then
         return {}, includeSourceLabel
     end
+    if itemFilter == "vendor" or itemFilter == "bound" then return {}, includeSourceLabel end
 
     local fallbackItems = {}
     for _, item in ipairs(session and session.items or {}) do

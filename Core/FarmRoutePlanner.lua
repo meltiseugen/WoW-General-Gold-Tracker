@@ -1126,58 +1126,111 @@ function GoldTracker:NavigateActiveCustomFarmRoutePlanStep(direction)
     return self:ActivateCustomFarmRoutePlanStep(active.farm.id, target.key)
 end
 
+local function BuildRouteOverviewMaps(plan, routeID, sharedMapID)
+    local mapOptions, optionsByMapID, pins, pinsByStepIndex = {}, {}, {}, {}
+    local previousMapID, segment = nil, 0
+    for index, node in ipairs(plan) do
+        local sourceMapID = tonumber(node.mapID)
+        local mapID = sourceMapID and (sharedMapID or sourceMapID)
+        if mapID then
+            local hasExactLocation = node.x ~= nil and node.y ~= nil
+            local x, y = ProjectRoutePointToOverviewMap(sourceMapID, mapID, node.x, node.y)
+            if not x or not y then
+                return nil, "A route stop could not be projected onto the shared parent map."
+            end
+            local sourceMapName = node.mapName or (GetMapInfo(sourceMapID) or {}).name
+                or ("Map " .. tostring(sourceMapID))
+            local option = optionsByMapID[mapID]
+            if not option then
+                local mapName = (GetMapInfo(mapID) or {}).name or sourceMapName
+                option = {
+                    id = sharedMapID and routeID or (routeID .. ":map:" .. tostring(mapID)),
+                    mapID = mapID,
+                    mapLabel = mapName,
+                    label = sharedMapID and "Route overview" or mapName,
+                    sourceType = "route-plan",
+                    sourceLabel = "Custom farm route plan",
+                    showRouteLinesWithIcons = true,
+                    pins = {},
+                }
+                optionsByMapID[mapID] = option
+                mapOptions[#mapOptions + 1] = option
+            end
+            if mapID ~= previousMapID then
+                segment = segment + 1
+                previousMapID = mapID
+            end
+            local pin = {
+                mapID = mapID,
+                x = x,
+                y = y,
+                label = string.format("%d. %s", index, node.name or "Farm stop"),
+                itemName = node.name,
+                spotLocation = hasExactLocation and sourceMapName
+                    or (sourceMapName .. " zone center; exact arrival unavailable"),
+                isRoute = true,
+                routeID = sharedMapID and segment == 1 and routeID or (routeID .. ":segment:" .. tostring(segment)),
+                routeType = "farm-plan",
+                routeOrder = index,
+                routeTotal = #plan,
+                mapIconType = node.isInstance and "dungeon" or nil,
+                mapIconAtlas = node.isInstance and "Dungeon" or nil,
+                sourceMapID = sourceMapID,
+                sourceMapName = sourceMapName,
+                confidence = node.confidence,
+                approximate = not hasExactLocation,
+            }
+            pins[#pins + 1] = pin
+            pinsByStepIndex[index] = pin
+            option.pins[#option.pins + 1] = pin
+        else
+            -- An unresolved stop also interrupts the visible route line.
+            previousMapID = nil
+        end
+    end
+    return mapOptions, pins, pinsByStepIndex
+end
+
 function GoldTracker:BuildCustomFarmRoutePlanOverview(farmID)
     local farm = self:GetCustomFarmByID(farmID)
     if not farm then
         return nil, "The selected custom farm is unavailable."
     end
     local plan = self:BuildCustomFarmRoutePlan(farm.id, false)
-    local overviewMapID, reason = GetSharedRouteOverviewMapID(plan)
-    if not overviewMapID then
-        return nil, reason
+    if #plan == 0 then
+        return nil, "This route has no stops to display."
     end
-
+    local mappedPlan = {}
+    for _, node in ipairs(plan) do
+        if tonumber(node.mapID) then mappedPlan[#mappedPlan + 1] = node end
+    end
+    if #mappedPlan == 0 then
+        return nil, "No route stops have map data. Choose a mapped location for a stop first."
+    end
     local routeID = "farm-plan:" .. tostring(farm.id)
-    local pins = {}
-    for index, node in ipairs(plan) do
-        local hasExactLocation = node.x ~= nil and node.y ~= nil
-        local x, y = ProjectRoutePointToOverviewMap(node.mapID, overviewMapID, node.x, node.y)
-        if not x or not y then
-            return nil, "A route stop could not be projected onto the shared parent map."
-        end
-        local sourceMapName = node.mapName or (GetMapInfo(node.mapID) or {}).name
-            or ("Map " .. tostring(node.mapID))
-        pins[#pins + 1] = {
-            mapID = overviewMapID,
-            x = x,
-            y = y,
-            label = string.format("%d. %s", index, node.name or "Farm stop"),
-            itemName = node.name,
-            spotLocation = hasExactLocation and sourceMapName
-                or (sourceMapName .. " zone center; exact arrival unavailable"),
-            isRoute = true,
-            routeID = routeID,
-            routeType = "farm-plan",
-            routeOrder = index,
-            routeTotal = #plan,
-            mapIconType = node.isInstance and "dungeon" or nil,
-            mapIconAtlas = node.isInstance and "Dungeon" or nil,
-            sourceMapID = node.mapID,
-            sourceMapName = sourceMapName,
-            confidence = node.confidence,
-            approximate = not hasExactLocation,
-        }
+    local overviewMapID = GetSharedRouteOverviewMapID(mappedPlan)
+    local mapOptions, pins, pinsByStepIndex = BuildRouteOverviewMaps(plan, routeID, overviewMapID)
+    if not mapOptions and overviewMapID then
+        -- Some parent maps cannot project their child zones. Keep those stops
+        -- available on their own maps instead of disabling the overview.
+        overviewMapID = nil
+        mapOptions, pins, pinsByStepIndex = BuildRouteOverviewMaps(plan, routeID)
+    end
+    if not mapOptions then
+        return nil, pins
     end
 
-    local overviewMapInfo = GetMapInfo(overviewMapID)
     return {
         farm = farm,
         plan = plan,
-        mapID = overviewMapID,
-        mapName = overviewMapInfo and overviewMapInfo.name or ("Map " .. tostring(overviewMapID)),
+        mapID = mapOptions[1].mapID,
+        mapName = mapOptions[1].mapLabel,
+        mapOptions = mapOptions,
         pins = pins,
+        pinsByStepIndex = pinsByStepIndex,
+        unmappedStopCount = #plan - #pins,
         routeID = routeID,
-        usesParentMap = tonumber(plan[1] and plan[1].mapID) ~= overviewMapID,
+        usesParentMap = overviewMapID ~= nil and tonumber(mappedPlan[1].mapID) ~= overviewMapID,
     }
 end
 
@@ -1193,6 +1246,15 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
         return false
     end
 
+    local overviewText = #overview.mapOptions > 1
+        and ("Choose a map above to view its numbered stops. Route spans " .. #overview.mapOptions .. " maps.")
+        or overview.usesParentMap and ("Shared parent map: " .. overview.mapName)
+        or ("Mapped route stops are on " .. overview.mapName)
+    if overview.unmappedStopCount > 0 then
+        overviewText = overviewText .. string.format(" %d %s no map data and %s listed below.",
+            overview.unmappedStopCount, overview.unmappedStopCount == 1 and "stop has" or "stops have",
+            overview.unmappedStopCount == 1 and "is" or "are")
+    end
     local detailLines = {
         {
             type = "text",
@@ -1203,16 +1265,14 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
         },
         {
             type = "text",
-            text = overview.usesParentMap
-                and ("Shared parent map: " .. overview.mapName)
-                or ("All route stops are on " .. overview.mapName),
+            text = overviewText,
             r = 0.72, g = 0.86, b = 1.0,
             gap = 8,
             fontObject = "GameFontHighlight",
         },
     }
     for index, node in ipairs(overview.plan) do
-        local pin = overview.pins[index]
+        local pin = overview.pinsByStepIndex[index]
         detailLines[#detailLines + 1] = {
             type = "text",
             text = string.format(
@@ -1220,7 +1280,7 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
                 index,
                 node.name or "Farm stop",
                 node.mapName or "Unknown location",
-                pin.approximate and " (zone center)" or ""
+                not pin and " (map location unavailable)" or pin.approximate and " (zone center)" or ""
             ),
             r = 0.82, g = 0.86, b = 0.92,
             gap = 4,
@@ -1231,18 +1291,7 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
     self:OpenStandaloneMapWindow({
         title = "Route Overview — " .. overview.farm.name,
         projectionKey = overview.routeID,
-        mapOptions = {
-            {
-                id = overview.routeID,
-                mapID = overview.mapID,
-                mapLabel = overview.mapName,
-                label = "Route overview",
-                sourceType = "route-plan",
-                sourceLabel = "Custom farm route plan",
-                showRouteLinesWithIcons = true,
-                pins = overview.pins,
-            },
-        },
+        mapOptions = overview.mapOptions,
         displayMode = "icons",
         detailLinesBuilder = function()
             return detailLines

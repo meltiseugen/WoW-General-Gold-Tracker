@@ -2478,6 +2478,7 @@ local function BuildRareFarmingFavoriteDisplayEntries(entries)
 end
 
 local function GetRareFarmingFavoriteColumnLayout(contentWidth, requiredItemWidth)
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local removeWidth = 24
     local valueWidth = 92
     local columnGap = 10
@@ -2485,7 +2486,7 @@ local function GetRareFarmingFavoriteColumnLayout(contentWidth, requiredItemWidt
     local sourceWidth = 150
     local farmX = removeWidth + columnGap
     local addX = farmX + RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH + columnGap
-    local itemX = addX + RARE_FARMING_ADD_BUTTON_WIDTH + columnGap
+    local itemX = addX + (showAdd and (RARE_FARMING_ADD_BUTTON_WIDTH + columnGap) or 0)
     local minimumItemWidth = math.max(120, tonumber(requiredItemWidth) or 0) + RARE_FARMING_FAVORITE_ITEM_TEXT_OFFSET
     local fixedWidth = itemX
         + minimumItemWidth
@@ -2522,6 +2523,7 @@ local function GetRareFarmingFavoriteColumnLayout(contentWidth, requiredItemWidt
         farmWidth = RARE_FARMING_FAVORITE_FARM_BUTTON_WIDTH,
         addX = addX,
         addWidth = RARE_FARMING_ADD_BUTTON_WIDTH,
+        showAdd = showAdd,
     }
 end
 
@@ -2550,6 +2552,7 @@ local function ApplyRareFarmingFavoriteHeaderLayout(frame, contentWidth, require
     for _, spec in ipairs(specs) do
         local label = labels[spec.key]
         if label then
+            label:SetShown(spec.key ~= "add" or layout.showAdd)
             label:ClearAllPoints()
             label:SetPoint("LEFT", headerFrame, "LEFT", spec.x, 0)
             label:SetWidth(spec.width)
@@ -3154,7 +3157,7 @@ function GoldTracker:RefreshRareFarmingLibraryWindow()
             row.favoriteAddButton:ClearAllPoints()
             row.favoriteAddButton:SetPoint("LEFT", row, "LEFT", layout.addX, 0)
             row.favoriteAddButton:SetWidth(layout.addWidth)
-            row.favoriteAddButton:Show()
+            row.favoriteAddButton:SetShown(layout.showAdd)
             row:SetScript("OnClick", function(self, button)
                 if type(GoldTracker.HandleFarmActionClick) == "function"
                     and GoldTracker:HandleFarmActionClick(self, button) then
@@ -3552,6 +3555,7 @@ local function ApplyRareFarmingTableColumnLayout(frame)
         return
     end
 
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local availableWidth = GetRareFarmingTableViewportWidth(frame)
     local favoriteX = RARE_FARMING_ROW_RIGHT_PADDING
     local mapX = favoriteX + RARE_FARMING_FAVORITE_WIDTH + RARE_FARMING_COLUMN_GAP
@@ -3562,8 +3566,8 @@ local function ApplyRareFarmingTableColumnLayout(frame)
         + RARE_FARMING_RARE_WIDTH
         + (RARE_FARMING_VALUE_WIDTH * 4)
         + RARE_FARMING_MAP_BUTTON_WIDTH
-        + RARE_FARMING_ADD_BUTTON_WIDTH
-        + (RARE_FARMING_COLUMN_GAP * 8)
+        + (showAdd and RARE_FARMING_ADD_BUTTON_WIDTH or 0)
+        + (RARE_FARMING_COLUMN_GAP * (showAdd and 8 or 7))
         + RARE_FARMING_ROW_RIGHT_PADDING
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rows, "itemText", RARE_FARMING_ITEM_MIN_WIDTH, {
         padding = 10,
@@ -3583,13 +3587,14 @@ local function ApplyRareFarmingTableColumnLayout(frame)
     local rareX = marketX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_RARE_WIDTH
     local locationX = rareX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_LOCATION_WIDTH
     local valueX = locationX - RARE_FARMING_COLUMN_GAP - RARE_FARMING_VALUE_WIDTH
-    local itemX = addX + RARE_FARMING_ADD_BUTTON_WIDTH + RARE_FARMING_COLUMN_GAP
+    local itemX = addX + (showAdd and (RARE_FARMING_ADD_BUTTON_WIDTH + RARE_FARMING_COLUMN_GAP) or 0)
     local itemWidth = math.max(requiredItemWidth, valueX - RARE_FARMING_COLUMN_GAP - itemX)
 
     local headerX = RARE_FARMING_HEADER_LEFT_INSET
     SetRareFarmingHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, RARE_FARMING_FAVORITE_WIDTH)
     SetRareFarmingHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, RARE_FARMING_MAP_BUTTON_WIDTH)
     SetRareFarmingHeaderColumn(frame.addHeaderButton, frame.listPanel, headerX + addX - horizontalOffset, RARE_FARMING_ADD_BUTTON_WIDTH)
+    if frame.addHeaderButton then frame.addHeaderButton:SetShown(showAdd) end
     SetRareFarmingHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
     SetRareFarmingHeaderColumn(frame.valueHeaderButton, frame.listPanel, headerX + valueX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
     SetRareFarmingHeaderColumn(frame.locationHeaderButton, frame.listPanel, headerX + locationX - horizontalOffset, RARE_FARMING_LOCATION_WIDTH)
@@ -3612,6 +3617,7 @@ local function ApplyRareFarmingTableColumnLayout(frame)
         end
         SetRareFarmingColumn(row.mapButton, row, mapX - horizontalOffset, RARE_FARMING_MAP_BUTTON_WIDTH)
         SetRareFarmingColumn(row.addButton, row, addX - horizontalOffset, RARE_FARMING_ADD_BUTTON_WIDTH)
+        if row.addButton then row.addButton:SetShown(showAdd and not row.isLocationGroupHeader) end
         SetRareFarmingColumn(row.itemText, row, itemX + RARE_FARMING_ICON_SIZE + 8 - horizontalOffset, math.max(80, itemWidth - RARE_FARMING_ICON_SIZE - 8))
         SetRareFarmingColumn(row.valueText, row, valueX - horizontalOffset, RARE_FARMING_VALUE_WIDTH)
         SetRareFarmingColumn(row.locationButton, row, locationX - horizontalOffset, RARE_FARMING_LOCATION_WIDTH)
@@ -3624,6 +3630,14 @@ local function ApplyRareFarmingTableColumnLayout(frame)
             row.icon:ClearAllPoints()
             row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
         end
+    end
+end
+
+function GoldTracker:RefreshRareFarmingWindowLayout()
+    local frame = self.rareFarmingFrame
+    ApplyRareFarmingTableColumnLayout(frame)
+    if frame and frame.libraryPanel and frame.libraryPanel:IsShown() then
+        self:RefreshRareFarmingLibraryWindow()
     end
 end
 
@@ -4303,7 +4317,7 @@ function GoldTracker:RefreshRareFarmingWindow(scrollToTop)
             row.rareSources = result.rareSources
             row.rareSourceCount = result.rareSourceCount
             row.hasRareFarmingMap = #BuildRareFarmingMapOptionsFromRow(result) > 0
-            row.addButton:Show()
+            row.addButton:SetShown(self:GetActiveCustomFarm() ~= nil)
             row.value = result.value
             row.marketValue = result.marketValue
             row.regionMarketValue = result.regionMarketValue

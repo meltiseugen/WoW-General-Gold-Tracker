@@ -32,9 +32,8 @@ GoldTracker.WORLD_MAP_PROJECTION_PIN_SCALE_STEP = 0.1
 GoldTracker.MAP_PIN_ICON_OPTIONS = {
     {
         id = "loot",
-        label = "Loot marker",
-        atlas = "VignetteLoot",
-        texture = "Interface\\Icons\\INV_Misc_Map02",
+        label = "Golden dot",
+        atlas = "QuestObjective",
     },
     { id = "map", label = "Map", texture = "Interface\\Icons\\INV_Misc_Map02" },
     { id = "coin", label = "Coin", texture = "Interface\\Icons\\INV_Misc_Coin_01" },
@@ -159,6 +158,7 @@ GoldTracker.DEFAULTS = {
     autoStartSessionOnFirstLoot = true,
     autoStartSessionOnEnterWorld = false,
     autoStartSessionOnLocationChange = false,
+    sessionSplitMode = "continuous",
     resumeSessionAfterReload = false,
     enableSessionHistory = true,
     historyRowsPerPage = 10,
@@ -1473,6 +1473,9 @@ function GoldTracker:InitializeDatabase()
         and (self.db.fallbackValueSource == nil or self.db.fallbackValueSource == "")
     local hadAuctionableInventoryValueSource = self.db.auctionableInventoryValueSource ~= nil
     local hadValueSourceFallbackOrder = type(self.db.valueSourceFallbackOrder) == "table"
+    if self.db.sessionSplitMode ~= "continuous" and self.db.sessionSplitMode ~= "instance" and self.db.sessionSplitMode ~= "location" then
+        self.db.sessionSplitMode = self.db.autoStartSessionOnLocationChange == true and "location" or "continuous"
+    end
 
     for key, value in pairs(self.DEFAULTS) do
         if self.db[key] == nil then
@@ -2236,6 +2239,7 @@ function GoldTracker:IsTotalWindowFeatureEnabled()
 end
 
 function GoldTracker:IsAutoStartSessionOnLocationChangeEnabled()
+    if self.GetSessionSplitMode then return self:GetSessionSplitMode() == "location" end
     if not self.db then
         return self.DEFAULTS.autoStartSessionOnLocationChange == true
     end
@@ -2349,6 +2353,9 @@ function GoldTracker:SetAuctionableInventoryValueSource(sourceID)
 end
 
 function GoldTracker:IsAutoOpenAuctionableInventoryOnAuctionHouseEnabled()
+    if type(self.IsModuleEnabled) == "function" and not self:IsModuleEnabled("inventory") then
+        return false
+    end
     if not self.db then
         return self.DEFAULTS.autoOpenAuctionableInventoryOnAuctionHouse == true
     end
@@ -2376,6 +2383,9 @@ end
 
 function GoldTracker:GetSessionElapsedSeconds()
     local session = self.session
+    if type(session.recordingPeriods) == "table" and self.GetSessionIntervalDuration then
+        return self:GetSessionIntervalDuration(session.recordingPeriods, session.active and time() or session.stopTime)
+    end
     if not session.startTime then
         return 0
     end

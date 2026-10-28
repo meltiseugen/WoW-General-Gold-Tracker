@@ -1,0 +1,193 @@
+{
+  "build": "12.1.5.70529",
+  "root_map": 12,
+  "zone_map": 69,
+  "zone_art": 74,
+  "reported_areas": [
+    "northern Feralas beneath Desolace",
+    "eastern Feralas beside Mulgore and Southern Barrens"
+  ],
+  "cause": "Native already-painted mountains and northern water were omitted from reveal-difference coverage, exposing enlarged continent artwork.",
+  "fix": [
+    "Reviewed northern and eastern painting ownership; rebuild neighboring masks.",
+    "Cut out the burnt Feralas top edge and bridge the narrow inland painting gap with a feathered native Desolace mountain sample beneath zone art."
+  ],
+  "ownership": {
+    "reach": 20,
+    "seam": 8,
+    "strict_frame": false,
+    "priority_frame": true,
+    "priority": [
+      [
+        [
+          0.32,
+          0.07
+        ],
+        [
+          0.71,
+          0.07
+        ],
+        [
+          0.75,
+          0.09
+        ],
+        [
+          0.72,
+          0.22
+        ],
+        [
+          0.58,
+          0.21
+        ],
+        [
+          0.48,
+          0.16
+        ],
+        [
+          0.34,
+          0.15
+        ]
+      ],
+      [
+        [
+          0.8,
+          0.2
+        ],
+        [
+          0.91,
+          0.15
+        ],
+        [
+          0.96,
+          0.24
+        ],
+        [
+          0.94,
+          0.42
+        ],
+        [
+          0.84,
+          0.4
+        ],
+        [
+          0.8,
+          0.3
+        ]
+      ],
+      [
+        [
+          0.55,
+          0.69
+        ],
+        [
+          0.76,
+          0.66
+        ],
+        [
+          0.92,
+          0.71
+        ],
+        [
+          0.94,
+          0.8
+        ],
+        [
+          0.7,
+          0.81
+        ],
+        [
+          0.69,
+          0.86
+        ],
+        [
+          0.57,
+          0.85
+        ]
+      ]
+    ],
+    "cutouts": [
+      [
+        [
+          0.29,
+          0
+        ],
+        [
+          0.78,
+          0
+        ],
+        [
+          0.78,
+          0.055
+        ],
+        [
+          0.29,
+          0.055
+        ]
+      ]
+    ]
+  },
+  "native_ridge": {
+    "issue": "feralas-north-ridge",
+    "source_art": 71,
+    "source": [
+      0.4,
+      0.86,
+      0.84,
+      0.942
+    ],
+    "target": [
+      0.376332,
+      0.594,
+      0.457541,
+      0.616
+    ],
+    "feather": 6,
+    "file": "13-feralas-north-ridge",
+    "uv": [
+      0,
+      0.861328125,
+      0,
+      0.107421875
+    ],
+    "sha256": "7a8a0fc382eb7bfbbade6f11cf7aebfca18d91c23dd1d96d8de95ab03b851372"
+  },
+  "preservation": {
+    "overview_pixel_identical": true,
+    "existing_ocean_caption_and_corner_assets_unchanged": true,
+    "southern_ungoro_uldum_and_silithus_preview_unchanged": true,
+    "runtime_components_unchanged": true,
+    "phase_selection_unchanged": true
+  },
+  "asset_sha256": {
+    "UI/Maps/ArtMaskIndex.lua": "65c44c8f7477329966ee81bb865a6e789c934fdfe468581412022096cf8d97f9",
+    "UI/Maps/Media/ArtMasks/204.blp": "b32ecaa724605139e2f2f71a6a3f41da592e78b46e57d9feb59c307f821243b8",
+    "UI/Maps/Media/ArtMasks/69.blp": "98af08cda2fe495e85cb14cd9d1118546958dd0de702c2c1d0a959925f57c9b4",
+    "UI/Maps/Media/ArtMasks/74.blp": "6d068ef90cf13b4a91837b3564f3ef69187d185050d683ed300698ff00f187cd",
+    "UI/Maps/Media/ArtMasks/8.blp": "0b961d17f7454626778605e09803fa8b5ed435fdfbc3442ed5017fe0452ac69c",
+    "UI/Maps/Media/NativeBackgrounds/13-feralas-north-ridge.blp": "7a8a0fc382eb7bfbbade6f11cf7aebfca18d91c23dd1d96d8de95ab03b851372"
+  },
+  "policy_sha256": "75d4a391f17e4f356f4a04949a2640a6d857980c60e1c1905d0e7fbb355d0bed",
+  "source_metadata_sha256": {
+    "UiMap.csv": "c07589d908b00d7d079e9e88b8c50d80ae8bd36631a661615bd7e636e5bbb7b3",
+    "UiMapArt.csv": "4007c26df8db966191e12376d8f3ec86d24ec636776a38c86113cac04f5d5848",
+    "UiMapArtStyleLayer.csv": "a682384554520220f7a9255d8f5f89c644e89d2fa707de80d81f00973cf05b9b",
+    "UiMapAssignment.csv": "69cacfcfe8ddda76b36b10fbfb96ebb313c0c429788a41f053352273ba819e8b",
+    "UiMapLink.csv": "6c9fe798330475d0fc5a2da62c65237ac6a0b34394aee5b10a8687f25b1deb6a",
+    "UiMapXMapArt.csv": "9fb1ba6466e44889959cb2dc7ac6a91e0fb9ee77ae96c52106543625d9c239e0",
+    "WorldMapOverlay.csv": "a30553a7669133009ea67deb818976b36b3c56fa85e37e3f317adab9693cbc11",
+    "WorldMapOverlayTile.csv": "63b48bb99b11d7f44f88323694af08015195fce2ecf59a7b84ecc22f87984b14"
+  },
+  "validation": {
+    "python_map_checks": 59,
+    "lua_interactive_map_checks": 48,
+    "audited_zoom_states": 14,
+    "manifest": "8 manifests, 284 runtime Lua files",
+    "visual_previews": [
+      "Kalimdor overview, transition, zone zoom 4 and 6",
+      "Global Map zoom 8.5 and 12.5",
+      "previous southern Kalimdor fixes with wounded Silithus and assault Uldum"
+    ],
+    "native_wow": "Offline verification only; native in-game rendering and performance remain pending."
+  },
+  "copyright": "Map artwork and the local native ridge derivative are copyright Blizzard Entertainment. Masks and crop annotations are independently authored."
+}

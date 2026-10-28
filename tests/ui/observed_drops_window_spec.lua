@@ -225,6 +225,7 @@ describe("UI/ObservedDropsWindow row snapshots", function()
 
     it("keeps Add beside the loot Map button and resets Map visibility when rows are reused", function()
         local addon, ns = load_loot_map_window()
+        addon:CreateCustomFarm("Loot", true)
         require("tests.helpers.explorer_ui").with_ui(ns, function()
             local frame = addon.observedDropsFrame
             frame.content = CreateFrame("Frame")
@@ -256,6 +257,96 @@ describe("UI/ObservedDropsWindow row snapshots", function()
             row.isLocationGroupHeader = true
             addon:RefreshObservedDropsWindowLayout()
             assert.is_false(row.mapButton:IsShown())
+        end)
+    end)
+
+    it("keeps separate Add and Map actions across every collectible tab and reused row", function()
+        local addon, ns = load_loot_map_window()
+        addon.RefreshObservedDropsWindowControls = function() end
+        addon.UpdateObservedDropsSortHeaderState = function() end
+        addon.IsCollapsedLocationHeadersEnabled = function() return false end
+        addon.FormatMoney = function(_, value) return tostring(value) end
+        addon.HasFarmForItem = function() return true end
+        addon.HasFarmForPet = function() return true end
+        addon.HasFarmForRecordID = function() return true end
+        local added, opened
+        addon.RequestAddToCustomFarm = function(_, row, sourceType)
+            added = { row.itemID, row.petID, row.observedDropKey, sourceType }
+        end
+        addon.OpenFarmDetailsForItem = function(_, id) opened = { "item", id } end
+        addon.OpenFarmDetailsForPet = function(_, id) opened = { "pet", id } end
+        addon.OpenFarmDetailsForRecordID = function(_, id) opened = { "record", id } end
+        addon.OpenObservedDropLootMap = function(_, row) opened = { "loot", row.observedDropKey } end
+        local farm = addon:CreateCustomFarm("Collectibles", true)
+
+        require("tests.helpers.explorer_ui").with_ui(ns, function()
+            local createButton = ns.JanisTheme.CreateButton
+            ns.JanisTheme.CreateButton = function(theme, parent, width, height, text, palette)
+                local button = createButton(theme, parent, width, height, text, palette)
+                button:SetText(text)
+                return button
+            end
+            local frame = addon.observedDropsFrame
+            frame.content = CreateFrame("Frame")
+            frame.listPanel = CreateFrame("Frame")
+            frame.scrollFrame = CreateFrame("ScrollFrame")
+            frame.mapHeaderButton = CreateFrame("Button")
+            frame.addHeaderButton = CreateFrame("Button")
+            frame.hasObservedDropsScanRun = true
+            local firstRow
+            for _, source in ipairs({
+                { id = "catalog-mounts", itemID = 163575, target = "item" },
+                { id = "catalog-pets", itemID = 82800, petID = 59, target = "pet" },
+                { id = "catalog-toys", itemID = 142265, target = "record" },
+                { id = "catalog-recipes", itemID = 191544, target = "record" },
+                { id = "catalog-cosmetics", itemID = 225759, target = "record" },
+                { id = "catalog-pets", itemID = 82800, petID = 4482, target = "pet" },
+                { id = "observed", itemID = 1001, target = "loot" },
+                { id = "att-zones", itemID = 1002 },
+            }) do
+                local recordID = source.id .. ":" .. tostring(source.petID or source.itemID)
+                frame.dropSourceID = source.id
+                frame.scannedObservedDropsRows = { {
+                    observedDropKey = recordID,
+                    recordID = source.id:find("catalog-", 1, true) and recordID or nil,
+                    itemID = source.itemID, petID = source.petID,
+                    itemName = "Collectible", itemQuality = 2,
+                    value = 0, marketValue = 0, regionMarketValue = 0, averageValue = 0,
+                    hasMapOrFarmData = true,
+                } }
+                addon:RefreshObservedDropsWindow()
+                local row = frame.rows[1]
+                firstRow = firstRow or row
+                assert.equals(firstRow, row)
+                assert.is_true(row.addButton:IsShown())
+                assert.equals("Add", row.addButton:GetText())
+                row.addButton:GetScript("OnClick")(row.addButton)
+                assert.same({ source.itemID, source.petID, recordID, "drops" }, added)
+                local entry = addon:BuildCustomFarmEntry(row, "drops")
+                if source.id:find("catalog-", 1, true) then
+                    assert.equals(recordID, entry.sourceKey)
+                    assert.is_true(addon:AddEntryToCustomFarm(farm.id, entry))
+                end
+                assert.equals(source.target ~= nil, row.mapButton:IsShown())
+                assert.equals(source.target ~= nil, frame.mapHeaderButton:IsShown())
+                if source.target then
+                    assert.equals("Map", row.mapButton:GetText())
+                    row.mapButton:GetScript("OnClick")(row.mapButton)
+                    local target = source.target == "item" and source.itemID
+                        or source.target == "pet" and source.petID or recordID
+                    assert.same({ source.target, target }, opened)
+                end
+            end
+            assert.equals(6, #farm.entries)
+
+            frame.dropSourceID = "catalog-cosmetics"
+            frame.scannedObservedDropsRows[1].hasMapOrFarmData = false
+            addon.HasFarmForRecordID = function() error("Rendering Cosmetics must not load Farms") end
+            addon:RefreshObservedDropsWindow()
+            assert.is_false(firstRow.mapButton:IsShown())
+            assert.is_nil(firstRow.mapButton:GetScript("OnClick"))
+            assert.is_true(firstRow.addButton:IsShown())
+            assert.equals("Add", firstRow.addButton:GetText())
         end)
     end)
 
@@ -1240,6 +1331,7 @@ describe("UI/ObservedDropsWindow row snapshots", function()
         assert.equals(1, #addon.observedDropsFrame.scannedObservedDropsRows)
         assert.equals(1624, addon.observedDropsFrame.scannedObservedDropsRows[1].petID)
         assert.equals(82800, addon.observedDropsFrame.scannedObservedDropsRows[1].itemID)
+        assert.equals("pets:Whelpling:1", addon.observedDropsFrame.scannedObservedDropsRows[1].recordID)
         assert.is_truthy(string.find(addon.observedDropsFrame.scannedObservedDropsRows[1].itemLink, "battlepet:1624", 1, true))
     end)
 

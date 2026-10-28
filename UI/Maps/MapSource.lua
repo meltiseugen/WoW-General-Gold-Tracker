@@ -46,6 +46,17 @@ function Source.ReadWorld(mapID)
     end
 end
 
+-- Some outdoor paintings (notably Ahn'Qiraj: The Fallen Kingdom) are tagged
+-- Orphan instead of Zone. Only accept those physically on their continent;
+-- scenario copies, battlegrounds and dungeon interiors stay separate.
+function Source.IsOutdoorOrphan(info)
+    if not info or info.mapType ~= 6 or not addon.MapOutdoorZones or not addon.MapOutdoorZones[info.mapID] then return false end
+    local parent = Source.Call(C_Map and C_Map.GetMapInfo, info.parentMapID)
+    if not parent or parent.mapType ~= 2 then return false end
+    local world, continent = Source.ReadWorld(info.mapID), Source.ReadWorld(info.parentMapID)
+    return world ~= nil and continent ~= nil and world.id == continent.id
+end
+
 function Source.Rect(mapID, rootID)
     if mapID == rootID then return { l = 0, t = 0, r = 1, b = 1 } end
     local l, r, t, b = Source.Call(C_Map and C_Map.GetMapRectOnMap, mapID, rootID)
@@ -109,9 +120,21 @@ function Source.New(options, standard)
         return self
     end
     local children = Source.Call(C_Map and C_Map.GetMapChildrenInfo, self.rootID, nil, true) or {}
+    -- Orphan paintings may also be omitted from normal child enumeration.
+    -- The reviewed registry supplies candidates; native placement/world checks
+    -- still decide whether they belong to this viewport.
+    local listed = {}
+    for _, info in ipairs(children) do listed[info.mapID] = true end
+    for mapID in pairs(addon.MapOutdoorZones or {}) do
+        if not listed[mapID] and Source.Rect(mapID, self.rootID) then
+            local info = Source.Call(C_Map and C_Map.GetMapInfo, mapID)
+            if Source.IsOutdoorOrphan(info) then children[#children + 1] = info end
+        end
+    end
     table.sort(children, function(a, b) return a.mapID < b.mapID end)
     for _, info in ipairs(children) do
-        if info.mapType == 3 or (options.includeContinents and info.mapType == 2) or info.mapID == options.mapID then
+        if info.mapType == 3 or Source.IsOutdoorOrphan(info)
+            or (options.includeContinents and info.mapType == 2) or info.mapID == options.mapID then
             self:AddNode(info.mapID, info)
         end
     end
@@ -144,7 +167,8 @@ function Source:AddNode(mapID, info)
     local rect = Source.Rect(mapID, self.rootID)
     if not rect then return end
     info = info or Source.Call(C_Map and C_Map.GetMapInfo, mapID) or {}
-    local node = { mapID = mapID, name = info.name or "Unknown map", mapType = info.mapType,
+    local node = { mapID = mapID, name = info.name or "Unknown map",
+        mapType = Source.IsOutdoorOrphan(info) and 3 or info.mapType, apiMapType = info.mapType,
         parentMapID = info.parentMapID, rect = rect }
     self.nodes[#self.nodes + 1], self.byID[mapID] = node, node
     return node
@@ -178,7 +202,9 @@ function Source:Exploration(node)
         node.explorationRead = true
         local art = self:Art(node)
         local overlays
-        if self.options.revealAll then
+        -- Classic Blizzard paintings always include every discovered-art overlay,
+        -- independently of the caller's policy or any character's exploration.
+        if self.standard or self.options.revealAll then
             overlays = art and self:RevealedOverlays(art)
         else
             overlays = self.options.getExploration and self.options.getExploration(node.mapID)

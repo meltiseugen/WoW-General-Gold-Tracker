@@ -89,6 +89,21 @@ If you enable auto-start in options, sessions can begin automatically.
 ### Session History
 ![Session History Screenshot Placeholder](https://via.placeholder.com/1000x560?text=Session+History+Screenshot)
 
+### Welcome and modules
+
+The first time you open `/gt`, choose which Explorer tabs to enable: Favorites, Alts,
+Market Watch, Rares, Instances, Drops, Materials, Farms, and Bags. **Use selected
+modules** saves your choices. **Skip - enable everything**, the close button, and
+Escape all enable every module and finish setup. Setup appears once per account,
+including on existing installations after this update.
+
+Change these choices anytime in **Options > Modules**. Changes apply immediately
+across characters without a reload. Disabling a module hides its tab and preserves
+its saved data; disabling Bags also stops its Auction House popup. The core gold
+tracker and session recording remain available. If all modules are disabled,
+Explorer provides a shortcut back to Modules. These switches control Explorer
+access; installed addon code and shared data services remain loaded.
+
 ### Options Panel
 Open `/gt options` for a searchable sidebar with **Appearance**, **Sessions & Loot**, **Pricing**, **Bags**, **Alts**, **Maps**, **History & Storage**, **Alerts**, **Logging**, **Advanced**, and **Experimental** pages.
 
@@ -132,11 +147,17 @@ Preferences save automatically and apply across characters. Pages remember their
   - Resume active session after `/reload`
 - Optional loot source tracking (`From: Unit/Node/AOE`)
 - Session history tools:
-  - Date filtering
-  - Sort by totals
+  - Search and date, character, and main-location filters
+  - Sort by duration, estimated value, or value per hour
+  - Loot, Locations, and Breakdown tabs with a shared location/style scope
+  - All-loot, auction-valued, vendor-only, and bound-item views
+  - Separate recorded visits and recording periods; legacy timing remains clearly labeled
+  - Continuous sessions by default, with optional instance or major-location splitting
+  - Resume a saved recording without counting the gap or creating duplicate history rows
   - Merge sessions
-  - Split merged sessions by location
-  - Location-specific details
+  - Split sessions by main location
+
+See [Session history behavior and storage](docs/session-history.md) for timing rules and compatibility details.
 
 ---
 
@@ -214,9 +235,17 @@ same sibling layout through `.pkgmeta`; end users do not need the development sc
 
 ### Interactive Alts map
 
-Alts uses ordinary Blizzard map paintings by default, with recorded character
-pins, drag panning, cursor-directed zoom, and **Reset view**. The continent-group
-**Map** buttons and all four **Global Map** tabs remain available.
+Alts gives the map most of the window, with profession names in a compact roster
+and direct links to assigned farms. Search finds characters by name, realm,
+profession, farm, role, or zone without changing saved group collapse states.
+**Details** opens recorded-location, role, and destination controls on demand.
+
+Maps use fully revealed Blizzard paintings by default, with recorded character
+pins, drag panning, and cursor-directed zoom. **Fit zone** / **Fit continent** fits
+the selected map; **Center** recenters the saved character position without changing
+zoom. **Expand map** hides the roster and summary until **Restore** is clicked.
+The continent-group **Map** buttons, character/continent switch, and all four
+**Global Map** tabs remain available. Destination-picker artwork is fully revealed too.
 
 **Options > Experimental > Seamless maps** opts into the unfinished stitched-zone
 and minimap-terrain rendering. It is off by default and applies immediately.
@@ -224,8 +253,8 @@ Switching styles resets existing maps to their initial view and preserves record
 locations, discoveries, roles, destinations and other Alts features.
 
 With seamless maps enabled, you can explore anywhere on that
-continent; zooming out stops at the continent view. **Reset view** restores the
-original zone, zoom, and position. Maps and close-up minimap terrain are always
+continent; zooming out stops at the continent view. **Fit zone** restores the
+original zone view. Maps and close-up minimap terrain are always
 fully revealed, regardless of what the selected character has explored.
 The same transition and terrain renderer serves all supported continents and
 worlds, including nested maps and separate physical worlds.

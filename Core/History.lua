@@ -2,6 +2,7 @@ local _, NS = ...
 local GoldTracker = NS.GoldTracker
 
 local MAX_HISTORY_SESSIONS = 300
+local normalizedHistoryEntries = setmetatable({}, { __mode = "k" })
 local BuildSessionFallbackLocationKey
 local BuildSessionFallbackLocationLabel
 
@@ -42,6 +43,8 @@ local function CloneItemLootEntries(itemLoots, fallbackSourceID, fallbackSourceL
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
             instanceName = entry.instanceName,
+            instanceMapID = tonumber(entry.instanceMapID),
+            instanceType = entry.instanceType,
             zoneName = entry.zoneName,
             mapID = tonumber(entry.mapID),
             mapX = tonumber(entry.mapX),
@@ -150,6 +153,8 @@ local function CloneMoneyLootEntries(moneyLoots)
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
             instanceName = entry.instanceName,
+            instanceMapID = tonumber(entry.instanceMapID),
+            instanceType = entry.instanceType,
             zoneName = entry.zoneName,
             mapID = tonumber(entry.mapID),
             mapX = tonumber(entry.mapX),
@@ -651,13 +656,17 @@ local function NormalizeHistoryEntry(entry)
         if loot.valueSourceID == nil then
             loot.valueSourceID = fallbackSourceID
         end
-        NormalizeLootLocationFields(loot, fallbackLocationKey, fallbackLocationLabel, fallbackLocationContext)
+        if not (entry.storageVersion == 2 and loot.locationRef) then
+            NormalizeLootLocationFields(loot, fallbackLocationKey, fallbackLocationLabel, fallbackLocationContext)
+        end
     end
 
     for _, money in ipairs(entry.moneyLoots) do
         money.amount = tonumber(money.amount) or 0
         money.timestamp = tonumber(money.timestamp) or 0
-        NormalizeLootLocationFields(money, fallbackLocationKey, fallbackLocationLabel, fallbackLocationContext)
+        if not (entry.storageVersion == 2 and money.locationRef) then
+            NormalizeLootLocationFields(money, fallbackLocationKey, fallbackLocationLabel, fallbackLocationContext)
+        end
     end
 
     local highlightCount = tonumber(entry.highlightItemCount)
@@ -700,7 +709,12 @@ function GoldTracker:GetSessionHistory()
     end
 
     for _, entry in ipairs(self.db.sessionHistory) do
-        NormalizeHistoryEntry(entry)
+        local counts = tostring(#(entry.itemLoots or {})) .. ":" .. tostring(#(entry.moneyLoots or {}))
+        if normalizedHistoryEntries[entry] ~= counts then
+            if self.HydrateSessionLocations then self:HydrateSessionLocations(entry) end
+            NormalizeHistoryEntry(entry)
+            normalizedHistoryEntries[entry] = counts
+        end
     end
 
     return self.db.sessionHistory
@@ -853,7 +867,8 @@ function GoldTracker:GetCurrentLocationSnapshot()
             snapshot.instanceMapID = mapID
         end
 
-        local effectiveMapID = snapshot.instanceMapID or playerMapID
+        -- GetInstanceInfo's map ID and C_Map's UI map IDs are separate spaces.
+        local effectiveMapID = playerMapID
         local locationDetails = self:GetMapLocationDetails(effectiveMapID)
         snapshot.mapID = locationDetails.mapID
         snapshot.mapName = locationDetails.mapName
@@ -889,15 +904,23 @@ function GoldTracker:GetCurrentLocationSnapshot()
         )
     end
 
+    if self.GetLocationGroupKey then
+        snapshot.locationKey = self:GetLocationGroupKey(snapshot)
+        if not snapshot.isInstanced and not (tonumber(snapshot.mapID) and snapshot.mapID > 0) then
+            snapshot.locationKey = nil
+        end
+    end
     return snapshot
 end
 
-function GoldTracker:UpdateSessionLocationContext()
+function GoldTracker:UpdateSessionLocationContext(snapshot)
     if not self.session then
         return
     end
 
-    local snapshot = self:GetCurrentLocationSnapshot()
+    snapshot = type(snapshot) == "table" and snapshot or self:GetCurrentLocationSnapshot()
+    if not snapshot.locationKey then return end
+    if self.UpdateSessionVisit then self:UpdateSessionVisit(snapshot) end
     self.session.isInstanced = snapshot.isInstanced == true
     self.session.instanceName = snapshot.instanceName
     self.session.instanceMapID = snapshot.instanceMapID
@@ -952,7 +975,12 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         savedAt = stopTime,
         startTime = tonumber(self.session.startTime) or stopTime,
         stopTime = stopTime,
-        duration = math.max(0, stopTime - (tonumber(self.session.startTime) or stopTime)),
+        duration = self.GetSessionIntervalDuration and self.session.recordingPeriods
+            and self:GetSessionIntervalDuration(self.session.recordingPeriods, stopTime)
+            or math.max(0, stopTime - (tonumber(self.session.startTime) or stopTime)),
+        timingVersion = self.session.timingVersion,
+        recordingPeriods = self.CopySessionIntervals and self:CopySessionIntervals(self.session.recordingPeriods),
+        locationVisits = self.CopySessionIntervals and self:CopySessionIntervals(self.session.locationVisits),
         activeDuration = math.max(0, math.floor((tonumber(self.session.activeDurationSeconds) or 0) + 0.5)),
         rawGold = rawGold,
         itemsValue = itemsValue,
@@ -997,7 +1025,11 @@ function GoldTracker:CreateSessionHistoryEntry(saveReason)
         resumedFromHistorySessionNames = CloneStringList(self.session.resumedFromHistorySessionNames),
     }
 
-    entry.name = self:BuildHistorySessionName(stopTime, entry)
+    entry.name = self.session.historyName or self:BuildHistorySessionName(entry.startTime, entry)
+    entry.customName = self.session.historyCustomName == true or nil
+    local previous = self.session.historySessionID and self:GetHistorySessionByID(self.session.historySessionID)
+    if previous then entry.id = previous.id; entry.pinned = previous.pinned end
+    if self.CompactSessionLocations then self:CompactSessionLocations(entry) end
     self.db.nextHistoryID = self.db.nextHistoryID + 1
 
     return entry
@@ -1023,6 +1055,9 @@ function GoldTracker:SaveCurrentSessionToHistory(saveReason)
 
     local history = self:GetSessionHistory()
     local entry = self:CreateSessionHistoryEntry(saveReason)
+    for index = #history, 1, -1 do
+        if history[index].id == entry.id then table.remove(history, index) end
+    end
     table.insert(history, 1, entry)
 
     while #history > MAX_HISTORY_SESSIONS do
@@ -1148,6 +1183,11 @@ function GoldTracker:ResumeHistorySession(sessionID)
 
     local session = self.session or {}
     self.session = session
+    -- Resume continues one saved recording; it never silently merges two runs.
+    if session.active == true and self.StopSession then
+        if session.historySessionID == historySession.id then return false end
+        self:StopSession({ saveReason = "resume-switch", silentChat = true })
+    end
     local wasActive = session.active == true
     local historyHighlightCount = tonumber(historySession.highlightItemCount) or 0
     local resumedAt = time()
@@ -1263,6 +1303,10 @@ function GoldTracker:ResumeHistorySession(sessionID)
     end
 
     self.tsmWarningShown = false
+    if self.ContinueSessionRecording then self:ContinueSessionRecording(historySession) end
+    session.historySessionID = historySession.id
+    session.historyName = historySession.name
+    session.historyCustomName = historySession.customName
     self:UpdateSessionLocationContext()
     if type(self.ImportSessionLootsToMainLootLog) == "function" then
         self:ImportSessionLootsToMainLootLog(mergedItemLoots, mergedMoneyLoots, not wasActive)
@@ -1402,6 +1446,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         if normalizedID and not added[normalizedID] then
             local session = self:GetHistorySessionByID(normalizedID)
             if session then
+                if session.isFarm or session.recordType == "farm" then return nil end
                 sessions[#sessions + 1] = session
                 added[normalizedID] = true
             end
@@ -1423,6 +1468,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     local highlightItemCount = 0
     local startTime
     local stopTime
+    local recordingPeriods, locationVisits, activeDuration = {}, {}, 0
     local mergedDiagnosisSnapshot = nil
     local wasResumed = false
     local resumeCount = 0
@@ -1434,6 +1480,15 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     local resumedFromHistorySessionNames = {}
 
     for _, session in ipairs(sessions) do
+        if self.CopySessionIntervals then
+            local periods = self:CopySessionIntervals(session.recordingPeriods)
+            if #periods == 0 then
+                periods[1] = { startTime = session.startTime, stopTime = session.stopTime or session.savedAt, estimated = true }
+            end
+            for _, period in ipairs(periods) do recordingPeriods[#recordingPeriods + 1] = period end
+            for _, visit in ipairs(self:CopySessionIntervals(session.locationVisits)) do locationVisits[#locationVisits + 1] = visit end
+        end
+        activeDuration = activeDuration + (tonumber(session.activeDuration) or 0)
         local sessionSourceID = session.valueSourceID
         local sessionSourceLabel = GetSessionPrimarySourceLabel(session)
         local fallbackTimestamp = tonumber(session.stopTime or session.savedAt or time()) or time()
@@ -1589,10 +1644,15 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
     local mergedEntry = {
         id = self.db.nextHistoryID,
         saveReason = "merge",
+        timingVersion = self.GetSessionIntervalDuration and 2 or nil,
+        recordingPeriods = self.GetSessionIntervalDuration and recordingPeriods or nil,
+        locationVisits = self.GetSessionIntervalDuration and locationVisits or nil,
+        activeDuration = activeDuration,
         savedAt = stopTime,
         startTime = startTime,
         stopTime = stopTime,
-        duration = math.max(0, stopTime - startTime),
+        duration = self.GetSessionIntervalDuration and self:GetSessionIntervalDuration(recordingPeriods)
+            or math.max(0, stopTime - startTime),
         rawGold = rawGold,
         itemsValue = itemsValue,
         itemsRawGold = itemsRawGold,
@@ -1631,6 +1691,7 @@ function GoldTracker:MergeHistorySessions(sessionIDs)
         resumedFromHistorySessionNames = resumedFromHistorySessionNames,
     }
     ApplyHistoryCharacterMetadata(mergedEntry, mergedCharacterLabels, firstSession)
+    if self.CompactSessionLocations then self:CompactSessionLocations(mergedEntry) end
 
     self.db.nextHistoryID = self.db.nextHistoryID + 1
 
@@ -1777,6 +1838,10 @@ function GoldTracker:SplitHistorySessionByLocation(sessionID)
     local bucketOrder = {}
 
     local function GetOrCreateBucket(locationKey, locationLabel, sourceEntry, timestamp)
+        if self.GetLocationGroupKey then
+            locationKey = self:GetLocationGroupKey(sourceEntry) or locationKey
+            locationLabel = self:GetLocationGroupLabel(sourceEntry)
+        end
         local key = locationKey
         if type(key) ~= "string" or key == "" then
             key = fallbackLocationKey
@@ -2017,7 +2082,23 @@ function GoldTracker:SplitHistorySessionByLocation(sessionID)
             resumedFromHistorySessionIDs = CloneNumberList(session.resumedFromHistorySessionIDs),
             resumedFromHistorySessionNames = CloneStringList(session.resumedFromHistorySessionNames),
         }
+        if self.CopySessionIntervals then
+            local visits = {}
+            for _, visit in ipairs(session.locationVisits or {}) do
+                if visit.locationKey == bucket.locationKey then visits[#visits + 1] = visit end
+            end
+            if #visits > 0 then
+                table.sort(visits, function(a, b) return (tonumber(a.startTime) or 0) < (tonumber(b.startTime) or 0) end)
+                splitEntry.locationVisits = self:CopySessionIntervals(visits)
+                splitEntry.recordingPeriods = self:CopySessionIntervals(visits)
+                splitEntry.timingVersion = 2
+                splitEntry.duration = self:GetSessionIntervalDuration(visits)
+                splitEntry.startTime = visits[1].startTime
+                splitEntry.stopTime = visits[#visits].stopTime
+            end
+        end
         ApplyHistoryCharacterMetadata(splitEntry, nil, session)
+        if self.CompactSessionLocations then self:CompactSessionLocations(splitEntry) end
 
         if #mergedFromIDs > 0 then
             splitEntry.mergedFromSessionIDs = CloneNumberList(mergedFromIDs)
@@ -2078,6 +2159,7 @@ function GoldTracker:RenameHistorySession(sessionID, newName)
     end
 
     session.name = trimmed
+    session.customName = true
 
     if self.RefreshHistoryWindow then
         self:RefreshHistoryWindow()

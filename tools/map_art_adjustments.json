@@ -1,9 +1,23 @@
 {
   "provenance": "Original annotations of Blizzard build 12.1.5.70529 paintings. Coordinates are fractions of each native painting, not reference-addon data.",
   "native_backdrops": [
+    13,
+    106,
     118
   ],
+  "outdoor_orphans": [327],
   "landmark_composites": [
+    {
+      "name": "The Great Gate and Mulgore road approach",
+      "root_map": 12,
+      "front_art": 8,
+      "back_art": 204,
+      "feather": 2,
+      "outline": [[0.668, 0.5185], [0.7355, 0.5185], [0.7355, 0.5833],
+                  [0.722, 0.6035], [0.731, 0.6258], [0.7355, 0.6743],
+                  [0.668, 0.6743], [0.6652, 0.6176], [0.6491, 0.6078],
+                  [0.6491, 0.5875]]
+    },
     {
       "name": "Drak'Tharon Keep",
       "root_map": 113,
@@ -15,6 +29,103 @@
     }
   ],
   "art": {
+    "339": { "reach": 20, "seam": 8, "strict_frame": false },
+    "2": { "reach": 20, "seam": 8, "strict_frame": false },
+    "8": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "label_moves": [
+        {
+          "name": "The Great Gate",
+          "source": [0.671, 0.63, 0.740, 0.675],
+          "offset": [-0.06, 0],
+          "lines": [[0.672655, 0.634731, 0.736527, 0.651198],
+                    [0.688623, 0.652695, 0.719561, 0.667665]],
+          "sample": [0.75, 0.60, 0.84, 0.71]
+        }
+      ]
+    },
+    "11": { "reach": 20, "seam": 8, "strict_frame": false },
+    "62": { "reach": 20, "seam": 8, "strict_frame": false },
+    "67": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "cutouts": [[[0, 0], [0.34, 0], [0.34, 0.12], [0.31, 0.39], [0, 0.43]]]
+    },
+    "68": { "reach": 20, "seam": 8, "strict_frame": false },
+    "69": { "reach": 20, "seam": 8, "strict_frame": false },
+    "70": { "reach": 20, "seam": 8, "strict_frame": false },
+    "71": { "reach": 20, "seam": 8, "strict_frame": false },
+    "74": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "priority_frame": true,
+      "priority": [
+        [[0.32, 0.07], [0.71, 0.07], [0.75, 0.09], [0.72, 0.22],
+         [0.58, 0.21], [0.48, 0.16], [0.34, 0.15]],
+        [[0.80, 0.20], [0.91, 0.15], [0.96, 0.24], [0.94, 0.42],
+         [0.84, 0.40], [0.80, 0.30]],
+        [[0.55, 0.69], [0.76, 0.66], [0.92, 0.71], [0.94, 0.80],
+         [0.70, 0.81], [0.69, 0.86], [0.57, 0.85]]
+      ],
+      "cutouts": [[[0.29, 0], [0.78, 0], [0.78, 0.055], [0.29, 0.055]]]
+    },
+    "75": { "reach": 20, "seam": 8, "strict_frame": false },
+    "76": { "reach": 20, "seam": 8, "strict_frame": false },
+    "81": { "reach": 20, "seam": 8, "strict_frame": false },
+    "82": { "reach": 20, "seam": 8, "strict_frame": false },
+    "83": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "priority": [
+        [[0.17, 0.13], [0.29, 0.07], [0.73, 0.07], [0.83, 0.16],
+         [0.87, 0.30], [0.87, 0.71], [0.79, 0.85], [0.72, 0.94],
+         [0.30, 0.94], [0.13, 0.90], [0.07, 0.72], [0.07, 0.36],
+         [0.17, 0.23], [0.31, 0.23], [0.31, 0.13]]
+      ],
+      "cutouts": [[[0.05, 0.10], [0.28, 0.10], [0.28, 0.19], [0.05, 0.19]]]
+    },
+    "85": { "reach": 20, "seam": 8, "strict_frame": false },
+    "86": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "cutouts": [[[0, 0.3], [0.065, 0.3], [0.065, 0.85], [0, 0.85]]]
+    },
+    "88": { "reach": 20, "seam": 8, "strict_frame": false },
+    "102": { "reach": 20, "seam": 8, "strict_frame": false },
+    "111": { "reach": 20, "seam": 8, "strict_frame": false },
+    "203": { "reach": 20, "seam": 8, "strict_frame": false },
+    "204": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "labels": [[0.421, 0.544, 0.475, 0.579], [0.48, 0.615, 0.565, 0.66],
+                 [0.35, 0.868, 0.423, 0.904]],
+      "road_links": [
+        {
+          "name": "Great Gate to Taurajo road",
+          "source_path": [[0.406528, 0.523636], [0.418443, 0.519467], [0.428372, 0.51917]],
+          "target_path": [[0.415464, 0.522742], [0.422414, 0.52304], [0.432344, 0.521254],
+                          [0.442273, 0.51917], [0.452202, 0.513215], [0.462131, 0.511727]],
+          "width": 9,
+          "feather": 3
+        }
+      ]
+    },
+    "227": { "reach": 20, "seam": 8, "strict_frame": false },
+    "260": { "reach": 20, "seam": 8, "strict_frame": false },
+    "289": { "reach": 20, "seam": 8, "strict_frame": false },
+    "498": { "reach": 20, "seam": 8, "strict_frame": false },
+    "962": {
+      "reach": 20, "seam": 8, "strict_frame": false, "core_from_art": 86,
+      "cutouts": [[[0, 0.3], [0.065, 0.3], [0.065, 0.85], [0, 0.85]]]
+    },
+    "1176": {
+      "reach": 20, "seam": 8, "strict_frame": false,
+      "core_from_art": 67,
+      "cutouts": [[[0, 0], [0.34, 0], [0.34, 0.12], [0.31, 0.39], [0, 0.43]]]
+    },
+    "1343": { "reach": 20, "seam": 8, "strict_frame": false, "core_from_art": 260 },
+    "105": { "reach": 20, "seam": 8, "strict_frame": false },
+    "107": { "reach": 20, "seam": 8, "strict_frame": false },
+    "109": { "reach": 20, "seam": 8, "strict_frame": false },
+    "110": { "reach": 20, "seam": 8, "strict_frame": false },
+    "112": { "reach": 20, "seam": 8, "strict_frame": false },
+    "113": { "reach": 20, "seam": 8, "strict_frame": false },
+    "114": { "reach": 20, "seam": 8, "strict_frame": false },
     "119": {
       "seam": 18,
       "cutouts": [
@@ -557,6 +668,23 @@
     "frame_fade": 0.07
   },
   "background_repairs": {
+    "13": [
+      {
+        "issue": "retire-exposed-caption",
+        "source_art": 13,
+        "paths": [[[0.397, 0.474], [0.408, 0.474]]],
+        "polygons": [],
+        "width": 116,
+        "sample": [1450, 1080, 1490, 1130]
+      },
+      {
+        "issue": "feralas-north-ridge",
+        "source_art": 71,
+        "source": [0.40, 0.86, 0.84, 0.942],
+        "target": [0.376332, 0.594, 0.457541, 0.616],
+        "feather": 6
+      }
+    ],
     "118": [
       {
         "source_art": 128,

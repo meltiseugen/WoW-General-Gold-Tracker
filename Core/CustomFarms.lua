@@ -559,6 +559,25 @@ function GoldTracker:GetSuggestedCustomFarmName()
 end
 
 function GoldTracker:NotifyCustomFarmsChanged()
+    local showAdd = self:GetActiveCustomFarm() ~= nil
+    if self.customFarmAddButtonsShown ~= showAdd then
+        self.customFarmAddButtonsShown = showAdd
+        -- Relayout existing views only when entering or leaving build mode.
+        -- This must not create windows, rescan sources, or refresh prices.
+        for _, view in ipairs({
+            { "inventoryFrame", "RefreshInventoryWindowLayout" },
+            { "craftingFarmingFrame", "RefreshCraftingFarmingWindowLayout" },
+            { "craftingFarmingExpandedFrame", "RefreshCraftingFarmingWindowLayout" },
+            { "rareFarmingFrame", "RefreshRareFarmingWindowLayout" },
+            { "instanceFarmingFrame", "RefreshInstanceFarmingWindowLayout" },
+            { "observedDropsFrame", "RefreshObservedDropsWindowLayout" },
+            { "standaloneMapFrame", "RefreshStandaloneMapCustomFarmAddButton" },
+        }) do
+            if self[view[1]] and type(self[view[2]]) == "function" then
+                self[view[2]](self, self[view[1]])
+            end
+        end
+    end
     if type(self.InvalidateCustomFarmRoutePlanCache) == "function" then
         self:InvalidateCustomFarmRoutePlanCache()
     end
@@ -1074,6 +1093,7 @@ function GoldTracker:ConfigureCustomFarmAddButton(button, sourceType)
         return button
     end
     button.customFarmSourceType = sourceType
+    button:SetShown(self:GetActiveCustomFarm() ~= nil)
     if type(button.RegisterForClicks) == "function" then
         button:RegisterForClicks("LeftButtonUp")
     end

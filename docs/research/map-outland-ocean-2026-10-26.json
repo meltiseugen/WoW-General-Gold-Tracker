@@ -1,0 +1,49 @@
+{
+  "build": "12.1.5.70529",
+  "root_map": 101,
+  "continent_art": 106,
+  "physical_world": 530,
+  "native_painting_size": [
+    3840,
+    2560
+  ],
+  "change": "Keep the original Outland background throughout the zone-art transition. Narrow zone painting margins to reveal the native outer contour and ocean instead of broad rectangular zone-paper fringes.",
+  "zone_arts": [
+    105,
+    107,
+    109,
+    110,
+    112,
+    113,
+    114
+  ],
+  "policy": {
+    "reach": 20,
+    "seam": 8,
+    "strict_frame": false
+  },
+  "preservation": {
+    "overview_pixel_identical": true,
+    "native_contour": "Original native ink, revealed by trimming child painting water margins; no fabricated boundary or new ocean synthesis.",
+    "corner_fills_unchanged": true,
+    "other_continents_unchanged": true
+  },
+  "validation": {
+    "lua_checks": 75,
+    "python_map_checks": 53,
+    "manifest": "8 manifests and 283 runtime Lua files",
+    "previews": "Actual Lua renderer: overview, transition, detail, western contour, southeast contour; offline only.",
+    "native_wow": "Pending in-game verification."
+  },
+  "asset_sha256": {
+    "UI\\Maps\\Media\\ArtMasks\\105.blp": "89709eb975dbc041a74b6f308ecfaf687298be279ca7426402884a75caaef695",
+    "UI\\Maps\\Media\\ArtMasks\\107.blp": "9ae2e8f9285f0292712e1d03ef3a78e3031c5b00126847069e9a04c9bdde56f4",
+    "UI\\Maps\\Media\\ArtMasks\\109.blp": "47e4285fdd009f01b8e98f12246fd3fc80d7ff05888bbced111c1790343aab50",
+    "UI\\Maps\\Media\\ArtMasks\\110.blp": "48df7fe99456e7dc4b0d18998406f26fe6a9b0630da5e350c498817071b1ad11",
+    "UI\\Maps\\Media\\ArtMasks\\112.blp": "a0a01be3c070a197aff5f54fc99606926a37980cdb7e0406bac9d5cabebc013b",
+    "UI\\Maps\\Media\\ArtMasks\\113.blp": "1003fb107471260b08986d51c9b1b9ebfdc527e2b63cbabd990bf5768277267d",
+    "UI\\Maps\\Media\\ArtMasks\\114.blp": "395e0b3660c0b438d4ba7b7dfb37a986c593a8bbde8117db002646891d31d753"
+  },
+  "policy_sha256": "f8e949f32b58e682ef709e41387fec92e0db72630c0c3087a03c929070ee2b05",
+  "copyright": "Map art is \u00a9 Blizzard Entertainment"
+}

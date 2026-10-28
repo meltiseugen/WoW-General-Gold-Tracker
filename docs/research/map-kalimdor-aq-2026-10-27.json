@@ -1,0 +1,69 @@
+{
+  "build": "12.1.5.70529",
+  "root_map": 12,
+  "continent_art": 13,
+  "issues": [
+    {
+      "reported": "Large apparently undiscovered area west of Uldum",
+      "map_id": 327,
+      "name": "Ahn'Qiraj: The Fallen Kingdom",
+      "art_id": 339,
+      "api_type": 6,
+      "display_type": 3,
+      "physical_world": 1,
+      "continent_rect": [
+        0.3580164437040234,
+        0.46807138859839537,
+        0.8291853151642193,
+        0.9392402602388259
+      ],
+      "cause": "Outdoor orphan painting excluded from zone selection and mask generation.",
+      "fix": "Reviewed outdoor-orphan registry, native placement/world checks, child-enumeration fallback, and native revealed painting territory."
+    },
+    {
+      "reported": "Incorrect pattern inside the western Silithus contour",
+      "art_ids": [
+        86,
+        962
+      ],
+      "cause": "Baked-in burnt parchment from the zone template leaked through its coastal mask.",
+      "fix": "Local mask cutout over the template strip; no ocean replacement or background repaint."
+    }
+  ],
+  "preservation": {
+    "native_ocean_and_contour_unchanged": true,
+    "overview_pixel_identical": true,
+    "existing_background_repairs_unchanged": true,
+    "renderer_and_scene_unchanged": true,
+    "scenario_and_raid_copies_excluded": true
+  },
+  "validation": {
+    "lua_checks": 76,
+    "python_map_checks": 57,
+    "audited_zoom_states": 14,
+    "manifest": "8 manifests, 284 runtime Lua files",
+    "previews": [
+      "southwestern Kalimdor with wounded Silithus and assault Uldum",
+      "AhnQiraj local detail",
+      "Global Map AhnQiraj detail",
+      "unchanged continent overview"
+    ],
+    "native_wow": "Offline verification only; native in-game rendering and performance remain pending."
+  },
+  "source_metadata_sha256": {
+    "UiMap.csv": "c07589d908b00d7d079e9e88b8c50d80ae8bd36631a661615bd7e636e5bbb7b3",
+    "UiMapAssignment.csv": "69cacfcfe8ddda76b36b10fbfb96ebb313c0c429788a41f053352273ba819e8b",
+    "UiMapXMapArt.csv": "9fb1ba6466e44889959cb2dc7ac6a91e0fb9ee77ae96c52106543625d9c239e0"
+  },
+  "asset_sha256": {
+    "UI/Maps/Media/ArtMasks/13.blp": "91091174d871d71a7f3d7737127868c7b2582ed41aa339b472339ed98ea6cc2c",
+    "UI/Maps/Media/ArtMasks/1343.blp": "96e7c3e9aaea77753cbec4510c1197ce5e2aa911dc499f73307324719df051c2",
+    "UI/Maps/Media/ArtMasks/260.blp": "96e7c3e9aaea77753cbec4510c1197ce5e2aa911dc499f73307324719df051c2",
+    "UI/Maps/Media/ArtMasks/289.blp": "9c46870bda4ff56641d6b40b084f3ecd27735f7970ae4ce238b1ddcc735e35cd",
+    "UI/Maps/Media/ArtMasks/86.blp": "4cb81f4eb5c09b37dcf905fe00ac158cf003c22f9f77231948c207a6e78660a8",
+    "UI/Maps/Media/ArtMasks/962.blp": "4cb81f4eb5c09b37dcf905fe00ac158cf003c22f9f77231948c207a6e78660a8",
+    "UI/Maps/Media/ArtMasks/339.blp": "86c88fef0c27257aee971746c1f15e22e766b5d22f55b68da8f6103fd358a8c1"
+  },
+  "policy_sha256": "f96c21152757409de2a646beed4832063f5fcab354bff81d07b36a82a3b34d37",
+  "copyright": "Map art is \u00a9 Blizzard Entertainment"
+}

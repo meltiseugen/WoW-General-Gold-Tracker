@@ -2600,7 +2600,8 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             local expansionWidth = 116
             local sourceWidth = 170
             local expansionX = contentWidth - expansionWidth - 12
-            local addX = expansionX - ADD_WIDTH - columnGap
+            local showAdd = self:GetActiveCustomFarm() ~= nil
+            local addX = expansionX - (showAdd and (ADD_WIDTH + columnGap) or 0)
             local sourceX = addX - sourceWidth - columnGap
             local averageX = sourceX - valueWidth - columnGap
             local regionX = averageX - valueWidth - columnGap
@@ -2695,7 +2696,7 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.favoriteAverageText:SetPoint("LEFT", row, "LEFT", averageX, 0)
             row.favoriteAverageText:SetWidth(valueWidth)
             row.favoriteAverageText:SetText(self:FormatMoney(favorite.averageValue or 0))
-            row.favoriteAddButton:Show()
+            row.favoriteAddButton:SetShown(showAdd)
             row.favoriteAddButton:ClearAllPoints()
             row.favoriteAddButton:SetPoint("LEFT", row, "LEFT", addX, 0)
             row:SetScript("OnClick", function(self)
@@ -3544,12 +3545,13 @@ ApplyTableColumnLayout = function(frame)
     end
     local showingPets = frame.instanceFarmingViewID == "pets"
     local showingTransmogs = frame.instanceFarmingViewID == "transmogs"
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local contentWidth = GetInstanceFarmingTableViewportWidth(frame)
     local trackWidth = showingPets and 0 or TRACK_WIDTH
     local mapWidth = MAP_WIDTH
     local detailsWidth = (showingPets or showingTransmogs) and 0 or DETAILS_WIDTH
-    local addWidth = ADD_WIDTH
-    local gapCount = showingPets and 10 or (showingTransmogs and 11 or 12)
+    local addWidth = showAdd and ADD_WIDTH or 0
+    local gapCount = (showingPets and 10 or (showingTransmogs and 11 or 12)) - (showAdd and 0 or 1)
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rowPool, "itemText", ITEM_MIN_WIDTH, {
         padding = 10,
         leadingWidth = ICON_SIZE + 8,
@@ -3601,7 +3603,7 @@ ApplyTableColumnLayout = function(frame)
     local trackX = HEADER_LEFT_INSET
     local mapX = showingPets and trackX or (trackX + trackWidth + COLUMN_GAP)
     local addX = mapX + mapWidth + COLUMN_GAP
-    local itemX = addX + addWidth + COLUMN_GAP
+    local itemX = addX + addWidth + (showAdd and COLUMN_GAP or 0)
     local typeX = itemX + itemWidth + COLUMN_GAP
     local valueX = typeX + TYPE_WIDTH + COLUMN_GAP
     local instanceX = valueX + valueWidth + COLUMN_GAP
@@ -3616,6 +3618,7 @@ ApplyTableColumnLayout = function(frame)
     SetHeaderColumn(frame.trackHeaderButton, frame.listPanel, trackX - horizontalOffset, trackWidth)
     SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, mapWidth)
     SetHeaderColumn(frame.addHeaderButton, frame.listPanel, addX - horizontalOffset, addWidth)
+    if frame.addHeaderButton then frame.addHeaderButton:SetShown(showAdd) end
     SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
     SetHeaderColumn(frame.typeHeaderButton, frame.listPanel, typeX - horizontalOffset, TYPE_WIDTH)
     SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, valueWidth)
@@ -3640,7 +3643,8 @@ ApplyTableColumnLayout = function(frame)
             row.trackButton:SetSize(TRACKED_BUTTON_WIDTH, TRACKED_BUTTON_HEIGHT)
         end
         SetColumn(row.mapButton, row, mapX - horizontalOffset, mapWidth)
-        SetColumn(row.addButton, row, addX - horizontalOffset, addWidth)
+        SetColumn(row.addButton, row, addX - horizontalOffset, ADD_WIDTH)
+        if row.addButton then row.addButton:SetShown(showAdd and not row.isLocationGroupHeader) end
         row.icon:ClearAllPoints()
         row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
         SetColumn(row.itemText, row, itemX + ICON_SIZE + 8 - horizontalOffset, math.max(80, itemWidth - ICON_SIZE - 8))
@@ -3653,6 +3657,14 @@ ApplyTableColumnLayout = function(frame)
         SetColumn(row.averageText, row, averageX - horizontalOffset, valueWidth)
         SetColumn(row.detailsButton, row, detailsX - horizontalOffset, detailsWidth)
         SetColumn(row.expansionText, row, expansionX - horizontalOffset, expansionWidth)
+    end
+end
+
+function GoldTracker:RefreshInstanceFarmingWindowLayout()
+    local frame = self.instanceFarmingFrame
+    ApplyTableColumnLayout(frame)
+    if frame and frame.libraryPanel and frame.libraryPanel:IsShown() then
+        self:RefreshInstanceFarmingLibraryWindow()
     end
 end
 
@@ -3889,7 +3901,7 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             row.trackButton:SetShown(not showingPets)
             row.mapButton:Show()
             row.detailsButton:SetShown(not showingPets and not showingTransmogs)
-            row.addButton:Show()
+            row.addButton:SetShown(self:GetActiveCustomFarm() ~= nil)
             row.trackButton:SetText(row.tracked and "-" or "<3")
             if row.trackButton.SetSelected then
                 row.trackButton:SetSelected(row.tracked)

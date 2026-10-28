@@ -2659,11 +2659,12 @@ local function ApplyMaterialsTableColumnLayout(frame)
         return
     end
 
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local availableWidth = GetMaterialsTableAvailableWidth(frame)
     local favoriteX = 8
     local mapX = favoriteX + MATERIALS_FAVORITE_WIDTH + MATERIALS_COLUMN_GAP
     local addX = mapX + MATERIALS_MAP_BUTTON_WIDTH + MATERIALS_COLUMN_GAP
-    local toggleX = addX + MATERIALS_ADD_BUTTON_WIDTH + MATERIALS_COLUMN_GAP
+    local toggleX = addX + (showAdd and (MATERIALS_ADD_BUTTON_WIDTH + MATERIALS_COLUMN_GAP) or 0)
     local iconX = toggleX + MATERIALS_TOGGLE_WIDTH
     local itemX = iconX + MATERIALS_ICON_SIZE + 8
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(
@@ -2697,8 +2698,8 @@ local function ApplyMaterialsTableColumnLayout(frame)
         + MATERIALS_COMPONENT_COST_WIDTH
         + MATERIALS_MARGIN_WIDTH
         + MATERIALS_MAP_BUTTON_WIDTH
-        + MATERIALS_ADD_BUTTON_WIDTH
-        + (MATERIALS_COLUMN_GAP * 15)
+        + (showAdd and MATERIALS_ADD_BUTTON_WIDTH or 0)
+        + (MATERIALS_COLUMN_GAP * (showAdd and 15 or 14))
         + MATERIALS_ROW_RIGHT_PADDING
     local tableWidth = math.max(availableWidth, minimumTableWidth)
     if frame.content then
@@ -2727,6 +2728,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         SetMaterialsHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, MATERIALS_FAVORITE_WIDTH)
         SetMaterialsHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsHeaderColumn(frame.addHeaderButton, frame.listPanel, headerX + addX - horizontalOffset, MATERIALS_ADD_BUTTON_WIDTH)
+        if frame.addHeaderButton then frame.addHeaderButton:SetShown(showAdd) end
         SetMaterialsHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
         SetMaterialsHeaderColumn(frame.tagHeaderButton, frame.listPanel, headerX + tagX - horizontalOffset, tagWidth)
         SetMaterialsHeaderColumn(frame.valueHeaderButton, frame.listPanel, headerX + valueX - horizontalOffset, MATERIALS_VALUE_WIDTH)
@@ -2761,6 +2763,7 @@ local function ApplyMaterialsTableColumnLayout(frame)
         end
         SetMaterialsRowButton(row.mapButton, row, mapX - horizontalOffset, MATERIALS_MAP_BUTTON_WIDTH)
         SetMaterialsRowButton(row.addButton, row, addX - horizontalOffset, MATERIALS_ADD_BUTTON_WIDTH)
+        if row.addButton then row.addButton:SetShown(showAdd and row.rowType ~= "divider") end
         if row.icon then
             row.icon:ClearAllPoints()
             row.icon:SetPoint("LEFT", row, "LEFT", iconX + rowIndent - horizontalOffset, 0)
@@ -3616,7 +3619,7 @@ function GoldTracker:RefreshCraftingFarmingWindow(scrollToTop, options)
                     row.mapButton:Show()
                 end
                 if row.addButton then
-                    row.addButton:Show()
+                    row.addButton:SetShown(self:GetActiveCustomFarm() ~= nil)
                 end
                 if result.icon then
                     row.icon:SetTexture(result.icon)

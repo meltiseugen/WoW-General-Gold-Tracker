@@ -33,15 +33,13 @@ local function PointFromFields(frame)
     return x / 100, y / 100
 end
 
-local function GetPickerExploration(addon, guid, mapID)
+local function GetPickerArt(addon, guid, mapID)
     local character = addon:GetAltCharacters()[guid]
-    local saved = character and character.exploredMaps and character.exploredMaps[mapID]
-    if guid ~= addon.currentAltGUID and type(saved) == "table" and #saved > 0 then return saved end
-    if not addon.altTrackerLeavingWorld and C_MapExplorationInfo and C_MapExplorationInfo.GetExploredMapTextures then
-        local ok, textures = pcall(C_MapExplorationInfo.GetExploredMapTextures, mapID)
-        if ok and type(textures) == "table" and #textures > 0 then return textures end
-    end
-    return saved or {}
+    local source = addon.MapDataSource.New({ mapID = mapID, revealAll = true, getArt = function(id)
+        return character and character.mapArtSnapshots and character.mapArtSnapshots[id]
+    end }, true)
+    local art = source.root and source:Art(source.root)
+    return art, art and source:RevealedOverlays(art) or {}
 end
 
 function GoldTracker:RefreshAltDestinationPickerPoint()
@@ -51,10 +49,11 @@ function GoldTracker:RefreshAltDestinationPickerPoint()
     frame.saveButton:SetEnabled(frame.mapID ~= nil and x ~= nil)
     if frame.explorationMapID ~= frame.mapID then
         frame.explorationMapID = frame.mapID
-        frame.exploredTextures = frame.mapID and GetPickerExploration(self, frame.guid, frame.mapID) or nil
+        frame.mapArt, frame.exploredTextures = nil, nil
+        if frame.mapID then frame.mapArt, frame.exploredTextures = GetPickerArt(self, frame.guid, frame.mapID) end
     end
     self:SetAltMapCard(frame.map, frame.mapName or "Destination map", frame.mapID, x, y,
-        "Choose a zone to view its map.", frame.exploredTextures)
+        "Choose a zone to view its map.", frame.exploredTextures, frame.mapArt)
 end
 
 function GoldTracker:SelectAltDestinationPickerMap(mapID, x, y)
@@ -143,7 +142,7 @@ function GoldTracker:CreateAltDestinationPicker()
     local frame = Theme:CreatePanel(parent, "panel", "chromeBorder")
     self.altDestinationPicker = frame
     frame:SetAllPoints(parent)
-    frame:SetFrameLevel(parent:GetFrameLevel() + 20)
+    frame:SetFrameLevel(parent:GetFrameLevel() + 3000)
     frame:EnableMouse(true)
     frame:Hide()
     frame.title = Text(frame, "GameFontNormalLarge")

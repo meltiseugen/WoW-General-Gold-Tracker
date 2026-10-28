@@ -32,9 +32,9 @@ local SETTING_HELP = {
         details = "Saves the active session for a UI reload and restores its loot, totals, and elapsed progress afterward. Turning this off clears any pending reload snapshot; it does not delete session history.",
         example = "Use /reload during a farm and continue the same session afterward.",
     },
-    autoStartSessionOnLocationChange = {
-        details = "Allows an active session to split when the destination is an outdoor zone, including when leaving an instance. Entering a different instance already splits an active session independently of this option. The old session is saved when session history is enabled.",
-        example = "Enable this to separate two outdoor farming zones into their own sessions.",
+    sessionSplitMode = {
+        details = "Continuous keeps one session across zones and instances. Each instance splits on confirmed instance entry, exit, or switching instances. Each major location also splits on outdoor zone changes. Subzones and floors stay together. Location visits are recorded separately in every mode.",
+        example = "Use Continuous for an evening of farming, or Each instance to separate dungeon visits. A UI reload continues the current session when Resume after /reload is enabled.",
     },
     useActiveTimeForGoldPerHour = {
         details = "Uses time accumulated around tracked loot activity instead of the full elapsed session duration. Gaps between loot events contribute at most 90 seconds, reducing the effect of long breaks. This changes the rate calculation, not the amount earned.",
@@ -97,13 +97,13 @@ local SETTING_HELP = {
         example = "Keep this enabled to compare the results of several completed farming runs.",
     },
     allowResumeHistorySession = {
-        details = "Allows loading a saved history session into the active tracker. With no active session, its recorded loot and totals are restored; with an active session, loading can merge the saved loot into it.",
-        example = "Load a completed run to continue tracking it. Check whether a session is already active before loading.",
+        details = "Allows continuing a saved history row in the active tracker. Another active session is saved first. Recording periods exclude the gap between runs, and stopping updates the original history row without duplicating its loot.",
+        example = "Resume yesterday's farm, loot more items, and stop. The same history row contains both recording periods, with the overnight gap excluded.",
         disabled = "Enable Save session history to use saved-session loading.",
     },
     historyRowsPerPage = {
-        details = "Sets how many sessions appear on one History list page. Changing it returns the visible list to page one. It does not change the number of sessions stored.",
-        example = "Use 20 rows to see twice as many sessions per page as the default 10.",
+        details = "Sets the maximum sessions on one History list page. Smaller windows use fewer complete rows. Changing it returns the visible list to page one. It does not change the number of sessions stored.",
+        example = "Choose 20 rows for a larger window; a smaller window will still show only the rows that fit.",
         disabled = "Enable Save session history to adjust its list display.",
     },
     historyDetailsFontSize = {
@@ -172,8 +172,8 @@ local SETTING_HELP = {
         disabled = "Turn on Enable alerts and Enable no-loot alert before testing.",
     },
     enableDiagnosticsPanel = {
-        details = "Enables runtime event counters and timing measurements and exposes the Diagnosis button in the tracker. It is useful for investigating missing loot or performance issues; it does not change pricing or the loot filters.",
-        example = "Enable diagnostics before reproducing an issue, then inspect the Diagnosis window.",
+        details = "Enables event counters and timing measurements and exposes the Diagnosis button in the tracker. Choose Runtime or Current session, then use Overview, Loot pipeline, Events, or Timings. Refresh reads a new snapshot; the window does not poll. Reset runtime preserves session snapshots. Copy report includes every metric. Timings cover instrumented loot work, not total addon CPU or memory.",
+        example = "Enable diagnostics, reproduce missing loot, open Diagnosis, and press Refresh. Check filters in Loot pipeline, then use Copy report to share the selected scope.",
     },
     enableExperimentalMaps = {
         details = "Off by default. Enables the unfinished seamless map renderer in Alts, continent-group maps, and every Global Map tab: stitched zone paintings, custom coast blending, and close-up minimap terrain. When off, these views keep ordinary Blizzard map paintings and recorded character pins. Pan, zoom, reset, destinations, roles, and other Alts features remain available. Switching applies immediately and resets each map to its starting view; it does not erase recorded locations or discoveries.",
@@ -312,7 +312,21 @@ function GoldTracker:GetOptionsPageDefinitions()
             end,
         })
     end
+    local moduleSettings = {}
+    for _, definition in ipairs(addon:GetExplorerModuleDefinitions()) do
+        local module = definition
+        moduleSettings[#moduleSettings + 1] = setting(module.key, module.label, module.description, "check", {
+            get = function() return addon:IsModuleEnabled(module.id) end,
+            set = function(value) addon:SetModuleEnabled(module.id, value) end,
+            details = "Show the " .. module.label .. " tab in Explorer. Changes apply immediately across characters. Disabling a module keeps its saved data. The core tracker and session recording remain available.",
+            example = "Turn this off to simplify Explorer, then enable it again here when you need it.",
+            keywords = "module enable disable welcome setup explorer tab",
+        })
+    end
     return {
+        page("modules", "Modules", "Choose which Explorer tabs are available. Changes apply immediately; your saved data is kept.", {
+            section("Explorer modules", moduleSettings, "All modules are enabled by default. The gold tracker is always available. Disabling Bags also stops its Auction House popup."),
+        }),
         page("appearance", "Appearance", "Choose your skin and how the tracker opens.", {
             section("UI skin", {
                 setting("visualTheme", "Window skin", "Applies to all tracker windows after reloading the UI.", "theme", {
@@ -348,7 +362,13 @@ function GoldTracker:GetOptionsPageDefinitions()
                 setting("resumeSessionAfterReload", "Resume after /reload", "Restore the active session before considering automatic startup.", "check", {
                     set = function(v) addon.db.resumeSessionAfterReload = v; if not v then call("ClearPendingReloadSession") end end,
                 }),
-                setting("autoStartSessionOnLocationChange", "Split on location change", "Also split an active session when changing outdoor zones or leaving an instance."),
+                setting("sessionSplitMode", "Session boundaries", "Choose when travel starts another session.", "select", {
+                    choices = {
+                        { id = "continuous", label = "Continuous" },
+                        { id = "instance", label = "Each instance" },
+                        { id = "location", label = "Each major location" },
+                    },
+                }),
             }),
             section("Gold/hour calculation", {
                 setting("useActiveTimeForGoldPerHour", "Use active loot time", "Ignore long idle gaps when calculating gold per hour.", "check", {
@@ -408,7 +428,10 @@ function GoldTracker:GetOptionsPageDefinitions()
         }),
         page("bags", "Bags", "Set Auctionable Inventory behavior and category order.", {
             section("Auction House", {
-                setting("autoOpenAuctionableInventoryOnAuctionHouse", "Open Bags from the Sell tab", "Open Auctionable Inventory when you click the Auction House Sell tab."),
+                setting("autoOpenAuctionableInventoryOnAuctionHouse", "Open Bags from the Sell tab", "Open Auctionable Inventory when you click the Auction House Sell tab.", "check", {
+                    enabled = function() return addon:IsModuleEnabled("inventory") end,
+                    disabledReason = "Enable Bags on the Modules page. Your Sell tab preference is kept while the module is disabled.",
+                }),
             }),
             section("Category display order", {
                 setting("inventoryCategoryOrder", "Inventory categories", "Drag a category or use the arrows to change its position.", "order", {
@@ -455,7 +478,7 @@ function GoldTracker:GetOptionsPageDefinitions()
                 }),
             }),
             section("History display", {
-                setting("historyRowsPerPage", "Rows per page", "Number of sessions shown on each history list page.", "slider", {
+                setting("historyRowsPerPage", "Maximum rows per page", "Maximum sessions per page; smaller windows show fewer rows so every row stays fully visible.", "slider", {
                     min = 5, max = 30, step = 1, unit = "rows", enabled = historyEnabled,
                     get = function() return addon:GetHistoryRowsPerPage() end,
                     set = function(v) addon:SetHistoryRowsPerPageOption(v) end,

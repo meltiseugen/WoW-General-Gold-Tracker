@@ -1,7 +1,60 @@
 {
   "build": "12.1.5.70529",
-  "provenance": "Reviewed native ocean samples and bottom-right ornament outline in Blizzard art 118 (3840x2560). Coordinates are native pixels. The original shallow/deep-water contour is preserved, not redrawn. No reference-addon assets or coordinates are inputs.",
+  "provenance": "Reviewed native samples and ornament outlines in Blizzard art 13 (Kalimdor), 106 (Outland) and 118 (Northrend), all 3840x2560. Coordinates are native pixels. Intact cartography, including depth contours, compass ink and Outland's constellation/swirl ink, is preserved, not redrawn. No reference-addon assets or coordinates are inputs.",
   "art": {
+    "13": {
+      "top-left": {
+        "match_frame_edges": true,
+        "sample": [800, 90, 960, 300],
+        "ornament_polygons": [
+          [[0, 0], [800, 0], [800, 100], [670, 170], [510, 150],
+           [470, 270], [410, 300], [430, 420], [280, 450], [160, 450],
+           [160, 650], [60, 750], [0, 750]]
+        ],
+        "expand": 12,
+        "feather": 4,
+        "preserve_probes": [[550, 300], [720, 200], [300, 500]]
+      },
+      "bottom-right": {
+        "match_frame_edges": true,
+        "sample": [3300, 1520, 3512, 1820],
+        "ornament_polygons": [
+          [[3840, 1730], [3790, 1760], [3750, 1930], [3715, 1960],
+           [3715, 2050], [3560, 2090], [3500, 2130], [3440, 2090], [3350, 2100],
+           [3410, 2230], [3350, 2300], [3310, 2390], [3290, 2500],
+           [3100, 2515], [3070, 2560], [3840, 2560]]
+        ],
+        "expand": 12,
+        "feather": 4,
+        "preserve_probes": [[3200, 2300], [3300, 2200]]
+      }
+    },
+    "106": {
+      "top-left": {
+        "match_frame_edges": true,
+        "sample": [64, 768, 320, 1280],
+        "ornament_polygons": [
+          [[0, 0], [660, 0], [660, 30], [560, 74], [480, 80], [390, 62],
+           [270, 82], [190, 122], [115, 195], [55, 260], [0, 290]]
+        ],
+        "expand": 12,
+        "feather": 4,
+        "preserve_probes": [[330, 430], [480, 360], [560, 300]]
+      },
+      "bottom-right": {
+        "match_frame_edges": true,
+        "sample": [3400, 1400, 3712, 1800],
+        "ornament_polygons": [
+          [[3840, 1790], [3795, 1850], [3760, 2000], [3705, 2070],
+           [3570, 2115], [3450, 2140], [3415, 2120], [3360, 2210],
+           [3280, 2350], [3270, 2470], [3140, 2520], [3100, 2490],
+           [2980, 2560], [3840, 2560]]
+        ],
+        "expand": 12,
+        "feather": 4,
+        "preserve_probes": [[3200, 2360], [3280, 2260]]
+      }
+    },
     "118": {
       "top-left": {
         "sample": [

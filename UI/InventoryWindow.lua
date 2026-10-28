@@ -2493,6 +2493,7 @@ local function ApplyInventoryTableColumnLayout(frame)
         return
     end
 
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local availableWidth = GetInventoryTableAvailableWidth(frame)
     if frame.inventoryContent then
         frame.inventoryContent:SetWidth(availableWidth)
@@ -2501,7 +2502,7 @@ local function ApplyInventoryTableColumnLayout(frame)
     local favoriteX = INVENTORY_ROW_ICON_LEFT
     local mapX = favoriteX + INVENTORY_TRACKED_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
     local addX = mapX + INVENTORY_MAP_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
-    local iconX = addX + INVENTORY_ADD_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP
+    local iconX = addX + (showAdd and (INVENTORY_ADD_COLUMN_WIDTH + INVENTORY_ACTION_COLUMN_GAP) or 0)
     local itemX = iconX + INVENTORY_ICON_SIZE + INVENTORY_ROW_ICON_GAP
     local rightEdge = availableWidth - INVENTORY_ROW_RIGHT_PADDING
     local trendX = rightEdge - INVENTORY_TREND_WIDTH
@@ -2534,6 +2535,7 @@ local function ApplyInventoryTableColumnLayout(frame)
         SetInventoryHeaderColumn(frame.favoriteHeaderButton, frame.listPanel, headerX + favoriteX - horizontalOffset, INVENTORY_TRACKED_COLUMN_WIDTH)
         SetInventoryHeaderColumn(frame.mapHeaderButton, frame.listPanel, headerX + mapX - horizontalOffset, INVENTORY_MAP_COLUMN_WIDTH)
         SetInventoryHeaderColumn(frame.addHeaderButton, frame.listPanel, headerX + addX - horizontalOffset, INVENTORY_ADD_COLUMN_WIDTH)
+        if frame.addHeaderButton then frame.addHeaderButton:SetShown(showAdd) end
         SetInventoryHeaderColumn(frame.itemHeaderButton, frame.listPanel, headerX + itemX - horizontalOffset, itemWidth)
         SetInventoryHeaderColumn(frame.unitHeaderButton, frame.listPanel, headerX + unitX - horizontalOffset, INVENTORY_UNIT_VALUE_WIDTH)
         SetInventoryHeaderColumn(frame.historyHeaderButton, frame.listPanel, headerX + historyX - horizontalOffset, INVENTORY_HISTORY_WIDTH)
@@ -2548,6 +2550,7 @@ local function ApplyInventoryTableColumnLayout(frame)
         SetInventoryRowControl(row.favoriteButton, row, favoriteX + math.floor((INVENTORY_TRACKED_COLUMN_WIDTH - INVENTORY_TRACKED_BUTTON_WIDTH) / 2), INVENTORY_TRACKED_BUTTON_WIDTH)
         SetInventoryRowControl(row.mapButton, row, mapX + math.floor((INVENTORY_MAP_COLUMN_WIDTH - INVENTORY_MAP_BUTTON_WIDTH) / 2), INVENTORY_MAP_BUTTON_WIDTH)
         SetInventoryRowControl(row.addButton, row, addX + math.floor((INVENTORY_ADD_COLUMN_WIDTH - INVENTORY_ADD_BUTTON_WIDTH) / 2), INVENTORY_ADD_BUTTON_WIDTH)
+        if row.addButton then row.addButton:SetShown(showAdd and not row.isCategoryDivider) end
         SetInventoryRowControl(row.icon, row, iconX, INVENTORY_ICON_SIZE)
         SetInventoryRowColumn(row.itemText, row, itemX, itemWidth)
         SetInventoryRowColumn(row.unitValueText, row, unitX, INVENTORY_UNIT_VALUE_WIDTH)
@@ -2994,7 +2997,7 @@ function GoldTracker:RefreshInventoryWindow(scrollToTop)
                     row.mapButton:Show()
                 end
                 if row.addButton then
-                    row.addButton:Show()
+                    row.addButton:SetShown(self:GetActiveCustomFarm() ~= nil)
                 end
                 row.itemText:Show()
                 row.quantityText:Show()

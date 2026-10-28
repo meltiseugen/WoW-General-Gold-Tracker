@@ -1213,18 +1213,20 @@ local function ApplyObservedTableColumnLayout(frame)
     end
 
     local availableWidth = GetObservedTableViewportWidth(frame)
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local showLootMap = NormalizeDropSourceID(frame.dropSourceID) == DROP_SOURCE_OBSERVED_ID
+    local showMap = showLootMap or IsAlwaysVisibleCatalogSource(frame.dropSourceID)
     local fixedWidth =
         TRACKED_WIDTH
-        + ADD_WIDTH
+        + (showAdd and ADD_WIDTH or 0)
         + EXPANSION_WIDTH
         + LOCATION_WIDTH
         + SOURCE_WIDTH
         + SEEN_WIDTH
         + QUANTITY_WIDTH
         + (VALUE_WIDTH * 4)
-        + (COLUMN_GAP * 11)
-        + (showLootMap and (MAP_WIDTH + COLUMN_GAP) or 0)
+        + (COLUMN_GAP * (showAdd and 11 or 10))
+        + (showMap and (MAP_WIDTH + COLUMN_GAP) or 0)
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rows, "itemText", ITEM_MIN_WIDTH, {
         padding = 8,
         leadingWidth = ICON_SIZE + 7,
@@ -1240,8 +1242,8 @@ local function ApplyObservedTableColumnLayout(frame)
     local horizontalOffset = GetObservedHorizontalOffset(frame)
     local trackedX = HEADER_LEFT_INSET
     local mapX = trackedX + TRACKED_WIDTH + COLUMN_GAP
-    local addX = mapX + (showLootMap and (MAP_WIDTH + COLUMN_GAP) or 0)
-    local itemX = addX + ADD_WIDTH + COLUMN_GAP
+    local addX = mapX + (showMap and (MAP_WIDTH + COLUMN_GAP) or 0)
+    local itemX = addX + (showAdd and (ADD_WIDTH + COLUMN_GAP) or 0)
     local valueX = itemX + itemWidth + COLUMN_GAP
     local locationX = valueX + VALUE_WIDTH + COLUMN_GAP
     local sourceX = locationX + LOCATION_WIDTH + COLUMN_GAP
@@ -1255,9 +1257,10 @@ local function ApplyObservedTableColumnLayout(frame)
     SetHeaderColumn(frame.trackedHeaderButton, frame.listPanel, trackedX - horizontalOffset, TRACKED_WIDTH)
     SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, MAP_WIDTH)
     if frame.mapHeaderButton then
-        frame.mapHeaderButton:SetShown(showLootMap)
+        frame.mapHeaderButton:SetShown(showMap)
     end
     SetHeaderColumn(frame.addHeaderButton, frame.listPanel, addX - horizontalOffset, ADD_WIDTH)
+    if frame.addHeaderButton then frame.addHeaderButton:SetShown(showAdd) end
     SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
     SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, VALUE_WIDTH)
     SetHeaderColumn(frame.locationHeaderButton, frame.listPanel, locationX - horizontalOffset, LOCATION_WIDTH)
@@ -1281,13 +1284,15 @@ local function ApplyObservedTableColumnLayout(frame)
             )
         end
         if row.addButton then
+            row.addButton:SetShown(showAdd and not row.isLocationGroupHeader)
             row.addButton:ClearAllPoints()
             row.addButton:SetPoint("LEFT", row, "LEFT", addX + 2 - horizontalOffset, 0)
         end
         if row.mapButton then
             row.mapButton:ClearAllPoints()
             row.mapButton:SetPoint("LEFT", row, "LEFT", mapX + 2 - horizontalOffset, 0)
-            row.mapButton:SetShown(showLootMap and not row.isLocationGroupHeader)
+            row.mapButton:SetShown(showMap and not row.isLocationGroupHeader
+                and (showLootMap or row.hasFarmMap == true))
         end
         if row.icon then
             row.icon:ClearAllPoints()
@@ -1414,6 +1419,7 @@ local function AddKnownDropRow(addon, rows, item, source)
 
     rows[#rows + 1] = {
         observedDropKey = drop.itemKey,
+        recordID = item.recordID,
         itemID = itemID,
         petID = tonumber(item.petID),
         itemLink = itemLink,
@@ -3144,6 +3150,20 @@ function GoldTracker:ConfigureObservedDropRowActionButton(button, row, dropSourc
     local petID = row and tonumber(row.petID)
     local recordID = row and row.observedDropKey
     local normalizedSourceID = NormalizeDropSourceID(dropSourceID)
+    if normalizedSourceID == DROP_SOURCE_OBSERVED_ID then
+        button:SetScript("OnClick", function(control)
+            self:OpenObservedDropLootMap(control:GetParent())
+        end)
+        button:SetScript("OnEnter", function(control)
+            if GameTooltip then
+                GameTooltip:SetOwner(control, "ANCHOR_CURSOR")
+                GameTooltip:AddLine("Show recorded loot locations", 1.0, 0.82, 0.18)
+                GameTooltip:Show()
+            end
+        end)
+        button:SetScript("OnLeave", HideObservedDropItemTooltip)
+        return "map"
+    end
     local isMountSource = normalizedSourceID == DROP_SOURCE_CATALOG_MOUNTS_ID
     local isPetSource = normalizedSourceID == DROP_SOURCE_CATALOG_PETS_ID
     local isToySource = normalizedSourceID == DROP_SOURCE_CATALOG_TOYS_ID
@@ -3164,12 +3184,10 @@ function GoldTracker:ConfigureObservedDropRowActionButton(button, row, dropSourc
     end
 
     if not hasFarm then
-        button:SetText("Add")
-        if type(button.SetPalette) == "function" then
-            button:SetPalette("neutral")
-        end
-        self:ConfigureCustomFarmAddButton(button, "drops")
-        return "add"
+        button:SetScript("OnClick", nil)
+        button:SetScript("OnEnter", nil)
+        button:SetScript("OnLeave", HideObservedDropItemTooltip)
+        return nil
     end
 
     local addon = self
@@ -3262,17 +3280,7 @@ function GoldTracker:GetObservedDropsWindowRow(index)
 
     local mapButton = CreateObservedButton(row, MAP_WIDTH - 4, 20, "Map", "primary")
     BindObservedResultsMouseWheel(mapButton, frame)
-    mapButton:SetScript("OnClick", function(control)
-        GoldTracker:OpenObservedDropLootMap(control:GetParent())
-    end)
-    mapButton:SetScript("OnEnter", function(control)
-        if GameTooltip then
-            GameTooltip:SetOwner(control, "ANCHOR_CURSOR")
-            GameTooltip:AddLine("Show recorded loot locations", 1.0, 0.82, 0.18)
-            GameTooltip:Show()
-        end
-    end)
-    mapButton:SetScript("OnLeave", HideObservedDropItemTooltip)
+    GoldTracker:ConfigureObservedDropRowActionButton(mapButton, row, frame.dropSourceID)
     mapButton:Hide()
     row.mapButton = mapButton
 
@@ -3406,10 +3414,6 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
         local row = self:GetObservedDropsWindowRow(visibleIndex)
         if row then
             row.isLocationGroupHeader = result.isLocationGroupHeader == true
-            if row.mapButton then
-                row.mapButton:SetShown(not row.isLocationGroupHeader
-                    and NormalizeDropSourceID(frame.dropSourceID) == DROP_SOURCE_OBSERVED_ID)
-            end
             row.isContinentGroupHeader = result.isContinentGroupHeader == true
             row.locationGroupKey = result.locationGroupKey
             row.locationGroupCollapsed = result.collapsed == true
@@ -3435,12 +3439,12 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
                 row.marketText,
                 row.regionText,
                 row.averageText,
-                row.addButton,
             }) do
                 control:SetShown(not row.isLocationGroupHeader)
             end
             if row.isLocationGroupHeader then
                 row.observedDropKey = nil
+                row.recordID = nil
                 row.itemID = nil
                 row.petID = nil
                 row.itemName = nil
@@ -3462,6 +3466,7 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
                 end
             else
             row.observedDropKey = result.observedDropKey
+            row.recordID = result.recordID
             row.itemID = result.itemID
             row.petID = result.petID
             row.itemName = result.itemName
@@ -3485,10 +3490,11 @@ function GoldTracker:RefreshObservedDropsWindow(scrollToTop)
             row.regionMarketValue = result.regionMarketValue
             row.averageValue = result.averageValue
             row.farmingSourceType = result.farmingSourceType
+            row.hasMapOrFarmData = result.hasMapOrFarmData
             row.bossName = result.bossName
             row.instanceName = result.instanceName
 
-            self:ConfigureObservedDropRowActionButton(row.addButton, row, frame.dropSourceID)
+            row.hasFarmMap = self:ConfigureObservedDropRowActionButton(row.mapButton, row, frame.dropSourceID) == "map"
 
             row.trackedButton:SetText(result.tracked and "-" or "<3")
             if row.trackedButton.SetSelected then

@@ -4,7 +4,7 @@ local function CreateFrame(...)
 end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
-local CHARACTER_ROW_HEIGHT, CHARACTER_LINE_SPACING, CHARACTER_DETAILS_TOP = 90, 18, 48
+local CHARACTER_ROW_HEIGHT, CHARACTER_FARM_TOP = 62, 59
 
 local function Text(parent, font, color)
     local text = parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
@@ -33,6 +33,30 @@ local function BuildAssignedFarms(addon)
         end)
     end
     return assignments
+end
+
+local function AssignedFarms(assignments, character)
+    local label = (character.name or "") .. (character.realm and ("-" .. character.realm) or "")
+    return assignments[CharacterAssignmentKey(label)] or {}
+end
+
+local function MatchesSearch(addon, entry, assignments, query)
+    if query == "" then return true end
+    local character = entry.character
+    local terms = { character.name or "", character.realm or "", character.location and character.location.mapName or "" }
+    for _, profession in ipairs(character.professions or {}) do terms[#terms + 1] = profession.name or "" end
+    for _, farm in ipairs(AssignedFarms(assignments, character)) do terms[#terms + 1] = farm.name end
+    for _, role in ipairs(addon:GetAltCharacterRoles(entry.guid)) do terms[#terms + 1] = role end
+    return table.concat(terms, " "):lower():find(query, 1, true) ~= nil
+end
+
+function GoldTracker:SelectAltCharacter(guid)
+    local frame = self.altsFrame
+    if not frame or not self:GetAltCharacters()[guid] then return end
+    if self.altDestinationPicker then self.altDestinationPicker:Hide() end
+    if type(CloseDropDownMenus) == "function" then CloseDropDownMenus() end
+    frame.selectedContinentID, frame.selectedGUID, frame.detailsOpen = nil, guid, false
+    self:RefreshAltsWindow(true)
 end
 
 function GoldTracker:OpenAltAssignedFarm(guid, farmID)
@@ -137,7 +161,8 @@ local function RenderCharacterPins(card, width, height)
         for entryIndex, data in ipairs(group.characters) do
             local entry = marker.entries[entryIndex]
             if not entry then
-                entry = CreateFrame("Frame", nil, marker.caption)
+                entry = CreateFrame("Button", nil, marker.caption)
+                entry:SetScript("OnClick", function() if entry.guid then GoldTracker:SelectAltCharacter(entry.guid) end end)
                 entry.label = Text(entry, "GameFontHighlight")
                 entry.label:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
                 entry.label:SetPoint("TOPLEFT")
@@ -151,6 +176,7 @@ local function RenderCharacterPins(card, width, height)
                 marker.entries[entryIndex] = entry
             end
             entry.label:SetText(data.name and nameCounts[data.name] == 1 and data.name or data.label)
+            entry.guid = data.guid
             local professionCount = 0
             for professionIndex, icon in ipairs(entry.professionIcons) do
                 local profession = data.professions and data.professions[professionIndex]
@@ -225,10 +251,10 @@ local function RenderMap(card)
     card.pin:Hide()
     card.message:SetText(card.mapID and "Map art unavailable" or card.emptyText)
     card.message:Show()
-    if not card.mapID or not C_Map or not C_Map.GetMapArtLayers or not C_Map.GetMapArtLayerTextures then return end
-    local layers = C_Map.GetMapArtLayers(card.mapID)
-    local layer = layers and layers[1]
-    local textures = layer and C_Map.GetMapArtLayerTextures(card.mapID, 1)
+    if not card.mapID then return end
+    local art = card.art or GoldTracker.MapDataSource.ReadArt(card.mapID)
+    local layer = art and { layerWidth = art.width, layerHeight = art.height, tileWidth = art.tileWidth, tileHeight = art.tileHeight }
+    local textures = art and art.textures
     if not layer or not textures or #textures == 0 then return end
     local width, height = layer.layerWidth, layer.layerHeight
     if not width or not height or width <= 0 or height <= 0 then return end
@@ -299,9 +325,10 @@ local function CreateMapCard(parent, heading)
     return card
 end
 
-local function SetMap(card, heading, mapID, x, y, emptyText, exploredTextures, characterLocations)
+local function SetMap(card, heading, mapID, x, y, emptyText, exploredTextures, characterLocations, art)
     card.mapID, card.x, card.y, card.emptyText = mapID, x, y, emptyText
     card.exploredTextures = exploredTextures
+    card.art = art
     card.characterLocations = characterLocations
     card.heading:SetText(heading)
     card.coordinates:SetText(x and y and string.format("%.2f, %.2f", x * 100, y * 100) or "")
@@ -313,15 +340,19 @@ function GoldTracker:CreateAltMapCard(parent, heading)
     return CreateMapCard(parent, heading)
 end
 
-function GoldTracker:SetAltMapCard(card, heading, mapID, x, y, emptyText, exploredTextures)
-    SetMap(card, heading, mapID, x, y, emptyText, exploredTextures)
+function GoldTracker:SetAltMapCard(card, heading, mapID, x, y, emptyText, exploredTextures, art)
+    SetMap(card, heading, mapID, x, y, emptyText, exploredTextures, nil, art)
 end
 
 local function LayoutAltMaps(frame, continentView)
     frame.localMap:ClearAllPoints()
-    frame.localMap:SetPoint("TOPLEFT", 0, continentView and -100 or -216)
+    local top = frame.mapExpanded and 0 or (frame.hasAssignedFarms and not continentView and 90 or 60)
+    frame.localMap:SetPoint("TOPLEFT", 0, -top)
     frame.localMap:SetPoint("BOTTOMRIGHT", 0, 20)
-    frame.destinationPanel:SetShown(not continentView)
+    frame.destinationPanel:SetShown(not continentView and frame.detailsOpen == true and not frame.mapExpanded)
+    frame.localMap.resetButton.label:SetText(continentView and "Fit continent" or "Fit zone")
+    frame.localMap.centerButton:SetEnabled(not continentView and frame.localMap.hasMapArt
+        and frame.localMap.x ~= nil and frame.localMap.y ~= nil)
 end
 
 local function ConfigureInteractiveAltMap(addon, frame, character, overview)
@@ -366,6 +397,7 @@ function GoldTracker:ShowAltContinentMap(continentMapID)
     if type(CloseDropDownMenus) == "function" then CloseDropDownMenus() end
     if not self.altTrackerLeavingWorld then self:CaptureCurrentAlt(true, nil, true) end
     frame.selectedContinentID = continentMapID
+    frame.detailsOpen = false
     self:RefreshAltsWindow()
     -- A group Map click opens the whole continent, including when it is already
     -- selected and the shared viewport was left zoomed into one of its zones.
@@ -375,6 +407,24 @@ end
 function GoldTracker:RefreshAltsWindowLayout()
     local frame = self.altsFrame
     if not frame then return end
+    local expanded = frame.mapExpanded == true
+    frame.listPanel:SetShown(not expanded)
+    frame.listPanel:SetWidth(math.max(244, math.min(280, frame:GetWidth() * 0.23)))
+    frame.detailsPanel:ClearAllPoints()
+    if expanded then frame.detailsPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    else frame.detailsPanel:SetPoint("TOPLEFT", frame.listPanel, "TOPRIGHT", 10, 0) end
+    frame.detailsPanel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    frame.characterTitle:SetShown(not expanded)
+    frame.globalMapButton:SetShown(not expanded)
+    frame.detailsButton:SetShown(not expanded and not frame.selectedContinentID)
+    frame.detailsButton:SetEnabled(frame.selectedGUID ~= nil)
+    frame.detailsButton:SetSelected(frame.detailsOpen == true and not expanded)
+    frame.continentButton:SetShown(not expanded)
+    frame.farmSummary:SetShown(not expanded and not frame.selectedContinentID and frame.hasAssignedFarms == true)
+    for _, tag in ipairs(frame.professionTags) do tag:SetShown(not expanded and not frame.selectedContinentID and tag.hasProfession == true) end
+    frame.noProfessions:SetShown(not expanded and not frame.selectedContinentID and frame.noProfessions.hasText == true)
+    frame.localMap.expandButton.label:SetText(expanded and "Restore" or "Expand map")
+    LayoutAltMaps(frame, frame.selectedContinentID ~= nil)
     frame.content:SetWidth(math.max(1, frame.scrollFrame:GetWidth()))
     frame.localMap:Resize()
 end
@@ -387,7 +437,7 @@ local function RefreshDestinationPanel(addon, frame, character)
         or "Destination: Free roam")
     local text, r, g, b = addon:GetAltDestinationStatusText(frame.selectedGUID)
     panel.status:SetText(text)
-    panel.status:SetTextColor(r, g, b)
+    panel.status:SetTextColor(unpack(Theme.colors and Theme.colors.textMuted or { r, g, b }))
     panel.setButton:SetEnabled(character ~= nil)
     panel.clearButton:SetShown(destination ~= nil)
     panel.clearButton:SetEnabled(destination ~= nil)
@@ -398,6 +448,12 @@ local function RefreshDestinationPanel(addon, frame, character)
     panel.refreshButton:ClearAllPoints()
     panel.refreshButton:SetPoint("LEFT", destination and panel.clearButton or panel.setButton, "RIGHT", 6, 0)
     panel.refreshButton:SetEnabled(online and not addon.altTrackerLeavingWorld)
+    panel.refreshButton.tooltipText = online and "Record this character's current location now."
+        or "Log in to this character to refresh its recorded location."
+    panel.setButton.label:SetText(destination and "Edit destination" or "Set destination")
+    panel.setButton.tooltipText = "Choose a zone and a destination. Changes are applied only when you save."
+    panel.navigateButton.tooltipText = online and "Start navigation to the saved destination." or "View this offline character's saved destination."
+    panel.clearButton.tooltipText = "Remove this character's destination and return to free roam."
 end
 
 local function CancelContinentDrag(frame)
@@ -486,13 +542,15 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
     local groups = self:BuildAltCharacterGroups()
     local characters = self:GetAltCharacters()
     local assignedFarms = BuildAssignedFarms(self)
+    local query = (frame.searchBox:GetText() or ""):lower():match("^%s*(.-)%s*$")
+    frame.searchActive = query ~= ""
     if not characters[frame.selectedGUID] then
         frame.selectedGUID = characters[self.currentAltGUID] and self.currentAltGUID
             or (groups[1] and groups[1].characters[1].guid)
     end
     for _, row in ipairs(frame.rows) do row:Hide() end
     frame.continentHeaders = {}
-    local rowIndex, offset, count = 0, 0, 0
+    local rowIndex, offset, count, matches = 0, 0, 0, 0
     local function NextRow()
         rowIndex = rowIndex + 1
         local row = frame.rows[rowIndex]
@@ -502,13 +560,15 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
             row.name = Text(row, "GameFontHighlight")
             row.name:SetPoint("TOPLEFT", 10, -7)
             row.name:SetPoint("TOPRIGHT", -10, -7)
-            row.realm = Text(row, "GameFontHighlightSmall", { 0.6, 0.64, 0.7 })
-            row.realm:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -30)
-            row.realm:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -30)
+            row.realm = Text(row, "GameFontHighlightSmall", Theme.colors and Theme.colors.textMuted or { 0.6, 0.64, 0.7 })
+            row.realm:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -42)
+            row.realm:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -42)
             row.realm:SetWordWrap(false)
+            row.professions = Text(row, "GameFontHighlightSmall")
+            row.professions:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -25)
+            row.professions:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -25)
+            row.professions:SetWordWrap(false)
             row.roles = Text(row, "GameFontHighlightSmall", { 1, 0.82, 0.3 })
-            row.roles:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -CHARACTER_DETAILS_TOP)
-            row.roles:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -CHARACTER_DETAILS_TOP)
             row.roles:SetWordWrap(false)
             row.farm = Text(row, "GameFontHighlightSmall")
             row.farm:SetWordWrap(false)
@@ -533,7 +593,8 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
             local function ToggleGroup()
                 local groupID = row.continentGroupID
                 if groupID == nil then return end
-                frame.collapsedContinents[groupID] = not frame.collapsedContinents[groupID]
+                local state = frame.searchActive and frame.searchCollapsed or frame.collapsedContinents
+                state[groupID] = not state[groupID]
                 self:RefreshAltsWindow()
             end
             row.collapseButton:SetScript("OnClick", ToggleGroup)
@@ -548,11 +609,7 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
                     return
                 end
                 if row.guid then
-                    if self.altDestinationPicker then self.altDestinationPicker:Hide() end
-                    if type(CloseDropDownMenus) == "function" then CloseDropDownMenus() end
-                    frame.selectedContinentID = nil
-                    frame.selectedGUID = row.guid
-                    self:RefreshAltsWindow(true)
+                    self:SelectAltCharacter(row.guid)
                 end
             end)
             frame.rows[rowIndex] = row
@@ -572,6 +629,7 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
         row.continentGroupName = nil
         row.tooltipText = nil
         row.roles:Hide()
+        row.professions:Hide()
         row.farm:Hide()
         row.farmButton:Hide()
         row.destination:Hide()
@@ -581,109 +639,135 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
         return row
     end
     for _, group in ipairs(groups) do
-        local header = NextRow()
-        local collapsed = frame.collapsedContinents[group.id] == true
         count = count + #group.characters
-        header.guid = nil
-        header.continentGroupID = group.id
-        header.continentGroupName, header.groupOffset = group.name, offset
-        header.tooltipText = "Click to expand or collapse. Drag to reorder groups."
-        frame.continentHeaders[#frame.continentHeaders + 1] = header
-        header.collapseButton.label:SetText(collapsed and "+" or "-")
-        header.collapseButton.tooltipText = (collapsed and "Expand " or "Collapse ") .. group.name
-        header.collapseButton:Show()
-        header:SetHeight(44)
-        header:SetEnabled(true)
-        header:SetSelected(group.id == frame.selectedContinentID)
-        header.name:SetText(group.name .. "  (" .. #group.characters .. ")")
-        header.name:SetFontObject("GameFontNormal")
-        header.name:SetJustifyH("CENTER")
-        header.name:SetWordWrap(true)
-        header.name:ClearAllPoints()
-        header.name:SetPoint("LEFT", header, "LEFT", 34, 0)
-        header.name:SetPoint("RIGHT", header, "RIGHT", -10, 0)
-        header.name:SetTextColor(1, 0.82, 0.3)
-        if type(group.id) == "number" then
-            header.continentMapID = group.id
-            header.mapButton:Show()
-            header.name:SetPoint("RIGHT", header, "RIGHT", -53, 0)
+        local visible = {}
+        for _, entry in ipairs(group.characters) do
+            if MatchesSearch(self, entry, assignedFarms, query) then visible[#visible + 1] = entry end
         end
-        header.realm:Hide()
-        offset = offset + 48
-        for _, entry in ipairs(not collapsed and group.characters or {}) do
-            local row, character = NextRow(), entry.character
-            local roleLabels = self:GetAltCharacterRoles(entry.guid)
-            local roleOffset = #roleLabels > 0 and CHARACTER_LINE_SPACING or 0
-            local farmTop = CHARACTER_DETAILS_TOP + roleOffset
-            local destinationTop = farmTop + CHARACTER_LINE_SPACING
-            row.guid = entry.guid
-            row:SetHeight(CHARACTER_ROW_HEIGHT + roleOffset)
-            if roleOffset > 0 then
+        matches = matches + #visible
+        if #visible > 0 then
+            local header = NextRow()
+            -- Search exposes matches without changing the saved collapse state.
+            local state = frame.searchActive and frame.searchCollapsed or frame.collapsedContinents
+            local collapsed = state[group.id] == true
+            header.guid = nil
+            header.continentGroupID = group.id
+            header.continentGroupName, header.groupOffset = group.name, offset
+            header.tooltipText = "Click to expand or collapse. Drag to reorder groups."
+            frame.continentHeaders[#frame.continentHeaders + 1] = header
+            header.collapseButton.label:SetText(collapsed and "+" or "-")
+            header.collapseButton.tooltipText = (collapsed and "Expand " or "Collapse ") .. group.name
+            header.collapseButton:Show()
+            header:SetHeight(36)
+            header:SetEnabled(true)
+            header:SetSelected(group.id == frame.selectedContinentID)
+            header.name:SetText(group.name .. "  (" .. #visible .. ")")
+            header.name:SetFontObject("GameFontNormal")
+            header.name:SetJustifyH("CENTER")
+            header.name:SetWordWrap(true)
+            header.name:ClearAllPoints()
+            header.name:SetPoint("LEFT", header, "LEFT", 34, 0)
+            header.name:SetPoint("RIGHT", header, "RIGHT", -10, 0)
+            header.name:SetTextColor(unpack(Theme.colors and Theme.colors.titleText or { 1, 0.82, 0.3 }))
+            if type(group.id) == "number" then
+                header.continentMapID = group.id
+                header.mapButton:Show()
+                header.name:SetPoint("RIGHT", header, "RIGHT", -53, 0)
+            end
+            header.realm:Hide()
+            offset = offset + 40
+            for _, entry in ipairs(not collapsed and visible or {}) do
+                local row, character = NextRow(), entry.character
+                local roleLabels = self:GetAltCharacterRoles(entry.guid)
+                local farms = AssignedFarms(assignedFarms, character)
+                row.guid = entry.guid
+                row:SetHeight(CHARACTER_ROW_HEIGHT + (#farms > 0 and 18 or 0))
                 row.roles:SetText(table.concat(roleLabels, " · "))
-                row.roles:Show()
-            end
-            row.farm:ClearAllPoints()
-            row.farm:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -farmTop)
-            row.farm:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -farmTop)
-            row.farmButton:ClearAllPoints()
-            row.farmButton:SetPoint("TOPRIGHT", row, "TOPRIGHT", -5, 3 - farmTop)
-            row.destination:ClearAllPoints()
-            row.destination:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -destinationTop)
-            row.destination:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -destinationTop)
-            row:SetEnabled(true)
-            row:SetSelected(not frame.selectedContinentID and entry.guid == frame.selectedGUID)
-            row.name:SetText(character.name)
-            local hasProfessions = false
-            for index = 1, 2 do
-                local profession = character.professions and character.professions[index]
-                if profession and profession.icon then
-                    row.professionIcons[index]:SetTexture(profession.icon)
-                    row.professionIcons[index]:Show()
-                    hasProfessions = true
+                row.farm:ClearAllPoints()
+                row.farm:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -CHARACTER_FARM_TOP)
+                row.farm:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -CHARACTER_FARM_TOP)
+                row.farmButton:ClearAllPoints()
+                row.farmButton:SetPoint("TOPRIGHT", row, "TOPRIGHT", -5, 3 - CHARACTER_FARM_TOP)
+                row:SetEnabled(true)
+                row:SetSelected(not frame.selectedContinentID and entry.guid == frame.selectedGUID)
+                row.name:SetText(character.name)
+                local hasProfessions = false
+                local professionNames = {}
+                for index = 1, 2 do
+                    local profession = character.professions and character.professions[index]
+                    if profession then professionNames[#professionNames + 1] = profession.name or "Unknown profession" end
+                    if profession and profession.icon then
+                        row.professionIcons[index]:SetTexture(profession.icon)
+                        row.professionIcons[index]:Show()
+                        hasProfessions = true
+                    end
                 end
+                row.professions:SetText(#professionNames > 0 and table.concat(professionNames, " · ")
+                    or (character.professions and "No primary professions" or "Professions not recorded"))
+                row.professions:Show()
+                if hasProfessions then
+                    row.name:SetPoint("TOPRIGHT", row, "TOPRIGHT", -66, -7)
+                end
+                local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[character.classFile]
+                local normal = Theme.colors and Theme.colors.text or { 0.9, 0.92, 0.98 }
+                row.name:SetTextColor(color and color.r or normal[1], color and color.g or normal[2], color and color.b or normal[3])
+                local levelText = character.level and ("Level " .. character.level .. " · ") or ""
+                row.realm:SetText(levelText .. (character.realm or "Unknown realm"))
+                row.realm:Show()
+                local farmNames = {}
+                for _, farm in ipairs(farms) do farmNames[#farmNames + 1] = farm.name end
+                if #farmNames > 0 then
+                    row.farm:SetText(#farmNames == 1 and ("Farm: " .. farmNames[1])
+                        or ("Farms: " .. #farmNames .. " assigned"))
+                    row.farm:SetTextColor(unpack(Theme.colors and Theme.colors.titleText or { 1, 0.82, 0.3 }))
+                    row.tooltipText = "Assigned farms\n" .. table.concat(farmNames, "\n")
+                    row.farm:SetPoint("TOPRIGHT", row, "TOPRIGHT", -53, -CHARACTER_FARM_TOP)
+                    row.farmButton.tooltipText = #farms == 1 and ("Edit farm: " .. farmNames[1])
+                        or "Choose an assigned farm to edit."
+                    row.farmButton:Show()
+                    row.farm:Show()
+                else
+                    row.farm:SetText("No farm assigned")
+                    row.farm:SetTextColor(0.6, 0.64, 0.7)
+                end
+                local statusText, r, g, b = self:GetAltDestinationStatusText(entry.guid)
+                row.destination:SetText(statusText)
+                row.destination:SetTextColor(r, g, b)
+                if character.destination then
+                    local destination = character.destination
+                    local description = string.format("Destination: %s · %.2f, %.2f\n%s",
+                        destination.mapName or "Unknown map", destination.x * 100, destination.y * 100, statusText)
+                    row.tooltipText = row.tooltipText and (row.tooltipText .. "\n\n" .. description) or description
+                end
+                if #roleLabels > 0 then
+                    local description = "Roles: " .. table.concat(roleLabels, ", ")
+                    row.tooltipText = row.tooltipText and (row.tooltipText .. "\n\n" .. description) or description
+                end
+                offset = offset + row:GetHeight() + 4
             end
-            if hasProfessions then
-                row.name:SetPoint("TOPRIGHT", row, "TOPRIGHT", -66, -7)
-            end
-            local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[character.classFile]
-            row.name:SetTextColor(color and color.r or 0.9, color and color.g or 0.92, color and color.b or 0.98)
-            local levelText = character.level and ("Level " .. character.level .. " · ") or ""
-            row.realm:SetText(levelText .. (character.realm or "Unknown realm"))
-            row.realm:Show()
-            local label = (character.name or "") .. (character.realm and ("-" .. character.realm) or "")
-            local farms = assignedFarms[CharacterAssignmentKey(label)] or {}
-            local farmNames = {}
-            for _, farm in ipairs(farms) do farmNames[#farmNames + 1] = farm.name end
-            if #farmNames > 0 then
-                row.farm:SetText(#farmNames == 1 and ("Farm: " .. farmNames[1])
-                    or ("Farms: " .. #farmNames .. " assigned"))
-                row.farm:SetTextColor(1, 0.82, 0.3)
-                row.tooltipText = "Assigned farms\n" .. table.concat(farmNames, "\n")
-                row.farm:SetPoint("TOPRIGHT", row, "TOPRIGHT", -53, -farmTop)
-                row.farmButton.tooltipText = #farms == 1 and ("Edit farm: " .. farmNames[1])
-                    or "Choose an assigned farm to edit."
-                row.farmButton:Show()
-            else
-                row.farm:SetText("No farm assigned")
-                row.farm:SetTextColor(0.6, 0.64, 0.7)
-            end
-            row.farm:Show()
-            local statusText, r, g, b = self:GetAltDestinationStatusText(entry.guid)
-            row.destination:SetText(statusText)
-            row.destination:SetTextColor(r, g, b)
-            row.destination:Show()
-            if character.destination then
-                local destination = character.destination
-                local description = string.format("Destination: %s · %.2f, %.2f\n%s",
-                    destination.mapName or "Unknown map", destination.x * 100, destination.y * 100, statusText)
-                row.tooltipText = row.tooltipText and (row.tooltipText .. "\n\n" .. description) or description
-            end
-            offset = offset + 84 + roleOffset
+            offset = offset + 16
         end
-        offset = offset + 24
     end
     frame.content:SetHeight(math.max(1, offset))
-    frame.listTitle:SetText("Characters  (" .. count .. ")")
+    frame.listTitle:SetText("Characters  (" .. (query ~= "" and (matches .. "/" .. count) or count) .. ")")
+    frame.searchHint:SetShown(frame.searchBox:GetText() == "")
+    frame.listEmpty:SetShown(matches == 0)
+    frame.listEmpty:SetText(count == 0 and "Log in to add characters." or "No matching characters")
+    local maximum = math.max(0, frame.content:GetHeight() - frame.scrollFrame:GetHeight())
+    frame.scrollFrame:SetVerticalScroll(math.min(frame.scrollFrame:GetVerticalScroll(), maximum))
+    local selected = characters[frame.selectedGUID]
+    local location = selected and selected.location
+    frame.continentButton:SetText(frame.selectedContinentID and "Character map" or "Continent map")
+    frame.continentButton:SetEnabled(location ~= nil and (frame.selectedContinentID ~= nil or location.continentMapID ~= nil))
+    local selectedFarms = selected and AssignedFarms(assignedFarms, selected) or {}
+    frame.hasAssignedFarms = #selectedFarms > 0
+    frame.farmSummary.guid = frame.selectedGUID
+    if #selectedFarms > 0 then
+        local names = {}
+        for _, farm in ipairs(selectedFarms) do names[#names + 1] = farm.name end
+        frame.farmSummary.label:SetText(#names == 1 and ("Farm: " .. names[1] .. "  ·  Open") or ("Farms: " .. #names .. " assigned  ·  Choose"))
+        frame.farmSummary.tooltipText = "Open assigned farm configuration\n" .. table.concat(names, "\n")
+    end
     frame.roleButton:Hide()
     if frame.selectedContinentID then
         local overview = self:BuildAltContinentMap(frame.selectedContinentID)
@@ -714,9 +798,6 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
     end
     RefreshDestinationPanel(self, frame, character)
     local location = character and character.location
-    if character and frame.selectedGUID == self.currentAltGUID and not self.altTrackerLeavingWorld then
-        self:CaptureAltMapExploration(character)
-    end
     frame.hint:SetText("Locations are recorded at login and logout.")
     local levelText = character and character.level and ("Level " .. character.level .. "  ·  ") or ""
     frame.characterTitle:SetText(character and (character.name .. "  ·  " .. levelText .. (character.realm or "")) or "Your characters")
@@ -728,12 +809,15 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
         frame.locationText:SetText(character and "Location unavailable. A position will be saved at logout."
             or "Log in to each character to add them here.")
     end
+    frame.detailsButton.tooltipText = frame.characterTitle:GetText() .. "\n" .. frame.locationText:GetText()
+        .. "\n\nShow recorded location, roles, and destination controls."
     local previous
     for index, tag in ipairs(frame.professionTags) do
         local profession = character and character.professions and character.professions[index]
         tag:ClearAllPoints()
         if previous then tag:SetPoint("LEFT", previous, "RIGHT", 8, 0)
-        else tag:SetPoint("TOPLEFT", frame.detailsPanel, "TOPLEFT", 12, -60) end
+        else tag:SetPoint("TOPLEFT", frame.detailsPanel, "TOPLEFT", 0, -30) end
+        tag.hasProfession = profession ~= nil
         if profession then
             tag.text:SetText(profession.name)
             tag:SetWidth(tag.text:GetStringWidth() + 38)
@@ -745,6 +829,7 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
         end
     end
     frame.noProfessions:SetShown(character ~= nil and not previous)
+    frame.noProfessions.hasText = character ~= nil and not previous
     frame.noProfessions:SetText(character and character.professions and "No primary professions" or "Professions not recorded yet")
     ConfigureInteractiveAltMap(self, frame, character)
     self:RefreshAltsWindowLayout()
@@ -757,6 +842,7 @@ function GoldTracker:CreateAltsWindow()
     self.altsFrame = frame
     frame:SetScript("OnHide", function()
         CancelContinentDrag(frame)
+        frame.searchBox:ClearFocus()
         if self.altDestinationPicker then self.altDestinationPicker:Hide() end
         if type(CloseDropDownMenus) == "function" then CloseDropDownMenus() end
     end)
@@ -764,24 +850,47 @@ function GoldTracker:CreateAltsWindow()
         self.db.altCollapsedGroups = { lowLevel = true }
     end
     frame.rows, frame.professionTags, frame.continentHeaders = {}, {}, {}
+    frame.searchCollapsed = {}
     frame.collapsedContinents = self.db.altCollapsedGroups
     frame.globalMapButton = Theme:CreateButton(frame, 140, 28, "Global Map", "primary")
-    frame.globalMapButton:SetPoint("TOPRIGHT", 0, 0)
     frame.globalMapButton.tooltipText = "Explore Azeroth, Outland, Draenor, and Shadowlands with your characters' recorded locations."
     frame.globalMapButton:SetScript("OnClick", function() self:OpenAltsGlobalMapWindow() end)
     frame.listPanel = Theme:CreatePanel(frame, "panel", "chromeBorder")
-    frame.listPanel:SetPoint("TOPLEFT", 0, -38)
+    frame.listPanel:SetPoint("TOPLEFT", 0, 0)
     frame.listPanel:SetPoint("BOTTOMLEFT")
-    frame.listPanel:SetWidth(230)
+    frame.listPanel:SetWidth(260)
     frame.listTitle = Text(frame.listPanel, "GameFontNormal")
     frame.listTitle:SetPoint("TOPLEFT", 12, -12)
+    frame.searchBox = CreateFrame("EditBox", nil, frame.listPanel, "InputBoxTemplate")
+    frame.searchBox:SetPoint("TOPLEFT", 16, -34)
+    frame.searchBox:SetPoint("TOPRIGHT", -12, -34)
+    frame.searchBox:SetHeight(24)
+    frame.searchBox:SetAutoFocus(false)
+    frame.searchBox:SetMaxLetters(100)
+    frame.searchHint = Text(frame.searchBox, "GameFontDisableSmall")
+    frame.searchHint:SetPoint("LEFT", 3, 0)
+    frame.searchHint:SetText("Search name, profession, farm")
+    frame.searchBox:SetScript("OnTextChanged", function()
+        if frame.localMap then
+            frame.searchCollapsed = {}
+            frame.scrollFrame:SetVerticalScroll(0)
+            self:RefreshAltsWindow()
+        end
+    end)
+    frame.searchBox:SetScript("OnEscapePressed", function(box) box:SetText(""); box:ClearFocus() end)
+    frame.searchBox:SetScript("OnEnterPressed", function(box) box:ClearFocus() end)
     frame.scrollFrame = CreateFrame("ScrollFrame", nil, frame.listPanel, "UIPanelScrollFrameTemplate")
-    frame.scrollFrame:SetPoint("TOPLEFT", 8, -38)
+    frame.scrollFrame:SetPoint("TOPLEFT", 8, -70)
     frame.scrollFrame:SetPoint("BOTTOMRIGHT", -28, 12)
     frame.content = CreateFrame("Frame", nil, frame.scrollFrame)
     frame.content:SetSize(190, 1)
     frame.scrollFrame:SetScrollChild(frame.content)
     frame.scrollFrame:SetScript("OnSizeChanged", function(_, width) frame.content:SetWidth(math.max(1, width)) end)
+    frame.listEmpty = Text(frame.listPanel, "GameFontHighlightSmall")
+    frame.listEmpty:SetPoint("TOPLEFT", 12, -84)
+    frame.listEmpty:SetPoint("TOPRIGHT", -12, -84)
+    frame.listEmpty:SetWordWrap(true)
+    frame.listEmpty:Hide()
     frame.continentDropIndicator = CreateFrame("Frame", nil, frame.content)
     frame.continentDropIndicator:SetHeight(3)
     frame.continentDropIndicator:SetFrameLevel(frame.scrollFrame:GetFrameLevel() + 10)
@@ -801,15 +910,44 @@ function GoldTracker:CreateAltsWindow()
     frame.detailsPanel = CreateFrame("Frame", nil, frame)
     frame.detailsPanel:SetPoint("TOPLEFT", frame.listPanel, "TOPRIGHT", 12, 0)
     frame.detailsPanel:SetPoint("BOTTOMRIGHT")
+    frame.globalMapButton:SetParent(frame.detailsPanel)
+    frame.globalMapButton:SetSize(110, 24)
+    frame.globalMapButton:SetPoint("TOPRIGHT", 0, 0)
+    frame.detailsButton = Theme:CreateButton(frame.detailsPanel, 76, 24, "Details", "neutral")
+    frame.detailsButton:SetPoint("RIGHT", frame.globalMapButton, "LEFT", -6, 0)
+    frame.detailsButton.tooltipText = "Show recorded location, roles, and destination controls."
+    frame.detailsButton:SetScript("OnClick", function()
+        frame.detailsOpen = not frame.detailsOpen
+        frame.detailsButton:SetSelected(frame.detailsOpen)
+        self:RefreshAltsWindowLayout()
+    end)
+    frame.continentButton = Theme:CreateButton(frame.detailsPanel, 110, 24, "Continent map", "neutral")
+    frame.continentButton:SetPoint("TOPRIGHT", 0, -30)
+    frame.continentButton.tooltipText = "Switch between this character's recorded zone and its continent. Select a character with a recorded continent to use this."
+    frame.continentButton:SetScript("OnClick", function()
+        local selected = self:GetAltCharacters()[frame.selectedGUID]
+        if frame.selectedContinentID then self:SelectAltCharacter(frame.selectedGUID)
+        elseif selected and selected.location and selected.location.continentMapID then self:ShowAltContinentMap(selected.location.continentMapID) end
+    end)
     frame.characterTitle = Text(frame.detailsPanel, "GameFontNormalLarge")
-    frame.characterTitle:SetPoint("TOPLEFT", 12, -10)
-    frame.characterTitle:SetPoint("TOPRIGHT", -108, -10)
-    frame.roleButton = Theme:CreateButton(frame.detailsPanel, 88, 22, "Roles", "neutral")
-    frame.roleButton:SetPoint("TOPRIGHT", -12, -7)
+    frame.characterTitle:SetPoint("TOPLEFT", 0, -4)
+    frame.characterTitle:SetPoint("TOPRIGHT", -204, -4)
+    frame.characterTitle:SetWordWrap(false)
+    frame.destinationPanel = Theme:CreatePanel(frame.detailsPanel, "panel", "chromeBorder")
+    local panel = frame.destinationPanel
+    panel:SetPoint("TOPLEFT", 0, -60)
+    panel:SetPoint("TOPRIGHT", 0, -60)
+    panel:SetHeight(124)
+    panel:SetFrameLevel(frame.detailsPanel:GetFrameLevel() + 2000)
+    panel:EnableMouse(true)
+    panel:Hide()
+    frame.roleButton = Theme:CreateButton(panel, 78, 24, "Roles", "neutral")
+    frame.roleButton:SetPoint("BOTTOMRIGHT", -12, 12)
     frame.roleButton:SetScript("OnClick", function() self:ShowAltCharacterRoles() end)
-    frame.locationText = Text(frame.detailsPanel, "GameFontHighlightSmall", { 0.65, 0.68, 0.73 })
-    frame.locationText:SetPoint("TOPLEFT", 12, -34)
-    frame.locationText:SetPoint("TOPRIGHT", -12, -34)
+    frame.locationText = Text(panel, "GameFontHighlightSmall")
+    frame.locationText:SetPoint("TOPLEFT", 12, -12)
+    frame.locationText:SetPoint("TOPRIGHT", -12, -12)
+    frame.locationText:SetWordWrap(false)
     for index = 1, 2 do
         local tag = Theme:CreatePanel(frame.detailsPanel, "header", "chromeBorder")
         tag:SetHeight(26)
@@ -818,26 +956,29 @@ function GoldTracker:CreateAltsWindow()
         tag.icon:SetPoint("LEFT", 5, 0)
         tag.text = Text(tag, "GameFontHighlightSmall")
         tag.text:SetPoint("LEFT", tag.icon, "RIGHT", 5, 0)
+        tag.text:SetWordWrap(false)
         frame.professionTags[index] = tag
     end
-    frame.noProfessions = Text(frame.detailsPanel, "GameFontHighlightSmall", { 0.65, 0.68, 0.73 })
-    frame.noProfessions:SetPoint("TOPLEFT", 12, -66)
-    frame.destinationPanel = Theme:CreatePanel(frame.detailsPanel, "panel", "chromeBorder")
-    local panel = frame.destinationPanel
-    panel:SetPoint("TOPLEFT", 0, -96)
-    panel:SetPoint("TOPRIGHT", 0, -96)
-    panel:SetHeight(108)
+    frame.noProfessions = Text(frame.detailsPanel, "GameFontHighlightSmall", Theme.colors and Theme.colors.textMuted or { 0.65, 0.68, 0.73 })
+    frame.noProfessions:SetPoint("TOPLEFT", 0, -36)
+    frame.farmSummary = Theme:CreateButton(frame.detailsPanel, 200, 24, "", "neutral")
+    frame.farmSummary:SetPoint("TOPLEFT", 0, -60)
+    frame.farmSummary:SetPoint("TOPRIGHT", 0, -60)
+    frame.farmSummary.farmButton = frame.farmSummary
+    frame.farmSummary.label:SetWordWrap(false)
+    frame.farmSummary:SetScript("OnClick", function() self:ShowAltAssignedFarms(frame.farmSummary) end)
+    frame.farmSummary:Hide()
     panel.destination = Text(panel, "GameFontNormal")
-    panel.destination:SetPoint("TOPLEFT", 12, -10)
-    panel.destination:SetPoint("TOPRIGHT", -12, -10)
+    panel.destination:SetPoint("TOPLEFT", 12, -36)
+    panel.destination:SetPoint("TOPRIGHT", -12, -36)
     panel.destination:SetWordWrap(false)
     panel.status = Text(panel, "GameFontHighlightSmall")
-    panel.status:SetPoint("TOPLEFT", 12, -32)
-    panel.status:SetPoint("TOPRIGHT", -12, -32)
-    panel.setButton = Theme:CreateButton(panel, 120, 24, "Set destination", "neutral")
-    panel.setButton:SetPoint("TOPLEFT", 12, -60)
+    panel.status:SetPoint("TOPLEFT", 12, -58)
+    panel.status:SetPoint("TOPRIGHT", -12, -58)
+    panel.setButton = Theme:CreateButton(panel, 110, 24, "Set destination", "neutral")
+    panel.setButton:SetPoint("BOTTOMLEFT", 12, 12)
     panel.setButton:SetScript("OnClick", function() self:ShowAltDestinationPicker(frame.selectedGUID) end)
-    panel.navigateButton = Theme:CreateButton(panel, 108, 24, "Navigate", "neutral")
+    panel.navigateButton = Theme:CreateButton(panel, 98, 24, "Navigate", "neutral")
     panel.navigateButton:SetPoint("LEFT", panel.setButton, "RIGHT", 6, 0)
     panel.navigateButton:SetScript("OnClick", function()
         if frame.selectedGUID ~= self.currentAltGUID then
@@ -847,16 +988,35 @@ function GoldTracker:CreateAltsWindow()
             frame.hint:SetText(message)
         end
     end)
-    panel.clearButton = Theme:CreateButton(panel, 58, 24, "Clear", "neutral")
+    panel.clearButton = Theme:CreateButton(panel, 48, 24, "Clear", "neutral")
     panel.clearButton:SetPoint("LEFT", panel.navigateButton, "RIGHT", 6, 0)
     panel.clearButton:SetScript("OnClick", function() self:ClearAltDestination(frame.selectedGUID) end)
-    panel.refreshButton = Theme:CreateButton(panel, 120, 24, "Refresh location", "neutral")
+    panel.refreshButton = Theme:CreateButton(panel, 110, 24, "Refresh location", "neutral")
     panel.refreshButton:SetPoint("LEFT", panel.clearButton, "RIGHT", 6, 0)
     panel.refreshButton:SetScript("OnClick", function() self:RefreshAltsWindow(true) end)
     frame.localMap = self:CreateInteractiveMapCard(frame.detailsPanel, "Location")
-    frame.localMap:SetPoint("TOPLEFT", 0, -100)
+    frame.localMap:SetCompactFooter(true)
+    frame.localMap.heading:ClearAllPoints()
+    frame.localMap.heading:SetPoint("TOPLEFT", 12, -12)
+    frame.localMap.heading:SetPoint("TOPRIGHT", -296, -12)
+    frame.localMap.resetButton:SetWidth(92)
+    frame.localMap.resetButton:ClearAllPoints()
+    frame.localMap.resetButton:SetPoint("TOPRIGHT", -102, -6)
+    frame.localMap.resetButton.tooltipText = "Fit the entire selected zone or continent in the map."
+    frame.localMap.centerButton = Theme:CreateButton(frame.localMap, 84, 24, "Center", "neutral")
+    frame.localMap.centerButton:SetPoint("TOPRIGHT", -200, -6)
+    frame.localMap.centerButton.tooltipText = "Center on the character's saved position without changing zoom. Select a character to use this."
+    frame.localMap.centerButton:SetScript("OnClick", function() frame.localMap:CenterOnSubject() end)
+    frame.localMap.expandButton = Theme:CreateButton(frame.localMap, 86, 24, "Expand map", "neutral")
+    frame.localMap.expandButton:SetPoint("TOPRIGHT", -10, -6)
+    frame.localMap.expandButton.tooltipText = "Use the full Alts tab for the map. Restore returns to the roster."
+    frame.localMap.expandButton:SetScript("OnClick", function()
+        frame.mapExpanded, frame.detailsOpen = not frame.mapExpanded, false
+        self:RefreshAltsWindowLayout()
+    end)
+    frame.localMap:SetPoint("TOPLEFT", 0, -60)
     frame.localMap:SetPoint("BOTTOMRIGHT", 0, 20)
-    frame.hint = Text(frame.detailsPanel, "GameFontHighlightSmall", { 0.5, 0.54, 0.6 })
+    frame.hint = Text(frame.detailsPanel, "GameFontHighlightSmall", Theme.colors and Theme.colors.textMuted or { 0.5, 0.54, 0.6 })
     frame.hint:SetPoint("BOTTOMLEFT", 2, 2)
     frame.hint:SetText("Locations are recorded at login and logout.")
     frame:SetScript("OnSizeChanged", function() self:RefreshAltsWindowLayout() end)

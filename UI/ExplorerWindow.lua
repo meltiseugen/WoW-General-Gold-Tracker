@@ -12,17 +12,7 @@ local EXPLORER_WINDOW_MIN_HEIGHT = 520
 local EXPLORER_WINDOW_MAX_WIDTH = 1440
 local EXPLORER_WINDOW_MAX_HEIGHT = 920
 
-local EXPLORER_TABS = {
-    { id = "favorites", label = "Favorites" },
-    { id = "alts", label = "Alts" },
-    { id = "priceAlerts", label = "Market Watch", width = 108 },
-    { id = "rares", label = "Rares" },
-    { id = "instances", label = "Instances" },
-    { id = "drops", label = "Drops" },
-    { id = "materials", label = "Materials" },
-    { id = "farms", label = "Farms" },
-    { id = "inventory", label = "Bags" },
-}
+local EXPLORER_TABS = GoldTracker:GetExplorerModuleDefinitions()
 
 local EXPLORER_TAB_LOOKUP = {}
 for _, tab in ipairs(EXPLORER_TABS) do
@@ -400,8 +390,22 @@ function GoldTracker:RefreshExplorerTabs()
         return
     end
 
-    local activeTabID = frame.activeTabID and NormalizeExplorerTab(frame.activeTabID) or nil
-    for tabID, button in pairs(frame.tabButtons) do
+    local activeTabID = frame.activeTabID
+    local previousButton
+    for _, tab in ipairs(EXPLORER_TABS) do
+        local tabID = tab.id
+        local button = frame.tabButtons[tabID]
+        local enabled = self:IsModuleEnabled(tabID)
+        SetFrameShown(button, enabled)
+        button:ClearAllPoints()
+        if enabled then
+            if previousButton then
+                button:SetPoint("LEFT", previousButton, "RIGHT", 8, 0)
+            else
+                button:SetPoint("TOPLEFT", frame.chrome or frame, "TOPLEFT", 12, -54)
+            end
+            previousButton = button
+        end
         if tabID == "inventory" then
             button.tooltipText = nil
         end
@@ -419,12 +423,18 @@ function GoldTracker:SetExplorerTab(tabID)
 
     HideTransientExplorerUI()
 
-    local normalizedTabID = NormalizeExplorerTab(tabID)
+    local normalizedTabID = self:ResolveEnabledExplorerTab(NormalizeExplorerTab(tabID))
     frame.activeTabID = normalizedTabID
     if self.db then
         self.db.explorerTab = normalizedTabID
     end
     self:RefreshExplorerTabs()
+    SetFrameShown(frame.modulesEmptyText, normalizedTabID == nil)
+    SetFrameShown(frame.modulesOptionsButton, normalizedTabID == nil)
+    if not normalizedTabID then
+        HideExplorerChildFrames(self)
+        return
+    end
 
     if normalizedTabID == "alts" then
         self:CreateAltsWindow()
@@ -580,6 +590,18 @@ function GoldTracker:CreateExplorerWindow()
     contentFrame:SetPoint("TOPLEFT", chrome, "TOPLEFT", 12, -86)
     contentFrame:SetPoint("BOTTOMRIGHT", chrome, "BOTTOMRIGHT", -12, 38)
     frame.contentFrame = contentFrame
+
+    local emptyText = contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    emptyText:SetPoint("TOPLEFT", 20, -28)
+    emptyText:SetPoint("TOPRIGHT", -20, -28)
+    emptyText:SetJustifyH("LEFT")
+    emptyText:SetText("All Explorer modules are disabled. Enable a module in Options to get started.")
+    emptyText:Hide()
+    local modulesButton = CreateExplorerButton(contentFrame, 160, 26, "Choose modules", "primary")
+    modulesButton:SetPoint("TOPLEFT", emptyText, "BOTTOMLEFT", 0, -16)
+    modulesButton:SetScript("OnClick", function() addon:OpenOptions("modules") end)
+    modulesButton:Hide()
+    frame.modulesEmptyText, frame.modulesOptionsButton = emptyText, modulesButton
 
     for _, button in pairs(frame.tabButtons) do
         SetExplorerFrameLevel(button, chrome, 3)

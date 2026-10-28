@@ -107,6 +107,8 @@ local function tab_buttons()
 end
 
 local function load_explorer(addon)
+    addon = addon or {}
+    loader.load_module("Core/Modules.lua", addon)
     return loader.load_module("UI/ExplorerWindow.lua", addon, {
         JanisTheme = {
             CreateButton = function() end,
@@ -231,6 +233,62 @@ describe("UI/ExplorerWindow", function()
         addon:SetExplorerTab("favorites")
         assert.is_true(alt_frame.hidden)
         assert.is_true(rare_frame.shown)
+    end)
+
+    it("falls back from disabled tabs without constructing their windows", function()
+        local alt_frame = frame()
+        local explorer = frame()
+        explorer.contentFrame, explorer.tabButtons = frame(), tab_buttons()
+        local addon = load_explorer({
+            db = { module_favorites = false, module_rares = false },
+            explorerFrame = explorer,
+            CreateAltsWindow = function(self) self.altsFrame = alt_frame end,
+            RefreshAltsWindow = function() end,
+            CreateRareFarmingWindow = function() error("Disabled module created a window") end,
+        })
+        addon:SetExplorerTab("rares")
+        assert.equals("alts", addon.db.explorerTab)
+        assert.is_false(explorer.tabButtons.favorites.shown)
+        assert.is_false(explorer.tabButtons.rares.shown)
+        assert.is_true(explorer.tabButtons.alts.shown)
+        assert.equals("TOPLEFT", explorer.tabButtons.alts.points[1][1])
+    end)
+
+    it("shows the module empty state and recovers when a module is enabled", function()
+        local explorer = frame()
+        explorer.contentFrame, explorer.tabButtons = frame(), tab_buttons()
+        explorer.modulesEmptyText, explorer.modulesOptionsButton = frame(), frame()
+        explorer:Show()
+        local alt_frame = frame()
+        local addon = load_explorer({
+            db = {}, explorerFrame = explorer,
+            CreateAltsWindow = function(self) self.altsFrame = alt_frame end,
+            RefreshAltsWindow = function() end,
+        })
+        for _, module in ipairs(addon:GetExplorerModuleDefinitions()) do addon.db[module.key] = false end
+        addon:SetExplorerTab("favorites")
+        assert.is_nil(explorer.activeTabID)
+        assert.is_true(explorer.modulesEmptyText.shown)
+        for _, tab in pairs(explorer.tabButtons) do assert.is_false(tab.shown) end
+        addon:SetModuleEnabled("alts", true)
+        assert.equals("alts", explorer.activeTabID)
+        assert.is_false(explorer.modulesEmptyText.shown)
+        assert.is_true(alt_frame.shown)
+        addon:SetModuleEnabled("alts", false)
+        assert.is_nil(explorer.activeTabID)
+        assert.is_true(alt_frame.hidden)
+        assert.is_true(explorer.modulesOptionsButton.shown)
+    end)
+
+    it("keeps the active view intact when an unrelated module changes", function()
+        local explorer = frame()
+        explorer.activeTabID, explorer.tabButtons = "alts", tab_buttons()
+        explorer:Show()
+        local addon = load_explorer({ db = {}, explorerFrame = explorer })
+        addon.SetExplorerTab = function() error("Changing an unrelated module reset the active view") end
+        addon:SetModuleEnabled("rares", false)
+        assert.equals("alts", explorer.activeTabID)
+        assert.is_false(explorer.tabButtons.rares.shown)
     end)
 
     it("removes the Bags tab tooltip", function()

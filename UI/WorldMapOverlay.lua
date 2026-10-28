@@ -344,8 +344,7 @@ local function ApplyConfiguredProjectionPinIcon(texture, addon)
         iconOption = addon:GetMapPinIconOption()
     end
     iconOption = type(iconOption) == "table" and iconOption or {
-        atlas = "VignetteLoot",
-        texture = "Interface\\Icons\\INV_Misc_Map02",
+        atlas = "QuestObjective",
     }
 
     local textureKind = ApplyProjectionPinTexture(texture, iconOption.atlas, iconOption.texture)

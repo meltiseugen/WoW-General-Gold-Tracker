@@ -4,7 +4,7 @@ local function CreateFrame(...)
 end
 local GoldTracker = NS.GoldTracker
 
-function GoldTracker:OpenOptions()
+function GoldTracker:OpenOptions(pageID)
     self:CreateOptionsPanel()
     if not self.optionsWindow then
         return
@@ -13,6 +13,10 @@ function GoldTracker:OpenOptions()
     self.optionsWindow:Show()
     self.optionsWindow:Raise()
     self:RefreshOptionsControls()
+    if pageID and self.optionsWindow.selectPage then
+        self.optionsWindow.searchInput:SetText("")
+        self.optionsWindow.selectPage(pageID)
+    end
 end
 
 function GoldTracker:RefreshOptionsControls()

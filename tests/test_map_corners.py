@@ -67,6 +67,25 @@ class MapCornerTests(unittest.TestCase):
         self.assertEqual(255, top.getpixel((70, 70)))
         self.assertEqual(255, bottom.getpixel((441, 441)))
 
+    def test_kalimdor_and_outland_corners_retain_reviewed_native_cartography(self):
+        recipe = json.loads((ROOT / 'tools/map_corner_fills.json').read_text())
+        receipt = json.loads((ROOT / 'docs/research/map-corners-2026-10-25.json').read_text())
+        for art in ('13', '106'):
+            wanted = {tuple(point) for setting in recipe['art'][art].values()
+                      for point in setting['preserve_probes']}
+            found = set()
+            for record in receipt['art'][art]:
+                texture = read_texture(ROOT / f"UI/Maps/Media/CornerFills/{record['file']}.blp")
+                left, top = round(record['rect'][0] * 3840), round(record['rect'][1] * 2560)
+                for probe in record.get('preserved_native_pixels', []):
+                    point = tuple(probe['pixel'])
+                    actual = texture.getpixel((point[0] - left, point[1] - top))
+                    self.assertEqual(255, actual[3])
+                    self.assertLessEqual(max(abs(a - b) for a, b in zip(actual[:3], probe['rgb'])), 16)
+                    found.add(point)
+            self.assertGreaterEqual(len(wanted), 5)
+            self.assertEqual(wanted, found)
+
     def test_sparse_packing_preserves_pixels_and_alpha_across_tile_boundaries(self):
         size = (3840, 2560)
         painting = Image.new('RGB', size, (171, 151, 104))
@@ -84,11 +103,28 @@ class MapCornerTests(unittest.TestCase):
             visible = np.asarray(alpha) == 255
             self.assertTrue(np.all(np.asarray(assembled)[:, :, :3][visible] == (171, 151, 104)))
 
+    def test_corner_fill_matches_existing_soft_border_without_doubling_opacity(self):
+        frame = read_texture(ROOT / 'UI/Maps/Media/FrameCutout.blp').getchannel('A')
+        bounds = read_texture(ROOT / 'UI/Maps/Media/BoundsFade.blp').getchannel('A')
+        alpha = corners.match_frame_edges(corners.corner_alpha(frame.size, 'top-left'), frame, bounds)
+        self.assertEqual(0, alpha.getpixel((0, 0)))
+        self.assertEqual(255, alpha.getpixel((70, 70)))
+        # The restored corner's edge must match the intact straight edge,
+        # including the original painting composited above the fill.
+        for x in range(6, 24):
+            old = frame.getpixel((x, 70)) / 255 * bounds.getpixel((x, 70)) / 255
+            fill = alpha.getpixel((x, 70)) / 255
+            combined = old + fill * (1 - old)
+            expected = frame.getpixel((x, 256)) / 255 * bounds.getpixel((x, 70)) / 255
+            self.assertAlmostEqual(expected, combined, delta=.01)
+
     def test_shipped_corner_tiles_match_their_receipt(self):
         receipt = json.loads((ROOT / 'docs/research/map-corners-2026-10-25.json').read_text())
-        records = receipt['art']['118']
-        self.assertEqual({'top-left', 'bottom-right'}, {record['corner'] for record in records})
-        self.assertEqual(4, len(records))
+        for art in ('13', '106', '118'):
+            records = receipt['art'][art]
+            self.assertEqual({'top-left', 'bottom-right'}, {record['corner'] for record in records})
+        self.assertEqual(4, len(receipt['art']['118']))
+        records = [record for records in receipt['art'].values() for record in records]
         for record in records:
             path = ROOT / f"UI/Maps/Media/CornerFills/{record['file']}.blp"
             self.assertEqual(record['sha256'], hashlib.sha256(path.read_bytes()).hexdigest())

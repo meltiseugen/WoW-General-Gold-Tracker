@@ -59,7 +59,7 @@ local function maskImageRect(spec)
     return { l = l, t = t, r = l + w, b = t + h }
 end
 
-function Renderer:Draw(group, view, fileID, rect, uv, alpha, masks, terrain, wrap)
+function Renderer:Draw(group, view, fileID, rect, uv, alpha, masks, terrain, wrap, subLevel)
     if alpha < 0.005 then return end
     local clipped = G.Intersection(rect, self.visible)
     if not clipped then return end
@@ -72,6 +72,9 @@ function Renderer:Draw(group, view, fileID, rect, uv, alpha, masks, terrain, wra
     end
     local texture = cell.texture
     cell.active = true
+    -- The client may batch textures sharing a draw depth. Keep revealed art
+    -- above the covered painting, and reset the depth on every pooled reuse.
+    texture:SetDrawLayer("ARTWORK", subLevel or 0)
     texture:SetTexture(fileID, wrap or "CLAMP", wrap or "CLAMP", "TRILINEAR")
     texture:SetTexCoord(unpack(G.CropUV(rect, clipped, uv)))
     texture:SetAlpha(alpha)
@@ -144,7 +147,7 @@ function Renderer:Overlays(group, view, source, node, alpha, feather)
     for _, piece in ipairs(source:Exploration(node)) do
         local p = piece.rect
         local rect = G.SubRect(node.rect, p.l, p.t, p.r, p.b)
-        self:Draw(group, view, piece.fileID, rect, piece.uv, alpha, feather)
+        self:Draw(group, view, piece.fileID, rect, piece.uv, alpha, feather, nil, nil, piece.top and 2 or 1)
     end
 end
 
@@ -203,6 +206,14 @@ function Renderer:Terrain(group, view, source, node, alpha, feather)
         end
     end
     return count
+end
+
+function Renderer:PaintingRepairs(group, view, node, repairs, opacity, directory)
+    for _, repair in ipairs(repairs) do
+        local r = repair.rect
+        local path = "Interface\\AddOns\\General-Gold-Tracker\\UI\\Maps\\Media\\" .. directory .. "\\" .. repair.file .. ".blp"
+        self:Draw(group, view, path, G.SubRect(node.rect, r[1], r[2], r[3], r[4]), repair.uv, opacity)
+    end
 end
 
 function Renderer:Render(view, source)
@@ -369,15 +380,20 @@ function Renderer:Render(view, source)
                     -- exposes the duplicate caption again during that blend.
                     local opacity = entry.alpha
                     local group = groupFor(entry.node, "caption")
-                    for _, repair in ipairs(repairs) do
-                        local r = repair.rect
-                        local path = "Interface\\AddOns\\General-Gold-Tracker\\UI\\Maps\\Media\\CaptionRepairs\\" .. repair.file .. ".blp"
-                        self:Draw(group, view, path, G.SubRect(entry.node.rect, r[1], r[2], r[3], r[4]), repair.uv, opacity)
-                    end
+                    self:PaintingRepairs(group, view, entry.node, repairs, opacity, "CaptionRepairs")
+                end
+                local roads = entry.node.art and addon.MapRoadLinks and addon.MapRoadLinks[entry.node.art.artID]
+                if roads then
+                    self:PaintingRepairs(groupFor(entry.node, "roads"), view, entry.node, roads, entry.alpha, "RoadLinks")
                 end
             end
             for _, entry in ipairs(terrainEntries) do
                 if source:ArtLabels(entry.node) then paint(entry, "labels") end
+                local moves = entry.node.art and addon.MapLabelMoves and addon.MapLabelMoves[entry.node.art.artID]
+                if moves then
+                    self:PaintingRepairs(groupFor(entry.node, "moved-labels"), view, entry.node, moves,
+                        entry.alpha * (1 - terrainBlend(view, entry.node)), "LabelMoves")
+                end
             end
         end
         -- Terrain is the final outdoor pass. Fully revealed callers render each

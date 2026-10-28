@@ -76,6 +76,54 @@ class MapArtMaskTests(unittest.TestCase):
             for repair in repairs:
                 path = ROOT / f"UI/Maps/Media/CaptionRepairs/{repair['file']}.blp"
                 self.assertEqual(repair['sha256'],hashlib.sha256(path.read_bytes()).hexdigest())
+        for key, directory in (('road_links', 'RoadLinks'), ('label_moves', 'LabelMoves')):
+            for repairs in receipt.get(key, {}).values():
+                for repair in repairs:
+                    path = ROOT / f"UI/Maps/Media/{directory}/{repair['file']}.blp"
+                    self.assertEqual(repair['sha256'], hashlib.sha256(path.read_bytes()).hexdigest())
+
+    def test_native_road_link_rotates_both_ink_strokes_without_widening_them(self):
+        from map_road_links import road_patch
+        painting = Image.new('RGB', (160, 120), (180, 150, 90))
+        draw = ImageDraw.Draw(painting)
+        for y in (46, 50):
+            draw.line((10, y, 150, y), fill=(70, 50, 20))
+        patch, rect, uv = road_patch(painting, [[.1,.4],[.9,.4]], [[.5,.15],[.5,.85]])
+        l, t = round(rect[0]*160), round(rect[1]*120)
+        for y in (40, 60, 80):
+            self.assertEqual((70, 50, 20, 255), patch.getpixel((78-l, y-t)))
+            self.assertEqual((70, 50, 20, 255), patch.getpixel((82-l, y-t)))
+            self.assertEqual((180, 150, 90, 255), patch.getpixel((80-l, y-t)))
+        self.assertEqual(0, patch.getpixel((0, 40-t))[3])
+        self.assertEqual(0, patch.getpixel((80-l, 18-t))[3])
+        self.assertEqual(0, patch.getpixel((80-l, 102-t))[3])
+        self.assertLess(np.count_nonzero(np.asarray(patch.getchannel('A'))), 160*120*.1)
+        self.assertEqual([0, round((rect[2]-rect[0])*160)/patch.width,
+                          0, round((rect[3]-rect[1])*120)/patch.height], uv)
+
+    def test_road_links_reject_zero_length_segments_and_invalid_feathers(self):
+        from map_road_links import road_patch
+        painting = Image.new('RGB', (64,64))
+        with self.assertRaises(ValueError):
+            road_patch(painting, [[.1,.1],[.1,.1]], [[.1,.1],[.9,.9]])
+        with self.assertRaises(ValueError):
+            road_patch(painting, [[.1,.1],[.9,.9]], [[.1,.1],[.9,.9]], width=3, feather=4)
+
+    def test_moved_native_label_keeps_glyphs_and_leaves_destination_paper_transparent(self):
+        from map_art_labels import moved_label_patch
+        painting = Image.new('RGB', (160,100), (180,150,90))
+        ImageDraw.Draw(painting).text((70,40), 'GATE', fill=(35,25,10))
+        ImageDraw.Draw(painting).line((65,32,100,32), fill=(35,25,10))
+        patch, rect, uv = moved_label_patch(painting, [.4,.3,.65,.6], [-.2,.1], lines=[[.4,.37,.65,.55]])
+        self.assertAlmostEqual(.2, rect[0])
+        self.assertAlmostEqual(.4, rect[1])
+        alpha = np.asarray(patch.getchannel('A'))
+        self.assertEqual(0, alpha[:7].max())  # Nearby mountain ink must stay behind.
+        self.assertGreater(np.count_nonzero(alpha), 20)
+        self.assertLess(np.count_nonzero(alpha), round(uv[1]*patch.width)*round(uv[3]*patch.height)*.5)
+        native = np.asarray(painting.crop((64,30,104,60)))
+        result = np.asarray(patch)[:30,:40]
+        self.assertTrue(np.array_equal(native[alpha[:30,:40]>0], result[:,:,:3][alpha[:30,:40]>0]))
 
     def test_local_art_restoration_changes_only_the_reviewed_stencil(self):
         from map_art_backgrounds import heal_patch
@@ -268,6 +316,72 @@ class MapArtMaskTests(unittest.TestCase):
         labels = read_texture(ROOT / "UI/Maps/Media/ArtLabels/121.blp").getchannel("A")
         for x in (139, 176, 224):
             self.assertGreater(labels.crop((x, 170, x + 3, 211)).getextrema()[1], 240)
+
+    def test_darkshore_variants_preserve_the_shore_and_exclude_offshore_frame_art(self):
+        from map_mask_texture import read_texture
+        for art in (67, 1176):
+            mask = read_texture(ROOT / f"UI/Maps/Media/ArtMasks/{art}.blp").getchannel("A")
+            for point in ((80, 100), (110, 135)):
+                self.assertEqual(0, mask.getpixel(point))
+            # The alternate painting's tiny changed overlay must not erase the
+            # unchanged, already-revealed land around Ameth'Aran and the shore.
+            for point in ((250, 250), (250, 340), (240, 360)):
+                self.assertEqual(255, mask.getpixel(point))
+
+    def test_silithus_variants_exclude_burnt_parchment_from_the_coastal_band(self):
+        from map_mask_texture import read_texture
+        for art in (86, 962):
+            mask = read_texture(ROOT / f"UI/Maps/Media/ArtMasks/{art}.blp").getchannel("A")
+            self.assertEqual(0, mask.getpixel((20, 316)))
+            self.assertEqual(255, mask.getpixel((200, 316)))
+
+    def test_southern_kalimdor_keeps_native_ridges_without_neighbour_titles_or_frames(self):
+        from map_mask_texture import read_texture
+        # Reported gaps: Feralas's southern mountains and Un'Goro's western /
+        # southern rim. These are already painted in the unexplored base and
+        # cannot be found using exploration-difference pixels alone.
+        for art, points in ((74, ((358, 390), (425, 390))),
+                            (83, ((65, 270), (170, 460), (310, 450)))):
+            mask = read_texture(ROOT / f"UI/Maps/Media/ArtMasks/{art}.blp").getchannel("A")
+            for point in points:
+                self.assertGreater(mask.getpixel(point), 220, (art, point))
+            for point in ((20, 20), (490, 490)):
+                self.assertEqual(0, mask.getpixel(point), (art, point))
+        # The neighbour name baked into Un'Goro's northwest margin must not
+        # reappear as isolated letters when that rim becomes visible.
+        ungoro = read_texture(ROOT / 'UI/Maps/Media/ArtMasks/83.blp').getchannel('A')
+        self.assertEqual(0, ungoro.crop((40, 60, 133, 90)).getextrema()[1])
+
+    def test_revealed_outdoor_paintings_keep_interiors_without_rectangular_frames(self):
+        from map_mask_texture import read_texture
+        for art in (962, 1343, 339):
+            mask = read_texture(ROOT / f"UI/Maps/Media/ArtMasks/{art}.blp").getchannel("A")
+            # Southern Silithus now blends with Ahn'Qiraj. Probe interiors,
+            # rather than requiring one painting to own their shared border.
+            for point in ((200, 220), (250, 340), (250, 400)):
+                self.assertEqual(255, mask.getpixel(point))
+            for point in ((20, 20), (490, 490)):
+                self.assertEqual(0, mask.getpixel(point))
+
+    def test_feralas_northern_and_eastern_detail_excludes_the_burnt_top_edge(self):
+        from map_mask_texture import read_texture
+        mask = read_texture(ROOT / 'UI/Maps/Media/ArtMasks/74.blp').getchannel('A')
+        # The two screenshot gaps, in Feralas painting coordinates. Include
+        # already-revealed northern water and the eastern mountain/lake band.
+        for point in ((256, 61), (328, 72), (450, 128), (460, 164)):
+            self.assertGreater(mask.getpixel(point), 240, point)
+        self.assertEqual(0, mask.crop((170, 3, 375, 20)).getextrema()[1])
+        self.assertEqual(0, mask.getpixel((100, 200)))  # Native ocean stays outside.
+
+        receipt = json.loads((ROOT / 'docs/research/map-art-masks-2026-10-24.json').read_text())
+        repairs = receipt['native_backgrounds']['13']['repairs']
+        ridge = next(repair for repair in repairs if repair.get('issue') == 'feralas-north-ridge')
+        l, t, r, b = ridge['target']
+        self.assertLess((r - l) * (b - t), .002)
+        # The local seam repair must stay inland, away from the western contour.
+        self.assertGreater(l, .375)
+        self.assertGreater(t, .59)
+        self.assertLess(b, .62)
 
     def test_stormheim_cannot_cover_highmountain_with_its_northwest_frame(self):
         # Native art 657: this strip crossed Highmountain in the reported view.

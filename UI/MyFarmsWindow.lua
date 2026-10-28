@@ -2016,6 +2016,59 @@ function GoldTracker:RefreshMyFarmsRouteRunButton(farm, hasRoutePlan)
     return isRunning
 end
 
+function GoldTracker:PopulateMyFarmsActionsMenu(farmID, level)
+    if level ~= 1 then return end
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then return end
+    -- Menu availability reads saved plan state only. Resolve maps and build
+    -- the overview inside the selected action, never while opening the menu.
+    local hasRoutePlan = type(self.HasCustomFarmRoutePlan) == "function" and self:HasCustomFarmRoutePlan(farmID)
+    local function heading(label)
+        local info = UIDropDownMenu_CreateInfo()
+        info.text, info.isTitle, info.notCheckable, info.disabled = label, true, true, true
+        UIDropDownMenu_AddButton(info, level)
+    end
+    local function action(label, callback, disabled, reason)
+        local info = UIDropDownMenu_CreateInfo()
+        info.text, info.notCheckable, info.disabled = label, true, disabled == true
+        info.tooltipTitle, info.tooltipText, info.tooltipOnButton = label, reason, reason ~= nil
+        info.tooltipWhileDisabled = reason ~= nil
+        info.func = function()
+            if disabled or not self:GetCustomFarmByID(farmID) then return end
+            CloseDropDownMenus()
+            callback()
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
+    heading("Route")
+    action("Open route plan", function() self:OpenFarmRoutePlanWindow(farmID) end,
+        not hasRoutePlan, not hasRoutePlan and "Plan this farm's route first." or nil)
+    action("Overview map", function() self:OpenCustomFarmRoutePlanOverview(farmID) end,
+        not hasRoutePlan, not hasRoutePlan and "Plan this farm's route first." or nil)
+    if hasRoutePlan then
+        action("Replan route", function()
+            self:BuildCustomFarmRoutePlan(farmID, true)
+            self:RefreshMyFarmsWindow()
+        end)
+    end
+    heading("Farm")
+    action("Rename", function() StaticPopup_Show(RENAME_DIALOG_KEY, nil, nil, farmID) end)
+    action("Delete...", function()
+        local selectedFarm = self:GetCustomFarmByID(farmID)
+        if selectedFarm then StaticPopup_Show(DELETE_DIALOG_KEY, selectedFarm.name, nil, farmID) end
+    end)
+end
+
+function GoldTracker:OpenMyFarmsActionsMenu(anchor)
+    local frame = self.myFarmsFrame
+    local farmID = frame and frame.selectedFarmID
+    if not frame or not self:GetCustomFarmByID(farmID) then return end
+    UIDropDownMenu_Initialize(frame.farmActionsMenu, function(_, level)
+        self:PopulateMyFarmsActionsMenu(farmID, level)
+    end)
+    ToggleDropDownMenu(1, nil, frame.farmActionsMenu, anchor, 0, 0)
+end
+
 function GoldTracker:RefreshMyFarmsCharacterDropdown(farm)
     local frame = self.myFarmsFrame
     if not frame then return end
@@ -2139,18 +2192,8 @@ function GoldTracker:RefreshMyFarmsWindow()
         frame.buildButton:SetSelected(isActive)
     end
     local hasRoutePlan = type(self.HasCustomFarmRoutePlan) == "function" and self:HasCustomFarmRoutePlan(farm.id)
-    frame.planButton:SetText(hasRoutePlan and "Replan Route" or "Plan Route")
-    frame.openPlanButton:SetShown(hasRoutePlan)
+    frame.planButton:SetShown(not hasRoutePlan)
     self:RefreshMyFarmsRouteRunButton(farm, hasRoutePlan)
-    if frame.overviewButton then
-        local overview, overviewReason
-        if hasRoutePlan and type(self.BuildCustomFarmRoutePlanOverview) == "function" then
-            overview, overviewReason = self:BuildCustomFarmRoutePlanOverview(farm.id)
-        end
-        frame.overviewButton:SetEnabled(overview ~= nil)
-        frame.overviewButton.tooltipText = overview and "Show every planned stop on one numbered route map."
-            or overviewReason or "Plan a route with map data before opening its overview."
-    end
     self:RefreshMyFarmsCharacterDropdown(farm)
 
     local entries = farm.entries or {}
@@ -2688,13 +2731,11 @@ function GoldTracker:CreateMyFarmsWindow()
 
     local farmTitleText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     farmTitleText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -14)
-    farmTitleText:SetPoint("RIGHT", bodyPanel, "RIGHT", -394, 0)
     farmTitleText:SetJustifyH("LEFT")
     farmTitleText:SetWordWrap(false)
     frame.farmTitleText = farmTitleText
 
-    local buildButton = CreateButton(bodyPanel, 100, 24, "Build", "primary")
-    buildButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -42)
+    local buildButton = CreateButton(bodyPanel, 100, 24, "Build", "neutral")
     buildButton:SetScript("OnClick", function(self)
         local activeFarm = addon:GetActiveCustomFarm()
         if activeFarm and activeFarm.id == frame.selectedFarmID then
@@ -2705,27 +2746,15 @@ function GoldTracker:CreateMyFarmsWindow()
     end)
     frame.buildButton = buildButton
 
-    local renameButton = CreateButton(bodyPanel, 76, 24, "Rename", "neutral")
-    renameButton:SetPoint("RIGHT", buildButton, "LEFT", -8, 0)
-    renameButton:SetScript("OnClick", function()
-        if type(StaticPopup_Show) == "function" then
-            StaticPopup_Show(RENAME_DIALOG_KEY, nil, nil, frame.selectedFarmID)
-        end
-    end)
-    frame.renameButton = renameButton
-
-    local deleteButton = CreateButton(bodyPanel, 70, 24, "Delete", "danger")
-    deleteButton:SetPoint("RIGHT", renameButton, "LEFT", -8, 0)
-    deleteButton:SetScript("OnClick", function()
-        local farm = addon:GetCustomFarmByID(frame.selectedFarmID)
-        if farm and type(StaticPopup_Show) == "function" then
-            StaticPopup_Show(DELETE_DIALOG_KEY, farm.name, nil, farm.id)
-        end
-    end)
-    frame.deleteButton = deleteButton
+    local actionsButton = CreateButton(bodyPanel, 32, 24, "...", "neutral")
+    actionsButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -10)
+    actionsButton.tooltipText = "More farm actions: route plan, overview map, replan, rename, and delete."
+    actionsButton:SetScript("OnClick", function(button) addon:OpenMyFarmsActionsMenu(button) end)
+    frame.actionsButton = actionsButton
+    frame.farmActionsMenu = CreateFrame("Frame", "GoldTrackerMyFarmsActionsMenu", frame, "UIDropDownMenuTemplate")
 
     local planButton = CreateButton(bodyPanel, 96, 24, "Plan Route", "primary")
-    planButton:SetPoint("RIGHT", deleteButton, "LEFT", -8, 0)
+    planButton:SetPoint("RIGHT", actionsButton, "LEFT", -8, 0)
     planButton:SetScript("OnClick", function()
         if type(addon.BuildCustomFarmRoutePlan) == "function" then
             addon:BuildCustomFarmRoutePlan(frame.selectedFarmID, true)
@@ -2734,27 +2763,10 @@ function GoldTracker:CreateMyFarmsWindow()
     end)
     frame.planButton = planButton
 
-    local overviewButton = CreateButton(bodyPanel, 112, 24, "Overview map", "primary")
-    overviewButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -10)
-    overviewButton:SetScript("OnClick", function()
-        if type(addon.OpenCustomFarmRoutePlanOverview) == "function" then
-            addon:OpenCustomFarmRoutePlanOverview(frame.selectedFarmID)
-        end
-    end)
-    frame.overviewButton = overviewButton
-
-    local openPlanButton = CreateButton(bodyPanel, 88, 24, "Open Plan", "neutral")
-    openPlanButton:SetPoint("RIGHT", overviewButton, "LEFT", -8, 0)
-    openPlanButton:SetScript("OnClick", function()
-        if type(addon.OpenFarmRoutePlanWindow) == "function" then
-            addon:OpenFarmRoutePlanWindow(frame.selectedFarmID)
-        end
-    end)
-    openPlanButton:Hide()
-    frame.openPlanButton = openPlanButton
-
-    local routeRunButton = CreateButton(bodyPanel, 70, 24, "Start", "primary")
-    routeRunButton:SetPoint("RIGHT", openPlanButton, "LEFT", -8, 0)
+    buildButton:SetPoint("RIGHT", planButton, "LEFT", -8, 0)
+    farmTitleText:SetPoint("RIGHT", buildButton, "LEFT", -14, 0)
+    local routeRunButton = CreateButton(bodyPanel, 96, 24, "Start", "primary")
+    routeRunButton:SetPoint("RIGHT", actionsButton, "LEFT", -8, 0)
     routeRunButton:SetScript("OnClick", function()
         if type(addon.ToggleCustomFarmRoutePlan) == "function" then
             addon:ToggleCustomFarmRoutePlan(frame.selectedFarmID)
@@ -2764,15 +2776,15 @@ function GoldTracker:CreateMyFarmsWindow()
     frame.routeRunButton = routeRunButton
 
     local farmMetaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    farmMetaText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -76)
+    farmMetaText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -44)
     farmMetaText:SetPoint("RIGHT", bodyPanel, "RIGHT", -14, 0)
     farmMetaText:SetJustifyH("LEFT")
     farmMetaText:SetWordWrap(false)
     frame.farmMetaText = farmMetaText
 
     local characterPanel = CreatePanel(bodyPanel, { 0.025, 0.03, 0.045, 0.92 }, { 1, 1, 1, 0.08 })
-    characterPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -100)
-    characterPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -100)
+    characterPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -72)
+    characterPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -72)
     characterPanel:SetHeight(72)
     frame.characterPanel = characterPanel
     local assignedTitle = characterPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -2817,12 +2829,9 @@ function GoldTracker:CreateMyFarmsWindow()
     frame.detailsWidgets = {
         farmTitleText,
         buildButton,
-        renameButton,
-        deleteButton,
+        actionsButton,
         planButton,
-        openPlanButton,
         routeRunButton,
-        overviewButton,
         farmMetaText,
         characterPanel,
         entriesTitle,

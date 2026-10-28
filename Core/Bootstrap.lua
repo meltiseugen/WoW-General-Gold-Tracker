@@ -103,6 +103,10 @@ function GoldTracker:HandleSlashCommand(message)
     commandArgs = commandArgs or ""
 
     if command == "" then
+        if type(self.NeedsWelcomeSetup) == "function" and self:NeedsWelcomeSetup() then
+            self:OpenWelcomeWindow()
+            return
+        end
         if type(self.OpenMainWindowFromSlash) == "function" then
             self:OpenMainWindowFromSlash()
         elseif type(self.OpenMainWindow) == "function" then
@@ -314,6 +318,9 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self:RegisterEvent("PLAYER_FOCUS_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    self:RegisterEvent("ZONE_CHANGED")
+    self:RegisterEvent("ZONE_CHANGED_INDOORS")
     self:RegisterEvent("BAG_UPDATE_DELAYED")
     self:RegisterEvent("AUCTION_HOUSE_SHOW")
     self:RegisterEvent("PLAYER_LOGOUT")
@@ -578,6 +585,7 @@ function GoldTracker:InstallAuctionHouseSellTabHooks()
 end
 
 function GoldTracker:OnAuctionHouseShow()
+    if type(self.IsModuleEnabled) == "function" and not self:IsModuleEnabled("inventory") then return end
     self.auctionHouseSellPaneWatcherArmed = false
     self.auctionHouseSellPaneWasShown = false
     self:StartAuctionHouseSellPaneWatcher()
@@ -627,6 +635,8 @@ GoldTracker:SetScript("OnEvent", function(_, event, ...)
         GoldTracker:OnPlayerFocusChanged(...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         GoldTracker:OnPlayerEnteringWorld(...)
+    elseif event == "ZONE_CHANGED_NEW_AREA" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then
+        GoldTracker:HandleSessionLocationTransition()
     elseif event == "BAG_UPDATE_DELAYED" then
         if type(GoldTracker.InvalidateInventoryWindowCache) == "function" then
             GoldTracker:InvalidateInventoryWindowCache()

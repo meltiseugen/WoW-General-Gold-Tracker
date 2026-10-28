@@ -35,6 +35,8 @@ local function CloneReloadItemLoots(itemLoots)
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
             instanceName = entry.instanceName,
+            instanceMapID = tonumber(entry.instanceMapID),
+            instanceType = entry.instanceType,
             zoneName = entry.zoneName,
             mapID = tonumber(entry.mapID),
             mapX = tonumber(entry.mapX),
@@ -70,6 +72,8 @@ local function CloneReloadMoneyLoots(moneyLoots)
             locationLabel = entry.locationLabel,
             isInstanced = entry.isInstanced == true,
             instanceName = entry.instanceName,
+            instanceMapID = tonumber(entry.instanceMapID),
+            instanceType = entry.instanceType,
             zoneName = entry.zoneName,
             mapID = tonumber(entry.mapID),
             mapX = tonumber(entry.mapX),
@@ -111,6 +115,12 @@ local function BuildReloadSessionSnapshot(session)
             and GoldTracker:CloneDiagnosisSnapshot(session.diagnosisSnapshot)
             or nil,
         activeDurationSeconds = tonumber(session.activeDurationSeconds) or 0,
+        timingVersion = session.timingVersion,
+        recordingPeriods = GoldTracker.CopySessionIntervals and GoldTracker:CopySessionIntervals(session.recordingPeriods),
+        locationVisits = GoldTracker.CopySessionIntervals and GoldTracker:CopySessionIntervals(session.locationVisits),
+        historySessionID = session.historySessionID,
+        historyName = session.historyName,
+        historyCustomName = session.historyCustomName,
         isInstanced = session.isInstanced == true,
         instanceName = session.instanceName,
         instanceMapID = session.instanceMapID,
@@ -147,12 +157,14 @@ function GoldTracker:StorePendingReloadSession()
         return false
     end
 
+    if self.CloseSessionRecording then self:CloseSessionRecording() end
     local snapshot = BuildReloadSessionSnapshot(self.session)
     if not snapshot then
         self.db.pendingReloadSession = nil
         return false
     end
 
+    if self.CompactSessionLocations then self:CompactSessionLocations(snapshot) end
     self.db.pendingReloadSession = snapshot
     return true
 end
@@ -168,6 +180,7 @@ function GoldTracker:TryRestorePendingReloadSession()
     end
 
     local snapshot = self.db.pendingReloadSession
+    if self.HydrateSessionLocations then self:HydrateSessionLocations(snapshot) end
     if type(snapshot) ~= "table" or snapshot.active ~= true then
         self.db.pendingReloadSession = nil
         return false
@@ -239,6 +252,10 @@ function GoldTracker:TryRestorePendingReloadSession()
 
     self.db.pendingReloadSession = nil
     self.tsmWarningShown = false
+    if self.ContinueSessionRecording then self:ContinueSessionRecording(snapshot) end
+    session.historySessionID = snapshot.historySessionID
+    session.historyName = snapshot.historyName
+    session.historyCustomName = snapshot.historyCustomName
     self:UpdateSessionLocationContext()
     self:AddLogMessage(string.format("%s  Session restored after reload.", date("%H:%M:%S")), 0.35, 1, 0.35)
     self:Print("Session restored after reload.", "sessions")
@@ -249,6 +266,10 @@ end
 function GoldTracker:StartSession(forceNew, options)
     options = options or {}
 
+    if self.session.active and forceNew then
+        self:StopSession({ saveReason = "new-session", silentChat = true })
+    end
+
     if self.session.active and not forceNew then
         if not options.silentChat then
             self:Print("Session already active.", "sessions")
@@ -258,6 +279,12 @@ function GoldTracker:StartSession(forceNew, options)
 
     self.session.active = true
     self.session.startTime = time()
+    self.session.timingVersion = 2
+    self.session.recordingPeriods = { { startTime = self.session.startTime } }
+    self.session.locationVisits = {}
+    self.session.historySessionID = nil
+    self.session.historyName = nil
+    self.session.historyCustomName = nil
     self.session.stopTime = nil
     self.session.goldLooted = 0
     self.session.itemValue = 0
@@ -328,6 +355,7 @@ function GoldTracker:StopSession(options)
 
     self.session.active = false
     self.session.stopTime = time()
+    if self.CloseSessionRecording then self:CloseSessionRecording(self.session.stopTime) end
     self.session.lastLootAt = nil
     if not options.skipContextRefresh then
         self:UpdateSessionLocationContext()
@@ -353,17 +381,17 @@ function GoldTracker:HandleSessionLocationTransition()
 
     local current = self:GetCurrentLocationSnapshot()
     if type(current.locationKey) ~= "string" or current.locationKey == previousLocationKey then
-        self:UpdateSessionLocationContext()
+        self:UpdateSessionLocationContext(current)
         return false
     end
 
     local decision = self:GetSessionLocationTransitionDecision(
         self.session,
         current,
-        self:IsAutoStartSessionOnLocationChangeEnabled()
+        self.GetSessionSplitMode and self:GetSessionSplitMode() or self:IsAutoStartSessionOnLocationChangeEnabled()
     )
     if not decision then
-        self:UpdateSessionLocationContext()
+        self:UpdateSessionLocationContext(current)
         return false
     end
 
