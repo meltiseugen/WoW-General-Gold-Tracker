@@ -1,0 +1,1212 @@
+{
+  "searchedAt": "2026-10-21",
+  "scope": "Follow-up source-chain and location research for Legion base Materials",
+  "batches": [
+    {
+      "queries": [
+        {
+          "q": "WoW \"Ancient Suramar Scroll\" digsites locations"
+        },
+        {
+          "q": "WoW \"Highmountain Ritual-Stone\" digsites locations"
+        },
+        {
+          "q": "WoW \"Mark of the Deceiver\" digsites locations"
+        },
+        {
+          "q": "WoW \"Hardened Felglass\" source location"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Crystal Eyes - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D41190/crystal-eyes"
+        },
+        {
+          "title": "Hardened Felglass - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Hardened_Felglass"
+        },
+        {
+          "title": "Legion Archaeology | Cymre Jones",
+          "url": "https://www.cymre.com/2016/06/23/legion-archaeology/"
+        },
+        {
+          "title": "Legion Archaeology Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-archaeology"
+        },
+        {
+          "title": "Archaeology level to get Highmountain Ritual-Stones? - Professions - World of Warcraft Forums",
+          "url": "https://us.forums.blizzard.com/en/wow/t/archaeology-level-to-get-highmountain-ritual-stones/1263959"
+        },
+        {
+          "title": "Gnawed Tauren Horn - Object - World of Warcraft",
+          "url": "https://www.wowhead.com/object%3D268460/gnawed-tauren-horn"
+        },
+        {
+          "title": "Demonic Archaeology Find - Object - World of Warcraft",
+          "url": "https://www.wowhead.com/object%3D246812/demonic-archaeology-find"
+        },
+        {
+          "title": "Highmountain Tauren Archaeology Fragment - Currency - World of Warcraft",
+          "url": "https://www.wowhead.com/currency%3D1173/highmountain-tauren-archaeology-fragment"
+        },
+        {
+          "title": "Archaeology - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Arch"
+        },
+        {
+          "title": "Everything you need to know about patch 7.1.5",
+          "url": "https://blizzardwatch.com/2017/01/09/patch-notes-patch-7-1-5-arrived/"
+        },
+        {
+          "title": "Archaeology race info [Archive] - WoWInterface",
+          "url": "https://www.wowinterface.com/forums/archive/index.php/t-55695.html"
+        },
+        {
+          "title": "Legion Q&A with Paul Kubit liveblog",
+          "url": "https://blizzardwatch.com/2017/01/12/legion-qa-paul-kubit-liveblog/"
+        },
+        {
+          "title": "What zone in all of wow do you think looks the best? Doesn't have to be beautiful, it can just be straight up cool",
+          "url": "https://www.reddit.com/r/wow/comments/10poxa1"
+        },
+        {
+          "title": "\"Here is the patience of the Saints",
+          "url": "https://documents.adventistarchives.org/Periodicals/RH/RH18870201-V64-05.pdf"
+        },
+        {
+          "title": "An Indictment",
+          "url": "https://thevisionsofezekiel.com/Collective.pdf"
+        },
+        {
+          "title": "Theory: The Cursed Origins of the Proudmoores with Wayne the Ancestral",
+          "url": "https://www.reddit.com/r/warcraftlore/comments/jn4y83"
+        },
+        {
+          "title": "I",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/5/58/Very_woman_%28Sixtine%29_a_cerebral_novel_%28IA_verywomansixtine00gouriala%29.pdf"
+        },
+        {
+          "title": "Getting Allied races is so much work. New players be ware.",
+          "url": "https://www.reddit.com/r/wownoob/comments/kh9390"
+        },
+        {
+          "title": "Unlocking Nightfallen Help - Currently Stuck",
+          "url": "https://www.reddit.com/r/wow/comments/o4pnif"
+        },
+        {
+          "title": "World Information from Exploring Azeroth: Isles and Islands",
+          "url": "https://www.reddit.com/r/warcraftlore/comments/1h3wmus"
+        },
+        {
+          "title": "Collegiate Q uarterly",
+          "url": "https://documents.adventistarchives.org/Periodicals/CQ/CQ19890701-V12-03.pdf"
+        }
+      ]
+    },
+    {
+      "queries": [
+        {
+          "q": "site:wowhead.com \"Bolt of Shadowcloth\" \"Bolt of Starweave\" source"
+        },
+        {
+          "q": "site:wowhead.com \"Hammer of Forgotten Heroes\" source"
+        },
+        {
+          "q": "site:wowhead.com \"Prime Wardenscale\" source"
+        },
+        {
+          "q": "site:wowhead.com \"Wisp-Touched Elderhide\" source"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Starweave and Shadowcloth - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D46683/starweave-and-shadowcloth"
+        },
+        {
+          "title": "Hammer of Forgotten Heroes - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D146714/hammer-of-forgotten-heroes"
+        },
+        {
+          "title": "Wisp-Touched Elderhide - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D46689/wisp-touched-elderhide"
+        },
+        {
+          "title": "Legion Tailoring Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-tailoring"
+        },
+        {
+          "title": "Hammer of Forgotten Heroes - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D46701/hammer-of-forgotten-heroes"
+        },
+        {
+          "title": "7.2 PTR: Artifact Challenge Tint Sources, Transmog Holiday Updates, Crafted Legendary Quests - Wowhead News",
+          "url": "https://www.wowhead.com/news/7-2-ptr-artifact-challenge-tint-sources-transmog-holiday-updates-crafted-259618?page=2"
+        },
+        {
+          "title": "7.2 PTR Build 23623 Artifact Knowledge Scaling, Infinite Artifact Traits, New Emissary Cache Mounts - Wowhead News",
+          "url": "https://www.wowhead.com/forever/news/7-2-ptr-build-23623-artifact-knowledge-scaling-infinite-artifact-traits-new-260586"
+        },
+        {
+          "title": "Command Center and Nether Disruptor Active on US Realms - Wowhead News",
+          "url": "https://www.wowhead.com/ptr/news/command-center-and-nether-disruptor-active-on-us-realms-262556?page=2"
+        },
+        {
+          "title": "Bolt of Shadowcloth - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D146710/bolt-of-shadowcloth"
+        },
+        {
+          "title": "Legendary Blacksmithing Supplies - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D147207/legendary-blacksmithing-supplies"
+        },
+        {
+          "title": "Profession and Obliterum Forge Updates in Patch 7.2 - Wowhead News",
+          "url": "https://www.wowhead.com/classic-ptr/news/profession-and-obliterum-forge-updates-in-patch-7-2-259637"
+        },
+        {
+          "title": "Wisp-Touched Elderhide - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D146712/wisp-touched-elderhide"
+        }
+      ]
+    },
+    {
+      "queries": [
+        {
+          "q": "site:wowhead.com \"Fel Piston Stabilizer\" source"
+        },
+        {
+          "q": "site:wowhead.com \"Neural Net Detangler\" source"
+        },
+        {
+          "q": "site:wowhead.com \"Predictive Combat Operations Databank\" source"
+        },
+        {
+          "q": "site:wowhead.com \"X-87 Battle Circuit\" source"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Banque de données prévisionnelles des opérations de combat - Objet - World of Warcraft",
+          "url": "https://www.wowhead.com/fr/item%3D140783/banque-de-donn%C3%A9es-pr%C3%A9visionnelles-des-op%C3%A9rations-de-combat"
+        },
+        {
+          "title": "Predictive Combat Operations Databank - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140783/predictive-combat-operations-databank"
+        },
+        {
+          "title": "X-87 Battle Circuit - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140781/x-87-battle-circuit"
+        },
+        {
+          "title": "Hardened Circuitboard Plating - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140785/hardened-circuitboard-plating"
+        },
+        {
+          "title": "Fel Piston Stabilizer - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140784/fel-piston-stabilizer"
+        },
+        {
+          "title": "Predictive Combat Operations Databank - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D140783/predictive-combat-operations-databank"
+        },
+        {
+          "title": "Neural Net Detangler - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140782/neural-net-detangler"
+        },
+        {
+          "title": "Предиктивный банк данных боевых операций - Предмет - World of Warcraft",
+          "url": "https://www.wowhead.com/ru/item%3D140783/%D0%BF%D1%80%D0%B5%D0%B4%D0%B8%D0%BA%D1%82%D0%B8%D0%B2%D0%BD%D1%8B%D0%B9-%D0%B1%D0%B0%D0%BD%D0%BA-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85-%D0%B1%D0%BE%D0%B5%D0%B2%D1%8B%D1%85-%D0%BE%D0%BF%D0%B5%D1%80%D0%B0%D1%86%D0%B8%D0%B9"
+        },
+        {
+          "title": "Mechanized Guardian - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D6234/mechanized-guardian"
+        },
+        {
+          "title": "Electrocutioner 6000 - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D6235/electrocutioner-6000"
+        },
+        {
+          "title": "Reaves Module: Piloted Combat Mode - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D132531/reaves-module-piloted-combat-mode"
+        },
+        {
+          "title": "Schéma : Module de Reeves, mode Générateur de tunnel spatiotemporel - Objet - World of Warcraft",
+          "url": "https://www.wowhead.com/fr/item%3D137695/sch%C3%A9ma-module-de-reeves-mode-g%C3%A9n%C3%A9rateur-de-tunnel-spatiotemporel"
+        }
+      ]
+    },
+    {
+      "queries": [
+        {
+          "q": "site:wowhead.com \"Big Fountain Goldfish\" fishing locations"
+        },
+        {
+          "q": "site:wowhead.com \"Ancient Mana Crystal\" farming location"
+        },
+        {
+          "q": "site:wowhead.com \"Ancient Mana Gem\" farming location"
+        },
+        {
+          "q": "site:wowhead.com \"Fel-Touched Lumber\" farming locations"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Big Fountain Goldfish - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D138967/big-fountain-goldfish"
+        },
+        {
+          "title": "Fel-Touched Lumber - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D251767/fel-touched-lumber"
+        },
+        {
+          "title": "魔觸木材—物品—魔獸世界",
+          "url": "https://www.wowhead.com/tw/item%3D251767/%E9%AD%94%E8%A7%B8%E6%9C%A8%E6%9D%90"
+        },
+        {
+          "title": "Shadowmoon Lumber Returned to Warlords of Draenor Zones in the Midnight Pre-Patch - Wowhead News",
+          "url": "https://www.wowhead.com/news/shadowmoon-lumber-returned-to-warlords-of-draenor-zones-in-the-midnight-pre-380372"
+        },
+        {
+          "title": "Большая золотая рыбка из фонтана - Предмет - World of Warcraft",
+          "url": "https://www.wowhead.com/ru/item%3D138967/%D0%B1%D0%BE%D0%BB%D1%8C%D1%88%D0%B0%D1%8F-%D0%B7%D0%BE%D0%BB%D0%BE%D1%82%D0%B0%D1%8F-%D1%80%D1%8B%D0%B1%D0%BA%D0%B0-%D0%B8%D0%B7-%D1%84%D0%BE%D0%BD%D1%82%D0%B0%D0%BD%D0%B0"
+        },
+        {
+          "title": "Professions in Player Housing - Crafting Decor Items in World of Warcraft - Wowhead",
+          "url": "https://www.wowhead.com/guide/player-housing/crafting-decor-items"
+        },
+        {
+          "title": "Fel-Touched Lumber - Item - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/item%3D251767/fel-touched-lumber"
+        },
+        {
+          "title": "Ancient Mana - Currency - World of Warcraft",
+          "url": "https://www.wowhead.com/currency%3D1155/ancient-mana"
+        },
+        {
+          "title": "Make Quick Gold with Lumber for Player Housing Decor - Wowhead News",
+          "url": "https://www.wowhead.com/ptr-2/news/make-quick-gold-with-lumber-for-player-housing-decor-379553?page=3"
+        },
+        {
+          "title": "Ancient Mana Crystal - Object - World of Warcraft",
+          "url": "https://www.wowhead.com/object%3D252774/ancient-mana-crystal"
+        },
+        {
+          "title": "Comprehensive Suramar Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/suramar"
+        },
+        {
+          "title": "Ancient Mana Gem - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D139890/ancient-mana-gem"
+        }
+      ]
+    },
+    {
+      "queries": [
+        {
+          "q": "site:wowhead.com \"Aridormi\" \"40.4\" \"Legion\""
+        },
+        {
+          "q": "site:wowhead.com \"Maras\" \"Vindicaar\" \"66.8\""
+        },
+        {
+          "q": "site:wowhead.com \"Queen's Grace Loom\" \"40\" \"69\""
+        },
+        {
+          "q": "site:wowhead.com \"Starweave and Shadowcloth\" \"467\""
+        }
+      ],
+      "sources": [
+        {
+          "title": "PTR Quests - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/quests/min-level%3A1/max-level%3A60/side%3A2"
+        }
+      ]
+    },
+    {
+      "queries": [
+        {
+          "q": "site:wowhead.com \"Slab of Bacon\" \"Highmountain\" \"Stormheim\""
+        },
+        {
+          "q": "site:wowhead.com \"Big Fountain Goldfish\" \"Margoss\""
+        },
+        {
+          "q": "site:wow-professions.com \"Stormscale Farming\""
+        },
+        {
+          "q": "site:wow-professions.com \"Stonehide Leather Farming\""
+        }
+      ],
+      "sources": [
+        {
+          "title": "Stonehide Leather farming",
+          "url": "https://www.wow-professions.com/farming/stonehide-leather-farming"
+        },
+        {
+          "title": "Slab of Bacon - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D41261/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D41242/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D41555/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D41549/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/quest%3D41242/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D41261/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/quest%3D41550/slab-of-bacon"
+        },
+        {
+          "title": "Slab of Bacon - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D41551/slab-of-bacon"
+        },
+        {
+          "title": "Active World Quests: Legion - Europe - World of Warcraft",
+          "url": "https://www.wowhead.com/world-quests/legion/eu"
+        },
+        {
+          "title": "Stormscale Farming",
+          "url": "https://www.wow-professions.com/farming/stormscale-farming"
+        },
+        {
+          "title": "厚切培根—任务—魔兽世界",
+          "url": "https://www.wowhead.com/cn/quest%3D41549/%E5%8E%9A%E5%88%87%E5%9F%B9%E6%A0%B9"
+        }
+      ]
+    },
+    {
+      "queries": [
+        {
+          "q": "site:wowhead.com \"Ancient Mana Crystal\" \"17\" \"58\""
+        },
+        {
+          "q": "site:wowhead.com \"Fel Piston Stabilizer\" \"satyr\" \"Shadowmoon\""
+        },
+        {
+          "q": "site:wowhead.com \"Wisp-Touched Elderhide\" \"coordinates\""
+        },
+        {
+          "q": "site:wowhead.com \"Boon of the Gemfinder\" \"Veridis\""
+        }
+      ],
+      "sources": [
+        {
+          "title": "Boon of the Gemfinder - Spell - World of Warcraft",
+          "url": "https://www.wowhead.com/spell%3D190955/boon-of-the-gemfinder"
+        },
+        {
+          "title": "Fel Piston Stabilizer - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140784/fel-piston-stabilizer"
+        },
+        {
+          "title": "Veridis Fallon - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D107376/veridis-fallon"
+        },
+        {
+          "title": "Sylvia Hartshorn - NPC - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/npc%3D106901/sylvia-hartshorn"
+        },
+        {
+          "title": "Harvested Goods - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140222/harvested-goods"
+        },
+        {
+          "title": "Valdemar Stormseeker - NPC - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/npc%3D106904/valdemar-stormseeker"
+        },
+        {
+          "title": "First Arcanist Thalyssra - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D97140/first-arcanist-thalyssra"
+        },
+        {
+          "title": "Legion Reputation Overview - Wowhead",
+          "url": "https://www.wowhead.com/guide/reputation/legion/overview"
+        },
+        {
+          "title": "Ransa Greyfeather - NPC - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/npc%3D106902/ransa-greyfeather"
+        },
+        {
+          "title": "Salvaged Armor - Item - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/item%3D140225/salvaged-armor"
+        },
+        {
+          "title": "Marin Bladewing - NPC - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/npc%3D107379/marin-bladewing"
+        },
+        {
+          "title": "Salvaged Armor - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D140225/salvaged-armor"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "WoW Aridormi Dalaran coordinates Broken Isles Gem Delivery"
+      ],
+      "sources": [
+        {
+          "title": "Broken Isles Enchantment Delivery - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Broken_Isles_Enchantment_Delivery"
+        },
+        {
+          "title": "Broken Isles Cloth Delivery - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Broken_Isles_Cloth_Delivery"
+        },
+        {
+          "title": "Broken Isles Herb Delivery - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Broken_Isles_Herb_Delivery"
+        },
+        {
+          "title": "Aridormi - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Aridormi"
+        },
+        {
+          "title": "Broken Isles Fish Delivery - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Broken_Isles_Fish_Delivery"
+        },
+        {
+          "title": "Broken Isles Enchantment Delivery - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Broken_Isles_Enchantment_Delivery"
+        },
+        {
+          "title": "Broken Isles Leather Delivery - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Broken_Isles_Leather_Delivery"
+        },
+        {
+          "title": "Broken Isles Herb Delivery - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Broken_Isles_Herb_Delivery"
+        },
+        {
+          "title": "Aridormi - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D180899/aridormi"
+        },
+        {
+          "title": "Broken Isles Meat Delivery - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Broken_Isles_Meat_Delivery"
+        },
+        {
+          "title": "Aridormi - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Aridormi"
+        },
+        {
+          "title": "Blizz - Fix the Whispering Felflame Crystal Timewalking Quest! - General Discussion - World of Warcraft Forums",
+          "url": "https://eu.forums.blizzard.com/en/wow/t/blizz-fix-the-whispering-felflame-crystal-timewalking-quest/620646"
+        },
+        {
+          "title": "Timewalking vendor?",
+          "url": "https://www.reddit.com/r/wownoob/comments/wrix3b"
+        },
+        {
+          "title": "Why is this above Karazhan?",
+          "url": "https://www.reddit.com/r/wow/comments/1q4ajs3/why_is_this_above_karazhan/"
+        },
+        {
+          "title": "I am trying to unlock world quests. I see I am supposed to talk to Khadgar?",
+          "url": "https://www.reddit.com/r/wownoob/comments/1umy1jl/i_am_trying_to_unlock_world_quests_i_see_i_am/"
+        },
+        {
+          "title": "Timewalking Vendor is Finally up",
+          "url": "https://www.reddit.com/r/wow/comments/1twibio/timewalking_vendor_is_finally_up/"
+        },
+        {
+          "title": "How do you get to the Broken Isles?!",
+          "url": "https://www.reddit.com/r/wow/comments/1crq843"
+        },
+        {
+          "title": "Stuck in Broken Isles",
+          "url": "https://www.reddit.com/r/wow/comments/1si6guz/stuck_in_broken_isles/"
+        },
+        {
+          "title": "If not here, on Argus, then where can I possibly use the Fel Meteorites?",
+          "url": "https://www.reddit.com/r/wow/comments/1p1sngm/if_not_here_on_argus_then_where_can_i_possibly/"
+        },
+        {
+          "title": "Why is legion vendor not up?",
+          "url": "https://www.reddit.com/r/wow/comments/10klsml"
+        },
+        {
+          "title": "How on earth do you get to Broken Isles",
+          "url": "https://www.reddit.com/r/wow/comments/1c46hpz/how_on_earth_do_you_get_to_broken_isles/"
+        },
+        {
+          "title": "Stabilizing Suramar",
+          "url": "https://www.reddit.com/r/wownoob/comments/uhmoqw"
+        },
+        {
+          "title": "World of Warcraft: Legion",
+          "url": "https://en.wikipedia.org/wiki/World_of_Warcraft%3A_Legion"
+        },
+        {
+          "title": "What is this doing here? I'm not the only one seeing it, right? (45,67 high above Karazan, retail)",
+          "url": "https://www.reddit.com/r/wow/comments/1uvootb/what_is_this_doing_here_im_not_the_only_one/"
+        },
+        {
+          "title": "How to Farm Rep for Broken Isles? (Unlocking Argus)",
+          "url": "https://www.reddit.com/r/wow/comments/1f0n55a"
+        },
+        {
+          "title": "World of Warcraft online manual",
+          "url": "https://bnetcmsus-a.akamaihd.net/cms/template_resource/LO0VQ46XB1281555957773363.pdf"
+        },
+        {
+          "title": "Oggetti di Warcraft",
+          "url": "https://it.wikipedia.org/wiki/Oggetti_di_Warcraft"
+        },
+        {
+          "title": "WOW Lands of Mystery.indd",
+          "url": "https://public.ds003.info/wcbooks/rpg/WORLD%20OF%20WARCRAFT%20%20-%20Lands%20of%20Mystery%20By%20Azamor.pdf"
+        },
+        {
+          "title": "©2008 IGE®. All rights reserved. http://www.IGE.co",
+          "url": "https://www.wow-mania.com/files/Guides/WoTLK.pdf"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "WoW Maras Vindicaar Primal Sargerite coordinates"
+      ],
+      "sources": [
+        {
+          "title": "Maras - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Maras"
+        },
+        {
+          "title": "Parche 7.3.2: Comerciante de Sargeritas Primigenias",
+          "url": "https://altertime.es/article/parche-7-3-2-comerciante-de-sargeritas-primigenias"
+        },
+        {
+          "title": "Maras - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D129674/maras"
+        },
+        {
+          "title": "Need Location of Primal Sargerite Vendor - Returning Player Help & Discussions - World of Warcraft Forums",
+          "url": "https://us.forums.blizzard.com/en/wow/t/need-location-of-primal-sargerite-vendor/18112"
+        },
+        {
+          "title": "Maras - NPC - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/npc%3D129674/maras"
+        },
+        {
+          "title": "Primal Sargerite - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D151568/primal-sargerite"
+        },
+        {
+          "title": "Primal Sargerite - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D151568/primal-sargerite"
+        },
+        {
+          "title": "The Prime Exchange - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/The_Prime_Exchange"
+        },
+        {
+          "title": "Patch 7.3.2: Primal Sargerite Vendor - News - Icy Veins",
+          "url": "https://www.icy-veins.com/forums/topic/33257-patch-732-primal-sargerite-vendor/"
+        },
+        {
+          "title": "Patch 7.3.2: Primal Sargerite Vendor - News - Icy Veins",
+          "url": "https://www.icy-veins.com/forums/topic/33257-patch-732-primal-sargerite-vendor/?comment=230320&do=findComment"
+        },
+        {
+          "title": "Patch 7.3.2: Primal Sargerite Vendor - News - Icy Veins",
+          "url": "https://www.icy-veins.com/forums/topic/33257-patch-732-primal-sargerite-vendor"
+        },
+        {
+          "title": "Primal Sargerite - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Primal_Sargerite"
+        },
+        {
+          "title": "Eredar questline weapons: No need for AH!",
+          "url": "https://www.reddit.com/r/wow/comments/16hi05d"
+        },
+        {
+          "title": "My favourite screenshot from the Legion days.",
+          "url": "https://www.reddit.com/r/wow/comments/furbsj"
+        },
+        {
+          "title": "1",
+          "url": "https://www.wowprime.com/index.php?id=115f89503138416a242f40fb7d7f338e&option=com_cwattachments&sid=310acbb45f88884956f2ea1f5f965fa5&task=download"
+        },
+        {
+          "title": "Returning player unable to continue Argus quest.",
+          "url": "https://www.reddit.com/r/wownoob/comments/j7sl5p"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "WoW Starweave and Shadowcloth Queen Grace Loom quest location"
+      ],
+      "sources": [
+        {
+          "title": "Starweave and Shadowcloth - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D46683/starweave-and-shadowcloth"
+        },
+        {
+          "title": "Starweave and Shadowcloth - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D46683/starweave-and-shadowcloth"
+        },
+        {
+          "title": "Starweave and Shadowcloth - Quest - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/quest%3D46683/starweave-and-shadowcloth"
+        },
+        {
+          "title": "Starweave and Shadowcloth - Quests - WoWDB",
+          "url": "https://www.wowdb.com/quests/46683-starweave-and-shadowcloth"
+        },
+        {
+          "title": "Starweave and Shadowcloth - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Starweave_and_Shadowcloth"
+        },
+        {
+          "title": "Starweave and Shadowcloth Tailoring Quest World of Warcraft - YouTube",
+          "url": "https://www.youtube.com/watch?v=H97OjcmT4JY"
+        },
+        {
+          "title": "The Queen's Grace Loom - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/The_Queen%27s_Grace_Loom"
+        },
+        {
+          "title": "The Queen's Grace Loom - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D38970/the-queens-grace-loom"
+        },
+        {
+          "title": "Taloring help - Professions - World of Warcraft Forums",
+          "url": "https://us.forums.blizzard.com/en/wow/t/taloring-help/205658"
+        },
+        {
+          "title": "Tissétoile et étoffe d’ombre - Quête - World of Warcraft",
+          "url": "https://www.wowhead.com/fr/quest%3D46683/tiss%C3%A9toile-et-%C3%A9toffe-d-ombre"
+        },
+        {
+          "title": "The Queen's Grace Loom - Quests - WoWDB (PTR)",
+          "url": "https://ptr.wowdb.com/quests/38970-the-queens-grace-loom"
+        },
+        {
+          "title": "任务:星纹布和暗影布 - 魔兽世界中文维基，自由编辑的魔兽资料库 - 灰机wiki - 北京嘉闻杰诺网络科技有限公司",
+          "url": "https://warcraft.huijiwiki.com/wiki/%E4%BB%BB%E5%8A%A1%3A%E6%98%9F%E7%BA%B9%E5%B8%83%E5%92%8C%E6%9A%97%E5%BD%B1%E5%B8%83"
+        },
+        {
+          "title": "The Queen's Grace Loom - Quest - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/quest%3D38970/the-queens-grace-loom"
+        },
+        {
+          "title": "Trying to make Legion Lego Cloth Shoulders",
+          "url": "https://www.reddit.com/r/wow/comments/1bdcrd7"
+        },
+        {
+          "title": "Tailoring question",
+          "url": "https://www.reddit.com/r/classicwowtbc/comments/o6zn1f"
+        },
+        {
+          "title": "The Druid Renaissance",
+          "url": "https://www.staff.ces.funai.edu.ng/textbooks/publication/filedownload.ashx/the_druid_renaissance.pdf"
+        },
+        {
+          "title": "Tailoring experts - Can you weigh in please?",
+          "url": "https://www.reddit.com/r/classicwowtbc/comments/v1ka97"
+        },
+        {
+          "title": "bc_specialist_tailor.xls",
+          "url": "https://giddygamer.com/wow/content/professions/bc_specialist_tailor.pdf"
+        },
+        {
+          "title": "Tailor Transmute Path",
+          "url": "https://www.reddit.com/r/classicwowtbc/comments/ofv3wm"
+        },
+        {
+          "title": "PSA: Tailoring Sets Will Be VERY Expensive Early",
+          "url": "https://www.reddit.com/r/classicwow/comments/n9xa6y"
+        },
+        {
+          "title": "In The First Circle A Novel The Restored Text",
+          "url": "https://server.ces.funai.edu.ng/textbook-solutions/uploaded-files/filedownload.ashx/In_The_First_Circle_A_Novel_The_Restored_Text.pdf"
+        },
+        {
+          "title": "World of Warcraft: Wrath of the Lich King™",
+          "url": "https://www.giddygamer.com/wow/content/professions/bc_tailoring_recipes.pdf"
+        },
+        {
+          "title": "Qualitatsmanagement Und Zertifizierung In Der Onk",
+          "url": "https://wclc2017.iaslc.org/files/publication/Download_PDFS/Qualitatsmanagement-Und-Zertifizierung-In-Der-Onk.pdf"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "WoW Wisp-Touched Elderhide Hrul Sharptooth coordinates"
+      ],
+      "sources": [
+        {
+          "title": "Hrul Sharphoof - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Hrul_Sharphoof"
+        },
+        {
+          "title": "Wisp-Touched Elderhide (quest) - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Wisp-Touched_Elderhide_%28quest%29"
+        },
+        {
+          "title": "Wisp-Touched Elderhide - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D46689/wisp-touched-elderhide"
+        },
+        {
+          "title": "Bag of Wisp-Touched Elderhide - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Bag_of_Wisp-Touched_Elderhide"
+        },
+        {
+          "title": "Create Wisp-Touched Elderhide - Spell - World of Warcraft",
+          "url": "https://www.wowhead.com/spell%3D240220/create-wisp-touched-elderhide"
+        },
+        {
+          "title": "Hrul Sharphoof - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Hrul_Sharphoof"
+        },
+        {
+          "title": "Wisp-Touched Elderhide (quest) - Wowpedia - Your wiki guide to the World of Warcraft",
+          "url": "https://wowpedia.fandom.com/wiki/Wisp-Touched_Elderhide_%28quest%29"
+        },
+        {
+          "title": "Wisp-Touched Elderhide - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/Wisp-Touched_Elderhide"
+        },
+        {
+          "title": "Armorcrafter's Commendation - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D147451/armorcrafters-commendation"
+        },
+        {
+          "title": "The Legend of the Elderhide - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/The_Legend_of_the_Elderhide"
+        },
+        {
+          "title": "The Wisp and the Shadow - Warcraft Wiki - Your wiki guide to the World of Warcraft",
+          "url": "https://warcraft.wiki.gg/wiki/The_Wisp_and_the_Shadow"
+        },
+        {
+          "title": "Kit de peletero legendario - Objeto - World of Warcraft",
+          "url": "https://www.wowhead.com/es/item%3D146977/kit-de-peletero-legendario"
+        },
+        {
+          "title": "WoW_OCR_110329",
+          "url": "https://www.tcgplayer.it/downloadwow/wow_ocr_110329.pdf"
+        },
+        {
+          "title": "To everyone farming mounts/rares in the Ringing Deeps and using coordinates to do so, keep in mind that coordinates previously listed from before this patch are now changed and need to be updated! Coordinates will take you east/southeast of where you want to go until they are updated.",
+          "url": "https://www.reddit.com/r/wow/comments/1izmp2d"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com/item=124119 \"Big Gamy Ribs\" farming"
+      ],
+      "sources": [
+        {
+          "title": "Big Gamy Ribs - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D124119/big-gamy-ribs"
+        },
+        {
+          "title": "Große Wildrippchen - Gegenstand - World of Warcraft",
+          "url": "https://www.wowhead.com/de/item%3D124119/gro%C3%9Fe-wildrippchen"
+        },
+        {
+          "title": "Costillas grandes de sabor fuerte - Objeto - World of Warcraft",
+          "url": "https://www.wowhead.com/es/item%3D124119/costillas-grandes-de-sabor-fuerte"
+        },
+        {
+          "title": "Aiding Our Allies - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D42436/aiding-our-allies"
+        },
+        {
+          "title": "Grandes côtes de gibier - Objet - World of Warcraft",
+          "url": "https://www.wowhead.com/fr/item%3D124119/grandes-c%C3%B4tes-de-gibier"
+        },
+        {
+          "title": "Reaves Module: Snack Distribution Mode - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D132529/reaves-module-snack-distribution-mode"
+        },
+        {
+          "title": "Costillas grandes de sabor fuerte - Objeto - World of Warcraft",
+          "url": "https://www.wowhead.com/mx/item%3D124119/costillas-grandes-de-sabor-fuerte"
+        },
+        {
+          "title": "Крупные ароматные ребрышки - Предмет - World of Warcraft",
+          "url": "https://www.wowhead.com/ru/item%3D124119/%D0%BA%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B5-%D0%B0%D1%80%D0%BE%D0%BC%D0%B0%D1%82%D0%BD%D1%8B%D0%B5-%D1%80%D0%B5%D0%B1%D1%80%D1%8B%D1%88%D0%BA%D0%B8"
+        },
+        {
+          "title": "Big Gamy Ribs - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D42930/big-gamy-ribs"
+        },
+        {
+          "title": "Plains Runehorn Calf - NPC - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/npc%3D107808/plains-runehorn-calf"
+        },
+        {
+          "title": "Big Gamy Ribs - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D42930/big-gamy-ribs"
+        },
+        {
+          "title": "Grosse Costine di Selvaggina - Oggetto - World of Warcraft",
+          "url": "https://www.wowhead.com/it/item%3D124119/grosse-costine-di-selvaggina"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com/item=124117 \"Lean Shank\" farm coordinates"
+      ],
+      "sources": [
+        {
+          "title": "Lean Shank - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D124117/lean-shank"
+        },
+        {
+          "title": "Jarret dégraissé - Objet - World of Warcraft",
+          "url": "https://www.wowhead.com/fr/item%3D124117/jarret-d%C3%A9graiss%C3%A9"
+        },
+        {
+          "title": "Постная рулька - Предмет - World of Warcraft",
+          "url": "https://www.wowhead.com/ru/item%3D124117/%D0%BF%D0%BE%D1%81%D1%82%D0%BD%D0%B0%D1%8F-%D1%80%D1%83%D0%BB%D1%8C%D0%BA%D0%B0"
+        },
+        {
+          "title": "정강이 살코기 - 아이템 - 월드 오브 워크래프트",
+          "url": "https://www.wowhead.com/ko/item%3D124117/%EC%A0%95%EA%B0%95%EC%9D%B4-%EC%82%B4%EC%BD%94%EA%B8%B0"
+        },
+        {
+          "title": "Big Gamy Ribs - Item - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/item%3D124119/big-gamy-ribs"
+        },
+        {
+          "title": "Recipe: Azshari Salad - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D133862/recipe-azshari-salad"
+        },
+        {
+          "title": "Recipe: Turf - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D141012/recipe-turf"
+        },
+        {
+          "title": "Costillas grandes de sabor fuerte - Objeto - World of Warcraft",
+          "url": "https://www.wowhead.com/mx/item%3D124119/costillas-grandes-de-sabor-fuerte"
+        },
+        {
+          "title": "Suramar Surf and Turf - Spell - World of Warcraft",
+          "url": "https://www.wowhead.com/spell%3D201501/suramar-surf-and-turf"
+        },
+        {
+          "title": "Grosse Costine di Selvaggina - Oggetto - World of Warcraft",
+          "url": "https://www.wowhead.com/it/item%3D124119/grosse-costine-di-selvaggina"
+        },
+        {
+          "title": "Suramar Snarler - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D104224/suramar-snarler"
+        },
+        {
+          "title": "Heartwood Doe - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D110043/heartwood-doe"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com/item=124120 \"Leyblood\" farm coordinates"
+      ],
+      "sources": [
+        {
+          "title": "Leyblood - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D124120/leyblood"
+        },
+        {
+          "title": "Leyblut - Gegenstand - World of Warcraft",
+          "url": "https://www.wowhead.com/de/item%3D124120/leyblut"
+        },
+        {
+          "title": "Sangre Ley - Objeto - World of Warcraft",
+          "url": "https://www.wowhead.com/es/item%3D124120/sangre-ley"
+        },
+        {
+          "title": "Elixirs of Aid - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D43832/elixirs-of-aid"
+        },
+        {
+          "title": "Sangre ley - Objeto - World of Warcraft",
+          "url": "https://www.wowhead.com/mx/item%3D124120/sangre-ley"
+        },
+        {
+          "title": "Кровь силы - Предмет - World of Warcraft",
+          "url": "https://www.wowhead.com/ru/item%3D124120/%D0%BA%D1%80%D0%BE%D0%B2%D1%8C-%D1%81%D0%B8%D0%BB%D1%8B"
+        },
+        {
+          "title": "Elixirs of Aid - Quest - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/quest%3D43832/elixirs-of-aid"
+        },
+        {
+          "title": "脈能之血—物品—魔獸世界",
+          "url": "https://www.wowhead.com/tw/item%3D124120/%E8%84%88%E8%83%BD%E4%B9%8B%E8%A1%80"
+        },
+        {
+          "title": "魔力之血—物品—魔兽世界",
+          "url": "https://www.wowhead.com/cn/item%3D124120/%E9%AD%94%E5%8A%9B%E4%B9%8B%E8%A1%80"
+        },
+        {
+          "title": "Fagliasangue - Oggetto - World of Warcraft",
+          "url": "https://www.wowhead.com/it/item%3D124120/fagliasangue"
+        },
+        {
+          "title": "Sangue meridional - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/pt/item%3D124120/sangue-meridional"
+        },
+        {
+          "title": "지맥 피 - 아이템 - 월드 오브 워크래프트",
+          "url": "https://www.wowhead.com/ko/item%3D124120/%EC%A7%80%EB%A7%A5-%ED%94%BC"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com/item=124115 \"Stormscale\" \"Eye of Azshara\""
+      ],
+      "sources": [
+        {
+          "title": "Stormscale - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D124115/stormscale"
+        },
+        {
+          "title": "Eye of Azshara: The Scales of Serpentrix - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D40154/eye-of-azshara-the-scales-of-serpentrix"
+        },
+        {
+          "title": "雷鱗—物品—魔獸世界",
+          "url": "https://www.wowhead.com/tw/item%3D124115/%E9%9B%B7%E9%B1%97"
+        },
+        {
+          "title": "Skinning Technique: Stormscale (Rank 3) - Spell - World of Warcraft",
+          "url": "https://www.wowhead.com/spell%3D194822/skinning-technique-stormscale-rank-3"
+        },
+        {
+          "title": "Unfinished Treatise on the Properties of Stormscale - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D129865/unfinished-treatise-on-the-properties-of-stormscale"
+        },
+        {
+          "title": "Immaculate Stormscale - Item - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/item%3D129867/immaculate-stormscale"
+        },
+        {
+          "title": "Stormscale Sample - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D40141/stormscale-sample"
+        },
+        {
+          "title": "Unfinished Treatise on the Properties of Stormscale - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D40143/unfinished-treatise-on-the-properties-of-stormscale"
+        },
+        {
+          "title": "Immaculate Stormscale - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D40151/immaculate-stormscale"
+        },
+        {
+          "title": "Unfinished Treatise on the Properties of Stormscale - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D40143/unfinished-treatise-on-the-properties-of-stormscale"
+        },
+        {
+          "title": "Under Down - Quest - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/quest%3D40145/under-down"
+        },
+        {
+          "title": "Under Down - Quest - World of Warcraft",
+          "url": "https://www.wowhead.com/quest%3D40145/under-down"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com \"Illnea Bloodthorn\" \"Arkhana\" \"Leylight\""
+      ],
+      "sources": [
+        {
+          "title": "Arkhana - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D124440/arkhana"
+        },
+        {
+          "title": "Legion Enchanting Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-enchanting"
+        },
+        {
+          "title": "Arkhana - Item - 12.1.0 PTR",
+          "url": "https://www.wowhead.com/ptr/item%3D124440/arkhana"
+        },
+        {
+          "title": "Arkhana - Item - World of Warcraft",
+          "url": "https://www.wowhead.com/item%3D124440/arkhana"
+        },
+        {
+          "title": "Leylight Shard - Item - 12.1.7 PTR",
+          "url": "https://www.wowhead.com/ptr/item%3D124441/leylight-shard"
+        },
+        {
+          "title": "Leylight Shard - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D124441/leylight-shard"
+        },
+        {
+          "title": "Illnea Bloodthorn - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D115264/illnea-bloodthorn"
+        },
+        {
+          "title": "Acquiring and Spending Primal Sargerite, Blood of Sargeras, Obliterum and Primal Obliterum - Wowhead",
+          "url": "https://www.wowhead.com/guide/acquiring-and-spending-blood-of-sargeras-and-obliterum"
+        },
+        {
+          "title": "WoW Economy Weekly Wrap-Up: Transmog, Profession Shuffling, Analyzing Markets and Gold Making Challenge - Wowhead News",
+          "url": "https://www.wowhead.com/diablo-4/news/wow-economy-weekly-wrap-up-transmog-profession-shuffling-analyzing-markets-and-269429"
+        },
+        {
+          "title": "Patch 7.1 Survival Guide: Return to Karazhan, Suramar Campaign, Raiding with Leashes, J!NX Giveaway - Wowhead News",
+          "url": "https://www.wowhead.com/diablo-2/news/patch-7-1-survival-guide-return-to-karazhan-suramar-campaign-raiding-with-257057"
+        },
+        {
+          "title": "Patch 7.1 PTR Preview: Profession and Blood of Sargeras Updates - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-7-1-ptr-preview-profession-and-blood-of-sargeras-updates-256536?page=4"
+        },
+        {
+          "title": "Patch 7.1 Survival Guide: Return to Karazhan, Suramar Campaign, Raiding with Leashes, J!NX Giveaway - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-7-1-survival-guide-return-to-karazhan-suramar-campaign-raiding-with-257057?page=7"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com \"Illnea Bloodthorn\" \"Big Gamy Ribs\""
+      ],
+      "sources": [
+        {
+          "title": "Illnea Bloodthorn - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D115264/illnea-bloodthorn"
+        },
+        {
+          "title": "Acquiring and Spending Primal Sargerite, Blood of Sargeras, Obliterum and Primal Obliterum - Wowhead",
+          "url": "https://www.wowhead.com/guide/acquiring-and-spending-blood-of-sargeras-and-obliterum"
+        },
+        {
+          "title": "Abundant Order Resources Cache - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D150737/abundant-order-resources-cache"
+        },
+        {
+          "title": "Profession Updates in Patch 7.1 - Wowhead",
+          "url": "https://www.wowhead.com/guide/professions-in-patch-7-1"
+        },
+        {
+          "title": "Patch 7.1 Survival Guide: Return to Karazhan, Suramar Campaign, Raiding with Leashes, J!NX Giveaway - Wowhead News",
+          "url": "https://www.wowhead.com/diablo-2/news/patch-7-1-survival-guide-return-to-karazhan-suramar-campaign-raiding-with-257057"
+        },
+        {
+          "title": "Patch 7.1 Survival Guide: Return to Karazhan, Suramar Campaign, Raiding with Leashes, J!NX Giveaway - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-7-1-survival-guide-return-to-karazhan-suramar-campaign-raiding-with-257057?page=5"
+        },
+        {
+          "title": "Patch 7.1 Survival Guide: Return to Karazhan, Suramar Campaign, Raiding with Leashes, J!NX Giveaway - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-7-1-survival-guide-return-to-karazhan-suramar-campaign-raiding-with-257057?page=7"
+        },
+        {
+          "title": "Patch 7.1 PTR Preview: Profession and Blood of Sargeras Updates - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-7-1-ptr-preview-profession-and-blood-of-sargeras-updates-256536?page=4"
+        },
+        {
+          "title": "Patch 7.1 PTR Preview: Profession and Blood of Sargeras Updates - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-7-1-ptr-preview-profession-and-blood-of-sargeras-updates-256536?page=3"
+        },
+        {
+          "title": "Legion Alchemy Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-alchemy"
+        },
+        {
+          "title": "Legion Engineering Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-engineering"
+        },
+        {
+          "title": "Patch 7.1 Overview - Wowhead",
+          "url": "https://www.wowhead.com/guide/patch-7-1-overview-5773"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com \"Illnea Bloodthorn\" \"Unbroken Claw\""
+      ],
+      "sources": [
+        {
+          "title": "Illnea Bloodthorn - NPC - World of Warcraft",
+          "url": "https://www.wowhead.com/npc%3D115264/illnea-bloodthorn"
+        },
+        {
+          "title": "Legion Skinning Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-skinning"
+        },
+        {
+          "title": "Legion Leatherworking Guide - Wowhead",
+          "url": "https://www.wowhead.com/ptr/guide/legion-leatherworking-guide-4568"
+        },
+        {
+          "title": "Patch Notes: World of Warcraft Patch 7.1 Return to Karazhan - Wowhead News",
+          "url": "https://www.wowhead.com/diablo-4/news/patch-notes-world-of-warcraft-patch-7-1-return-to-karazhan-257148"
+        },
+        {
+          "title": "Acquiring and Spending Primal Sargerite, Blood of Sargeras, Obliterum and Primal Obliterum - Wowhead",
+          "url": "https://www.wowhead.com/guide/acquiring-and-spending-blood-of-sargeras-and-obliterum"
+        },
+        {
+          "title": "Patch Notes: World of Warcraft Patch 7.1 Return to Karazhan - Wowhead News",
+          "url": "https://www.wowhead.com/news/patch-notes-world-of-warcraft-patch-7-1-return-to-karazhan-257148?page=2"
+        },
+        {
+          "title": "Legion Tailoring Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-tailoring"
+        },
+        {
+          "title": "Legion Alchemy Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-alchemy"
+        },
+        {
+          "title": "Patch 7.1 Survival Guide: Return to Karazhan, Suramar Campaign, Raiding with Leashes, J!NX Giveaway - Wowhead News",
+          "url": "https://www.wowhead.com/diablo-2/news/patch-7-1-survival-guide-return-to-karazhan-suramar-campaign-raiding-with-257057"
+        },
+        {
+          "title": "Patch 7.1 Overview - Wowhead",
+          "url": "https://www.wowhead.com/guide/patch-7-1-overview-5773"
+        },
+        {
+          "title": "Legion Blacksmithing Guide - Wowhead",
+          "url": "https://www.wowhead.com/guide/legion-blacksmithing"
+        },
+        {
+          "title": "Abundant Order Resources Cache - Item - 12.1.5 PTR",
+          "url": "https://www.wowhead.com/ptr-2/item%3D150737/abundant-order-resources-cache"
+        }
+      ]
+    },
+    {
+      "queries": [
+        "site:wowhead.com \"Broken Isles Gem Delivery\" \"Contains\""
+      ],
+      "sources": [
+        {
+          "title": "Legion Timewalking Guide - Vendor Location, Rewards - Wowhead",
+          "url": "https://www.wowhead.com/guide/events/legion-timewalking-weekly-bonus-event-guide"
+        }
+      ]
+    }
+  ]
+}

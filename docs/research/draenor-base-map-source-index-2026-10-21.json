@@ -1,0 +1,1740 @@
+{
+  "scope": "Retail Draenor base Materials only; composed materials excluded",
+  "checkedAt": "2026-10-21T12:45:39.334973+00:00",
+  "itemCount": 91,
+  "sourceCount": 91,
+  "failedSourceCount": 0,
+  "items": [
+    {
+      "itemID": 109585,
+      "itemName": "Arakkoa Cipher",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:109585"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 108439,
+      "itemName": "Draenor Clan Orator Cane",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:108439"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109584,
+      "itemName": "Ogre Missive",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:109584"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 120945,
+      "itemName": "Primal Spirit",
+      "category": "Bound Crafting Input",
+      "sourceKeys": [
+        "item:120945"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111557,
+      "itemName": "Sumptuous Fur",
+      "category": "Cloth",
+      "sourceKeys": [
+        "item:111557"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 113264,
+      "itemName": "Sorcerous Air",
+      "category": "Elemental",
+      "sourceKeys": [
+        "item:113264"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 113263,
+      "itemName": "Sorcerous Earth",
+      "category": "Elemental",
+      "sourceKeys": [
+        "item:113263"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 113261,
+      "itemName": "Sorcerous Fire",
+      "category": "Elemental",
+      "sourceKeys": [
+        "item:113261"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 113262,
+      "itemName": "Sorcerous Water",
+      "category": "Elemental",
+      "sourceKeys": [
+        "item:113262"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109693,
+      "itemName": "Draenic Dust",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:109693"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 115504,
+      "itemName": "Fractured Temporal Crystal",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:115504"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111245,
+      "itemName": "Luminous Shard",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:111245"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 115502,
+      "itemName": "Small Luminous Shard",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:115502"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 113588,
+      "itemName": "Temporal Crystal",
+      "category": "Enchanting",
+      "sourceKeys": [
+        "item:113588"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109143,
+      "itemName": "Abyssal Gulper Eel Flesh",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109143"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109144,
+      "itemName": "Blackwater Whiptail Flesh",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109144"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109140,
+      "itemName": "Blind Lake Sturgeon Flesh",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109140"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109137,
+      "itemName": "Crescent Saberfish Flesh",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109137"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109139,
+      "itemName": "Fat Sleeper Flesh",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109139"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 127991,
+      "itemName": "Felmouth Frenzy",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:127991"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109141,
+      "itemName": "Fire Ammonite Tentacle",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109141"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109138,
+      "itemName": "Jawless Skulker Flesh",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109138"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109142,
+      "itemName": "Sea Scorpion Segment",
+      "category": "Fish",
+      "sourceKeys": [
+        "item:109142"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110293,
+      "itemName": "Abyssal Gulper Eel Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110293"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110294,
+      "itemName": "Blackwater Whiptail Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110294"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110290,
+      "itemName": "Blind Lake Sturgeon Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110290"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110289,
+      "itemName": "Fat Sleeper Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110289"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128229,
+      "itemName": "Felmouth Frenzy Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:128229"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110291,
+      "itemName": "Fire Ammonite Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110291"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110274,
+      "itemName": "Jawless Skulker Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110274"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110292,
+      "itemName": "Sea Scorpion Bait",
+      "category": "Fishing Bait",
+      "sourceKeys": [
+        "item:110292"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109125,
+      "itemName": "Fireweed",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:109125"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109124,
+      "itemName": "Frostweed",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:109124"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109126,
+      "itemName": "Gorgrond Flytrap",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:109126"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109128,
+      "itemName": "Nagrand Arrowbloom",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:109128"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109127,
+      "itemName": "Starflower",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:109127"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109129,
+      "itemName": "Talador Orchid",
+      "category": "Herb",
+      "sourceKeys": [
+        "item:109129"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109625,
+      "itemName": "Broken Fireweed Stem",
+      "category": "Herb Fragment",
+      "sourceKeys": [
+        "item:109625"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109624,
+      "itemName": "Broken Frostweed Stem",
+      "category": "Herb Fragment",
+      "sourceKeys": [
+        "item:109624"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109626,
+      "itemName": "Gorgrond Flytrap Ichor",
+      "category": "Herb Fragment",
+      "sourceKeys": [
+        "item:109626"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109628,
+      "itemName": "Nagrand Arrowbloom Petal",
+      "category": "Herb Fragment",
+      "sourceKeys": [
+        "item:109628"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109627,
+      "itemName": "Starflower Petal",
+      "category": "Herb Fragment",
+      "sourceKeys": [
+        "item:109627"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109629,
+      "itemName": "Talador Orchid Petal",
+      "category": "Herb Fragment",
+      "sourceKeys": [
+        "item:109629"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110609,
+      "itemName": "Raw Beast Hide",
+      "category": "Leather",
+      "sourceKeys": [
+        "item:110609"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 110610,
+      "itemName": "Raw Beast Hide Scraps",
+      "category": "Leather Scrap",
+      "sourceKeys": [
+        "item:110610"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128499,
+      "itemName": "Fel Egg",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:128499"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128500,
+      "itemName": "Fel Ham",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:128500"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109136,
+      "itemName": "Raw Boar Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:109136"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109131,
+      "itemName": "Raw Clefthoof Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:109131"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109134,
+      "itemName": "Raw Elekk Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:109134"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109135,
+      "itemName": "Raw Riverbeast Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:109135"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109132,
+      "itemName": "Raw Talbuk Meat",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:109132"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109133,
+      "itemName": "Rylak Egg",
+      "category": "Meat",
+      "sourceKeys": [
+        "item:109133"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128314,
+      "itemName": "Frozen Arms of a Hero",
+      "category": "Mission Reward",
+      "sourceKeys": [
+        "item:128314"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128313,
+      "itemName": "Huge Ogre Cache",
+      "category": "Mission Reward",
+      "sourceKeys": [
+        "item:128313"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109118,
+      "itemName": "Blackrock Ore",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:109118"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109119,
+      "itemName": "True Iron Ore",
+      "category": "Ore",
+      "sourceKeys": [
+        "item:109119"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109992,
+      "itemName": "Blackrock Fragment",
+      "category": "Ore Fragment",
+      "sourceKeys": [
+        "item:109992"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 109991,
+      "itemName": "True Iron Nugget",
+      "category": "Ore Fragment",
+      "sourceKeys": [
+        "item:109991"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 114931,
+      "itemName": "Cerulean Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:114931"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 127759,
+      "itemName": "Felblight",
+      "category": "Reagent",
+      "sourceKeys": [
+        "item:127759"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 118472,
+      "itemName": "Savage Blood",
+      "category": "Reagent",
+      "sourceKeys": [
+        "item:118472"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 128315,
+      "itemName": "Medallion of the Legion",
+      "category": "Reputation Item",
+      "sourceKeys": [
+        "item:128315"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 116053,
+      "itemName": "Draenic Seeds",
+      "category": "Seed",
+      "sourceKeys": [
+        "item:116053"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 115508,
+      "itemName": "Draenic Stone",
+      "category": "Stone",
+      "sourceKeys": [
+        "item:115508"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 108739,
+      "itemName": "Pretty Draenor Pearl",
+      "category": "Toy",
+      "sourceKeys": [
+        "item:108739"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 251766,
+      "itemName": "Shadowmoon Lumber",
+      "category": "Warband Housing Lumber",
+      "sourceKeys": [
+        "item:251766"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111664,
+      "itemName": "Abyssal Gulper Eel",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111664"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111663,
+      "itemName": "Blackwater Whiptail",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111663"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111667,
+      "itemName": "Blind Lake Sturgeon",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111667"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111595,
+      "itemName": "Crescent Saberfish",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111595"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111671,
+      "itemName": "Enormous Abyssal Gulper Eel",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111671"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111670,
+      "itemName": "Enormous Blackwater Whiptail",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111670"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111674,
+      "itemName": "Enormous Blind Lake Sturgeon",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111674"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111601,
+      "itemName": "Enormous Crescent Saberfish",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111601"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111675,
+      "itemName": "Enormous Fat Sleeper",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111675"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111673,
+      "itemName": "Enormous Fire Ammonite",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111673"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111676,
+      "itemName": "Enormous Jawless Skulker",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111676"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111672,
+      "itemName": "Enormous Sea Scorpion",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111672"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111668,
+      "itemName": "Fat Sleeper",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111668"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111666,
+      "itemName": "Fire Ammonite",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111666"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111669,
+      "itemName": "Jawless Skulker",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111669"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111665,
+      "itemName": "Sea Scorpion",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111665"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111659,
+      "itemName": "Small Abyssal Gulper Eel",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111659"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111662,
+      "itemName": "Small Blackwater Whiptail",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111662"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111652,
+      "itemName": "Small Blind Lake Sturgeon",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111652"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111589,
+      "itemName": "Small Crescent Saberfish",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111589"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111651,
+      "itemName": "Small Fat Sleeper",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111651"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111656,
+      "itemName": "Small Fire Ammonite",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111656"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111650,
+      "itemName": "Small Jawless Skulker",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111650"
+      ],
+      "status": "retrieved"
+    },
+    {
+      "itemID": 111658,
+      "itemName": "Small Sea Scorpion",
+      "category": "Whole Fish",
+      "sourceKeys": [
+        "item:111658"
+      ],
+      "status": "retrieved"
+    }
+  ],
+  "sources": {
+    "item:108439": {
+      "kind": "item",
+      "id": 108439,
+      "name": "Draenor Clan Orator Cane",
+      "pageUrl": "https://www.wowhead.com/item=108439",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/108439?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.816186+00:00",
+      "sha256": "75f27bff66f4231ee99a7a4c8aeafdd493097950cada0fdafb320af48a4d6bbc",
+      "status": "retrieved"
+    },
+    "item:108739": {
+      "kind": "item",
+      "id": 108739,
+      "name": "Pretty Draenor Pearl",
+      "pageUrl": "https://www.wowhead.com/item=108739",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/108739?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.730783+00:00",
+      "sha256": "da0cba9106dc2ab1b634fad98987cf5c7c7f28cf3f02c565976195cc3eff8b9e",
+      "status": "retrieved"
+    },
+    "item:109118": {
+      "kind": "item",
+      "id": 109118,
+      "name": "Blackrock Ore",
+      "pageUrl": "https://www.wowhead.com/item=109118",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109118?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.735777+00:00",
+      "sha256": "b28205ac0f5721ca578abae72877c65ec02ebfb0a7de4b9831645fd3614c76c4",
+      "status": "retrieved"
+    },
+    "item:109119": {
+      "kind": "item",
+      "id": 109119,
+      "name": "True Iron Ore",
+      "pageUrl": "https://www.wowhead.com/item=109119",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109119?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.736778+00:00",
+      "sha256": "1c57cf3114ab4ae294522c177b1651462847e66202c0b8cf4b7ced58bbad8d20",
+      "status": "retrieved"
+    },
+    "item:109124": {
+      "kind": "item",
+      "id": 109124,
+      "name": "Frostweed",
+      "pageUrl": "https://www.wowhead.com/item=109124",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109124?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.918311+00:00",
+      "sha256": "eae5463d0c6da1322a495c34026f912aee71dd417cf550d99330f50965cdd3dc",
+      "status": "retrieved"
+    },
+    "item:109125": {
+      "kind": "item",
+      "id": 109125,
+      "name": "Fireweed",
+      "pageUrl": "https://www.wowhead.com/item=109125",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109125?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.983019+00:00",
+      "sha256": "249eb4f88f796c61278de249b076e65af1a0a8976bbd188cd4927bc097740fc0",
+      "status": "retrieved"
+    },
+    "item:109126": {
+      "kind": "item",
+      "id": 109126,
+      "name": "Gorgrond Flytrap",
+      "pageUrl": "https://www.wowhead.com/item=109126",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109126?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.919311+00:00",
+      "sha256": "05a455e736298011dd97177624a1f1a6b6bc8a5c649d79e1b60af7cf244ad313",
+      "status": "retrieved"
+    },
+    "item:109127": {
+      "kind": "item",
+      "id": 109127,
+      "name": "Starflower",
+      "pageUrl": "https://www.wowhead.com/item=109127",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109127?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:06.985024+00:00",
+      "sha256": "6b7bed3e32523447f2bb413b8f7af9ab407059224e0c0c37b44b66ef84331189",
+      "status": "retrieved"
+    },
+    "item:109128": {
+      "kind": "item",
+      "id": 109128,
+      "name": "Nagrand Arrowbloom",
+      "pageUrl": "https://www.wowhead.com/item=109128",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109128?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.087495+00:00",
+      "sha256": "b6cb36a33af841e1ec3a49abf212fa0181f4c747ae2e611d09bad5f4d525bdd6",
+      "status": "retrieved"
+    },
+    "item:109129": {
+      "kind": "item",
+      "id": 109129,
+      "name": "Talador Orchid",
+      "pageUrl": "https://www.wowhead.com/item=109129",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109129?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.114268+00:00",
+      "sha256": "6649f52b7d12ef915d0de643a3066e8636d60d893ec1391809e73fd0f0ed8e02",
+      "status": "retrieved"
+    },
+    "item:109131": {
+      "kind": "item",
+      "id": 109131,
+      "name": "Raw Clefthoof Meat",
+      "pageUrl": "https://www.wowhead.com/item=109131",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109131?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.260599+00:00",
+      "sha256": "8657172eab3e437c85bec418c7a68906b56945d793c7c96f59b7c26c2eaf0008",
+      "status": "retrieved"
+    },
+    "item:109132": {
+      "kind": "item",
+      "id": 109132,
+      "name": "Raw Talbuk Meat",
+      "pageUrl": "https://www.wowhead.com/item=109132",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109132?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.268515+00:00",
+      "sha256": "ff66614d69bdd0016a6ed5ee4af0525cba6b17be2b0eaa41878779e889ced684",
+      "status": "retrieved"
+    },
+    "item:109133": {
+      "kind": "item",
+      "id": 109133,
+      "name": "Rylak Egg",
+      "pageUrl": "https://www.wowhead.com/item=109133",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109133?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.436058+00:00",
+      "sha256": "31e227e05311a48fbd6b6b47db4c6b28fbdb0dca206f3def4a88aecc54139f1d",
+      "status": "retrieved"
+    },
+    "item:109134": {
+      "kind": "item",
+      "id": 109134,
+      "name": "Raw Elekk Meat",
+      "pageUrl": "https://www.wowhead.com/item=109134",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109134?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.296567+00:00",
+      "sha256": "61e25e79b3c26832a9f96e0ac0cd85e179b6da712686d6e63038a0f9e51623b0",
+      "status": "retrieved"
+    },
+    "item:109135": {
+      "kind": "item",
+      "id": 109135,
+      "name": "Raw Riverbeast Meat",
+      "pageUrl": "https://www.wowhead.com/item=109135",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109135?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.590955+00:00",
+      "sha256": "33200c928ccf6bc2ceadc287371efb05a7e3540aa72bcdd080fe9ad7b3fd606f",
+      "status": "retrieved"
+    },
+    "item:109136": {
+      "kind": "item",
+      "id": 109136,
+      "name": "Raw Boar Meat",
+      "pageUrl": "https://www.wowhead.com/item=109136",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109136?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.606094+00:00",
+      "sha256": "1ec5adebbf17983b6f9fc916c8b322070de9c91ed97dc8882f1f23f12ea6587e",
+      "status": "retrieved"
+    },
+    "item:109137": {
+      "kind": "item",
+      "id": 109137,
+      "name": "Crescent Saberfish Flesh",
+      "pageUrl": "https://www.wowhead.com/item=109137",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109137?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.477038+00:00",
+      "sha256": "d7b05173b90127d6d88b216ce62decb85ee0afb5100c0bc1f0fc3371ac29f08d",
+      "status": "retrieved"
+    },
+    "item:109138": {
+      "kind": "item",
+      "id": 109138,
+      "name": "Jawless Skulker Flesh",
+      "pageUrl": "https://www.wowhead.com/item=109138",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109138?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.779356+00:00",
+      "sha256": "0b36f4d6f7ae2018b1c72b688b7813d36bff5d50679045533cf07a7b99352198",
+      "status": "retrieved"
+    },
+    "item:109139": {
+      "kind": "item",
+      "id": 109139,
+      "name": "Fat Sleeper Flesh",
+      "pageUrl": "https://www.wowhead.com/item=109139",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109139?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.661987+00:00",
+      "sha256": "19f3cdc7fb71e662ed2752d4fe2c5f7dc3d109ebd78c96adc4b4e3da0b4ca944",
+      "status": "retrieved"
+    },
+    "item:109140": {
+      "kind": "item",
+      "id": 109140,
+      "name": "Blind Lake Sturgeon Flesh",
+      "pageUrl": "https://www.wowhead.com/item=109140",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109140?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.778353+00:00",
+      "sha256": "7b6389feedc47979c0e6b5bbc85d352010ce2ab7fe56e67a633df3790257a1cd",
+      "status": "retrieved"
+    },
+    "item:109141": {
+      "kind": "item",
+      "id": 109141,
+      "name": "Fire Ammonite Tentacle",
+      "pageUrl": "https://www.wowhead.com/item=109141",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109141?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.791397+00:00",
+      "sha256": "e8b55a951c272e3d48585a026802eacbc09deffe39ac2d87634fdcf5b0204100",
+      "status": "retrieved"
+    },
+    "item:109142": {
+      "kind": "item",
+      "id": 109142,
+      "name": "Sea Scorpion Segment",
+      "pageUrl": "https://www.wowhead.com/item=109142",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109142?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.848907+00:00",
+      "sha256": "dae3d8a42b147da7ab22a3828d0a0657f45f279160571734209d1da6aa396835",
+      "status": "retrieved"
+    },
+    "item:109143": {
+      "kind": "item",
+      "id": 109143,
+      "name": "Abyssal Gulper Eel Flesh",
+      "pageUrl": "https://www.wowhead.com/item=109143",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109143?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.962194+00:00",
+      "sha256": "295204d38a1863b58632cfe5c5a0b62fc276310b185c659fe135d42e19b4dcde",
+      "status": "retrieved"
+    },
+    "item:109144": {
+      "kind": "item",
+      "id": 109144,
+      "name": "Blackwater Whiptail Flesh",
+      "pageUrl": "https://www.wowhead.com/item=109144",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109144?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.961244+00:00",
+      "sha256": "c2e4d87120244c178eb6083da6a546076c680c271836758d797acb30e8df4a2f",
+      "status": "retrieved"
+    },
+    "item:109584": {
+      "kind": "item",
+      "id": 109584,
+      "name": "Ogre Missive",
+      "pageUrl": "https://www.wowhead.com/item=109584",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109584?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:07.964198+00:00",
+      "sha256": "932dd895dda2571741b54be2e4a3549f8ae7beaa7f04b9eaccdf819f0bc29828",
+      "status": "retrieved"
+    },
+    "item:109585": {
+      "kind": "item",
+      "id": 109585,
+      "name": "Arakkoa Cipher",
+      "pageUrl": "https://www.wowhead.com/item=109585",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109585?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.016118+00:00",
+      "sha256": "a026b46c91a566766e822e7a6072131e33e2eb4f90464fe504139f66e852c2ed",
+      "status": "retrieved"
+    },
+    "item:109624": {
+      "kind": "item",
+      "id": 109624,
+      "name": "Broken Frostweed Stem",
+      "pageUrl": "https://www.wowhead.com/item=109624",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109624?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.156177+00:00",
+      "sha256": "6f27da28e8885ce6da35776468aa1226bb89d3e4fe9ae9a7dcd61c4711fab995",
+      "status": "retrieved"
+    },
+    "item:109625": {
+      "kind": "item",
+      "id": 109625,
+      "name": "Broken Fireweed Stem",
+      "pageUrl": "https://www.wowhead.com/item=109625",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109625?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.148333+00:00",
+      "sha256": "ea4e85ed907af3ebe6c4c6a46c3eb3788428107ab61b199aa661214571346455",
+      "status": "retrieved"
+    },
+    "item:109626": {
+      "kind": "item",
+      "id": 109626,
+      "name": "Gorgrond Flytrap Ichor",
+      "pageUrl": "https://www.wowhead.com/item=109626",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109626?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.149332+00:00",
+      "sha256": "85e6ea7b70315481f89e33fa000eb560862120416c17c440e145a98570c00085",
+      "status": "retrieved"
+    },
+    "item:109627": {
+      "kind": "item",
+      "id": 109627,
+      "name": "Starflower Petal",
+      "pageUrl": "https://www.wowhead.com/item=109627",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109627?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.244221+00:00",
+      "sha256": "35d0311f57d3827355f052f6437de1e46bf1535d1475c9c7cf2f81e0f3618a71",
+      "status": "retrieved"
+    },
+    "item:109628": {
+      "kind": "item",
+      "id": 109628,
+      "name": "Nagrand Arrowbloom Petal",
+      "pageUrl": "https://www.wowhead.com/item=109628",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109628?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.341138+00:00",
+      "sha256": "00c91bf79b7a6bbb34c046b830cbc18ec97365ddc90016f27f368933e7d7615a",
+      "status": "retrieved"
+    },
+    "item:109629": {
+      "kind": "item",
+      "id": 109629,
+      "name": "Talador Orchid Petal",
+      "pageUrl": "https://www.wowhead.com/item=109629",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109629?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.425349+00:00",
+      "sha256": "a09f966ff6b0bc564da477646373c62128695868559f2dcc0649a4c74a9741fd",
+      "status": "retrieved"
+    },
+    "item:109693": {
+      "kind": "item",
+      "id": 109693,
+      "name": "Draenic Dust",
+      "pageUrl": "https://www.wowhead.com/item=109693",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109693?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.336106+00:00",
+      "sha256": "db537d377dd279ffa6c9afdc777613722e237e058be194395d5e357e9be65eb8",
+      "status": "retrieved"
+    },
+    "item:109991": {
+      "kind": "item",
+      "id": 109991,
+      "name": "True Iron Nugget",
+      "pageUrl": "https://www.wowhead.com/item=109991",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109991?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.479151+00:00",
+      "sha256": "892810edf8f362fb60abefb114603fcd829aa4e37800e7e09b4c6ce56b657ffd",
+      "status": "retrieved"
+    },
+    "item:109992": {
+      "kind": "item",
+      "id": 109992,
+      "name": "Blackrock Fragment",
+      "pageUrl": "https://www.wowhead.com/item=109992",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/109992?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.517835+00:00",
+      "sha256": "fe84d0e8b8fdb274536bc6532205a76a3848c8a9e659164d6b0bac01a4ccbfac",
+      "status": "retrieved"
+    },
+    "item:110274": {
+      "kind": "item",
+      "id": 110274,
+      "name": "Jawless Skulker Bait",
+      "pageUrl": "https://www.wowhead.com/item=110274",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110274?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.535876+00:00",
+      "sha256": "e9412a5bd6b4efb87224b4b7f3f0df5eb0ae7cc2baff659d8d31f59374458074",
+      "status": "retrieved"
+    },
+    "item:110289": {
+      "kind": "item",
+      "id": 110289,
+      "name": "Fat Sleeper Bait",
+      "pageUrl": "https://www.wowhead.com/item=110289",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110289?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.616132+00:00",
+      "sha256": "3558e3fbdab5d14e26af6a71fcefcdfd6721a9ffad7ee90de405ac4fc616c9cd",
+      "status": "retrieved"
+    },
+    "item:110290": {
+      "kind": "item",
+      "id": 110290,
+      "name": "Blind Lake Sturgeon Bait",
+      "pageUrl": "https://www.wowhead.com/item=110290",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110290?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.729038+00:00",
+      "sha256": "f68fb95346fe79bac56d086bd6f0ea6776bba8311afef52936c6fede81a8115c",
+      "status": "retrieved"
+    },
+    "item:110291": {
+      "kind": "item",
+      "id": 110291,
+      "name": "Fire Ammonite Bait",
+      "pageUrl": "https://www.wowhead.com/item=110291",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110291?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.705829+00:00",
+      "sha256": "51dca9c54f683be71af0b6883a0ed031301f6f4000eb4c864ae280e70ee673d6",
+      "status": "retrieved"
+    },
+    "item:110292": {
+      "kind": "item",
+      "id": 110292,
+      "name": "Sea Scorpion Bait",
+      "pageUrl": "https://www.wowhead.com/item=110292",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110292?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.696869+00:00",
+      "sha256": "796d24503892846518411a69158bbddb4c18f68e3b8c77da1bee86dd3c4666b6",
+      "status": "retrieved"
+    },
+    "item:110293": {
+      "kind": "item",
+      "id": 110293,
+      "name": "Abyssal Gulper Eel Bait",
+      "pageUrl": "https://www.wowhead.com/item=110293",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110293?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.786842+00:00",
+      "sha256": "2ef88769258dc10d2e38a35002dbe8a732b4c318a5cbaa2da2aedc0aeca6efac",
+      "status": "retrieved"
+    },
+    "item:110294": {
+      "kind": "item",
+      "id": 110294,
+      "name": "Blackwater Whiptail Bait",
+      "pageUrl": "https://www.wowhead.com/item=110294",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110294?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.865570+00:00",
+      "sha256": "0c722de13cb205463fffd74fc119c266dc9cc71d78384d361a1717fbd042dbaf",
+      "status": "retrieved"
+    },
+    "item:110609": {
+      "kind": "item",
+      "id": 110609,
+      "name": "Raw Beast Hide",
+      "pageUrl": "https://www.wowhead.com/item=110609",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110609?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.872570+00:00",
+      "sha256": "65f6602e4c8118c8777b98b18742d0fb2fefdca8a24221e5090a2862a68d6e3d",
+      "status": "retrieved"
+    },
+    "item:110610": {
+      "kind": "item",
+      "id": 110610,
+      "name": "Raw Beast Hide Scraps",
+      "pageUrl": "https://www.wowhead.com/item=110610",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/110610?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.899480+00:00",
+      "sha256": "708cb7e1411729fae9953ae46c692454076ec4af84a0c86d91c2c1a67297ea5d",
+      "status": "retrieved"
+    },
+    "item:111245": {
+      "kind": "item",
+      "id": 111245,
+      "name": "Luminous Shard",
+      "pageUrl": "https://www.wowhead.com/item=111245",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111245?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:08.952398+00:00",
+      "sha256": "4e9c390483a673db6b4ab5c60ada90cbddd4aa3ada0e8dcc4880f5d0445437c5",
+      "status": "retrieved"
+    },
+    "item:111557": {
+      "kind": "item",
+      "id": 111557,
+      "name": "Sumptuous Fur",
+      "pageUrl": "https://www.wowhead.com/item=111557",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111557?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.037429+00:00",
+      "sha256": "f4f5783fe8d2f7f27927cd7dc800ae234d188f2ac9facc843bb6c9420615ccf3",
+      "status": "retrieved"
+    },
+    "item:111589": {
+      "kind": "item",
+      "id": 111589,
+      "name": "Small Crescent Saberfish",
+      "pageUrl": "https://www.wowhead.com/item=111589",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111589?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.116431+00:00",
+      "sha256": "75dd8903ddb57facf5ea3cb44b1fffc4a68c77fa23e1104027331a06606bae04",
+      "status": "retrieved"
+    },
+    "item:111595": {
+      "kind": "item",
+      "id": 111595,
+      "name": "Crescent Saberfish",
+      "pageUrl": "https://www.wowhead.com/item=111595",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111595?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.082429+00:00",
+      "sha256": "819f080ebf9df23c1a24db215290dec68b3512b6139279026a11ab14042f42da",
+      "status": "retrieved"
+    },
+    "item:111601": {
+      "kind": "item",
+      "id": 111601,
+      "name": "Enormous Crescent Saberfish",
+      "pageUrl": "https://www.wowhead.com/item=111601",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111601?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.133430+00:00",
+      "sha256": "d72df8d6106e3a32b4170c67bc6e8b97514affd261b1c9f0625f5b48fe78d447",
+      "status": "retrieved"
+    },
+    "item:111650": {
+      "kind": "item",
+      "id": 111650,
+      "name": "Small Jawless Skulker",
+      "pageUrl": "https://www.wowhead.com/item=111650",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111650?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.278555+00:00",
+      "sha256": "f9f82ca58a8129655e471011cefbdd9d789150d49912358295bbec0ee78f676a",
+      "status": "retrieved"
+    },
+    "item:111651": {
+      "kind": "item",
+      "id": 111651,
+      "name": "Small Fat Sleeper",
+      "pageUrl": "https://www.wowhead.com/item=111651",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111651?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.286551+00:00",
+      "sha256": "9b42d2f64651811d744de2f52c72c520dd2f5f3700f2e61085a160e1c964d9fc",
+      "status": "retrieved"
+    },
+    "item:111652": {
+      "kind": "item",
+      "id": 111652,
+      "name": "Small Blind Lake Sturgeon",
+      "pageUrl": "https://www.wowhead.com/item=111652",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111652?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.353741+00:00",
+      "sha256": "208baf0b7a625d084919a464c165021ce4c6575a700cc39a730e774022b15ac7",
+      "status": "retrieved"
+    },
+    "item:111656": {
+      "kind": "item",
+      "id": 111656,
+      "name": "Small Fire Ammonite",
+      "pageUrl": "https://www.wowhead.com/item=111656",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111656?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.390961+00:00",
+      "sha256": "e16d68794c7c8cbac96e549829203f8227f03b5bf2695978ccb300577bad6965",
+      "status": "retrieved"
+    },
+    "item:111658": {
+      "kind": "item",
+      "id": 111658,
+      "name": "Small Sea Scorpion",
+      "pageUrl": "https://www.wowhead.com/item=111658",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111658?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.561974+00:00",
+      "sha256": "9ff4687acd8f8390119cc7eec52c4b56148637fb67917893005b98e4ff1eaf60",
+      "status": "retrieved"
+    },
+    "item:111659": {
+      "kind": "item",
+      "id": 111659,
+      "name": "Small Abyssal Gulper Eel",
+      "pageUrl": "https://www.wowhead.com/item=111659",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111659?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.452541+00:00",
+      "sha256": "cf291bedebb82d95940f1e5d6004481f830f46b6c803b4f4dca3c849c261d04b",
+      "status": "retrieved"
+    },
+    "item:111662": {
+      "kind": "item",
+      "id": 111662,
+      "name": "Small Blackwater Whiptail",
+      "pageUrl": "https://www.wowhead.com/item=111662",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111662?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.599860+00:00",
+      "sha256": "ebcb551f0f4446f9d5b113522b69ccfe524e7a038bd862ebacd797d676b2d1dd",
+      "status": "retrieved"
+    },
+    "item:111663": {
+      "kind": "item",
+      "id": 111663,
+      "name": "Blackwater Whiptail",
+      "pageUrl": "https://www.wowhead.com/item=111663",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111663?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.646304+00:00",
+      "sha256": "18ee33c6e2e6bfd74bdd9fd3395337461886f4683b3b91218b869793e9063e6d",
+      "status": "retrieved"
+    },
+    "item:111664": {
+      "kind": "item",
+      "id": 111664,
+      "name": "Abyssal Gulper Eel",
+      "pageUrl": "https://www.wowhead.com/item=111664",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111664?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.672093+00:00",
+      "sha256": "e31a7a6304ec66e5e39f66e2e1c356234d922c5b1995b9d818025f8d69a1a89d",
+      "status": "retrieved"
+    },
+    "item:111665": {
+      "kind": "item",
+      "id": 111665,
+      "name": "Sea Scorpion",
+      "pageUrl": "https://www.wowhead.com/item=111665",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111665?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.818828+00:00",
+      "sha256": "b87a678513b5e02457fe9f5a1e272e114c848bec58966c6a6ba5c0f283241dc0",
+      "status": "retrieved"
+    },
+    "item:111666": {
+      "kind": "item",
+      "id": 111666,
+      "name": "Fire Ammonite",
+      "pageUrl": "https://www.wowhead.com/item=111666",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111666?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.791152+00:00",
+      "sha256": "e65a015d5ea5bc9d1170cac5b513e6ee7281b6472ca6708fcf91e61aa27ed830",
+      "status": "retrieved"
+    },
+    "item:111667": {
+      "kind": "item",
+      "id": 111667,
+      "name": "Blind Lake Sturgeon",
+      "pageUrl": "https://www.wowhead.com/item=111667",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111667?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.877482+00:00",
+      "sha256": "06a064c77af06c26a3fcfa1f6c5da405c2568ec78d7a40e3182d70001ba6bf03",
+      "status": "retrieved"
+    },
+    "item:111668": {
+      "kind": "item",
+      "id": 111668,
+      "name": "Fat Sleeper",
+      "pageUrl": "https://www.wowhead.com/item=111668",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111668?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:09.926097+00:00",
+      "sha256": "88580844c5d6f2bf9cd4e5b9986501a3887e338221582952d4f3b14d14982e80",
+      "status": "retrieved"
+    },
+    "item:111669": {
+      "kind": "item",
+      "id": 111669,
+      "name": "Jawless Skulker",
+      "pageUrl": "https://www.wowhead.com/item=111669",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111669?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.026922+00:00",
+      "sha256": "004d2183f94ea3dfeec82703376dd99c47c06f825436d39df7f4eebca6887311",
+      "status": "retrieved"
+    },
+    "item:111670": {
+      "kind": "item",
+      "id": 111670,
+      "name": "Enormous Blackwater Whiptail",
+      "pageUrl": "https://www.wowhead.com/item=111670",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111670?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.052074+00:00",
+      "sha256": "97bc0ea322247634ff1b31926922de3a5c6b25199d601610457a24d9a9e29f10",
+      "status": "retrieved"
+    },
+    "item:111671": {
+      "kind": "item",
+      "id": 111671,
+      "name": "Enormous Abyssal Gulper Eel",
+      "pageUrl": "https://www.wowhead.com/item=111671",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111671?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.052074+00:00",
+      "sha256": "4904fb276986bd0a7c93c5a303d6b90f9adf0dea0653cad2b001bd4df35bc69d",
+      "status": "retrieved"
+    },
+    "item:111672": {
+      "kind": "item",
+      "id": 111672,
+      "name": "Enormous Sea Scorpion",
+      "pageUrl": "https://www.wowhead.com/item=111672",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111672?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.089672+00:00",
+      "sha256": "6dbab3db77fc487dee605c7fdd6f673c04e229f0a36325294b705c6a32b5280d",
+      "status": "retrieved"
+    },
+    "item:111673": {
+      "kind": "item",
+      "id": 111673,
+      "name": "Enormous Fire Ammonite",
+      "pageUrl": "https://www.wowhead.com/item=111673",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111673?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.226693+00:00",
+      "sha256": "bf59c108c0195c50f46614aadee5401ded5660605b83f8d1c9160af7ee1714cf",
+      "status": "retrieved"
+    },
+    "item:111674": {
+      "kind": "item",
+      "id": 111674,
+      "name": "Enormous Blind Lake Sturgeon",
+      "pageUrl": "https://www.wowhead.com/item=111674",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111674?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.252807+00:00",
+      "sha256": "c4dabc74bf4c0296bec80399415f7b06823f3e0890a87629b69e2c130a7343cd",
+      "status": "retrieved"
+    },
+    "item:111675": {
+      "kind": "item",
+      "id": 111675,
+      "name": "Enormous Fat Sleeper",
+      "pageUrl": "https://www.wowhead.com/item=111675",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111675?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.214694+00:00",
+      "sha256": "1128d8ada3e8c49c346aed03ce31dba100f25104427c8a90dc982a07fdcaae27",
+      "status": "retrieved"
+    },
+    "item:111676": {
+      "kind": "item",
+      "id": 111676,
+      "name": "Enormous Jawless Skulker",
+      "pageUrl": "https://www.wowhead.com/item=111676",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/111676?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.253807+00:00",
+      "sha256": "0d4b36e2317be6bcd7300397de59d482a93124cc1ce56d45e73a810e4d08b832",
+      "status": "retrieved"
+    },
+    "item:113261": {
+      "kind": "item",
+      "id": 113261,
+      "name": "Sorcerous Fire",
+      "pageUrl": "https://www.wowhead.com/item=113261",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/113261?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.378554+00:00",
+      "sha256": "8016c1a8aafc2aa2fd66bf228251728a044eb10f9a10471bfa3c4883bf6842ad",
+      "status": "retrieved"
+    },
+    "item:113262": {
+      "kind": "item",
+      "id": 113262,
+      "name": "Sorcerous Water",
+      "pageUrl": "https://www.wowhead.com/item=113262",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/113262?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.390261+00:00",
+      "sha256": "4b7b6fbd9a9d15bab62ea7ee161775bff12e41f19da8d657b6d72a4341c9798f",
+      "status": "retrieved"
+    },
+    "item:113263": {
+      "kind": "item",
+      "id": 113263,
+      "name": "Sorcerous Earth",
+      "pageUrl": "https://www.wowhead.com/item=113263",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/113263?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.416302+00:00",
+      "sha256": "40e02f179238a7736f6e7b988f534ee3d95e3066fd31b62d554f100c91ebf83a",
+      "status": "retrieved"
+    },
+    "item:113264": {
+      "kind": "item",
+      "id": 113264,
+      "name": "Sorcerous Air",
+      "pageUrl": "https://www.wowhead.com/item=113264",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/113264?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.423301+00:00",
+      "sha256": "efbd2590e3a266ff29bf2bc3198f9e0307b38799e0e0a00bc96ec9ab459a806c",
+      "status": "retrieved"
+    },
+    "item:113588": {
+      "kind": "item",
+      "id": 113588,
+      "name": "Temporal Crystal",
+      "pageUrl": "https://www.wowhead.com/item=113588",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/113588?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.548566+00:00",
+      "sha256": "0fea161d7b7d267a8ca31c30bac8cf21f4b93c6479adfb019de851257c848623",
+      "status": "retrieved"
+    },
+    "item:114931": {
+      "kind": "item",
+      "id": 114931,
+      "name": "Cerulean Pigment",
+      "pageUrl": "https://www.wowhead.com/item=114931",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/114931?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.567070+00:00",
+      "sha256": "a9db571c2a173320464e43dd001d40b60a6a2c10e721d2ade256073853eebf2d",
+      "status": "retrieved"
+    },
+    "item:115502": {
+      "kind": "item",
+      "id": 115502,
+      "name": "Small Luminous Shard",
+      "pageUrl": "https://www.wowhead.com/item=115502",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/115502?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.640798+00:00",
+      "sha256": "2016e5f1e8b8ec67468c06180fcc0a6e36e7fc0b334199f5c0f253f82a4c01c8",
+      "status": "retrieved"
+    },
+    "item:115504": {
+      "kind": "item",
+      "id": 115504,
+      "name": "Fractured Temporal Crystal",
+      "pageUrl": "https://www.wowhead.com/item=115504",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/115504?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.628848+00:00",
+      "sha256": "a0038f70b1051e178d9f238d6f5e29d2c11a82baab623c9094127fb66b0bdb3a",
+      "status": "retrieved"
+    },
+    "item:115508": {
+      "kind": "item",
+      "id": 115508,
+      "name": "Draenic Stone",
+      "pageUrl": "https://www.wowhead.com/item=115508",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/115508?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.783937+00:00",
+      "sha256": "9bcef75f10eed68070f6029354d02962a34e178ef871f2a283d802ddac1b03ef",
+      "status": "retrieved"
+    },
+    "item:116053": {
+      "kind": "item",
+      "id": 116053,
+      "name": "Draenic Seeds",
+      "pageUrl": "https://www.wowhead.com/item=116053",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/116053?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.753531+00:00",
+      "sha256": "79eb5ab3882de702dd610a896a179b89d886b12920034002b99d5d46bf736279",
+      "status": "retrieved"
+    },
+    "item:118472": {
+      "kind": "item",
+      "id": 118472,
+      "name": "Savage Blood",
+      "pageUrl": "https://www.wowhead.com/item=118472",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/118472?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.829818+00:00",
+      "sha256": "64d12633faa20c8ee39084db3f2be48d40b404e679da7b14507309d4e75c7f46",
+      "status": "retrieved"
+    },
+    "item:120945": {
+      "kind": "item",
+      "id": 120945,
+      "name": "Primal Spirit",
+      "pageUrl": "https://www.wowhead.com/item=120945",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/120945?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.829295+00:00",
+      "sha256": "301f3a4b3fab3945b8617c960b3ba62ac07f2d20369f9dda3656c614d4af2026",
+      "status": "retrieved"
+    },
+    "item:127759": {
+      "kind": "item",
+      "id": 127759,
+      "name": "Felblight",
+      "pageUrl": "https://www.wowhead.com/item=127759",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/127759?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:10.999986+00:00",
+      "sha256": "b6e6b3e75c05972e37954ecc26eed062b2a76adb6a192f62b90bd5914fa67e32",
+      "status": "retrieved"
+    },
+    "item:127991": {
+      "kind": "item",
+      "id": 127991,
+      "name": "Felmouth Frenzy",
+      "pageUrl": "https://www.wowhead.com/item=127991",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/127991?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.016563+00:00",
+      "sha256": "0a0e8fcb8be3443003623a2f60df5e82868743f456af72ec4d251a361d3777ea",
+      "status": "retrieved"
+    },
+    "item:128229": {
+      "kind": "item",
+      "id": 128229,
+      "name": "Felmouth Frenzy Bait",
+      "pageUrl": "https://www.wowhead.com/item=128229",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128229?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.044294+00:00",
+      "sha256": "a108a5655e720fb7ed64bdc9502f0f8dcc68758927582f6a64a8334d6d4b840e",
+      "status": "retrieved"
+    },
+    "item:128313": {
+      "kind": "item",
+      "id": 128313,
+      "name": "Huge Ogre Cache",
+      "pageUrl": "https://www.wowhead.com/item=128313",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128313?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.049286+00:00",
+      "sha256": "f0703a2f02cd1b89a67897203a85febb65754682f8b8da810b16deae2f391eaa",
+      "status": "retrieved"
+    },
+    "item:128314": {
+      "kind": "item",
+      "id": 128314,
+      "name": "Frozen Arms of a Hero",
+      "pageUrl": "https://www.wowhead.com/item=128314",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128314?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.250963+00:00",
+      "sha256": "ef69f464eba91f51c2f7619bd898760e0acc6b080171212ea4ab3697ceb04820",
+      "status": "retrieved"
+    },
+    "item:128315": {
+      "kind": "item",
+      "id": 128315,
+      "name": "Medallion of the Legion",
+      "pageUrl": "https://www.wowhead.com/item=128315",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128315?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.204071+00:00",
+      "sha256": "4ca28add5f2cfa4f8596e71d128609efa893f834bc216b50e62c45d9346a7b4f",
+      "status": "retrieved"
+    },
+    "item:128499": {
+      "kind": "item",
+      "id": 128499,
+      "name": "Fel Egg",
+      "pageUrl": "https://www.wowhead.com/item=128499",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128499?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.279964+00:00",
+      "sha256": "18c63f2da6f40f139336c0ce409df79afc93e200dc7fe433222e7bcdaeec8fb9",
+      "status": "retrieved"
+    },
+    "item:128500": {
+      "kind": "item",
+      "id": 128500,
+      "name": "Fel Ham",
+      "pageUrl": "https://www.wowhead.com/item=128500",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/128500?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.283975+00:00",
+      "sha256": "76f6b5f1c13097c7282f121ff953b569bf3e3104ad32047c2b8ff31484ffdbe1",
+      "status": "retrieved"
+    },
+    "item:251766": {
+      "kind": "item",
+      "id": 251766,
+      "name": "Shadowmoon Lumber",
+      "pageUrl": "https://www.wowhead.com/item=251766",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/251766?dataEnv=1&locale=0",
+      "retrievedAt": "2026-10-21T12:36:11.395635+00:00",
+      "sha256": "46b23e5689c44ed463888f969c0bcbfb7ebc4b823dc0284a3f24aca5f9f3464e",
+      "status": "retrieved"
+    }
+  }
+}

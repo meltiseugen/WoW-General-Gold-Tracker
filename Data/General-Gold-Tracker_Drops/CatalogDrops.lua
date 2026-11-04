@@ -9221,6 +9221,7 @@ local categories = {
         { recordID = "toys:CrashinThrashinCannonController:1", farmID = "CrashinThrashinCannonController", farmName = "Crashin Thrashin Cannon Controller", itemID = 108633, itemLink = nil, petID = nil, quantity = 1, contentID = 6, expansion = "warlords", expansionLabel = "Warlords of Draenor", locationID = 6723, locationLabel = "Tanaan Jungle" },
         { recordID = "toys:CrashinThrashinMortarController:1", farmID = "CrashinThrashinMortarController", farmName = "Crashin Thrashin Mortar Controller", itemID = 108634, itemLink = nil, petID = nil, quantity = 1, contentID = 6, expansion = "warlords", expansionLabel = "Warlords of Draenor", locationID = 6723, locationLabel = "Tanaan Jungle" },
         { recordID = "toys:BigRedRayGun:1", farmID = "BigRedRayGun", farmName = "Big Red Ray Gun", itemID = 142265, itemLink = nil, petID = nil, quantity = 1, contentID = 7, expansion = "legion", expansionLabel = "Legion", locationID = 6043, locationLabel = "Dustwallow Marsh" },
+        { recordID = "toys:PrettyDraenorPearl:1", farmID = "PrettyDraenorPearl", farmName = "Pretty Draenor Pearl", itemID = 108739, itemLink = nil, petID = nil, quantity = 1, contentID = 6, expansion = "warlords", expansionLabel = "Warlords of Draenor", locationID = nil, locationLabel = "Frostfire Ridge" },
     },
     pets = {
         { recordID = "pets:EmeraldWhelplingFeralas:1", farmID = "EmeraldWhelplingFeralas", farmName = "Emerald Whelpling Feralas", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:59:1:3:161:10:11:0000000000000000:6291|h[Emerald Whelpling]|h|r", petID = 59, quantity = 1, contentID = 1, expansion = "classic", expansionLabel = "Classic", locationID = 357, locationLabel = "Feralas" },
@@ -9244,8 +9245,6 @@ local categories = {
         { recordID = "pets:BronzeWhelplingBlastedlands:1", farmID = "BronzeWhelplingBlastedlands", farmName = "Bronze Whelpling Blastedlands", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:1563:1:3:152:13:10:0000000000000000:6291|h[Bronze Whelpling]|h|r", petID = 1563, quantity = 1, contentID = 6, expansion = "warlords", expansionLabel = "Warlords of Draenor", locationID = 4, locationLabel = "Blasted Lands" },
         { recordID = "pets:ZomstrokWodShadowmoonValley:1", farmID = "ZomstrokWodShadowmoonValley", farmName = "Zomstrok Wod Shadowmoon Valley", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:1428:1:3:158:12:10:0000000000000000:6291|h[Zomstrok]|h|r", petID = 1428, quantity = 1, contentID = 6, expansion = "warlords", expansionLabel = "Warlords of Draenor", locationID = 6719, locationLabel = "Shadowmoon Valley" },
         { recordID = "pets:SavageCubTannanJungle:1", farmID = "SavageCubTannanJungle", farmName = "Savage Cub Tannan Jungle", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:1692:1:3:155:12:11:0000000000000000:6291|h[Savage Cub]|h|r", petID = 1692, quantity = 1, contentID = 6, expansion = "warlords", expansionLabel = "Warlords of Draenor", locationID = 6723, locationLabel = "Tanaan Jungle" },
-        { recordID = "pets:MoonMoonDarkmoonFaire:1", farmID = "MoonMoonDarkmoonFaire", farmName = "Moon Moon Darkmoon Faire", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:1276:1:3:152:13:10:0000000000000000:6291|h[Moon Moon]|h|r", petID = 1276, quantity = 1, contentID = 1, expansion = "classic", expansionLabel = "Classic", locationID = 5861, locationLabel = "Darkmoon Island" },
-        { recordID = "pets:DarkmoonRabbitDarkmoonFaire:1", farmID = "DarkmoonRabbitDarkmoonFaire", farmName = "Darkmoon Rabbit Darkmoon Faire", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:848:1:3:152:9:14:0000000000000000:6291|h[Darkmoon Rabbit]|h|r", petID = 848, quantity = 1, contentID = 1, expansion = "classic", expansionLabel = "Classic", locationID = 5861, locationLabel = "Darkmoon Island" },
         { recordID = "pets:TinyShaleSpiderDeepholm:1", farmID = "TinyShaleSpiderDeepholm", farmName = "Tiny Shale Spider Deepholm", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:279:1:3:152:12:12:0000000000000000:6291|h[Tiny Shale Spider]|h|r", petID = 279, quantity = 1, contentID = 1, expansion = "classic", expansionLabel = "Classic", locationID = 5042, locationLabel = "Deepholm" },
         { recordID = "pets:SpineclawCrabTimelessIsle:1", farmID = "SpineclawCrabTimelessIsle", farmName = "Spineclaw Crab Timeless Isle", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:1337:1:3:162:12:10:0000000000000000:6291|h[Spineclaw Crab]|h|r", petID = 1337, quantity = 1, contentID = 1, expansion = "classic", expansionLabel = "Classic", locationID = 6757, locationLabel = "Timeless Isle" },
         { recordID = "pets:GulpFrogletTimelessIsle:1", farmID = "GulpFrogletTimelessIsle", farmName = "Gulp Froglet Timeless Isle", itemID = 82800, itemLink = "|cff0070dd|Hbattlepet:1338:1:3:161:11:10:0000000000000000:6291|h[Gulp Froglet]|h|r", petID = 1338, quantity = 1, contentID = 1, expansion = "classic", expansionLabel = "Classic", locationID = 6757, locationLabel = "Timeless Isle" },
@@ -9369,13 +9368,13 @@ local categories = {
 NS.CatalogDropsData = {
     dataVersion = 1,
     sourceVersion = "v4.3.1",
-    itemSourceCount = 9348,
+    itemSourceCount = 9347,
     categoryCounts = {
         transmogs = 9049,
         openWorldInstances = 147,
         mounts = 7,
-        toys = 7,
-        pets = 47,
+        toys = 8,
+        pets = 45,
         raidPets = 91,
     },
     categories = categories,

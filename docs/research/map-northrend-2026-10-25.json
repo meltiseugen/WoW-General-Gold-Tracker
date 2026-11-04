@@ -1,0 +1,126 @@
+{
+  "date": "2026-10-25",
+  "build": "12.1.5.70529",
+  "scope": "Northrend background continuity, visible base-only maps, complete seam labels and shared mountain blends.",
+  "findings": [
+    "The previous detail backdrop replaced Northrend ocean art with a generated frequency field.",
+    "Wintergrasp art 128 and Hrothgar Landing art 175 declare exploration records whose native tiles have no visible alpha. Their generated masks were entirely black.",
+    "A nearest-interior seam divided the Avalanche ridge between different paintings; native place labels could also be split or overwritten by later zones."
+  ],
+  "implementation": [
+    "Retain original art 118 as Northrend backdrop at all zooms, including its ocean.",
+    "Keep base-only native paintings and give Wintergrasp/Hrothgar independently annotated land masks.",
+    "Use wider physical-coordinate blends with original ownership annotations for the Avalanche and northern Wintergrasp mountains.",
+    "Protect complete native labels in a separate alpha-only pass above zone paintings and below terrain; select a single complete DrakTharon Keep label.",
+    "Suppress duplicate neighbouring-zone captions whole at the annotated positions.",
+    "Add focused same-build root regeneration and exact focus-coordinate offline previews."
+  ],
+  "independence": {
+    "reference_review": "Installed OpenMap retail Client.lua, Stitch.lua and texture provenance notice; retail keeps its native ocean backdrop and constrains zone paintings by territory.",
+    "inputs": "Blizzard CSVs and native textures plus original annotations in tools/map_art_adjustments.json. No reference addon code, coordinates, masks, textures or generated data were copied."
+  },
+  "asset_receipt": "map-art-masks-2026-10-24.json",
+  "asset_receipt_sha256": "315047d7a6afbbe1e541cadad7de321912fbe2f7ffa5f6c05507a01f18f052d3",
+  "code_sha256": {
+    "UI/Maps/ArtMaskIndex.lua": "9277721e88aa069c11a4821bec46723f36b6fd3cbfcf05bf777912105ef7644d",
+    "UI/Maps/Geometry.lua": "b50de8628503b0c0b4cf46e3dbe24eca2cf6e6b899fcde666720822a5344669d",
+    "UI/Maps/InteractiveMap.lua": "80044c695a914e0a0f96979c5b307a2f0cfb809341f5647a91f2e5f644b4bb78",
+    "UI/Maps/MapRenderer.lua": "8e2f8e236660bf18dd593a325e8cac2e3012241a290459e8495feaf07dae83bf",
+    "UI/Maps/MapScene.lua": "68968b676fee86db50b5d2d0d07ad0d4546052d58cd84c64247a6ce9afc16a1e",
+    "UI/Maps/MapSource.lua": "0693168938db3faa4130da75496fa5e2be352a68ed606cf8534dd876e501d856",
+    "UI/Maps/OceanIndex.lua": "e6fe4086bc0f796efda5e8fece6fe18cd2494be5722030e900e477bcf2615018",
+    "tools/map_art_adjustments.json": "1549018e9ec7592ca524601e09bda571738276e16aef1f2de4cae3860fa4c257",
+    "tools/map_art_labels.py": "bcc653b6f0f10e5ad95695e6c915d0a475233f171db2bbb75e2bc22c37b9a7db",
+    "tools/map_art_ownership.py": "58482b98f477f3d0506bb4cbf34777110446d0dcacc14c3928c8b4d82df08e37",
+    "tools/generate_map_art_masks.py": "247e43a4a74de08d22ad3fe271e1e3414d8892e69ed754c065d9be0e64a26bff",
+    "tools/preview_interactive_map.py": "d7d174c0e3f06ba00d019f06981b15c3a38a9d57118172141ee3bf0d889f2792",
+    "tests/test_map_art_masks.py": "18e5ccb1d32df9e8efee0f5d9e0ce9c45bf030b3c8d3085f67acc921ec25fb06",
+    "tests/ui/interactive_map_spec.lua": "56e9f784dff7bc609bc8a8c0eb2a76d214498b270682e32aa9340e57005462f7"
+  },
+  "validation": {
+    "focused_lua51_harness": {
+      "passed": 110,
+      "failed": 0,
+      "native_busted": false
+    },
+    "python_map_tests": {
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0
+    },
+    "manifest": {
+      "passed": true,
+      "manifests": 8,
+      "lua_files": 276
+    },
+    "audits": {
+      "northrend-continents-audit": {
+        "scenes": 19,
+        "states": 133,
+        "maximum_regions": 2199,
+        "budget_reached": false,
+        "sha256": "6c7fdf6a04dd21942b265ce5ee3df3d205a3a0ae4f36101ac682380ebf89992c"
+      },
+      "northrend-global-audit": {
+        "scenes": 11,
+        "states": 77,
+        "maximum_regions": 2194,
+        "budget_reached": false,
+        "sha256": "770098108c1937a59c57ab43772da57a9b27ed75e4a9c7e389fd9eab2cbb58d8"
+      }
+    },
+    "native_art_raster_previews": {
+      "wintergrasp": {
+        "mapID": 123,
+        "states": 7,
+        "images_sha256": {
+          "zoom-01.00.png": "e472a0fde1c701141a57b120340b8d78a63fefbe0f9b3a41c925bce6c153c816",
+          "zoom-01.40.png": "3f58c05247b928b4ee475d35bc1f7cbb17fb30ee304a072137a147ec0b4acd72",
+          "zoom-01.50.png": "b9bc96b47aa6d6df9fbab423d6d8d855f30e3d66eb82a4a00bfac79009813b49",
+          "zoom-01.60.png": "058d335d93cb42c22aedd32a142c1cd5d3e8c68875479d880c347543dd427837",
+          "zoom-02.00.png": "aecad18d82d16595e6b53818520b2f09e71f625333342fd4b15d3dd48b357190",
+          "zoom-04.00.png": "1cde311247ef649f9d692788272d458fad3ac1a7532cf1b96cd13c9afadf7332",
+          "zoom-06.00.png": "66ebb221ee81ed1f136279a9c90650bb3145ca957cb68b5b234bda003186ce31"
+        },
+        "report_sha256": "f1b7a3fef02a50941d502f1db52f2f6983cdc7cf6a5d8c6bf2bbe2cf9ab2731c"
+      },
+      "avalanche": {
+        "mapID": 119,
+        "states": 2,
+        "images_sha256": {
+          "zoom-03.00.png": "e16d75ff762b834afbe9e4afc16cd94d491616de48ac29f22b286a6e80adeba3",
+          "zoom-05.00.png": "8cc57743588063d9c74a3e8cf49ed124b09c479dbf5a06077fe82c8e20345428"
+        },
+        "report_sha256": "97f87cf83b0789887700ae78f882f3f6df28ebee8c0067dcaec36e17d103b15f"
+      },
+      "draktharon": {
+        "mapID": 121,
+        "states": 2,
+        "images_sha256": {
+          "zoom-03.00.png": "662749e7a54c25bb7f3436f5dffbed20f84d852606a164bd5e398757e8fcc0d8",
+          "zoom-05.00.png": "2ebe765904a705abd27ee2033b5293be15f7e55dc9c6317c63a6c8f7cffc08e0"
+        },
+        "report_sha256": "199127bd9f5e43bb3bde7fac7f650e1721937c5e5e204ac5e80dfb3d07669e17"
+      },
+      "island": {
+        "mapID": 170,
+        "states": 3,
+        "images_sha256": {
+          "zoom-01.00.png": "e472a0fde1c701141a57b120340b8d78a63fefbe0f9b3a41c925bce6c153c816",
+          "zoom-02.00.png": "5105d64a9d19037443a4f9cdcb5b03b7be82ef2ab8adc0c0e2989edb213ef3d8",
+          "zoom-04.00.png": "0f7e5ef244b329dac6993e26575ead58bc2ec157cef00db73880a6ca7822eee2"
+        },
+        "report_sha256": "8b5dc01d5ccc3efcc2bf37fe827224f83f14c98dfc1c5eeee62df7d97fe9f046"
+      }
+    },
+    "comparison": {
+      "path": ".local/interactive-map-preview/northrend-final/before-after.jpg",
+      "sha256": "7d04800ac88de8b8f333fd8d51468441276fdd459f3d97a9b4f9651531d810a0"
+    },
+    "comparison_method": "Saved pre-change renderer, source, index and Northrend masks; same client data, focus points and zoom factors as the final renderer."
+  },
+  "limitations": [
+    "Offline Lua fixtures and Pillow rasterization do not verify native WoW texture blending, active phase conditions or performance.",
+    "Whole-label annotations and native-art masks are build-specific; unknown art retains conservative fallback handling."
+  ]
+}

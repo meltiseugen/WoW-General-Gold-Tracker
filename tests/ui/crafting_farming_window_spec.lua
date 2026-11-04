@@ -166,7 +166,7 @@ local function build_addon(frame_overrides)
     }
 end
 
-local function load_window(addon, farming_data)
+local function load_window(addon, farming_data, theme)
     return loader.with_globals({
         C_Item = {
             GetItemInfo = function(item_id)
@@ -187,6 +187,7 @@ local function load_window(addon, farming_data)
             FarmingItems = farming_data or copy_farming_data(),
             MaterialFarmingSpots = addon.materialFarmingSpots,
             FarmCatalog = addon.farmCatalog,
+            JanisTheme = theme,
         })
     end)
 end
@@ -223,7 +224,237 @@ local function project_rows(rows)
     return projected
 end
 
+describe("Materials display market history", function()
+    it("records ordinary and expanded valued lists without an explicit snapshot action", function()
+        local addon = load_window(build_addon())
+        addon.DEFAULTS.marketHistoryRetentionDays = 120
+        addon.DEFAULTS.marketHistoryMaxItems = 0
+        addon.DEFAULTS.marketHistoryMaxSnapshotsPerItem = 240
+        addon.GetTSMItemStringFromLink = function(_, link)
+            local id = get_item_id_from_string(link)
+            return id and ("i:" .. id)
+        end
+        loader.load_module("Core/MarketHistory.lua", addon)
+        addon.FormatMoney = function(_, value) return tostring(value) end
+        addon.GetCraftingFarmingWindowRow = function() return nil end
+        addon.RefreshCraftingFarmingWindowLayout = function() end
+        addon.UpdateCraftingFarmingSortHeaderState = function() end
+        local function content()
+            return { SetHeight = function() end }
+        end
+        addon.craftingFarmingFrame.content = content()
+        local expanded = { content = content(), rows = {}, IsShown = function() return true end }
+        addon.craftingFarmingExpandedFrame = expanded
+        loader.with_globals({ time = function() return 1710000000 end, date = os.date }, function()
+            addon:RefreshCraftingFarmingWindow(false, { synchronous = true, skipControls = true })
+        end)
+        local count = 0
+        for _, row in ipairs(addon.craftingFarmingFrame.materialDisplayRows) do
+            if row.itemID and row.value > 0 then
+                local history = addon.db.marketHistory.items["i:" .. row.itemID]
+                assert.is_table(history)
+                assert.equals(1, #history.snapshots)
+                assert.equals(row.value, history.snapshots[1].selectedUnitValue)
+                count = count + 1
+            end
+        end
+        assert.is_true(count > 0)
+        assert.equals(addon.craftingFarmingFrame.materialDisplayRows, expanded.materialDisplayRows)
+    end)
+end)
+
 describe("UI/CraftingFarmingWindow rows", function()
+    local function protoform_window(expansionID)
+        local data = copy_farming_data({
+            {itemID=3005,expansion="shadowlands",professions={"protoformLattices"},tag="Protoform Lattice"},
+        })
+        data.expansions = {{id="all",label="All expansions"},{id="classic",label="Classic"},
+            {id="shadowlands",label="Shadowlands"},{id="warWithin",label="The War Within"}}
+        data.professions = {{id="all",label="All professions"},{id="mining",label="Mining"},
+            {id="miscellaneous",label="Miscellaneous"},
+            {id="protoformLattices",label="Protoform Lattices",expansion="shadowlands",browsingOnly=true}}
+        return load_window(build_addon({expansionID=expansionID or "shadowlands",professionID="all"}),data)
+    end
+
+    it("shows Protoform Lattices only in Shadowlands and All expansions browsing menus", function()
+        local addon = protoform_window()
+        for _, expansionID in ipairs({"all","shadowlands","classic","warWithin"}) do
+            local found = false
+            for _, option in ipairs(addon:GetCraftingFarmingBrowseProfessionOptions(expansionID)) do
+                if option.id == "protoformLattices" then found = true end
+            end
+            assert.equals(expansionID == "all" or expansionID == "shadowlands",found)
+        end
+        for _, option in ipairs(addon:GetCraftingFarmingProfessionOptions()) do
+            assert.is_true(option.id ~= "protoformLattices")
+        end
+    end)
+
+    it("moves lattice rows out of Miscellaneous and preserves category selection across All expansions", function()
+        local addon = protoform_window()
+        addon:SetCraftingFarmingProfessionFilter("protoformLattices")
+        local rows = addon:BuildCraftingFarmingRows()
+        assert.equals(1,#rows)
+        assert.equals(3005,rows[1].itemID)
+        assert.equals("Protoform Lattices",rows[1].professionLabel)
+        addon:SetCraftingFarmingExpansionFilter("all")
+        assert.equals("protoformLattices",addon.craftingFarmingFrame.professionID)
+        assert.equals(3005,addon:BuildCraftingFarmingRows()[1].itemID)
+        addon:SetCraftingFarmingProfessionFilter("miscellaneous")
+        assert.same({},addon:BuildCraftingFarmingRows())
+    end)
+
+    it("resets scoped profession filters when leaving Shadowlands and rejects stale selections", function()
+        local addon = protoform_window()
+        addon:SetCraftingFarmingProfessionFilter("protoformLattices")
+        addon:SetCraftingFarmingExpansionFilter("classic")
+        assert.equals("all",addon.craftingFarmingFrame.professionID)
+        assert.same({all=true},addon.craftingFarmingFrame.professionIDs)
+        assert.equals("all",addon.db.craftingFarmingProfessionID)
+        assert.same({"all"},addon.db.craftingFarmingProfessionIDs)
+        assert.equals("all",addon:SetCraftingFarmingProfessionFilter("protoformLattices"))
+        assert.same({all=true},addon:ToggleCraftingFarmingProfessionFilter("protoformLattices"))
+        addon.craftingFarmingFrame.professionID = "protoformLattices"
+        addon.craftingFarmingFrame.professionIDs = {protoformLattices=true}
+        assert.is_true(#addon:BuildCraftingFarmingRows() > 0)
+    end)
+
+    local function load_uncached_classic_materials()
+        local _, catalog = loader.load_module("Data/MaterialIndex.lua", {})
+        local _, farming = loader.load_module("Data/FarmingItems.lua", {})
+        local addon = build_addon({ expansionID = "classic", professionID = "enchanting", raidMaterialsExpanded = true })
+        addon.craftingFarmingFrame.itemCache = {}
+        addon.db.craftingFarmingCustomItems = {}
+        loader.load_module("UI/CraftingFarmingWindow.lua", addon, {
+            FarmingItems = farming.FarmingItems,
+            MaterialIndex = catalog.MaterialIndex,
+        })
+        return addon, catalog.MaterialIndex.items
+    end
+
+    it("shows catalog names for uncached Classic enchanting materials and accepts localized item data later", function()
+        local addon, catalog = load_uncached_classic_materials()
+        local requested = {}
+        loader.with_globals({ C_Item = {
+            GetItemInfo = function() return nil end,
+            RequestLoadItemDataByID = function(itemID) requested[itemID] = true end,
+        } }, function()
+            local by_id = {}
+            for _, row in ipairs(addon:BuildCraftingFarmingRows({ deferMetrics = true })) do
+                if row.itemID then by_id[row.itemID] = row end
+            end
+            for _, itemID in ipairs({ 10978, 10998, 11082, 11083, 11084, 11134, 11135, 11137,
+                11138, 11139, 11174, 11175, 11176, 11177, 11178, 20725 }) do
+                assert.equals(catalog[itemID].itemName, by_id[itemID].itemName)
+                assert.is_nil(by_id[itemID].itemLink)
+                assert.is_true(requested[itemID])
+            end
+            assert.equals("Nexus Crystal", by_id[20725].itemName)
+        end)
+        loader.with_globals({ C_Item = { GetItemInfo = function(itemID)
+            if itemID == 10978 then
+                return "Localized Shard", "|Hitem:10978|h[Localized Shard]|h", 3
+            end
+        end } }, function()
+            addon:UpdateCraftingFarmingItemDisplayData(10978)
+            local cache = addon.craftingFarmingFrame.itemCache["10978|TSM_DBMARKET"]
+            assert.equals("Localized Shard", cache.itemName)
+            assert.equals("|Hitem:10978|h[Localized Shard]|h", cache.itemLink)
+            assert.equals(3, cache.itemQuality)
+        end)
+    end)
+
+    it("finds uncached materials by catalog name while still requesting item data", function()
+        local addon = load_uncached_classic_materials()
+        addon.craftingFarmingFrame.searchText = "greater astral"
+        local requested = {}
+        loader.with_globals({ C_Item = {
+            GetItemInfo = function() return nil end,
+            RequestLoadItemDataByID = function(itemID) requested[itemID] = true end,
+        } }, function()
+            local rows = addon:BuildCraftingFarmingRows({ deferMetrics = true })
+            assert.equals(1, #rows)
+            assert.equals(11082, rows[1].itemID)
+            assert.equals("Greater Astral Essence", rows[1].itemName)
+            assert.is_true(requested[11082])
+        end)
+    end)
+
+    it("uses researched names when an uncached material has no index entry", function()
+        local addon = build_addon({ expansionID = "classic", professionID = "mining" })
+        addon.craftingFarmingFrame.itemCache = {}
+        loader.load_module("UI/CraftingFarmingWindow.lua", addon, {
+            FarmingItems = copy_farming_data(),
+            MaterialFarmingSpots = { items = { [3001] = { itemName = "Researched Ore" } } },
+        })
+        loader.with_globals({ C_Item = { GetItemInfo = function() return nil end } }, function()
+            local rows = addon:BuildCraftingFarmingRows({ deferMetrics = true })
+            local names = {}
+            for _, row in ipairs(rows) do names[row.itemID] = row.itemName end
+            assert.equals("Researched Ore", names[3001])
+        end)
+    end)
+
+    it("fits long Type text and keeps its header and neighboring column aligned in both views", function()
+        assert(loadfile("Libs/JanisTheme-1.0/JanisTheme-1.0.lua"))()
+        local _, ns = loader.load_module("UI/Theme.lua", {})
+        local addon = load_window(build_addon(), nil, ns.JanisTheme)
+        local function column(textWidth)
+            return {
+                ClearAllPoints = function() end,
+                SetPoint = function(self, _, _, _, x) self.x = x end,
+                SetWidth = function(self, width) self.width = width end,
+                GetUnboundedStringWidth = function() return textWidth end,
+            }
+        end
+        for _, target in ipairs({ addon.craftingFarmingFrame, {} }) do
+            target.scrollFrame = { GetWidth = function() return 900 end }
+            target.content = { SetWidth = function() end }
+            target.listPanel = {}
+            target.tagHeaderButton = column(0)
+            target.rows = { { tagText = column(231), valueText = column(0) } }
+            addon:RefreshCraftingFarmingWindowLayout(target)
+            local tag = target.rows[1].tagText
+            assert.equals(241, tag.width)
+            assert.equals(tag.width, target.tagHeaderButton.width)
+            assert.equals(tag.x + 12, target.tagHeaderButton.x)
+            assert.is_true(target.rows[1].valueText.x >= tag.x + tag.width + 8)
+        end
+    end)
+
+    it("collapses composed materials on expansion, profession and value-source selection changes", function()
+        local addon = load_window(build_addon())
+        local changes = {
+            function() addon:SetCraftingFarmingExpansionFilter("classic") end,
+            function() addon:SetCraftingFarmingProfessionFilter("mining") end,
+            function() addon:ToggleCraftingFarmingProfessionFilter("herbalism") end,
+            function() addon:SetCraftingFarmingValueSource("TSM_DBMARKET") end,
+        }
+        for _, change in ipairs(changes) do
+            addon.craftingFarmingFrame.composedMaterialsExpanded = true
+            addon.craftingFarmingFrame.expandedComposedMaterials = { [3005] = true }
+            change()
+            assert.is_false(addon.craftingFarmingFrame.composedMaterialsExpanded)
+            assert.same({}, addon.craftingFarmingFrame.expandedComposedMaterials)
+        end
+    end)
+
+    it("invalidates expanded results and pending prices when composed materials collapse", function()
+        local addon = load_window(build_addon({
+            composedMaterialsExpanded = true,
+            materialDisplayRows = { { itemID = 3005 } },
+            materialsRefreshGeneration = 3,
+            materialsRealtimeLoading = true,
+        }))
+        addon.craftingFarmingExpandedFrame = { materialDisplayRows = { { itemID = 3005 } } }
+        assert.is_true(addon:CollapseCraftingFarmingComposedMaterials())
+        assert.is_nil(addon.craftingFarmingFrame.materialDisplayRows)
+        assert.is_nil(addon.craftingFarmingExpandedFrame.materialDisplayRows)
+        assert.equals(4, addon.craftingFarmingFrame.materialsRefreshGeneration)
+        assert.is_false(addon.craftingFarmingFrame.materialsRealtimeLoading)
+        assert.is_false(addon:CollapseCraftingFarmingComposedMaterials())
+    end)
+
     it("renders herb coordinates as a route without requiring a redundant spot flag", function()
         local addon = build_addon()
         addon.materialFarmingSpots = {
@@ -325,7 +556,65 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.same({}, addon:BuildCraftingFarmingRows())
     end)
 
-    it("separates raid and dungeon mining materials from gathered ore", function()
+    it("excludes unsellable products, Darkmoon products and world-drop mounts across filters and search", function()
+        local excluded = {
+            { tag = "Bound Crafting Input" },
+            { tag = "Bound Reagent" },
+            { auctionable = false },
+            { supportOnly = true },
+            { tag = "Darkmoon Card" },
+            { itemName = "Darkmoon Deck: Test" },
+            { tag = "World Drop Mount" },
+            { tag = "Augment Rune" },
+            { itemName = "Battle-Scarred Augment Rune" },
+            { itemID = 160053 },
+            { itemID = 181468 },
+            { itemID = 163131 },
+        }
+        for _, properties in ipairs(excluded) do
+            local item = { itemID = 3005, expansion = "classic", professions = { "mining" } }
+            for key, value in pairs(properties) do item[key] = value end
+            for _, search in ipairs({ "", "Composed" }) do
+                local addon = load_window(build_addon({ expansionID = "all", searchText = search,
+                    composedMaterialsExpanded = true, raidMaterialsExpanded = true }), copy_farming_data({ item }))
+                for _, row in ipairs(addon:BuildCraftingFarmingRows()) do
+                    assert.is_true(row.itemID ~= item.itemID)
+                end
+            end
+        end
+    end)
+
+    it("keeps bound recipe inputs expandable without listing them as sale products", function()
+        local data = copy_farming_data({
+            { itemID = 3010, expansion = "classic", professions = { "mining" }, auctionable = false,
+                tag = "Bound Crafting Input", components = { { itemID = 3001, quantity = 3 } } },
+            { itemID = 3005, expansion = "classic", professions = { "mining" }, auctionable = true,
+                components = { { itemID = 3010, quantity = 2 } } },
+        })
+        local addon = load_window(build_addon({ expansionID = "classic", composedMaterialsExpanded = true,
+            expandedComposedMaterials = { [3005] = true } }), data)
+        local foundProduct, foundComponent = false, false
+        for _, row in ipairs(addon:BuildCraftingFarmingRows()) do
+            if row.itemID == 3005 then foundProduct = true end
+            if row.itemID == 3010 then
+                assert.equals("component", row.rowType)
+                foundComponent = true
+            end
+        end
+        assert.is_true(foundProduct)
+        assert.is_true(foundComponent)
+    end)
+
+    it("honors non-auctionable research metadata when the base item has no binding flag", function()
+        local addon = build_addon({ expansionID = "all", searchText = "Composed" })
+        addon.materialFarmingSpots = { items = { [3005] = { auctionable = false } } }
+        addon = load_window(addon, copy_farming_data({
+            { itemID = 3005, expansion = "classic", professions = { "mining" } },
+        }))
+        for _, row in ipairs(addon:BuildCraftingFarmingRows()) do assert.is_true(row.itemID ~= 3005) end
+    end)
+
+    it("groups dungeon mining materials under the collapsed Instance items header", function()
         local data = copy_farming_data({
             {
                 itemID = 3011,
@@ -345,9 +634,294 @@ describe("UI/CraftingFarmingWindow rows", function()
         assert.equals(3004, rows[1].itemID)
         assert.equals(3001, rows[2].itemID)
         assert.equals("divider", rows[3].rowType)
-        assert.equals("Raid and dungeon mining materials", rows[3].label)
+        assert.equals("Instance items", rows[3].label)
+        assert.equals("raidMaterials", rows[3].dividerKind)
+        assert.is_false(rows[3].expanded)
+        assert.equals(3, #rows)
+
+        addon.craftingFarmingFrame.raidMaterialsExpanded = true
+        rows = addon:BuildCraftingFarmingRows()
         assert.equals(3011, rows[4].itemID)
         assert.equals("instance", rows[4].acquisitionType)
+    end)
+
+    it("keeps raid and dungeon items collapsed across every expansion and profession", function()
+        for _, expansion in ipairs(base_farming_data.expansions) do
+            for _, profession in ipairs(base_farming_data.professions) do
+                local data = copy_farming_data({
+                    { itemID = 3011, expansion = "classic", professions = { profession.id }, isRaidMaterial = true },
+                    { itemID = 3010, expansion = "warWithin", professions = { profession.id }, acquisitionType = "raid-drop" },
+                    { itemID = 3009, expansion = "classic", professions = { profession.id }, tag = "Dungeon Reagent" },
+                    { itemID = 3005, expansion = "warWithin", professions = { profession.id }, acquisitionType = "dungeon-drop" },
+                })
+                local addon = load_window(build_addon({ expansionID = expansion.id, professionID = profession.id }), data)
+                local rows = addon:BuildCraftingFarmingRows()
+                local divider = rows[#rows]
+                assert.equals("raidMaterials", divider.dividerKind)
+                assert.is_false(divider.expanded)
+                for _, row in ipairs(rows) do
+                    assert.is_true(row.itemID ~= 3011 and row.itemID ~= 3010
+                        and row.itemID ~= 3009 and row.itemID ~= 3005)
+                end
+                addon.craftingFarmingFrame.raidMaterialsExpanded = true
+                local found = {}
+                for _, row in ipairs(addon:BuildCraftingFarmingRows()) do
+                    if row.itemID then found[row.itemID] = true end
+                end
+                assert.equals(expansion.id ~= "warWithin", found[3011] == true)
+                assert.equals(expansion.id ~= "classic", found[3010] == true)
+                assert.equals(expansion.id ~= "warWithin", found[3009] == true)
+                assert.equals(expansion.id ~= "classic", found[3005] == true)
+            end
+        end
+    end)
+
+    it("filters elemental IDs by expansion while retaining their profession links and composed groups", function()
+        local data = copy_farming_data({
+            { itemID = 3005, expansion = "classic", professions = { "mining" },
+                components = { { itemID = 3001, quantity = 10 } } },
+        })
+        data.elementalItemIDs = { [3001] = true, [3002] = true, [3005] = true }
+        local addon = load_window(build_addon({ expansionID = "classic", professionID = "elemental" }), data)
+        local rows = addon:BuildCraftingFarmingRows()
+        assert.equals(2, #rows)
+        assert.equals(3001, rows[1].itemID)
+        assert.equals("Mining", rows[1].professionLabel)
+        assert.equals("composedMaterials", rows[2].dividerKind)
+
+        addon.craftingFarmingFrame.composedMaterialsExpanded = true
+        rows = addon:BuildCraftingFarmingRows()
+        assert.equals(3005, rows[3].itemID)
+        addon:SetCraftingFarmingExpansionFilter("warWithin")
+        rows = addon:BuildCraftingFarmingRows()
+        assert.equals(1, #rows)
+        assert.equals(3002, rows[1].itemID)
+        addon:ToggleCraftingFarmingProfessionFilter("elemental")
+        assert.same({ "elemental" }, addon.db.craftingFarmingProfessionIDs)
+
+        addon:SetCraftingFarmingExpansionFilter("classic")
+        addon:ToggleCraftingFarmingProfessionFilter("mining")
+        rows = addon:BuildCraftingFarmingRows()
+        local found = {}
+        for _, row in ipairs(rows) do found[row.itemID or row.dividerKind] = true end
+        assert.is_true(found[3001])
+        assert.is_true(found[3004])
+        for _, option in ipairs(addon:GetCraftingFarmingProfessionOptions()) do
+            assert.is_false(option.id == "elemental" or option.id == "raidItems")
+        end
+    end)
+
+    it("does not infer elemental membership from names or from recipe components", function()
+        local data = copy_farming_data({
+            { itemID = 3005, itemName = "Primal Diamond", tag = "Elemental", expansion = "classic",
+                professions = { "mining" }, components = { { itemID = 3001, quantity = 2 } } },
+        })
+        data.elementalItemIDs = { [3001] = true }
+        local addon = load_window(build_addon({ professionID = "elemental", composedMaterialsExpanded = true }), data)
+        local rows = addon:BuildCraftingFarmingRows()
+        assert.equals(1, #rows)
+        assert.equals(3001, rows[1].itemID)
+    end)
+
+    it("covers elemental catalog families across every expansion and keeps bound inputs hidden", function()
+        local ns = {}
+        assert(loadfile("Data/FarmingItems.lua"))("General-Gold-Tracker", ns)
+        local data = ns.FarmingItems
+        local expected_counts = {
+            classic = 14, burningCrusade = 17, wrath = 12, cataclysm = 5, mists = 2,
+            warlords = 4, legion = 1, battleForAzeroth = 0, shadowlands = 2,
+            dragonflight = 14, warWithin = 0, midnight = 4, all = 75,
+        }
+        local addon = build_addon({ professionID = "elemental", raidMaterialsExpanded = true,
+            composedMaterialsExpanded = true })
+        addon.materialFarmingSpots = { items = {} }
+        addon.db.craftingFarmingCustomItems = {}
+        addon = load_window(addon, data)
+        for _, expansion in ipairs(data.expansions) do
+            addon.craftingFarmingFrame.expansionID = expansion.id
+            local count = 0
+            for _, row in ipairs(addon:BuildCraftingFarmingRows()) do
+                if row.itemID then
+                    count = count + 1
+                    assert.is_true(data.elementalItemIDs[row.itemID])
+                    assert.is_true(expansion.id == "all" or expansion.id == row.expansionID)
+                end
+            end
+            assert.equals(expected_counts[expansion.id], count)
+        end
+    end)
+
+    it("filters raid items by expansion using categories, routes and acquisition metadata", function()
+        local addon = build_addon({ expansionID = "classic", professionID = "raidItems", raidMaterialsExpanded = true })
+        addon.materialFarmingSpots = { items = {
+            [3011] = { category = "Raid Reagent" },
+            [3010] = { spots = { { routeType = "disenchant-raid-gear-farm" } } },
+        } }
+        addon = load_window(addon, copy_farming_data({
+            { itemID = 3011, expansion = "classic", professions = { "mining" } },
+            { itemID = 3010, expansion = "classic", professions = { "herbalism" } },
+            { itemID = 3005, expansion = "warWithin", professions = { "skinning" }, acquisitionType = "raid-drop" },
+        }))
+        local rows = addon:BuildCraftingFarmingRows()
+        assert.equals(3, #rows)
+        assert.equals("raidMaterials", rows[1].dividerKind)
+        assert.equals(3010, rows[2].itemID)
+        assert.equals(3011, rows[3].itemID)
+        assert.equals("Herbalism", rows[2].professionLabel)
+        addon:SetCraftingFarmingExpansionFilter("warWithin")
+        rows = addon:BuildCraftingFarmingRows()
+        assert.equals(2, #rows)
+        assert.equals(3005, rows[2].itemID)
+        addon:SetCraftingFarmingExpansionFilter("all")
+        assert.equals(4, #addon:BuildCraftingFarmingRows())
+        addon:ToggleCraftingFarmingProfessionFilter("raidItems")
+        assert.same({ "raidItems" }, addon.db.craftingFarmingProfessionIDs)
+    end)
+
+    it("defers raid pricing while collapsed and preserves composed drill-down inside the raid group", function()
+        local data = copy_farming_data({
+            { itemID = 3005, expansion = "classic", professions = { "mining" }, tag = "Dungeon Reagent",
+                components = { { itemID = 3011, quantity = 2 } } },
+        })
+        local addon = build_addon({ professionID = "raidItems", expandedComposedMaterials = { [3005] = true } })
+        addon.craftingFarmingFrame.itemCache = {}
+        local lookups = 0
+        addon.GetTSMItemValueForItemID = function(_, _, itemID)
+            lookups = lookups + 1
+            return item_values[itemID] or 0
+        end
+        addon = load_window(addon, data)
+        assert.equals(1, #addon:BuildCraftingFarmingRows())
+        assert.equals(0, lookups)
+        addon.craftingFarmingFrame.raidMaterialsExpanded = true
+        local rows = addon:BuildCraftingFarmingRows()
+        assert.equals(3, #rows)
+        assert.equals(3005, rows[2].itemID)
+        assert.equals(8000, rows[2].componentCost)
+        assert.equals("component", rows[3].rowType)
+        assert.equals(3011, rows[3].itemID)
+        assert.is_true(lookups > 0)
+    end)
+
+    it("includes dungeon sources in the raid filter without including recipe inputs or recipe locations", function()
+        local addon = build_addon({ professionID = "raidItems", raidMaterialsExpanded = true })
+        addon.materialFarmingSpots = { items = {
+            [3011] = { category = "Dungeon Reagent", spots = { { routeType = "instance-boss" } } },
+        } }
+        addon = load_window(addon, copy_farming_data({
+            { itemID = 3011, expansion = "classic", professions = { "mining" }, acquisitionType = "instance" },
+            { itemID = 3005, expansion = "classic", professions = { "mining" },
+                components = { { itemID = 3010, quantity = 2 } }, recipeSourceLabel = "Drop: Dungeons" },
+            { itemID = 3010, expansion = "classic", professions = { "mining" }, isRaidMaterial = true },
+        }))
+        local rows = addon:BuildCraftingFarmingRows()
+        assert.equals(3, #rows)
+        assert.equals(3010, rows[2].itemID)
+        assert.equals(3011, rows[3].itemID)
+    end)
+
+    it("recognizes dungeon and delve metadata on catalog items, research records and nested spots", function()
+        for _, field in ipairs({ "acquisitionType", "tag", "category", "routeType" }) do
+            for _, sourceType in ipairs({ "Dungeon Reagent", "dungeon-boss", "instance", "Instances",
+                "Delve Reagent", "delve-container", "Delves", "delve-container-farm" }) do
+                for _, location in ipairs({ "item", "research", "spot" }) do
+                    local item = { itemID = 3011, expansion = "classic", professions = { "mining" } }
+                    local record = { [field] = sourceType }
+                    local addon = build_addon({ professionID = "raidItems", raidMaterialsExpanded = true })
+                    if location == "item" then
+                        item[field] = sourceType
+                    else
+                        addon.materialFarmingSpots = { items = {
+                            [3011] = location == "spot" and { spots = { record } } or record,
+                        } }
+                    end
+                    addon = load_window(addon, copy_farming_data({ item }))
+                    local rows = addon:BuildCraftingFarmingRows()
+                    assert.equals(2, #rows)
+                    assert.equals("raidMaterials", rows[1].dividerKind)
+                    assert.equals(3011, rows[2].itemID)
+                end
+            end
+        end
+    end)
+
+    it("prices bait through the shared fallback chain and retains fractional TSM demand", function()
+        local data = {
+            expansions = { { id = "all", label = "All expansions" }, { id = "warlords", label = "Warlords of Draenor" } },
+            professions = { { id = "all", label = "All professions" }, { id = "fishing", label = "Fishing" } },
+            items = {},
+        }
+        for _, itemID in ipairs({ 110274, 110294, 110290, 128229 }) do
+            data.items[#data.items + 1] = { itemID = itemID, expansion = "warlords", professions = { "fishing" }, tag = "Fishing Bait" }
+        end
+        local addon = build_addon({ valueSourceID = "TSM_DBMINBUYOUT" })
+        addon.db.craftingFarmingCustomItems = {}
+        addon.craftingFarmingFrame.itemCache = {}
+        addon.VALUE_SOURCE_BY_ID.TSM_DBMINBUYOUT = { id = "TSM_DBMINBUYOUT", label = "Min Buyout", tsmKey = "DBMinBuyout" }
+        addon.VALUE_SOURCE_BY_ID.TSM_DBREGIONMARKETAVG = { id = "TSM_DBREGIONMARKETAVG", label = "Region Market Value Avg", tsmKey = "DBRegionMarketAvg" }
+        addon.GetValueSourceResolutionOrder = function(_, preferred)
+            return { preferred, "TSM_DBMARKET", "TSM_DBREGIONMARKETAVG" }
+        end
+        addon = loader.load_module("Tracking/Valuation.lua", load_window(addon, data))
+        local query_count = 0
+        loader.with_globals({ TSM_API = { GetCustomPriceValue = function(expression, itemString)
+            query_count = query_count + 1
+            local values = {
+                ["i:110274"] = { DBMarket = 120200, DBHistorical = 120000 },
+                ["i:110294"] = { DBRegionMarketAvg = 178400, DBHistorical = 1100098 },
+                ["i:110290"] = { DBMinBuyout = 950, DBMarket = 1800 },
+            }
+            if expression == "1000 * DBRegionSaleRate" or expression == "1000 * DBRegionSoldPerDay" then return 2 end
+            return (values[itemString] or {})[expression]
+        end } }, function()
+            addon:BuildCraftingFarmingRows({ deferMetrics = true })
+            assert.equals(0, query_count)
+            addon.craftingFarmingFrame.itemCache = {}
+            local found = {}
+            for _, row in ipairs(addon:BuildCraftingFarmingRows()) do found[row.itemID] = row end
+            assert.equals(120200, found[110274].value)
+            assert.equals("TSM_DBMARKET", found[110274].valueSourceID)
+            assert.is_true(found[110274].valueSourceWasFallback)
+            assert.equals(178400, found[110294].value)
+            assert.equals("Region Market Value Avg", found[110294].valueSourceLabel)
+            assert.is_true(found[110294].valueSourceWasFallback)
+            assert.equals(950, found[110290].value)
+            assert.equals("TSM_DBMINBUYOUT", found[110290].valueSourceID)
+            assert.is_false(found[110290].valueSourceWasFallback)
+            assert.equals(0, found[128229].value)
+            assert.equals("TSM_DBMINBUYOUT", found[128229].valueSourceID)
+            assert.is_false(found[128229].valueSourceWasFallback)
+            assert.equals(0.002, found[110294].regionSoldPerDay)
+            assert.equals(0.002, found[110294].regionSaleRate)
+            assert.equals("slow", found[110294].demandTier)
+
+            local pending = {}
+            local refresh = addon.RefreshCraftingFarmingWindow
+            addon.craftingFarmingFrame.content = {}
+            addon.RefreshCraftingFarmingWindow = function(self, scrollToTop, options)
+                if options and options.renderOnly then
+                    self.craftingFarmingFrame.materialDisplayRows = options.rows
+                    return
+                end
+                return refresh(self, scrollToTop, options)
+            end
+            loader.with_globals({ C_Timer = { After = function(_, callback) pending[#pending + 1] = callback end } }, function()
+                local previousQueries = query_count
+                addon:RefreshCraftingFarmingWindow()
+                assert.equals(previousQueries, query_count)
+                assert.is_true(addon.craftingFarmingFrame.materialsRealtimeLoading)
+                while #pending > 0 do table.remove(pending, 1)() end
+                assert.is_false(addon.craftingFarmingFrame.materialsRealtimeLoading)
+                local asyncRows = {}
+                for _, row in ipairs(addon.craftingFarmingFrame.materialDisplayRows) do asyncRows[row.itemID] = row end
+                for itemID, expected in pairs(found) do
+                    assert.equals(expected.value, asyncRows[itemID].value)
+                    assert.equals(expected.valueSourceID, asyncRows[itemID].valueSourceID)
+                    assert.equals(expected.valueSourceWasFallback, asyncRows[itemID].valueSourceWasFallback)
+                    assert.equals(expected.regionSoldPerDay, asyncRows[itemID].regionSoldPerDay)
+                end
+            end)
+        end)
     end)
 
     it("adds sortable regional demand, sell rate, and market trend data", function()
@@ -481,6 +1055,11 @@ describe("UI/CraftingFarmingWindow rows", function()
             assert.is_nil(addon.craftingFarmingFrame.professionIDs.mining)
             assert.same({ "herbalism" }, addon.db.craftingFarmingProfessionIDs)
             assert.equals("Herbalism", dropdown_texts[#dropdown_texts])
+
+            addon:ToggleCraftingFarmingProfessionFilter("elemental")
+            addon:RefreshCraftingFarmingWindowControls()
+            assert.same({ "elemental" }, addon.db.craftingFarmingProfessionIDs)
+            assert.equals("Elemental", dropdown_texts[#dropdown_texts])
         end)
     end)
 
@@ -920,6 +1499,35 @@ describe("UI/CraftingFarmingWindow rows", function()
             learnedFromSession = true,
             importSource = "session",
         }, addon.db.craftingFarmingCustomItems[2])
+    end)
+
+    it("opens researched source-area maps with guidance and no fabricated pins", function()
+        local addon = build_addon()
+        addon.materialFarmingSpots = { items = { [3001] = {
+            itemID = 3001, itemName = "Old Ore", spots = { {
+                id = "active-digsite", mapID = 371, mapName = "The Jade Forest",
+                location = "Possible active digsite", mapOnly = true, coords = {},
+                farmAction = "Check the active Archaeology overlay.",
+                tips = { "Sites rotate per character." }, sourceUrls = { "https://example.com/source" },
+            } },
+        } } }
+        addon = load_window(addon)
+        local opened
+        addon.OpenStandaloneMapWindow = function(_, options) opened = options end
+        addon.BuildStandaloneMapDetailLines = function(_, pins) return pins end
+        local rows = addon:BuildCraftingFarmingRows()
+        local hasMap
+        for _, row in ipairs(rows) do if row.itemID == 3001 then hasMap = row.hasFarmingMap end end
+        assert.is_true(hasMap)
+        assert.is_true(addon:OpenMaterialFarmingMap(3001))
+        local option = opened.mapOptions[1]
+        assert.is_true(option.mapOnly)
+        assert.equals(0, #option.pins)
+        local details = opened.detailLinesBuilder(option, nil, option.mapLabel)
+        assert.equals("Check the active Archaeology overlay.", details[1].farmAction)
+        assert.is_nil(details[1].x)
+        assert.same({ "Sites rotate per character." }, details[1].tips)
+        assert.same({ "https://example.com/source" }, details[1].sourceUrls)
     end)
 
     it("builds coordinate-backed map options for researched material spots", function()

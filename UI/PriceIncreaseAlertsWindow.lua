@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -649,6 +652,9 @@ function GoldTracker:RefreshPriceIncreaseAlertsWindow(scrollToTop)
     local rows, meta = self:BuildPriceAlertRows({ direction = direction })
     rows = type(rows) == "table" and rows or {}
     meta = type(meta) == "table" and meta or {}
+    if type(self.RecordDisplayedItemMarketSnapshots) == "function" then
+        self:RecordDisplayedItemMarketSnapshots(rows)
+    end
 
     if frame.metaText then
         local summary = string.format(
@@ -795,7 +801,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerPriceIncreaseAlertsFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerPriceIncreaseAlertsFrame", UIParent)
     frame:SetSize(ALERTS_WINDOW_DEFAULT_WIDTH, ALERTS_WINDOW_DEFAULT_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame:SetFrameStrata("DIALOG")
@@ -827,7 +833,7 @@ function GoldTracker:CreatePriceIncreaseAlertsWindow()
     frame.rows = {}
     frame.alertDirection = "increase"
 
-    local chrome = Theme:ApplyWindowChrome(frame, "Price Alerts")
+    local chrome = Theme:ApplyWindowChrome(frame, "Market Watch")
     Theme:RegisterSpecialFrame("GoldTrackerPriceIncreaseAlertsFrame")
 
     local controlsPanel = CreateAlertsPanel(frame, { 0.05, 0.06, 0.08, 0.94 }, { 1.0, 0.82, 0.18, 0.12 })

@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -717,7 +720,7 @@ local function CreateMethodDialog()
     if GoldTracker.customFarmMethodDialog then
         return GoldTracker.customFarmMethodDialog
     end
-    local frame = CreateFrame("Frame", "GoldTrackerCustomFarmMethodDialog", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerCustomFarmMethodDialog", UIParent)
     frame:SetSize(640, 420)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
     -- Blizzard dropdown lists use FULLSCREEN_DIALOG. Keep the picker below that
@@ -848,7 +851,7 @@ local function CreateMethodDialog()
             committed, reason = GoldTracker:CommitCustomFarmEntry(payload, catalogFarmID, mapOption)
         end
         if not committed then
-            GoldTracker:Print("Could not save this target in the custom farm (" .. tostring(reason or "unknown") .. ").")
+            GoldTracker:Print("Could not save this target in the custom farm (" .. tostring(reason or "unknown") .. ").", "warnings")
         else
             frame:Hide()
         end
@@ -1362,6 +1365,12 @@ local function ConfigureCatalogItemRow(addon, row, target, snapshotTarget, strip
     row.itemID = itemID
     row.itemLink = itemLink
     row.nameText:SetText(itemLink or (itemID and GetItemNameSafe(itemID)) or "Unknown item")
+    if snapshotTarget and type(addon.RecordDisplayedItemMarketSnapshots) == "function" then
+        addon:RecordDisplayedItemMarketSnapshots({
+            itemID = itemID, itemLink = itemLink, unitValue = snapshotTarget.unitValue,
+            quantity = target.quantity, totalValue = snapshotTarget.sampleValue,
+        })
+    end
     row.quantityText:SetText("x " .. FormatQuantity(target and target.quantity))
     row.unitValueText:SetText(GetCatalogItemValueText(addon, snapshotTarget, "unitValue"))
     row.totalValueText:SetText(GetCatalogItemValueText(addon, snapshotTarget, "sampleValue"))
@@ -1765,6 +1774,7 @@ local function GetOrCreateStepRow(frame, index)
         if parent.catalogFarmID and type(GoldTracker.OpenFarmDetails) == "function" then
             GoldTracker:OpenFarmDetails(parent.catalogFarmID, {
                 itemID = parent.firstItemID,
+                farmSnapshot = parent.catalogSnapshot,
                 suppressFarmOptionNotice = true,
             })
         end
@@ -1939,7 +1949,7 @@ local function ConfigureEntryRow(frame, row, entry, yOffset, striped, grouped)
     row.itemText:SetText(entry.itemLink or entry.itemName or ("Item " .. tostring(entry.itemID)))
     local context = grouped and ("Selected target | Added from " .. (entry.sourceLabel or "Unknown source")) or (entry.sourceLabel or "Unknown source")
     if grouped and entry.catalogFarmID and type(GoldTracker.GetFarmByID) == "function" then
-        local catalogFarm = GoldTracker:GetFarmByID(entry.catalogFarmID)
+        local catalogFarm = GoldTracker:ResolveCustomFarmCatalog(entry)
         local target = GetTargetForItem(catalogFarm, entry.itemID)
         if target then
             local duration = tonumber(catalogFarm.recordedSeconds) or 0
@@ -2004,6 +2014,113 @@ function GoldTracker:RefreshMyFarmsRouteRunButton(farm, hasRoutePlan)
         button:SetSelected(isRunning)
     end
     return isRunning
+end
+
+function GoldTracker:PopulateMyFarmsActionsMenu(farmID, level)
+    if level ~= 1 then return end
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then return end
+    -- Menu availability reads saved plan state only. Resolve maps and build
+    -- the overview inside the selected action, never while opening the menu.
+    local hasRoutePlan = type(self.HasCustomFarmRoutePlan) == "function" and self:HasCustomFarmRoutePlan(farmID)
+    local function heading(label)
+        local info = UIDropDownMenu_CreateInfo()
+        info.text, info.isTitle, info.notCheckable, info.disabled = label, true, true, true
+        UIDropDownMenu_AddButton(info, level)
+    end
+    local function action(label, callback, disabled, reason)
+        local info = UIDropDownMenu_CreateInfo()
+        info.text, info.notCheckable, info.disabled = label, true, disabled == true
+        info.tooltipTitle, info.tooltipText, info.tooltipOnButton = label, reason, reason ~= nil
+        info.tooltipWhileDisabled = reason ~= nil
+        info.func = function()
+            if disabled or not self:GetCustomFarmByID(farmID) then return end
+            CloseDropDownMenus()
+            callback()
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
+    heading("Route")
+    action("Open route plan", function() self:OpenFarmRoutePlanWindow(farmID) end,
+        not hasRoutePlan, not hasRoutePlan and "Plan this farm's route first." or nil)
+    action("Overview map", function() self:OpenCustomFarmRoutePlanOverview(farmID) end,
+        not hasRoutePlan, not hasRoutePlan and "Plan this farm's route first." or nil)
+    if hasRoutePlan then
+        action("Replan route", function()
+            self:BuildCustomFarmRoutePlan(farmID, true)
+            self:RefreshMyFarmsWindow()
+        end)
+    end
+    heading("Farm")
+    action("Rename", function() StaticPopup_Show(RENAME_DIALOG_KEY, nil, nil, farmID) end)
+    action("Delete...", function()
+        local selectedFarm = self:GetCustomFarmByID(farmID)
+        if selectedFarm then StaticPopup_Show(DELETE_DIALOG_KEY, selectedFarm.name, nil, farmID) end
+    end)
+end
+
+function GoldTracker:OpenMyFarmsActionsMenu(anchor)
+    local frame = self.myFarmsFrame
+    local farmID = frame and frame.selectedFarmID
+    if not frame or not self:GetCustomFarmByID(farmID) then return end
+    UIDropDownMenu_Initialize(frame.farmActionsMenu, function(_, level)
+        self:PopulateMyFarmsActionsMenu(farmID, level)
+    end)
+    ToggleDropDownMenu(1, nil, frame.farmActionsMenu, anchor, 0, 0)
+end
+
+function GoldTracker:RefreshMyFarmsCharacterDropdown(farm)
+    local frame = self.myFarmsFrame
+    if not frame then return end
+    local characters = self:GetCustomFarmCharacterOptions(farm)
+    local selectedLabel = "Select a character"
+    for _, character in ipairs(characters) do
+        if character.selected then selectedLabel = character.label; break end
+    end
+    UIDropDownMenu_SetText(frame.characterDropdown, selectedLabel)
+    if #characters == 0 and not farm.assignedCharacter and type(UIDropDownMenu_DisableDropDown) == "function" then
+        UIDropDownMenu_DisableDropDown(frame.characterDropdown)
+    elseif (#characters > 0 or farm.assignedCharacter) and type(UIDropDownMenu_EnableDropDown) == "function" then
+        UIDropDownMenu_EnableDropDown(frame.characterDropdown)
+    end
+    frame.noCharactersText:SetShown(#characters == 0)
+end
+
+function GoldTracker:PopulateMyFarmsCharacterDropdown(farmID, level)
+    if level ~= 1 then return end
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then return end
+    local noneInfo = UIDropDownMenu_CreateInfo()
+    noneInfo.text, noneInfo.value = "None", "__NONE__"
+    noneInfo.checked = farm.assignedCharacter == nil
+    noneInfo.func = function() self:SetCustomFarmAssignedCharacter(farmID, nil) end
+    UIDropDownMenu_AddButton(noneInfo, level)
+
+    local groupLabels = { suggested = "Suggestions", unassigned = "Unassigned", assigned = "Assigned" }
+    local previousGroup
+    for _, character in ipairs(self:GetCustomFarmCharacterOptions(farm)) do
+        if character.group ~= previousGroup then
+            local title = UIDropDownMenu_CreateInfo()
+            title.text = groupLabels[character.group]
+            title.isTitle, title.notCheckable, title.disabled = true, true, true
+            UIDropDownMenu_AddButton(title, level)
+            previousGroup = character.group
+        end
+        local info = UIDropDownMenu_CreateInfo()
+        local characterLabel = character.value
+        info.text, info.value, info.checked = character.label, characterLabel, character.selected
+        info.tooltipTitle = characterLabel
+        info.tooltipText = character.suggestionReason
+            or (#character.assignedFarms > 0 and ("Assigned to: " .. table.concat(character.assignedFarms, ", ")))
+            or "Not assigned to a farm."
+        info.tooltipOnButton = true
+        info.func = function()
+            for _, option in ipairs(self:GetCustomFarmCharacterOptions(farmID)) do
+                if option.value == characterLabel then return self:SetCustomFarmAssignedCharacter(farmID, characterLabel) end
+            end
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
 end
 
 function GoldTracker:RefreshMyFarmsWindow()
@@ -2075,26 +2192,9 @@ function GoldTracker:RefreshMyFarmsWindow()
         frame.buildButton:SetSelected(isActive)
     end
     local hasRoutePlan = type(self.HasCustomFarmRoutePlan) == "function" and self:HasCustomFarmRoutePlan(farm.id)
-    frame.planButton:SetText(hasRoutePlan and "Replan Route" or "Plan Route")
-    frame.openPlanButton:SetShown(hasRoutePlan)
+    frame.planButton:SetShown(not hasRoutePlan)
     self:RefreshMyFarmsRouteRunButton(farm, hasRoutePlan)
-    if frame.overviewButton then
-        local overview, overviewReason
-        if hasRoutePlan and type(self.BuildCustomFarmRoutePlanOverview) == "function" then
-            overview, overviewReason = self:BuildCustomFarmRoutePlanOverview(farm.id)
-        end
-        frame.overviewButton:SetEnabled(overview ~= nil)
-        frame.overviewButton.tooltipText = overview and "Show every planned stop on one numbered route map."
-            or overviewReason or "Plan a route with map data before opening its overview."
-    end
-    local characters = self:GetKnownCustomFarmCharacters()
-    UIDropDownMenu_SetText(frame.characterDropdown, farm.assignedCharacter or "Select a character")
-    if #characters == 0 and type(UIDropDownMenu_DisableDropDown) == "function" then
-        UIDropDownMenu_DisableDropDown(frame.characterDropdown)
-    elseif #characters > 0 and type(UIDropDownMenu_EnableDropDown) == "function" then
-        UIDropDownMenu_EnableDropDown(frame.characterDropdown)
-    end
-    frame.noCharactersText:SetShown(#characters == 0)
+    self:RefreshMyFarmsCharacterDropdown(farm)
 
     local entries = farm.entries or {}
     local steps = self:GetCustomFarmSteps(farm)
@@ -2106,10 +2206,11 @@ function GoldTracker:RefreshMyFarmsWindow()
     for stepIndex, step in ipairs(steps) do
         local catalogFarm
         if step.catalogFarmID then
-            catalogFarm = type(self.GetFarmByID) == "function" and self:GetFarmByID(step.catalogFarmID) or nil
+            catalogFarm = self:ResolveCustomFarmCatalog(step.entries and step.entries[1])
             stepRowCount = stepRowCount + 1
             local stepRow = GetOrCreateStepRow(frame, stepRowCount)
             stepRow.catalogFarmID = step.catalogFarmID
+            stepRow.catalogSnapshot = step.entries and step.entries[1] and step.entries[1].catalogSnapshot
             stepRow.firstItemID = step.entries[1] and step.entries[1].itemID or nil
             stepRow.nameText:SetText(step.name or step.catalogFarmID)
             local meta = step.sourcePath or step.activity or "Catalog farm"
@@ -2444,7 +2545,7 @@ function GoldTracker:CreateFarmCatalogExpandedWindow()
         return self.farmCatalogExpandedFrame
     end
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerFarmCatalogExpandedFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerFarmCatalogExpandedFrame", UIParent)
     local width = CATALOG_EXPANDED_WIDTH
     local height = CATALOG_EXPANDED_HEIGHT
     if UIParent and type(UIParent.GetWidth) == "function" then
@@ -2520,7 +2621,7 @@ function GoldTracker:CreateMyFarmsWindow()
     end
     EnsureDialogs()
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerMyFarmsFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerMyFarmsFrame", UIParent)
     frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 30)
     frame:SetFrameStrata("DIALOG")
@@ -2542,6 +2643,9 @@ function GoldTracker:CreateMyFarmsWindow()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
     frame.farmsWorkspaceView = "my"
+    frame:SetScript("OnHide", function()
+        if addon.farmTransferFrame then addon.farmTransferFrame:Hide() end
+    end)
 
     local chrome = Theme:ApplyWindowChrome(frame, "Farms")
     frame.chrome = chrome
@@ -2577,9 +2681,13 @@ function GoldTracker:CreateMyFarmsWindow()
         end
     end)
     frame.newFarmButton = newFarmButton
+    local shareButton = CreateButton(frame, 80, 24, "Share", "neutral")
+    shareButton:SetPoint("RIGHT", newFarmButton, "LEFT", -8, 0)
+    shareButton:SetScript("OnClick", function() addon:OpenFarmTransferWindow(frame.selectedFarmID) end)
+    frame.farmShareButton = shareButton
 
     local activeStatusText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    activeStatusText:SetPoint("RIGHT", newFarmButton, "LEFT", -12, 0)
+    activeStatusText:SetPoint("RIGHT", shareButton, "LEFT", -12, 0)
     activeStatusText:SetPoint("LEFT", farmsTabButton, "RIGHT", 12, 0)
     activeStatusText:SetJustifyH("RIGHT")
     activeStatusText:SetTextColor(0.72, 0.86, 1.0)
@@ -2623,13 +2731,11 @@ function GoldTracker:CreateMyFarmsWindow()
 
     local farmTitleText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     farmTitleText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -14)
-    farmTitleText:SetPoint("RIGHT", bodyPanel, "RIGHT", -394, 0)
     farmTitleText:SetJustifyH("LEFT")
     farmTitleText:SetWordWrap(false)
     frame.farmTitleText = farmTitleText
 
-    local buildButton = CreateButton(bodyPanel, 100, 24, "Build", "primary")
-    buildButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -42)
+    local buildButton = CreateButton(bodyPanel, 100, 24, "Build", "neutral")
     buildButton:SetScript("OnClick", function(self)
         local activeFarm = addon:GetActiveCustomFarm()
         if activeFarm and activeFarm.id == frame.selectedFarmID then
@@ -2640,27 +2746,15 @@ function GoldTracker:CreateMyFarmsWindow()
     end)
     frame.buildButton = buildButton
 
-    local renameButton = CreateButton(bodyPanel, 76, 24, "Rename", "neutral")
-    renameButton:SetPoint("RIGHT", buildButton, "LEFT", -8, 0)
-    renameButton:SetScript("OnClick", function()
-        if type(StaticPopup_Show) == "function" then
-            StaticPopup_Show(RENAME_DIALOG_KEY, nil, nil, frame.selectedFarmID)
-        end
-    end)
-    frame.renameButton = renameButton
-
-    local deleteButton = CreateButton(bodyPanel, 70, 24, "Delete", "danger")
-    deleteButton:SetPoint("RIGHT", renameButton, "LEFT", -8, 0)
-    deleteButton:SetScript("OnClick", function()
-        local farm = addon:GetCustomFarmByID(frame.selectedFarmID)
-        if farm and type(StaticPopup_Show) == "function" then
-            StaticPopup_Show(DELETE_DIALOG_KEY, farm.name, nil, farm.id)
-        end
-    end)
-    frame.deleteButton = deleteButton
+    local actionsButton = CreateButton(bodyPanel, 32, 24, "...", "neutral")
+    actionsButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -10)
+    actionsButton.tooltipText = "More farm actions: route plan, overview map, replan, rename, and delete."
+    actionsButton:SetScript("OnClick", function(button) addon:OpenMyFarmsActionsMenu(button) end)
+    frame.actionsButton = actionsButton
+    frame.farmActionsMenu = CreateFrame("Frame", "GoldTrackerMyFarmsActionsMenu", frame, "UIDropDownMenuTemplate")
 
     local planButton = CreateButton(bodyPanel, 96, 24, "Plan Route", "primary")
-    planButton:SetPoint("RIGHT", deleteButton, "LEFT", -8, 0)
+    planButton:SetPoint("RIGHT", actionsButton, "LEFT", -8, 0)
     planButton:SetScript("OnClick", function()
         if type(addon.BuildCustomFarmRoutePlan) == "function" then
             addon:BuildCustomFarmRoutePlan(frame.selectedFarmID, true)
@@ -2669,27 +2763,10 @@ function GoldTracker:CreateMyFarmsWindow()
     end)
     frame.planButton = planButton
 
-    local overviewButton = CreateButton(bodyPanel, 112, 24, "Overview map", "primary")
-    overviewButton:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -10)
-    overviewButton:SetScript("OnClick", function()
-        if type(addon.OpenCustomFarmRoutePlanOverview) == "function" then
-            addon:OpenCustomFarmRoutePlanOverview(frame.selectedFarmID)
-        end
-    end)
-    frame.overviewButton = overviewButton
-
-    local openPlanButton = CreateButton(bodyPanel, 88, 24, "Open Plan", "neutral")
-    openPlanButton:SetPoint("RIGHT", overviewButton, "LEFT", -8, 0)
-    openPlanButton:SetScript("OnClick", function()
-        if type(addon.OpenFarmRoutePlanWindow) == "function" then
-            addon:OpenFarmRoutePlanWindow(frame.selectedFarmID)
-        end
-    end)
-    openPlanButton:Hide()
-    frame.openPlanButton = openPlanButton
-
-    local routeRunButton = CreateButton(bodyPanel, 70, 24, "Start", "primary")
-    routeRunButton:SetPoint("RIGHT", openPlanButton, "LEFT", -8, 0)
+    buildButton:SetPoint("RIGHT", planButton, "LEFT", -8, 0)
+    farmTitleText:SetPoint("RIGHT", buildButton, "LEFT", -14, 0)
+    local routeRunButton = CreateButton(bodyPanel, 96, 24, "Start", "primary")
+    routeRunButton:SetPoint("RIGHT", actionsButton, "LEFT", -8, 0)
     routeRunButton:SetScript("OnClick", function()
         if type(addon.ToggleCustomFarmRoutePlan) == "function" then
             addon:ToggleCustomFarmRoutePlan(frame.selectedFarmID)
@@ -2699,15 +2776,15 @@ function GoldTracker:CreateMyFarmsWindow()
     frame.routeRunButton = routeRunButton
 
     local farmMetaText = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    farmMetaText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -76)
+    farmMetaText:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -44)
     farmMetaText:SetPoint("RIGHT", bodyPanel, "RIGHT", -14, 0)
     farmMetaText:SetJustifyH("LEFT")
     farmMetaText:SetWordWrap(false)
     frame.farmMetaText = farmMetaText
 
     local characterPanel = CreatePanel(bodyPanel, { 0.025, 0.03, 0.045, 0.92 }, { 1, 1, 1, 0.08 })
-    characterPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -100)
-    characterPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -100)
+    characterPanel:SetPoint("TOPLEFT", bodyPanel, "TOPLEFT", 14, -72)
+    characterPanel:SetPoint("TOPRIGHT", bodyPanel, "TOPRIGHT", -14, -72)
     characterPanel:SetHeight(72)
     frame.characterPanel = characterPanel
     local assignedTitle = characterPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -2717,36 +2794,14 @@ function GoldTracker:CreateMyFarmsWindow()
     characterDropdown:SetPoint("TOPLEFT", assignedTitle, "BOTTOMLEFT", -16, -2)
     UIDropDownMenu_SetWidth(characterDropdown, 360)
     UIDropDownMenu_Initialize(characterDropdown, function(_, level)
-        if level ~= 1 then
-            return
-        end
-        local farm = addon:GetCustomFarmByID(frame.selectedFarmID)
-        local noneInfo = UIDropDownMenu_CreateInfo()
-        noneInfo.text = "None"
-        noneInfo.value = "__NONE__"
-        noneInfo.checked = farm and farm.assignedCharacter == nil
-        noneInfo.func = function()
-            addon:SetCustomFarmAssignedCharacter(frame.selectedFarmID, nil)
-        end
-        UIDropDownMenu_AddButton(noneInfo, level)
-        for _, label in ipairs(addon:GetKnownCustomFarmCharacters()) do
-            local characterLabel = label
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = characterLabel
-            info.value = characterLabel
-            info.checked = farm and farm.assignedCharacter == characterLabel
-            info.func = function()
-                addon:SetCustomFarmAssignedCharacter(frame.selectedFarmID, characterLabel)
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
+        addon:PopulateMyFarmsCharacterDropdown(frame.selectedFarmID, level)
     end)
     frame.characterDropdown = characterDropdown
     local noCharactersText = characterPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     noCharactersText:SetPoint("LEFT", characterDropdown, "RIGHT", -4, 2)
     noCharactersText:SetPoint("RIGHT", characterPanel, "RIGHT", -10, 2)
     noCharactersText:SetJustifyH("LEFT")
-    noCharactersText:SetText("Log into a character once to make it available here.")
+    noCharactersText:SetText("No eligible Alts characters. Banks and low-level alts are excluded.")
     frame.noCharactersText = noCharactersText
 
     local entriesTitle = bodyPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -2774,12 +2829,9 @@ function GoldTracker:CreateMyFarmsWindow()
     frame.detailsWidgets = {
         farmTitleText,
         buildButton,
-        renameButton,
-        deleteButton,
+        actionsButton,
         planButton,
-        openPlanButton,
         routeRunButton,
-        overviewButton,
         farmMetaText,
         characterPanel,
         entriesTitle,
@@ -2788,6 +2840,7 @@ function GoldTracker:CreateMyFarmsWindow()
     }
     frame.myFarmsViewWidgets = {
         newFarmButton,
+        shareButton,
         activeStatusText,
         listPanel,
         bodyPanel,
@@ -2819,6 +2872,17 @@ function GoldTracker:CreateMyFarmsWindow()
     self.myFarmsFrame = frame
     self:RefreshMyFarmsWindow()
     return frame
+end
+
+function GoldTracker:OpenCustomFarmConfiguration(farmID)
+    local farm = self:GetCustomFarmByID(farmID)
+    if not farm then return false end
+    local frame = self:CreateMyFarmsWindow()
+    frame.selectedFarmID = farm.id
+    -- Leave the catalog view before opening so the requested farm's editor is visible.
+    self:SetFarmsWorkspaceView("my")
+    self:OpenMyFarmsWindow()
+    return true
 end
 
 function GoldTracker:OpenMyFarmsWindow()

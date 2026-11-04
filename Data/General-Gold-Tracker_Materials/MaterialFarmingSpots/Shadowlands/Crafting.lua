@@ -1,0 +1,3 @@
+local _, NS = ...
+
+NS.RegisterMaterialCraftingRecords("shadowlands")

@@ -29,6 +29,133 @@ local function load_custom_farms(saved_db, globals, ns_overrides)
 end
 
 describe("Core/CustomFarms", function()
+    it("offers only eligible tracked alts and ranks gathering profession matches before location matches", function()
+        local _, indexNS = loader.load_module("Data/MaterialIndex.lua")
+        local function alt(name, profession, continent, level, roles)
+            return { name = name, realm = "Realm", level = level or 80, roles = roles,
+                professions = profession and { { name = "Localized profession", skillLineID = profession } } or {},
+                location = { continentMapID = continent or 200, continentName = "Continent" } }
+        end
+        local addon = load_custom_farms({
+            altCharacters = {
+                skinner = alt("Zeta", 393), miner = alt("Miner", 186), herbalist = alt("Herbalist", 182),
+                leatherworker = alt("Leatherworker", 165), localAlt = alt("Alpha", nil, 100),
+                bank = alt("Bank", 393, 100, 80, { main = true, bank = true }),
+                low = alt("Low", 393, 100, 19),
+                otherRealm = { name = "Zeta", realm = "Other Realm", level = 80 },
+            },
+            sessionHistory = { { savedBy = "SessionOnly-Realm" } },
+            customFarms = { knownCharacters = { ["Legacy-Realm"] = true } },
+        }, nil, { MaterialIndex = indexNS.MaterialIndex })
+        loader.load_module("Core/AltTracker.lua", addon)
+        addon.GetCustomFarmContinentIDs = function() return { [100] = true } end
+        local farm = addon:CreateCustomFarm("Leather", false)
+        addon:AddEntryToCustomFarm(farm.id, { itemID = 2318 })
+        local options, byValue = addon:GetCustomFarmCharacterOptions(farm), {}
+        for _, option in ipairs(options) do byValue[option.value] = option end
+        assert.equals(6, #options)
+        assert.equals("Zeta-Realm", options[1].value)
+        assert.same({ "Localized profession" }, options[1].professionMatches)
+        assert.matches("Profession match", options[1].suggestionReason)
+        assert.is_false(options[1].sameContinent)
+        assert.equals("Alpha-Realm", options[2].value)
+        assert.is_true(options[2].suggested)
+        assert.is_false(byValue["Leatherworker-Realm"].suggested)
+        assert.is_false(byValue["Zeta-Other Realm"].suggested)
+        assert.is_nil(byValue["Bank-Realm"])
+        assert.is_nil(byValue["Low-Realm"])
+        assert.is_nil(byValue["Goldie-Silvermoon"])
+        assert.is_nil(byValue["Legacy-Realm"])
+        assert.is_nil(byValue["SessionOnly-Realm"])
+        addon:AddEntryToCustomFarm(farm.id, { itemID = 2770 })
+        addon:AddEntryToCustomFarm(farm.id, { itemID = 765 })
+        options = addon:GetCustomFarmCharacterOptions(farm)
+        assert.equals("Herbalist-Realm", options[1].value)
+        assert.equals("Miner-Realm", options[2].value)
+        assert.equals("Zeta-Realm", options[3].value)
+        assert.is_true(options[1].suggested)
+        assert.is_true(options[2].suggested)
+    end)
+
+    it("uses the saved farming method without loading catalogs for profession matching", function()
+        local addon, ns = loader.load_module("Core/CustomFarms.lua", { db = {} }, {
+            MaterialIndex = { items = { [2770] = { professions = { "mining" } } } },
+        })
+        setmetatable(ns, { __index = function(_, key) error("Unexpected catalog load: " .. key) end })
+        assert.same({ fishing = true }, addon:GetCustomFarmProfessionIDs({ entries = {
+            { itemID = 2770, catalogFarmID = "ore-from-fishing", catalogActivity = "fishing" },
+        } }))
+        assert.same({ mining = true }, addon:GetCustomFarmProfessionIDs({ entries = { { itemID = 2770 } } }))
+        assert.same({}, addon:GetCustomFarmProfessionIDs({ entries = {
+            { itemID = 2770, catalogFarmID = "ore-from-mobs", catalogActivity = "mob drops" },
+        } }))
+        assert.same({ alchemy = true }, addon:GetCustomFarmProfessionIDs({ entries = {
+            { itemID = 2770, catalogFarmID = "crafted-result", catalogActivity = "alchemy" },
+        } }))
+    end)
+
+    it("does not suggest material consumers for a mote-and-skinning farm", function()
+        local _, indexNS = loader.load_module("Data/MaterialIndex.lua")
+        local function alt(name, profession, continent)
+            return { name = name, realm = "Realm", level = 80,
+                professions = { { name = profession == 393 and "Skinning" or "Alchemy", skillLineID = profession } },
+                location = { continentMapID = continent } }
+        end
+        local addon = load_custom_farms({ altCharacters = {
+            janius = alt("Janius", 393, 101), beky = alt("Beky", 171, 12), janis = alt("Janis", 171, 2537),
+        } }, nil, { MaterialIndex = indexNS.MaterialIndex })
+        addon.GetCustomFarmContinentIDs = function() return { [101] = true } end
+        local farm = { entries = {
+            { itemID = 22572 },
+            { itemID = 29539, catalogFarmID = "wit:gathering:skinning:cobrascales", catalogActivity = "skinning" },
+        } }
+        for _, activity in ipairs({ false, "mob drops" }) do
+            farm.entries[1].catalogActivity = activity or nil
+            assert.same({ skinning = true }, addon:GetCustomFarmProfessionIDs(farm))
+            local options = addon:GetCustomFarmCharacterOptions(farm)
+            assert.equals(3, #options)
+            assert.equals("Janius-Realm", options[1].value)
+            assert.is_true(options[1].suggested)
+            assert.same({ "Skinning" }, options[1].professionMatches)
+            for index = 2, 3 do
+                assert.is_false(options[index].suggested)
+                assert.same({}, options[index].professionMatches)
+                assert.equals("unassigned", options[index].group)
+            end
+        end
+    end)
+
+    it("excludes low-level alts from all farm character choices, including existing assignments", function()
+        local addon = load_custom_farms({
+            altLowLevelThreshold = 20,
+            altCharacters = {
+                low = { name = "Amy", realm = "Realm A", level = 19,
+                    location = { continentMapID = 100, continentName = "Kalimdor" } },
+                ready = { name = "Bo", realm = "Realm A", level = 20,
+                    location = { continentMapID = 100, continentName = "Kalimdor" } },
+            },
+            customFarms = { farms = { { id = 1, name = "Target", entries = {} } } },
+        })
+        loader.load_module("Core/AltTracker.lua", addon)
+        addon.GetCustomFarmContinentIDs = function() return { [100] = true } end
+        local options = addon:GetCustomFarmCharacterOptions(1)
+        assert.equals("Bo-Realm A", options[1].value)
+        assert.is_true(options[1].suggested)
+        assert.equals(1, #options)
+        addon:GetCustomFarmByID(1).assignedCharacter = "Amy-Realm A"
+        options = addon:GetCustomFarmCharacterOptions(1)
+        assert.equals(1, #options)
+        assert.equals("Bo-Realm A", options[1].value)
+        assert.equals("Amy-Realm A", addon:GetCustomFarmByID(1).assignedCharacter)
+        addon:SetCustomFarmAssignedCharacter(1, nil)
+        addon:SetAltLowLevelThreshold(0)
+        options = addon:GetCustomFarmCharacterOptions(1)
+        assert.equals("Amy-Realm A", options[1].value)
+        assert.is_true(options[1].suggested)
+        addon:SetAltLowLevelThreshold(30)
+        assert.equals(0, #addon:GetCustomFarmCharacterOptions(1))
+    end)
+
     local function map_option(id, mapID, sourceType)
         return {
             id = id, mapID = mapID, sourceType = sourceType or "static", label = id or "User map",
@@ -202,6 +329,103 @@ describe("Core/CustomFarms", function()
         assert.equals("Miner-Silvermoon", farm.assignedCharacter)
         assert.is_true(addon:SetCustomFarmAssignedCharacter(farm.id, nil))
         assert.is_nil(farm.assignedCharacter)
+    end)
+
+    it("suggests only unassigned alts on a farm continent and merges legacy label spellings", function()
+        local addon = load_custom_farms({
+            altCharacters = {
+                near = { name = "Zara", realm = "Realm One", location = { continentMapID = 100, continentName = "Kalimdor" } },
+                far = { name = "Alice", realm = "Realm One", location = { continentMapID = 200, continentName = "Outland" } },
+                busy = { name = "Bob", realm = "Realm One", location = { continentMapID = 100, continentName = "Kalimdor" } },
+                current = { name = "Cora", realm = "Realm One", location = { continentMapID = 100, continentName = "Kalimdor" } },
+                unknown = { name = "Dora", realm = "Realm One" },
+                sameNameOtherRealm = { name = "Zara", realm = "Realm Two", location = { continentMapID = 200, continentName = "Outland" } },
+            },
+            customFarms = {
+                knownCharacters = { ["Zara - RealmOne"] = true, ["zara-Realm One"] = true },
+                farms = {
+                    { id = 1, name = "Target", assignedCharacter = "Cora - RealmOne", entries = { { itemID = 2770, mapID = 10 } } },
+                    { id = 2, name = "Other", assignedCharacter = "Bob-RealmOne", entries = {} },
+                },
+            },
+        })
+        addon.GetAltMapHierarchy = function(_, mapID) return { continentMapID = mapID == 10 and 100 or nil } end
+        local options = addon:GetCustomFarmCharacterOptions(1)
+        assert.equals(6, #options)
+        assert.equals("Zara-Realm One", options[1].value)
+        assert.equals("Zara - Kalimdor", options[1].label)
+        assert.is_true(options[1].suggested)
+        assert.equals("Alice - Outland", options[2].label)
+        assert.equals("Dora - Unknown location", options[3].label)
+        assert.equals("Zara-Realm Two", options[4].value)
+        assert.equals("assigned", options[5].group)
+        assert.same({ "Other" }, options[5].assignedFarms)
+        assert.is_true(options[6].selected)
+        assert.is_false(options[6].suggested)
+        assert.equals("Cora - RealmOne", addon:GetCustomFarmByID(1).assignedCharacter)
+
+        addon:SetCustomFarmAssignedCharacter(2, nil)
+        options = addon:GetCustomFarmCharacterOptions(1)
+        assert.equals("Bob-Realm One", options[1].value)
+        assert.is_true(options[1].suggested)
+        assert.equals("Zara-Realm One", options[2].value)
+    end)
+
+    it("matches saved map and catalog continents without building item maps or scanning positions", function()
+        local catalog = { id = "multi", mapIDs = { 20, 21 } }
+        local instance = { id = "instance", mapIDs = { 999 }, sourceCategory = "Instances" }
+        local addon = load_custom_farms({
+            altCharacters = {
+                alpha = { name = "Alpha", realm = "Realm", location = { mapID = 10, savedAt = 1 }, locationUnavailable = true },
+                beta = { name = "Beta", realm = "Realm", location = { mapID = 20 } },
+                gamma = { name = "Gamma", realm = "Realm", location = { mapID = 21 } },
+                delta = { name = "Delta", realm = "Realm", location = { mapID = 30 } },
+            },
+        }, nil, { FarmCatalog = { farms = { catalog, instance }, byID = { multi = 1, instance = 2 } } })
+        loader.load_module("Core/AltTracker.lua", addon)
+        local farm = addon:CreateCustomFarm("Multi continent", false)
+        addon:AddEntryToCustomFarm(farm.id, { itemID = 2770, mapID = 30, mapSource = map_option("chosen", 10) })
+        addon:AddEntryToCustomFarm(farm.id, { itemID = 2835, mapID = 30, catalogFarmID = "multi" })
+        addon.BuildMaterialFarmingMapOptions = function() error("Assignment must not build item map options") end
+        local maps = {
+            [10] = { parentMapID = 100, mapType = 3 }, [100] = { name = "Kalimdor", mapType = 2 },
+            [20] = { parentMapID = 200, mapType = 3 }, [200] = { name = "Outland", mapType = 2 },
+            [21] = { parentMapID = 201, mapType = 3 }, [201] = { name = "Draenor", mapType = 2 },
+            [30] = { parentMapID = 300, mapType = 3 }, [300] = { name = "Northrend", mapType = 2 },
+        }
+        loader.with_globals({ C_Map = {
+            GetMapInfo = function(id) return maps[id] end,
+            GetPlayerMapPosition = function() error("Use saved alt locations") end,
+        } }, function()
+            assert.same({ [100] = true, [200] = true, [201] = true }, addon:GetCustomFarmContinentIDs(farm))
+            local options = addon:GetCustomFarmCharacterOptions(farm)
+            assert.equals("Alpha - Kalimdor", options[1].label)
+            assert.is_true(options[1].suggested)
+            assert.is_true(options[2].suggested)
+            assert.is_true(options[3].suggested)
+            assert.is_false(options[4].suggested)
+            addon.ResolveCatalogFarmInstanceEntrance = function(_, value)
+                assert.equals(instance, value)
+                return { mapID = 30 }
+            end
+            addon:AddEntryToCustomFarm(farm.id, { itemID = 5000, catalogFarmID = "instance" })
+            assert.is_true(addon:GetCustomFarmContinentIDs(farm)[300])
+        end)
+    end)
+
+    it("keeps unknown locations selectable without guessing continent matches", function()
+        local addon = load_custom_farms({
+            altCharacters = { alt = { name = "SameName", realm = "Realm", location = { continentName = "Kalimdor" } } },
+            customFarms = { knownCharacters = { ["Legacy-Realm"] = true } },
+        })
+        local farm = addon:CreateCustomFarm("Unmapped farm", false)
+        local options = addon:GetCustomFarmCharacterOptions(farm)
+        assert.equals(1, #options)
+        assert.equals("SameName - Kalimdor", options[1].label)
+        for _, option in ipairs(options) do
+            assert.is_false(option.suggested)
+            assert.equals("unassigned", option.group)
+        end
     end)
 
     it("migrates old multi-character assignments to one deterministic character", function()

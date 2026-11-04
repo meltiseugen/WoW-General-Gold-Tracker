@@ -98,10 +98,10 @@ describe("Core/MarketHistory", function()
         assert.equals("TSM_DBMARKET", history.snapshots[1].selectedSourceID)
         assert.equals(123456, history.snapshots[1].selectedUnitValue)
         assert.equals(246912, history.snapshots[1].totalValue)
-        assert.equals(150000, history.snapshots[1].dbMarket)
+        assert.equals(123456, history.snapshots[1].dbMarket)
     end)
 
-    it("replaces the current-hour snapshot instead of appending duplicates", function()
+    it("preserves the first observation during the snapshot interval", function()
         local addon = load_market_history()
 
         with_time(1710000000, function()
@@ -127,7 +127,7 @@ describe("Core/MarketHistory", function()
 
         local snapshots = addon.db.marketHistory.items["i:12345"].snapshots
         assert.equals(1, #snapshots)
-        assert.equals(222222, snapshots[1].selectedUnitValue)
+        assert.equals(100000, snapshots[1].selectedUnitValue)
     end)
 
     it("captures every graph price source as soon as an item is discovered", function()
@@ -411,6 +411,115 @@ describe("Core/MarketHistory", function()
         assert.equals(snapshots, addon.db.marketHistory.items["i:12345"].snapshots)
         assert.equals(2, #snapshots)
         assert.equals(1710003600, snapshots[1].timestamp)
+    end)
+
+    it("uses elapsed time across clock-hour boundaries without repeating price queries", function()
+        local addon = load_market_history()
+        local queries = 0
+        local original = addon.GetTSMRawCustomValue
+        addon.GetTSMRawCustomValue = function(...)
+            queries = queries + 1
+            return original(...)
+        end
+        local row = { itemID = 12345, value = 100, valueSourceID = "TSM_DBMINBUYOUT" }
+        -- 59 seconds before an hour boundary, then one minute later.
+        local start = 1710003541
+        with_time(start, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        local firstQueries = queries
+        row.value = 200
+        with_time(start + 60, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        with_time(start + 3599, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        assert.equals(firstQueries, queries)
+        local history = addon.db.marketHistory.items["i:12345"]
+        assert.equals(1, #history.snapshots)
+        assert.equals(start, history.snapshots[1].timestamp)
+        assert.equals(100, history.snapshots[1].dbMinBuyout)
+        with_time(start + 3600, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        assert.equals(2, #history.snapshots)
+        assert.equals(200, history.snapshots[2].dbMinBuyout)
+        assert.equals(100, history.snapshots[1].dbMinBuyout)
+    end)
+
+    it("honors a configurable interval independently for each item, even with unchanged prices", function()
+        local addon = load_market_history()
+        addon.db.marketHistorySnapshotIntervalMinutes = 10
+        local row = { itemID = 12345, value = 100 }
+        with_time(1710000000, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        with_time(1710000300, function()
+            addon:RecordDisplayedItemMarketSnapshots({ row, { itemID = 67890, value = 200 } })
+        end)
+        with_time(1710000600, function()
+            addon:RecordDisplayedItemMarketSnapshots({ row, { itemID = 67890, value = 200 } })
+        end)
+        assert.equals(2, #addon.db.marketHistory.items["i:12345"].snapshots)
+        assert.equals(1, #addon.db.marketHistory.items["i:67890"].snapshots)
+    end)
+
+    it("ignores loading rows and unpriced discoveries so a later price can be saved immediately", function()
+        local addon = load_market_history({})
+        with_time(1710000000, function()
+            addon:RecordDisplayedItemMarketSnapshots({ { rowType = "divider" }, { itemID = 12345, value = 0 } })
+            addon:RecordDiscoveredItemMarketSnapshots({ itemID = 12345 })
+            assert.is_nil(addon.db.marketHistory.items["i:12345"])
+            addon:RecordDisplayedItemMarketSnapshots({ itemID = 12345, value = 100 })
+        end)
+        assert.equals(1, #addon.db.marketHistory.items["i:12345"].snapshots)
+    end)
+
+    it("keeps saved samples independent from reused rows and compact snapshot inputs", function()
+        local addon = load_market_history({})
+        local row = { itemID = 12345, value = 100, marketHistorySnapshot = { dbMinBuyout = 100 } }
+        with_time(1710000000, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        local first = addon.db.marketHistory.items["i:12345"].snapshots[1]
+        row.marketHistorySnapshot.dbMinBuyout = 200
+        with_time(1710003600, function() addon:RecordDisplayedItemMarketSnapshots(row) end)
+        assert.equals(100, first.dbMinBuyout)
+        local copy = addon:GetMarketHistorySourceSnapshot(nil, 12345, first)
+        copy.timestamp = 0
+        assert.equals(1710000000, first.timestamp)
+        assert.equals(200, addon.db.marketHistory.items["i:12345"].snapshots[2].dbMinBuyout)
+    end)
+
+    it("restores saved history and continues its per-item interval after reload", function()
+        local addon = load_market_history({})
+        with_time(1710000000, function()
+            addon:RecordDisplayedItemMarketSnapshots({ itemID = 12345, value = 100 })
+        end)
+        local snapshot = addon.db.marketHistory.items["i:12345"].snapshots[1]
+        local serialized = {}
+        for k, v in pairs(snapshot) do serialized[k] = v end
+        addon = load_market_history({})
+        addon.db.marketHistory.items["i:12345"] = { snapshots = { serialized } }
+        with_time(1710003599, function() addon:RecordDisplayedItemMarketSnapshots({ itemID = 12345, value = 200 }) end)
+        with_time(1710003600, function() addon:RecordDisplayedItemMarketSnapshots({ itemID = 12345, value = 300 }) end)
+        local snapshots = addon.db.marketHistory.items["i:12345"].snapshots
+        assert.equals(2, #snapshots)
+        assert.equals(100, snapshots[1].selectedUnitValue)
+        assert.equals(300, snapshots[2].selectedUnitValue)
+    end)
+
+    it("retires the legacy default item cap and retains more than 500 item histories", function()
+        local addon = load_market_history()
+        local rows = {}
+        for id = 1, 650 do rows[#rows + 1] = { itemID = id, value = id } end
+        with_time(1710000000, function() addon:RecordDisplayedItemMarketSnapshots(rows) end)
+        assert.equals(0, addon.db.marketHistoryMaxItems)
+        local count = 0
+        for _ in pairs(addon.db.marketHistory.items) do count = count + 1 end
+        assert.equals(650, count)
+        -- A cap chosen after the migration remains effective.
+        addon.db.marketHistoryMaxItems = 100
+        addon:PruneMarketHistory(1710000000)
+        count = 0
+        for _ in pairs(addon.db.marketHistory.items) do count = count + 1 end
+        assert.equals(100, count)
+    end)
+
+    it("preserves a custom item cap during migration", function()
+        local addon = load_market_history()
+        addon.db.marketHistoryMaxItems = 2000
+        addon:NormalizeMarketHistory()
+        assert.equals(2000, addon.db.marketHistoryMaxItems)
     end)
 
     it("keeps same-hour rescans in one snapshot slot", function()

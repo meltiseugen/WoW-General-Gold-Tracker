@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-25",
+  "mapID": 113,
+  "artID": 118,
+  "scope": "Northrend bottom-right masked frame corner only.",
+  "cause": "The broad diagonal frame cut also hid intact native shallow water and depth-contour ink.",
+  "repair": "Retain original cartography outside the reviewed ornament outline; fill only ornament and outer frame edge from native ocean context.",
+  "painted_depth_contour": "Preserved native artwork, not a fabricated gameplay fatigue boundary.",
+  "pixel_regression": [
+    {
+      "view": "overview",
+      "changed_pixels": 26987,
+      "changed_pixels_outside_bottom_right_support": 0
+    },
+    {
+      "view": "detail",
+      "changed_pixels": 105121,
+      "changed_pixels_outside_bottom_right_support": 0
+    }
+  ],
+  "renderer_unchanged": true,
+  "top_left_assets_byte_identical": true,
+  "tile_rectangles_uvs_dimensions_unchanged": true,
+  "corner_asset_count": 4,
+  "total_corner_asset_bytes": 2975760,
+  "preserved_native_pixel_probes": 8,
+  "validation": {
+    "python_map_tests": { "passed": 45, "failed": 0 },
+    "focused_lua_51_harness": { "passed": 114, "failed": 0 },
+    "manifest_validation": { "manifests": 8, "runtime_lua_files": 277, "passed": true },
+    "offline_previews": [
+      { "zoom": 1, "regions": 155, "terrain_pieces": 0 },
+      { "zoom": 2, "regions": 337, "terrain_pieces": 0 }
+    ],
+    "native_wow": "Not run. Offline rendering and checks do not prove in-game rendering."
+  }
+}

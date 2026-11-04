@@ -7,13 +7,11 @@ ignore:
   - .github
   - .vscode
   - .idea
+  - .local
   - AssetsRaw*
   - BACKLOG.md
   - README.md
   - release.ps1
-  - tools/generate_atlasloot_snapshot.ps1
-  - tools/generate_rarescanner_snapshot.py
-  - tools/generate_rarescanner_snapshot.ps1
 
 move-folders:
   General-Gold-Tracker/Data/General-Gold-Tracker_Rares: General-Gold-Tracker_Rares
@@ -21,3 +19,5 @@ move-folders:
   General-Gold-Tracker/Data/General-Gold-Tracker_Drops: General-Gold-Tracker_Drops
   General-Gold-Tracker/Data/General-Gold-Tracker_Materials: General-Gold-Tracker_Materials
   General-Gold-Tracker/Data/General-Gold-Tracker_Farms: General-Gold-Tracker_Farms
+  General-Gold-Tracker/Data/General-Gold-Tracker_TSMRealmData: General-Gold-Tracker_TSMRealmData
+  General-Gold-Tracker/Data/General-Gold-Tracker_MapData: General-Gold-Tracker_MapData

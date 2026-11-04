@@ -7,6 +7,21 @@ local function load_diagnostics(addon, globals)
 end
 
 describe("Core/Diagnostics", function()
+    it("preserves active-session diagnostics when resetting runtime only", function()
+        loader.with_globals({ time = function() return 1000 end }, function()
+            local addon = load_diagnostics({ session = { active = true, startTime = 900,
+                diagnosisSnapshot = { counters = { item_entries_tracked = 7 } },
+            } })
+            local snapshot = addon.session.diagnosisSnapshot
+            addon:ResetDiagnosticsState("runtime")
+            assert.equals(snapshot, addon.session.diagnosisSnapshot)
+            assert.equals(7, snapshot.counters.item_entries_tracked)
+            assert.same({}, addon.diagnosticsState.counters)
+            addon:ResetDiagnosticsState()
+            assert.same({}, addon.session.diagnosisSnapshot.counters)
+        end)
+    end)
+
     it("normalizes negative counters and empty timing buckets", function()
         local addon = load_diagnostics({}, {
             time = function()

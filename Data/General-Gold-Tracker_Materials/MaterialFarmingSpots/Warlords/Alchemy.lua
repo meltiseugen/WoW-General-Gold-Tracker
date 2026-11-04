@@ -148,6 +148,5 @@ Register({
     },
 })
 
--- Sorcerous Air, Fire, Earth, and Water remain pending under the raw-material
--- rule: profession guides describe them primarily as work-order or cooldown
--- byproducts rather than coordinate-backed outdoor farming targets.
+-- Miscellaneous.lua researches Sorcerous byproducts as profession/work-order
+-- sources without inventing outdoor mob locations or deterministic bonus yields.

@@ -5,8 +5,21 @@ NS.GoldTracker = GoldTracker
 
 GoldTracker.ADDON_NAME = ADDON_NAME
 GoldTracker.PREFIX = "|cffffd200[General Gold Tracker]|r"
--- Temporary mute: preserve the saved preference, but emit no chat/console logs.
-GoldTracker.CHAT_LOGGING_MUTED = true
+GoldTracker.CHAT_LOG_CATEGORIES = {
+    { id = "startup", key = "chatLogStartup", label = "Startup" },
+    { id = "sessions", key = "chatLogSessions", label = "Sessions" },
+    { id = "scans", key = "chatLogScans", label = "Scans" },
+    { id = "navigation", key = "chatLogNavigation", label = "Navigation" },
+    { id = "farms", key = "chatLogFarms", label = "Farms" },
+    { id = "history", key = "chatLogHistory", label = "History" },
+    { id = "alerts", key = "chatLogAlerts", label = "Alerts" },
+    { id = "warnings", key = "chatLogWarnings", label = "Warning" },
+    { id = "commands", key = "chatLogCommands", label = "Reply" },
+}
+GoldTracker.CHAT_LOG_CATEGORY_BY_ID = {}
+for _, category in ipairs(GoldTracker.CHAT_LOG_CATEGORIES) do
+    GoldTracker.CHAT_LOG_CATEGORY_BY_ID[category.id] = category
+end
 GoldTracker.COPPER_PER_GOLD = 10000
 GoldTracker.MIN_INTERFACE = 120000
 GoldTracker.REQUIRED_PROJECT = WOW_PROJECT_MAINLINE
@@ -19,9 +32,8 @@ GoldTracker.WORLD_MAP_PROJECTION_PIN_SCALE_STEP = 0.1
 GoldTracker.MAP_PIN_ICON_OPTIONS = {
     {
         id = "loot",
-        label = "Loot marker",
-        atlas = "VignetteLoot",
-        texture = "Interface\\Icons\\INV_Misc_Map02",
+        label = "Golden dot",
+        atlas = "QuestObjective",
     },
     { id = "map", label = "Map", texture = "Interface\\Icons\\INV_Misc_Map02" },
     { id = "coin", label = "Coin", texture = "Interface\\Icons\\INV_Misc_Coin_01" },
@@ -71,6 +83,7 @@ for _, style in ipairs(GoldTracker.SESSION_STYLE_OPTIONS) do
 end
 
 GoldTracker.DEFAULTS = {
+    visualTheme = "midnight",
     valueSource = "TSM_DBMINBUYOUT",
     sessionStyleFilter = GoldTracker.SESSION_STYLE_ALL_ID,
     fallbackValueSource = "TSM_AUCTIONINGOPNORMAL",
@@ -131,6 +144,7 @@ GoldTracker.DEFAULTS = {
     },
     farmCatalogValueCache = {},
     explorerTab = "rares",
+    altLowLevelThreshold = 20,
     inventoryCategoryOrder = {
         "crafting",
         "consumables",
@@ -144,6 +158,7 @@ GoldTracker.DEFAULTS = {
     autoStartSessionOnFirstLoot = true,
     autoStartSessionOnEnterWorld = false,
     autoStartSessionOnLocationChange = false,
+    sessionSplitMode = "continuous",
     resumeSessionAfterReload = false,
     enableSessionHistory = true,
     historyRowsPerPage = 10,
@@ -153,11 +168,21 @@ GoldTracker.DEFAULTS = {
     showMainWindowGoldPerHour = true,
     showTotalWindowGoldPerHour = true,
     enableChatLogging = true,
+    chatLogStartup = false,
+    chatLogSessions = true,
+    chatLogScans = true,
+    chatLogNavigation = false,
+    chatLogFarms = true,
+    chatLogHistory = true,
+    chatLogAlerts = true,
+    chatLogWarnings = true,
+    chatLogCommands = true,
+    chatLogTimestamps = false,
     mainWindowSlashOpenMode = "maximized",
     useActiveTimeForGoldPerHour = false,
     allowResumeHistorySession = true,
     enableLootSourceTracking = true,
-    enableObservedWorldDrops = false,
+    enableObservedWorldDrops = true,
     collapsedLocationHeaders = true,
     observedWorldDropsValueSource = "TSM_DBMARKET",
     observedWorldDropsMinimumValue = 0,
@@ -173,12 +198,14 @@ GoldTracker.DEFAULTS = {
     mainLootStreamExpanded = false,
     mainWindowTransparent = false,
     enableDiagnosticsPanel = false,
+    enableExperimentalMaps = false,
     minimapButtonAngle = 225,
     windowWidth = 780,
     collapsedWindowWidth = 388,
     windowHeight = 500,
     marketHistoryRetentionDays = 120,
-    marketHistoryMaxItems = 500,
+    marketHistorySnapshotIntervalMinutes = 60,
+    marketHistoryMaxItems = 0, -- 0 keeps all observed items; retention still applies.
     marketHistoryMaxSnapshotsPerItem = 240,
     priceIncreaseAlertThresholdPercent = 30,
     priceIncreaseAlertLookbackDays = 3,
@@ -984,17 +1011,30 @@ function GoldTracker:BuildSessionViewSummary(session, styleID)
     return summary
 end
 
-function GoldTracker:Print(message)
-    if not self:IsChatLoggingEnabled() then
-        return
+local function GetChatLoggingSettings(addon)
+    if type(addon.db) == "table" then return addon.db end
+    if type(WoWGeneralGoldTrackerDB) == "table" then return WoWGeneralGoldTrackerDB end
+    return addon.DEFAULTS
+end
+
+function GoldTracker:Print(message, categoryID)
+    -- Unclassified messages remain command/action replies for older callers.
+    -- The test message checks delivery using only the master switch.
+    local category = self.CHAT_LOG_CATEGORY_BY_ID[categoryID] or self.CHAT_LOG_CATEGORY_BY_ID.commands
+    local isTest = categoryID == "test"
+    if not self:IsChatLoggingEnabled(isTest and "test" or category.id) then
+        return false
     end
 
-    local text = string.format("%s %s", self.PREFIX, tostring(message))
+    local settings = GetChatLoggingSettings(self)
+    local timestamp = settings.chatLogTimestamps == true and (date("%H:%M:%S") .. " ") or ""
+    local text = string.format("%s%s |cff9aa5b5[%s]|r %s", timestamp, self.PREFIX, isTest and "Test" or category.label, tostring(message))
     if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
         DEFAULT_CHAT_FRAME:AddMessage(text)
     else
         print(text)
     end
+    return true
 end
 
 function GoldTracker:NormalizeInventoryCategoryOrder()
@@ -1127,6 +1167,13 @@ function GoldTracker:InvalidateValueSourceResolutionCaches()
     end
     if self.observedDropsFrame then
         self.observedDropsFrame.priceCache = {}
+    end
+    if self.craftingFarmingFrame then
+        self.craftingFarmingFrame.itemCache = {}
+        self.craftingFarmingFrame.materialDisplayRows = nil
+    end
+    if self.craftingFarmingExpandedFrame then
+        self.craftingFarmingExpandedFrame.materialDisplayRows = nil
     end
 end
 
@@ -1426,6 +1473,9 @@ function GoldTracker:InitializeDatabase()
         and (self.db.fallbackValueSource == nil or self.db.fallbackValueSource == "")
     local hadAuctionableInventoryValueSource = self.db.auctionableInventoryValueSource ~= nil
     local hadValueSourceFallbackOrder = type(self.db.valueSourceFallbackOrder) == "table"
+    if self.db.sessionSplitMode ~= "continuous" and self.db.sessionSplitMode ~= "instance" and self.db.sessionSplitMode ~= "location" then
+        self.db.sessionSplitMode = self.db.autoStartSessionOnLocationChange == true and "location" or "continuous"
+    end
 
     for key, value in pairs(self.DEFAULTS) do
         if self.db[key] == nil then
@@ -1696,6 +1746,9 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.enableDiagnosticsPanel) ~= "boolean" then
         self.db.enableDiagnosticsPanel = self.DEFAULTS.enableDiagnosticsPanel
     end
+    if type(self.db.enableExperimentalMaps) ~= "boolean" then
+        self.db.enableExperimentalMaps = self.DEFAULTS.enableExperimentalMaps
+    end
 
     local historyRowsPerPage = tonumber(self.db.historyRowsPerPage)
     if not historyRowsPerPage then
@@ -1730,15 +1783,22 @@ function GoldTracker:InitializeDatabase()
     if type(self.db.enableChatLogging) ~= "boolean" then
         self.db.enableChatLogging = self.DEFAULTS.enableChatLogging
     end
+    for _, category in ipairs(self.CHAT_LOG_CATEGORIES) do
+        if type(self.db[category.key]) ~= "boolean" then
+            self.db[category.key] = self.DEFAULTS[category.key]
+        end
+    end
+    if type(self.db.chatLogTimestamps) ~= "boolean" then
+        self.db.chatLogTimestamps = self.DEFAULTS.chatLogTimestamps
+    end
     if not self.MAIN_WINDOW_SLASH_OPEN_MODE_BY_ID[self.db.mainWindowSlashOpenMode] then
         self.db.mainWindowSlashOpenMode = self.DEFAULTS.mainWindowSlashOpenMode
     end
     if type(self.db.enableLootSourceTracking) ~= "boolean" then
         self.db.enableLootSourceTracking = self.DEFAULTS.enableLootSourceTracking
     end
-    if type(self.db.enableObservedWorldDrops) ~= "boolean" then
-        self.db.enableObservedWorldDrops = self.DEFAULTS.enableObservedWorldDrops
-    end
+    -- Observed drops are a standard feature, including for existing profiles.
+    self.db.enableObservedWorldDrops = true
     if not self.VALUE_SOURCE_BY_ID[self.db.observedWorldDropsValueSource] then
         self.db.observedWorldDropsValueSource = self.DEFAULTS.observedWorldDropsValueSource
     end
@@ -1820,11 +1880,13 @@ function GoldTracker:InitializeDatabase()
         marketHistoryRetentionDays = self.DEFAULTS.marketHistoryRetentionDays
     end
     self.db.marketHistoryRetentionDays = math.floor(math.max(14, math.min(365, marketHistoryRetentionDays)) + 0.5)
+    self.db.marketHistorySnapshotIntervalMinutes = math.floor(math.max(1, math.min(1440,
+        tonumber(self.db.marketHistorySnapshotIntervalMinutes) or self.DEFAULTS.marketHistorySnapshotIntervalMinutes)) + 0.5)
     local marketHistoryMaxItems = tonumber(self.db.marketHistoryMaxItems)
     if not marketHistoryMaxItems then
         marketHistoryMaxItems = self.DEFAULTS.marketHistoryMaxItems
     end
-    self.db.marketHistoryMaxItems = math.floor(math.max(50, math.min(2000, marketHistoryMaxItems)) + 0.5)
+    self.db.marketHistoryMaxItems = math.floor(math.max(0, math.min(50000, marketHistoryMaxItems)) + 0.5)
     local marketHistoryMaxSnapshotsPerItem = tonumber(self.db.marketHistoryMaxSnapshotsPerItem)
     if not marketHistoryMaxSnapshotsPerItem then
         marketHistoryMaxSnapshotsPerItem = self.DEFAULTS.marketHistoryMaxSnapshotsPerItem
@@ -2108,10 +2170,7 @@ function GoldTracker:IsLootSourceTrackingEnabled()
 end
 
 function GoldTracker:IsObservedWorldDropsEnabled()
-    if not self.db then
-        return false
-    end
-    return self.db.enableObservedWorldDrops == true
+    return true
 end
 
 function GoldTracker:IsLootLogTimestampsEnabled()
@@ -2159,14 +2218,20 @@ function GoldTracker:IsTotalWindowGoldPerHourEnabled()
     return self.db.showTotalWindowGoldPerHour == true
 end
 
-function GoldTracker:IsChatLoggingEnabled()
-    if self.CHAT_LOGGING_MUTED then
-        return false
+function GoldTracker:IsChatLoggingEnabled(categoryID)
+    -- ADDON_LOADED can report an unsupported client before DB initialization.
+    local settings = GetChatLoggingSettings(self)
+    local master = settings.enableChatLogging
+    if type(master) ~= "boolean" then master = self.DEFAULTS.enableChatLogging end
+    if not master then return false end
+    if not categoryID or categoryID == "test" then return true end
+
+    local category = self.CHAT_LOG_CATEGORY_BY_ID[categoryID] or self.CHAT_LOG_CATEGORY_BY_ID.commands
+    local enabled = settings[category.key]
+    if type(enabled) ~= "boolean" then
+        enabled = self.DEFAULTS[category.key]
     end
-    if not self.db then
-        return self.DEFAULTS.enableChatLogging == true
-    end
-    return self.db.enableChatLogging == true
+    return enabled == true
 end
 
 function GoldTracker:IsTotalWindowFeatureEnabled()
@@ -2174,6 +2239,7 @@ function GoldTracker:IsTotalWindowFeatureEnabled()
 end
 
 function GoldTracker:IsAutoStartSessionOnLocationChangeEnabled()
+    if self.GetSessionSplitMode then return self:GetSessionSplitMode() == "location" end
     if not self.db then
         return self.DEFAULTS.autoStartSessionOnLocationChange == true
     end
@@ -2225,6 +2291,13 @@ function GoldTracker:IsDiagnosticsPanelEnabled()
         return false
     end
     return self.db.enableDiagnosticsPanel == true
+end
+
+function GoldTracker:SetExperimentalMapsEnabled(enabled)
+    enabled = enabled == true
+    if not self.db or self.db.enableExperimentalMaps == enabled then return end
+    self.db.enableExperimentalMaps = enabled
+    if self.RefreshInteractiveMapStyles then self:RefreshInteractiveMapStyles() end
 end
 
 function GoldTracker:NormalizeHighlightThresholds()
@@ -2280,6 +2353,9 @@ function GoldTracker:SetAuctionableInventoryValueSource(sourceID)
 end
 
 function GoldTracker:IsAutoOpenAuctionableInventoryOnAuctionHouseEnabled()
+    if type(self.IsModuleEnabled) == "function" and not self:IsModuleEnabled("inventory") then
+        return false
+    end
     if not self.db then
         return self.DEFAULTS.autoOpenAuctionableInventoryOnAuctionHouse == true
     end
@@ -2307,6 +2383,9 @@ end
 
 function GoldTracker:GetSessionElapsedSeconds()
     local session = self.session
+    if type(session.recordingPeriods) == "table" and self.GetSessionIntervalDuration then
+        return self:GetSessionIntervalDuration(session.recordingPeriods, session.active and time() or session.stopTime)
+    end
     if not session.startTime then
         return 0
     end

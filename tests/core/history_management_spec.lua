@@ -250,6 +250,7 @@ describe("Core/History management", function()
                         coordinateSource = "live",
                         coordinateCapturedAt = 110,
                         coordinateRetryCount = 0,
+                        observedDropRecorded = true,
                         ahTracked = true,
                     },
                     {
@@ -292,6 +293,7 @@ describe("Core/History management", function()
         assert.equals("live", split_entries[1].itemLoots[1].coordinateSource)
         assert.equals(110, split_entries[1].itemLoots[1].coordinateCapturedAt)
         assert.equals(0, split_entries[1].itemLoots[1].coordinateRetryCount)
+        assert.is_true(split_entries[1].itemLoots[1].observedDropRecorded)
         assert.equals(1, #split_entries[1].moneyLoots)
         assert.equals("Zone B", split_entries[2].locationLabel)
         assert.equals("Mimi - Silvermoon", split_entries[2].savedBy)

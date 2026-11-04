@@ -29,6 +29,8 @@ describe("Core/Bootstrap slash commands", function()
             ADDON_NAME = "General-Gold-Tracker",
             IsSupportedClient = function() return true end,
             InitializeDatabase = record("database"),
+            InitializeTSMRealmData = record("tsmRealmData"),
+            InitializeAltTracker = record("alts"),
             InitializeMemoryStorage = record("migration"),
             CreateMinimapButton = function() end,
             CreateMainWindow = function() error("The closed tracker must not be constructed at login") end,
@@ -42,7 +44,7 @@ describe("Core/Bootstrap slash commands", function()
             Print = function() end,
         })
         addon:OnAddonLoaded("General-Gold-Tracker")
-        assert.same({ database = true, migration = true, registerOnly = true, bags = true, materials = true }, calls)
+        assert.same({ database = true, tsmRealmData = true, alts = true, migration = true, registerOnly = true, bags = true, materials = true }, calls)
     end)
 
     it("routes common slash commands to the right addon actions", function()

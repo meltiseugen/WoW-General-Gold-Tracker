@@ -58,6 +58,36 @@ describe("Tracking/Valuation", function()
         end)
     end)
 
+    it("preserves regional statistics below one through TSM's integer expression API", function()
+        local calls = {}
+        local addon = load_valuation({ GetTSMItemStringFromLink = function() return "i:110294" end })
+        loader.with_globals({ TSM_API = { GetCustomPriceValue = function(expression, itemString)
+            calls[#calls + 1] = { expression, itemString }
+            if expression == "1000 * DBRegionSaleRate" or expression == "1000 * DBRegionSoldPerDay" then return 2 end
+            if expression == "DBRegionMarketAvg" then return 178400 end
+        end } }, function()
+            assert.equals(0.002, addon:GetTSMRawCustomValueForItemID("DBRegionSaleRate", 110294))
+            assert.equals(0.002, addon:GetTSMRawCustomValue("DBRegionSoldPerDay", "item:110294"))
+            assert.equals(178400, addon:GetTSMRawCustomValueForItemID("DBRegionMarketAvg", 110294))
+            assert.is_nil(addon:GetTSMRawCustomValueForItemID("DBMarket", 110294))
+        end)
+        assert.same({
+            { "1000 * DBRegionSaleRate", "i:110294" },
+            { "1000 * DBRegionSoldPerDay", "i:110294" },
+            { "DBRegionMarketAvg", "i:110294" }, { "DBMarket", "i:110294" },
+        }, calls)
+        assert.is_nil(addon:GetTSMRawCustomValueForItemID("DBMarket", 110294))
+    end)
+
+    it("treats invalid or unavailable raw TSM data as unknown", function()
+        local addon = load_valuation({})
+        loader.with_globals({ TSM_API = { GetCustomPriceValue = function() error("not ready") end } }, function()
+            assert.is_nil(addon:GetTSMRawCustomValueForItemID("DBMarket", 110294))
+            assert.is_nil(addon:GetTSMRawCustomValueForItemID("DBMarket", 0))
+            assert.is_nil(addon:GetTSMRawCustomValueForItemID("DBMarket", "bad"))
+        end)
+    end)
+
     it("prints the unavailable TSM warning only once unless a value later succeeds", function()
         local messages = {}
         local addon = {
@@ -345,6 +375,7 @@ describe("Tracking/Valuation", function()
 
     it("records market history immediately when loot is discovered", function()
         local discoveredItem
+        local observedLocation
         local addon = load_valuation({
             db = {},
             session = {
@@ -395,6 +426,8 @@ describe("Tracking/Valuation", function()
             RecordDiscoveredItemMarketSnapshots = function(_, item)
                 discoveredItem = item
             end,
+            RecordObservedWorldDrop = function() return true end,
+            UpdateObservedDropLootLocation = function(_, _, location) observedLocation = location end,
             NotifyHighValueItem = function() end,
             UpdateMainWindow = function() end,
         })
@@ -408,7 +441,7 @@ describe("Tracking/Valuation", function()
             return { itemID = 12345 }
         end
         addon.GetCurrentSessionLootLocationData = function()
-            return {}
+            return { mapID = 37, mapX = 0.42, mapY = 0.51 }
         end
 
         loader.with_globals({
@@ -425,5 +458,8 @@ describe("Tracking/Valuation", function()
         assert.equals(5000, discoveredItem.unitValue)
         assert.equals(10000, discoveredItem.totalValue)
         assert.equals("TSM_DBMARKET", discoveredItem.valueSourceID)
+        assert.is_true(discoveredItem.observedDropRecorded)
+        assert.equals(0.42, observedLocation.mapX)
+        assert.equals(0.51, observedLocation.mapY)
     end)
 end)

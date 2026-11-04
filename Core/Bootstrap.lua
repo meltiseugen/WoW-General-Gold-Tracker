@@ -17,6 +17,7 @@ local TRADING_POST_WINDOW_KEYS = {
     "farmSourceLinkFrame",
     "farmRoutePlanFrame",
     "myFarmsFrame",
+    "farmTransferFrame",
     "farmCatalogExpandedFrame",
     "craftingFarmingFrame",
     "craftingFarmingExpandedFrame",
@@ -102,6 +103,10 @@ function GoldTracker:HandleSlashCommand(message)
     commandArgs = commandArgs or ""
 
     if command == "" then
+        if type(self.NeedsWelcomeSetup) == "function" and self:NeedsWelcomeSetup() then
+            self:OpenWelcomeWindow()
+            return
+        end
         if type(self.OpenMainWindowFromSlash) == "function" then
             self:OpenMainWindowFromSlash()
         elseif type(self.OpenMainWindow) == "function" then
@@ -137,7 +142,7 @@ function GoldTracker:HandleSlashCommand(message)
         if type(self.OpenExplorerWindow) == "function" then
             self:OpenExplorerWindow()
         else
-            self:Print("Explorer window is not loaded yet.")
+            self:Print("Explorer window is not loaded yet.", "warnings")
         end
         return
     end
@@ -148,7 +153,7 @@ function GoldTracker:HandleSlashCommand(message)
         elseif type(self.OpenRareFarmingWindow) == "function" then
             self:OpenRareFarmingWindow()
         else
-            self:Print("Rare Farming window is not loaded yet.")
+            self:Print("Rare Farming window is not loaded yet.", "warnings")
         end
         return
     end
@@ -159,7 +164,7 @@ function GoldTracker:HandleSlashCommand(message)
         elseif type(self.OpenInstanceFarmingWindow) == "function" then
             self:OpenInstanceFarmingWindow()
         else
-            self:Print("Dungeon & Raid Farming window is not loaded yet.")
+            self:Print("Dungeon & Raid Farming window is not loaded yet.", "warnings")
         end
         return
     end
@@ -170,7 +175,7 @@ function GoldTracker:HandleSlashCommand(message)
         elseif type(self.OpenCraftingFarmingWindow) == "function" then
             self:OpenCraftingFarmingWindow()
         else
-            self:Print("Materials Farming window is not loaded yet.")
+            self:Print("Materials Farming window is not loaded yet.", "warnings")
         end
         return
     end
@@ -181,7 +186,7 @@ function GoldTracker:HandleSlashCommand(message)
         elseif type(self.OpenObservedDropsWindow) == "function" then
             self:OpenObservedDropsWindow()
         else
-            self:Print("Observed Drops window is not loaded yet.")
+            self:Print("Observed Drops window is not loaded yet.", "warnings")
         end
         return
     end
@@ -192,7 +197,7 @@ function GoldTracker:HandleSlashCommand(message)
         elseif type(self.OpenPriceIncreaseAlertsWindow) == "function" then
             self:OpenPriceIncreaseAlertsWindow()
         else
-            self:Print("Price Alerts window is not loaded yet.")
+            self:Print("Market Watch window is not loaded yet.", "warnings")
         end
         return
     end
@@ -201,7 +206,7 @@ function GoldTracker:HandleSlashCommand(message)
         local itemIDText, expansionID, professionID, tag = string.match(commandArgs, "^(%d+)%s+(%S+)%s+(%S+)%s*(.-)%s*$")
         local itemID = tonumber(itemIDText)
         if not itemID then
-            self:Print("Usage: /gt addmat <itemID> <expansionID> <professionID> [tag]. Example: /gt addmat 14256 classic tailoring Cloth")
+            self:Print("Usage: /gt addmat <itemID> <expansionID> <professionID> [tag]. Example: /gt addmat 14256 classic tailoring Cloth", "commands")
             return
         end
 
@@ -212,9 +217,9 @@ function GoldTracker:HandleSlashCommand(message)
                 customItem.itemID,
                 customItem.expansion,
                 customItem.professions and customItem.professions[1] or "unknown"
-            ))
+            ), "farms")
         else
-            self:Print("Could not add custom material item.")
+            self:Print("Could not add custom material item.", "warnings")
         end
         return
     end
@@ -228,7 +233,7 @@ function GoldTracker:HandleSlashCommand(message)
         if type(self.PrintMarketHistoryDebug) == "function" then
             self:PrintMarketHistoryDebug(commandArgs)
         else
-            self:Print("Market history is not loaded yet.")
+            self:Print("Market history is not loaded yet.", "warnings")
         end
         return
     end
@@ -237,17 +242,17 @@ function GoldTracker:HandleSlashCommand(message)
         if type(self.ClearWorldMapProjection) == "function" then
             self:ClearWorldMapProjection()
         else
-            self:Print("World map projection is not loaded yet.")
+            self:Print("World map projection is not loaded yet.", "warnings")
         end
         return
     end
 
     if command == "maptest" then
         if type(self.OpenStandaloneMapTest) == "function" then
-            self:Print("Opening farming route map...")
+            self:Print("Opening farming route map...", "navigation")
             self:OpenStandaloneMapTest()
         else
-            self:Print("Farming route map is not loaded yet.")
+            self:Print("Farming route map is not loaded yet.", "warnings")
         end
         return
     end
@@ -257,11 +262,11 @@ function GoldTracker:HandleSlashCommand(message)
         if self:IsTotalWindowFeatureEnabled() then
             commands = commands .. ", /gt total, /gtt"
         end
-        self:Print(commands)
+        self:Print(commands, "commands")
         return
     end
 
-    self:Print("Unknown command. Use /gt help")
+    self:Print("Unknown command. Use /gt help", "commands")
 end
 
 function GoldTracker:OnAddonLoaded(addonName)
@@ -275,12 +280,21 @@ function GoldTracker:OnAddonLoaded(addonName)
 
     local isSupported, reason = self:IsSupportedClient()
     if not isSupported then
-        self:Print("Disabled: " .. reason)
+        self:Print("Disabled: " .. reason, "warnings")
         self:UnregisterEvent("ADDON_LOADED")
         return
     end
 
+    if type(self.InitializeTSMRealmData) == "function" then
+        self:InitializeTSMRealmData()
+    end
     self:InitializeDatabase()
+    if type(self.InitializeVisualTheme) == "function" then
+        self:InitializeVisualTheme()
+    end
+    if type(self.InitializeAltTracker) == "function" then
+        self:InitializeAltTracker()
+    end
     if type(self.InitializeMemoryStorage) == "function" then
         self:InitializeMemoryStorage()
     end
@@ -304,6 +318,9 @@ function GoldTracker:OnAddonLoaded(addonName)
     self:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self:RegisterEvent("PLAYER_FOCUS_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    self:RegisterEvent("ZONE_CHANGED")
+    self:RegisterEvent("ZONE_CHANGED_INDOORS")
     self:RegisterEvent("BAG_UPDATE_DELAYED")
     self:RegisterEvent("AUCTION_HOUSE_SHOW")
     self:RegisterEvent("PLAYER_LOGOUT")
@@ -316,7 +333,7 @@ function GoldTracker:OnAddonLoaded(addonName)
     end
 
     self:InstallTradingPostWindowGuard()
-    self:Print("Loaded. Use /gt to open the tracker window.")
+    self:Print("Loaded. Use /gt to open the tracker window.", "startup")
 end
 
 function GoldTracker:ShouldAutoStartOnWorldEntry(isInitialLogin, isReloadingUI)
@@ -360,11 +377,11 @@ function GoldTracker:OnPlayerEnteringWorld(isInitialLogin, isReloadingUI)
             silentChat = true,
         })
         if isInitialLogin then
-            self:Print("Session auto-started on world entry.")
+            self:Print("Session auto-started on world entry.", "sessions")
         elseif isReloadingUI then
-            self:Print("Session auto-started after reload.")
+            self:Print("Session auto-started after reload.", "sessions")
         else
-            self:Print("Session auto-started on instance entry.")
+            self:Print("Session auto-started on instance entry.", "sessions")
         end
     end
 end
@@ -568,6 +585,7 @@ function GoldTracker:InstallAuctionHouseSellTabHooks()
 end
 
 function GoldTracker:OnAuctionHouseShow()
+    if type(self.IsModuleEnabled) == "function" and not self:IsModuleEnabled("inventory") then return end
     self.auctionHouseSellPaneWatcherArmed = false
     self.auctionHouseSellPaneWasShown = false
     self:StartAuctionHouseSellPaneWatcher()
@@ -617,6 +635,8 @@ GoldTracker:SetScript("OnEvent", function(_, event, ...)
         GoldTracker:OnPlayerFocusChanged(...)
     elseif event == "PLAYER_ENTERING_WORLD" then
         GoldTracker:OnPlayerEnteringWorld(...)
+    elseif event == "ZONE_CHANGED_NEW_AREA" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then
+        GoldTracker:HandleSessionLocationTransition()
     elseif event == "BAG_UPDATE_DELAYED" then
         if type(GoldTracker.InvalidateInventoryWindowCache) == "function" then
             GoldTracker:InvalidateInventoryWindowCache()

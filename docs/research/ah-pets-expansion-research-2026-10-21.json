@@ -1,0 +1,1767 @@
+{
+  "researchedAt": "2026-10-21",
+  "scope": "Additional saleable pets for Drops > Pets; Classic through Midnight",
+  "newSpeciesCount": 29,
+  "expansionCounts": {
+    "Classic": 1,
+    "The Burning Crusade": 5,
+    "Wrath of the Lich King": 1,
+    "Cataclysm": 1,
+    "Warlords of Draenor": 1,
+    "Legion": 3,
+    "Battle for Azeroth": 3,
+    "Shadowlands": 2,
+    "Dragonflight": 3,
+    "The War Within": 2,
+    "Midnight": 3,
+    "Mists of Pandaria": 4
+  },
+  "mapOptionCount": 29,
+  "pinCount": 44,
+  "verification": "Embedded Lua 5.1 catalog and UI action checks passed; no live WoW or AH verification",
+  "pets": [
+    {
+      "itemName": "Green Wing Macaw",
+      "action": "Clear Defias Pirates near the ship at the end of The Deadmines and loot the Parrot Cage (Green Wing Macaw).",
+      "petID": 50,
+      "expansionLabel": "Classic",
+      "acquisitionType": "dungeon-trash",
+      "expansion": "classic",
+      "guideLabel": "Pet acquisition - Classic",
+      "repeatability": "Normal dungeon resets provide more trash attempts, subject to the account's instance-entry limit.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/flying/parrots/green-wing-macaw/",
+        "https://www.wowhead.com/zone=1581/the-deadmines",
+        "https://www.wowhead.com/npc=7387/green-wing-macaw"
+      ],
+      "tips": [
+        "The exterior marker is the mine approach. Follow the mine tunnels to the dungeon portal; the pet drops inside, not at the entrance.",
+        "Normal dungeon resets provide more trash attempts, subject to the account's instance-entry limit.",
+        "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+      ],
+      "cageable": true,
+      "summary": "Green Wing Macaw: Clear Defias Pirates near the ship at the end of The Deadmines and loot the Parrot Cage (Green Wing Macaw).",
+      "saleMethod": "item-or-cage",
+      "requirement": "Enter the ordinary Deadmines dungeon through the Moonbrook mine in Westfall.",
+      "spots": [
+        {
+          "mapID": 52,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/flying/parrots/green-wing-macaw/",
+            "https://www.wowhead.com/zone=1581/the-deadmines",
+            "https://www.wowhead.com/npc=7387/green-wing-macaw"
+          ],
+          "id": "ah-pet-50-1",
+          "routeType": "farm-pet",
+          "mapName": "Westfall",
+          "tips": [
+            "The exterior marker is the mine approach. Follow the mine tunnels to the dungeon portal; the pet drops inside, not at the entrance.",
+            "Normal dungeon resets provide more trash attempts, subject to the account's instance-entry limit.",
+            "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Clear Defias Pirates near the ship at the end of The Deadmines and loot the Parrot Cage (Green Wing Macaw).",
+          "coords": [
+            {
+              "y": 0.7153,
+              "x": 0.42560000000000003,
+              "label": "Deadmines mine approach; continue inside to the portal"
+            }
+          ],
+          "location": "Moonbrook mine approach - The Deadmines",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "entrance"
+        }
+      ],
+      "contentID": 1
+    },
+    {
+      "itemName": "Phoenix Hatchling",
+      "action": "Defeat Kael'thas Sunstrider at the end of Magisters' Terrace for a chance at Phoenix Hatchling.",
+      "petID": 175,
+      "expansionLabel": "The Burning Crusade",
+      "acquisitionType": "dungeon-boss",
+      "expansion": "burningCrusade",
+      "guideLabel": "Pet acquisition - The Burning Crusade",
+      "repeatability": "The pet drops on Normal and Heroic. Normal resets allow repeat attempts; Heroic has a daily lockout.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/elemental/mythical/phoenix-hatchling/",
+        "https://wow.gg/guides/swift-white-hawkstrider-mount-guide"
+      ],
+      "tips": [
+        "Use the original Burning Crusade dungeon. The pin marks its exterior entrance, not the Midnight dungeon or the boss room.",
+        "The pet drops on Normal and Heroic. Normal resets allow repeat attempts; Heroic has a daily lockout.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Phoenix Hatchling: Defeat Kael'thas Sunstrider at the end of Magisters' Terrace for a chance at Phoenix Hatchling.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Reach the original Isle of Quel'Danas and enter Magisters' Terrace.",
+      "spots": [
+        {
+          "mapID": 122,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/elemental/mythical/phoenix-hatchling/",
+            "https://wow.gg/guides/swift-white-hawkstrider-mount-guide"
+          ],
+          "id": "ah-pet-175-1",
+          "routeType": "farm-pet",
+          "mapName": "Isle of Quel'Danas",
+          "tips": [
+            "Use the original Burning Crusade dungeon. The pin marks its exterior entrance, not the Midnight dungeon or the boss room.",
+            "The pet drops on Normal and Heroic. Normal resets allow repeat attempts; Heroic has a daily lockout.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Defeat Kael'thas Sunstrider at the end of Magisters' Terrace for a chance at Phoenix Hatchling.",
+          "coords": [
+            {
+              "y": 0.309,
+              "x": 0.613,
+              "label": "Original Magisters' Terrace entrance - Kael'thas inside"
+            }
+          ],
+          "location": "Original Magisters' Terrace entrance",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "entrance"
+        }
+      ],
+      "contentID": 2
+    },
+    {
+      "itemName": "Giant Sewer Rat",
+      "action": "Fish open sewer water by the Cantrips & Crows pier in Northrend Dalaran for a rare Giant Sewer Rat catch.",
+      "petID": 193,
+      "expansionLabel": "Wrath of the Lich King",
+      "acquisitionType": "fishing",
+      "expansion": "wrath",
+      "guideLabel": "Pet acquisition - Wrath of the Lich King",
+      "repeatability": "Repeat casts are allowed; no fixed number of casts guarantees a pet.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/critter/rats-and-mice/giant-sewer-rat/",
+        "https://www.wowhead.com/achievement=1958/i-smell-a-giant-rat",
+        "https://www.wowhead.com/quest=13832/jewel-of-the-sewers"
+      ],
+      "tips": [
+        "Use the Underbelly floor in the map selector. This is a fishing-area marker, not a rat to kill or capture.",
+        "Repeat casts are allowed; no fixed number of casts guarantees a pet.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Giant Sewer Rat: Fish open sewer water by the Cantrips & Crows pier in Northrend Dalaran for a rare Giant Sewer Rat catch.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Learn Fishing and travel to Northrend Dalaran's Underbelly.",
+      "spots": [
+        {
+          "mapID": 126,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/critter/rats-and-mice/giant-sewer-rat/",
+            "https://www.wowhead.com/achievement=1958/i-smell-a-giant-rat",
+            "https://www.wowhead.com/quest=13832/jewel-of-the-sewers"
+          ],
+          "id": "ah-pet-193-1",
+          "routeType": "farm-pet",
+          "mapName": "Dalaran - The Underbelly",
+          "tips": [
+            "Use the Underbelly floor in the map selector. This is a fishing-area marker, not a rat to kill or capture.",
+            "Repeat casts are allowed; no fixed number of casts guarantees a pet.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Fish open sewer water by the Cantrips & Crows pier in Northrend Dalaran for a rare Giant Sewer Rat catch.",
+          "coords": [
+            {
+              "y": 0.6596,
+              "x": 0.4475,
+              "label": "Cantrips & Crows fishing pier - open sewer water"
+            }
+          ],
+          "location": "Cantrips & Crows sewer fishing pier",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "fishing-area"
+        }
+      ],
+      "contentID": 3
+    },
+    {
+      "itemName": "Elementium Geode",
+      "action": "Mine Elementium nodes in Twilight Highlands for a rare Elementium Geode bonus drop.",
+      "petID": 293,
+      "expansionLabel": "Cataclysm",
+      "acquisitionType": "mining",
+      "expansion": "cataclysm",
+      "guideLabel": "Pet acquisition - Cataclysm",
+      "repeatability": "Repeat eligible node gathers; a mining pass does not guarantee the pet.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=50722/elementium-geode",
+        "https://www.wowhead.com/news/cataclysm-companion-pets-guide-gotta-catch-em-all-176437",
+        "https://www.wow-professions.com/farming/elementium-ore-farming"
+      ],
+      "tips": [
+        "The marker is a northern mining-area anchor from the researched Elementium circuit. Search surrounding ridges for nodes; it is not a fixed pet spawn.",
+        "Repeat eligible node gathers; a mining pass does not guarantee the pet.",
+        "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+      ],
+      "cageable": true,
+      "summary": "Elementium Geode: Mine Elementium nodes in Twilight Highlands for a rare Elementium Geode bonus drop.",
+      "saleMethod": "item-or-cage",
+      "requirement": "Learn Cataclysm Mining and gather Elementium Veins or Rich Elementium Veins.",
+      "spots": [
+        {
+          "mapID": 241,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=50722/elementium-geode",
+            "https://www.wowhead.com/news/cataclysm-companion-pets-guide-gotta-catch-em-all-176437",
+            "https://www.wow-professions.com/farming/elementium-ore-farming"
+          ],
+          "id": "ah-pet-293-1",
+          "routeType": "farm-pet",
+          "mapName": "Twilight Highlands",
+          "tips": [
+            "The marker is a northern mining-area anchor from the researched Elementium circuit. Search surrounding ridges for nodes; it is not a fixed pet spawn.",
+            "Repeat eligible node gathers; a mining pass does not guarantee the pet.",
+            "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Mine Elementium nodes in Twilight Highlands for a rare Elementium Geode bonus drop.",
+          "coords": [
+            {
+              "y": 0.19899999999999998,
+              "x": 0.4458,
+              "label": "Elementium mining-area anchor; search nearby ridges"
+            }
+          ],
+          "location": "Northern ridges - Elementium mining area",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "gathering-area"
+        }
+      ],
+      "contentID": 4
+    },
+    {
+      "itemName": "Ikky",
+      "action": "Complete Ikky's Egg and the feeding follow-up, then return to Veil Terokk for the final Ikky quest that teaches the pet.",
+      "petID": 1532,
+      "expansionLabel": "Warlords of Draenor",
+      "acquisitionType": "quest",
+      "expansion": "warlords",
+      "guideLabel": "Pet acquisition - Warlords of Draenor",
+      "repeatability": "This is a one-time quest chain per eligible character; use another character for another reward.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wow-petguide.com/Pet/86447/Ikky?sel_lang=en",
+        "https://www.wowhead.com/npc=86447/ikky"
+      ],
+      "tips": [
+        "The pin marks the egg and quest start. If the egg is missing, finish the prerequisite story instead of waiting for a rare spawn.",
+        "This is a one-time quest chain per eligible character; use another character for another reward.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Ikky: Complete Ikky's Egg and the feeding follow-up, then return to Veil Terokk for the final Ikky quest that teaches the pet.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Progress the Spires of Arak story through The Kaliri Whisperer.",
+      "spots": [
+        {
+          "mapID": 542,
+          "sourceUrls": [
+            "https://www.wow-petguide.com/Pet/86447/Ikky?sel_lang=en",
+            "https://www.wowhead.com/npc=86447/ikky"
+          ],
+          "id": "ah-pet-1532-1",
+          "routeType": "farm-pet",
+          "mapName": "Spires of Arak",
+          "tips": [
+            "The pin marks the egg and quest start. If the egg is missing, finish the prerequisite story instead of waiting for a rare spawn.",
+            "This is a one-time quest chain per eligible character; use another character for another reward.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Ikky's Egg and the feeding follow-up, then return to Veil Terokk for the final Ikky quest that teaches the pet.",
+          "coords": [
+            {
+              "y": 0.366,
+              "x": 0.45399999999999996,
+              "label": "Ikky's Egg - finish the chain and return to Veil Terokk"
+            }
+          ],
+          "location": "Ikky's Egg quest start",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "contentID": 6
+    },
+    {
+      "itemName": "Benax",
+      "action": "Defeat Anax in Suramar and loot Benax.",
+      "petID": 1934,
+      "expansionLabel": "Legion",
+      "acquisitionType": "rare-drop",
+      "expansion": "legion",
+      "guideLabel": "Pet acquisition - Legion",
+      "repeatability": "Legion vignette rare rewards are generally one-time per character. Use an eligible alt rather than repeatedly killing a completed rare.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=113136/benax",
+        "https://www.cymre.com/2016/06/13/legion-battle-pets/"
+      ],
+      "tips": [
+        "Check the small island and tree by the water. The pin names Anax, not a capturable Benax spawn.",
+        "Legion vignette rare rewards are generally one-time per character. Use an eligible alt rather than repeatedly killing a completed rare.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Benax: Defeat Anax in Suramar and loot Benax.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Reach Meredil in Suramar and find Anax by the water near Shal'Aran.",
+      "spots": [
+        {
+          "mapID": 680,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=113136/benax",
+            "https://www.cymre.com/2016/06/13/legion-battle-pets/"
+          ],
+          "id": "ah-pet-1934-1",
+          "routeType": "farm-pet",
+          "mapName": "Suramar",
+          "tips": [
+            "Check the small island and tree by the water. The pin names Anax, not a capturable Benax spawn.",
+            "Legion vignette rare rewards are generally one-time per character. Use an eligible alt rather than repeatedly killing a completed rare.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Defeat Anax in Suramar and loot Benax.",
+          "coords": [
+            {
+              "y": 0.518,
+              "x": 0.337,
+              "label": "Anax - Benax reward"
+            }
+          ],
+          "location": "Meredil - Anax",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "rare"
+        }
+      ],
+      "contentID": 7
+    },
+    {
+      "itemName": "Pygmy Owl",
+      "action": "Summon and defeat Gorebeak in Val'sharah to obtain Pygmy Owl.",
+      "petID": 1907,
+      "expansionLabel": "Legion",
+      "acquisitionType": "event-rare",
+      "expansion": "legion",
+      "guideLabel": "Pet acquisition - Legion",
+      "repeatability": "Treat this as a one-time Legion rare reward per character; use eligible alts for additional pets.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=130154/pygmy-owl",
+        "https://www.wowhead.com/npc=108568/pygmy-owl",
+        "https://warcraft.wiki.gg/wiki/Gorebeak"
+      ],
+      "tips": [
+        "Gorebeak is summoned through the local NPC interaction; an empty marker does not by itself mean the rare is on a respawn timer.",
+        "Treat this as a one-time Legion rare reward per character; use eligible alts for additional pets.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Pygmy Owl: Summon and defeat Gorebeak in Val'sharah to obtain Pygmy Owl.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Speak to Lorel Sagefeather in Whispering Bluffs to summon Gorebeak.",
+      "spots": [
+        {
+          "mapID": 641,
+          "sourceUrls": [
+            "https://www.wowhead.com/item=130154/pygmy-owl",
+            "https://www.wowhead.com/npc=108568/pygmy-owl",
+            "https://warcraft.wiki.gg/wiki/Gorebeak"
+          ],
+          "id": "ah-pet-1907-1",
+          "routeType": "farm-pet",
+          "mapName": "Val'sharah",
+          "tips": [
+            "Gorebeak is summoned through the local NPC interaction; an empty marker does not by itself mean the rare is on a respawn timer.",
+            "Treat this as a one-time Legion rare reward per character; use eligible alts for additional pets.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Summon and defeat Gorebeak in Val'sharah to obtain Pygmy Owl.",
+          "coords": [
+            {
+              "y": 0.773,
+              "x": 0.598,
+              "label": "Gorebeak - speak to Lorel Sagefeather nearby"
+            }
+          ],
+          "location": "Whispering Bluffs - Gorebeak event",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "event-rare"
+        }
+      ],
+      "contentID": 7
+    },
+    {
+      "itemName": "Stormborne Whelpling",
+      "action": "Defeat Stormwing Matriarch in Stormheim for Stormborne Whelpling.",
+      "petID": 1721,
+      "expansionLabel": "Legion",
+      "acquisitionType": "rare-drop",
+      "expansion": "legion",
+      "guideLabel": "Pet acquisition - Legion",
+      "repeatability": "The Legion rare reward is one-time per eligible character; plan extra pets on alts.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=97205/stormborne-whelpling",
+        "https://www.warcraftpets.com/wow-pets/dragonkin/dragon-whelps/stormborne-whelpling/"
+      ],
+      "tips": [
+        "The rookery is elevated. Use the mountain path or flight; the pin is not on the road below.",
+        "The Legion rare reward is one-time per eligible character; plan extra pets on alts.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Stormborne Whelpling: Defeat Stormwing Matriarch in Stormheim for Stormborne Whelpling.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Reach Stormwing Rookery on the southern Stormheim mountain.",
+      "spots": [
+        {
+          "mapID": 634,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=97205/stormborne-whelpling",
+            "https://www.warcraftpets.com/wow-pets/dragonkin/dragon-whelps/stormborne-whelpling/"
+          ],
+          "id": "ah-pet-1721-1",
+          "routeType": "farm-pet",
+          "mapName": "Stormheim",
+          "tips": [
+            "The rookery is elevated. Use the mountain path or flight; the pin is not on the road below.",
+            "The Legion rare reward is one-time per eligible character; plan extra pets on alts.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Defeat Stormwing Matriarch in Stormheim for Stormborne Whelpling.",
+          "coords": [
+            {
+              "y": 0.72,
+              "x": 0.496,
+              "label": "Stormwing Matriarch - elevated rookery"
+            }
+          ],
+          "location": "Stormwing Rookery",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "rare"
+        }
+      ],
+      "contentID": 7
+    },
+    {
+      "itemName": "Rotbreath",
+      "action": "Enter Lord Aj'qirai's cave during the Aqir assault and defeat him for the Stinky Sack that teaches Rotbreath.",
+      "petID": 2847,
+      "expansionLabel": "Battle for Azeroth",
+      "acquisitionType": "assault-rare",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Pet acquisition - Battle for Azeroth",
+      "repeatability": "The rare must be available in the current assault rotation; eligible daily rare loot attempts are per character.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=161997/rotbreath",
+        "https://www.wowhead.com/guide/battle-pets-visions-of-nzoth"
+      ],
+      "tips": [
+        "The marker is the cave entrance. Continue inside to the rare; original pre-assault Uldum is a different phase.",
+        "The rare must be available in the current assault rotation; eligible daily rare loot attempts are per character.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Rotbreath: Enter Lord Aj'qirai's cave during the Aqir assault and defeat him for the Stinky Sack that teaches Rotbreath.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Unlock Visions of N'Zoth assaults and use the assault version of Uldum while the Aqir assault is active.",
+      "spots": [
+        {
+          "mapID": 1527,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=161997/rotbreath",
+            "https://www.wowhead.com/guide/battle-pets-visions-of-nzoth"
+          ],
+          "id": "ah-pet-2847-1",
+          "routeType": "farm-pet",
+          "mapName": "Uldum (N'Zoth assault)",
+          "tips": [
+            "The marker is the cave entrance. Continue inside to the rare; original pre-assault Uldum is a different phase.",
+            "The rare must be available in the current assault rotation; eligible daily rare loot attempts are per character.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Enter Lord Aj'qirai's cave during the Aqir assault and defeat him for the Stinky Sack that teaches Rotbreath.",
+          "coords": [
+            {
+              "y": 0.20929999999999999,
+              "x": 0.3685,
+              "label": "Lord Aj'qirai cave entrance - Aqir assault phase"
+            }
+          ],
+          "location": "Lord Aj'qirai cave entrance",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "entrance"
+        }
+      ],
+      "contentID": 8
+    },
+    {
+      "itemName": "Aqir Tunneler",
+      "action": "Find and defeat the flying rare Skikx'traz for Black Chitinous Plate, which teaches Aqir Tunneler.",
+      "petID": 2848,
+      "expansionLabel": "Battle for Azeroth",
+      "acquisitionType": "assault-rare",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Pet acquisition - Battle for Azeroth",
+      "repeatability": "Available during the Aqir assault rotation, with eligible daily rare loot attempts per character.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=162004/aqir-tunneler",
+        "https://www.wowhead.com/guide/battle-pets-visions-of-nzoth"
+      ],
+      "tips": [
+        "The pin is a flying-rare search anchor. Look above the terrain and nearby patrol area; it is not a guaranteed ground spawn.",
+        "Available during the Aqir assault rotation, with eligible daily rare loot attempts per character.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Aqir Tunneler: Find and defeat the flying rare Skikx'traz for Black Chitinous Plate, which teaches Aqir Tunneler.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Unlock Visions of N'Zoth assaults and visit Uldum during the Aqir minor assault.",
+      "spots": [
+        {
+          "mapID": 1527,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=162004/aqir-tunneler",
+            "https://www.wowhead.com/guide/battle-pets-visions-of-nzoth"
+          ],
+          "id": "ah-pet-2848-1",
+          "routeType": "farm-pet",
+          "mapName": "Uldum (N'Zoth assault)",
+          "tips": [
+            "The pin is a flying-rare search anchor. Look above the terrain and nearby patrol area; it is not a guaranteed ground spawn.",
+            "Available during the Aqir assault rotation, with eligible daily rare loot attempts per character.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Find and defeat the flying rare Skikx'traz for Black Chitinous Plate, which teaches Aqir Tunneler.",
+          "coords": [
+            {
+              "y": 0.6103000000000001,
+              "x": 0.212,
+              "label": "Skikx'traz flying patrol anchor - Aqir assault"
+            }
+          ],
+          "location": "Skikx'traz flying-rare search area",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "patrol"
+        }
+      ],
+      "contentID": 8
+    },
+    {
+      "itemName": "K'uddly",
+      "action": "Defeat The Forgotten on its floating platform for a chance at K'uddly.",
+      "petID": 2845,
+      "expansionLabel": "Battle for Azeroth",
+      "acquisitionType": "assault-rare",
+      "expansion": "battleForAzeroth",
+      "guideLabel": "Pet acquisition - Battle for Azeroth",
+      "repeatability": "The source follows the Vale assault rotation; use eligible daily rare loot attempts on additional characters.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=161954/kuddly",
+        "https://www.wowhead.com/guide/battle-pets-visions-of-nzoth"
+      ],
+      "tips": [
+        "The target is on a platform in the sky. The marker uses the assault map, not the original Pandaria Vale.",
+        "The source follows the Vale assault rotation; use eligible daily rare loot attempts on additional characters.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "K'uddly: Defeat The Forgotten on its floating platform for a chance at K'uddly.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Unlock Visions of N'Zoth assaults and enter the Black Empire assault phase of the Vale of Eternal Blossoms.",
+      "spots": [
+        {
+          "mapID": 1530,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=161954/kuddly",
+            "https://www.wowhead.com/guide/battle-pets-visions-of-nzoth"
+          ],
+          "id": "ah-pet-2845-1",
+          "routeType": "farm-pet",
+          "mapName": "Vale of Eternal Blossoms (N'Zoth assault)",
+          "tips": [
+            "The target is on a platform in the sky. The marker uses the assault map, not the original Pandaria Vale.",
+            "The source follows the Vale assault rotation; use eligible daily rare loot attempts on additional characters.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Defeat The Forgotten on its floating platform for a chance at K'uddly.",
+          "coords": [
+            {
+              "y": 0.4219,
+              "x": 0.5185,
+              "label": "The Forgotten - platform in the sky"
+            }
+          ],
+          "location": "The Forgotten - floating platform",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "rare"
+        }
+      ],
+      "contentID": 8
+    },
+    {
+      "itemName": "Lost Quill",
+      "action": "Pick up the Forbidden Ink, then bring it to Lost Quill on the wall above the library to receive Refilling Inkwell.",
+      "petID": 3008,
+      "expansionLabel": "Shadowlands",
+      "acquisitionType": "treasure",
+      "expansion": "shadowlands",
+      "guideLabel": "Pet acquisition - Shadowlands",
+      "repeatability": "Treat the treasure as one-time per eligible character; use alts for additional sale copies.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=173508/lost-quill",
+        "https://www.warcraftpets.com/wow-pets/magic/miscellaneous/lost-quill/"
+      ],
+      "tips": [
+        "The two pins distinguish the ink inside the library and the quill on the upper wall. The quill cannot be reached by standing directly below it.",
+        "Treat the treasure as one-time per eligible character; use alts for additional sale copies.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Lost Quill: Pick up the Forbidden Ink, then bring it to Lost Quill on the wall above the library to receive Refilling Inkwell.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Collect Forbidden Ink inside the Forbidden Library before speaking to the quill above it.",
+      "spots": [
+        {
+          "mapID": 1525,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=173508/lost-quill",
+            "https://www.warcraftpets.com/wow-pets/magic/miscellaneous/lost-quill/"
+          ],
+          "id": "ah-pet-3008-1",
+          "routeType": "farm-pet",
+          "mapName": "Revendreth",
+          "tips": [
+            "The two pins distinguish the ink inside the library and the quill on the upper wall. The quill cannot be reached by standing directly below it.",
+            "Treat the treasure as one-time per eligible character; use alts for additional sale copies.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Pick up the Forbidden Ink, then bring it to Lost Quill on the wall above the library to receive Refilling Inkwell.",
+          "coords": [
+            {
+              "y": 0.6873999999999999,
+              "x": 0.3768,
+              "label": "Forbidden Ink - inside the library"
+            },
+            {
+              "y": 0.6927,
+              "x": 0.3776,
+              "label": "Lost Quill - upper wall; bring Forbidden Ink"
+            }
+          ],
+          "location": "Forbidden Library - ink and upper-wall quill",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "treasure"
+        }
+      ],
+      "contentID": 9
+    },
+    {
+      "itemName": "Shimmerbough Hoarder",
+      "action": "Enter from the river and loot the Faerie Trove underneath the tree in Ardenweald.",
+      "petID": 3022,
+      "expansionLabel": "Shadowlands",
+      "acquisitionType": "treasure",
+      "expansion": "shadowlands",
+      "guideLabel": "Pet acquisition - Shadowlands",
+      "repeatability": "One-time treasure per eligible character; additional characters provide more copies.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=173591/shimmerbough-hoarder",
+        "https://www.wowhead.com/guide/shadowlands-battle-pets"
+      ],
+      "tips": [
+        "The chest is underneath the terrain in a small cave. Approach from the river, not the top of the log.",
+        "One-time treasure per eligible character; additional characters provide more copies.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Shimmerbough Hoarder: Enter from the river and loot the Faerie Trove underneath the tree in Ardenweald.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Find the Faerie Trove beneath the fallen tree south of Refugee Camp.",
+      "spots": [
+        {
+          "mapID": 1565,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=173591/shimmerbough-hoarder",
+            "https://www.wowhead.com/guide/shadowlands-battle-pets"
+          ],
+          "id": "ah-pet-3022-1",
+          "routeType": "farm-pet",
+          "mapName": "Ardenweald",
+          "tips": [
+            "The chest is underneath the terrain in a small cave. Approach from the river, not the top of the log.",
+            "One-time treasure per eligible character; additional characters provide more copies.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Enter from the river and loot the Faerie Trove underneath the tree in Ardenweald.",
+          "coords": [
+            {
+              "y": 0.5588000000000001,
+              "x": 0.49700000000000005,
+              "label": "Faerie Trove underneath tree - enter from river"
+            }
+          ],
+          "location": "Faerie Trove - river entrance beneath tree",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "treasure"
+        }
+      ],
+      "contentID": 9
+    },
+    {
+      "itemName": "Roseate Hopper",
+      "action": "Combine Adventurer's Lost Soap Bar, Marmoni's Prize and Well-Preserved Bone near the hornswog, then loot Hidden Hornswog Hostage.",
+      "petID": 3365,
+      "expansionLabel": "Dragonflight",
+      "acquisitionType": "treasure-puzzle",
+      "expansion": "dragonflight",
+      "guideLabel": "Pet acquisition - Dragonflight",
+      "repeatability": "The treasure puzzle is one-time per eligible character; repeat on alts for more pets.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=192369/roseate-hopper",
+        "https://www.warcraftpets.com/wow-pets/aquatic/frogs-and-toads/roseate-hopper/"
+      ],
+      "tips": [
+        "The map includes all three ingredient locations and the final hornswog. Read Observant Riddles: A Field Guide at the final location.",
+        "The treasure puzzle is one-time per eligible character; repeat on alts for more pets.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Roseate Hopper: Combine Adventurer's Lost Soap Bar, Marmoni's Prize and Well-Preserved Bone near the hornswog, then loot Hidden Hornswog Hostage.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Collect the three riddle ingredients in The Waking Shores before returning to the Possessive Hornswog.",
+      "spots": [
+        {
+          "mapID": 2022,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=192369/roseate-hopper",
+            "https://www.warcraftpets.com/wow-pets/aquatic/frogs-and-toads/roseate-hopper/"
+          ],
+          "id": "ah-pet-3365-1",
+          "routeType": "farm-pet",
+          "mapName": "The Waking Shores",
+          "tips": [
+            "The map includes all three ingredient locations and the final hornswog. Read Observant Riddles: A Field Guide at the final location.",
+            "The treasure puzzle is one-time per eligible character; repeat on alts for more pets.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Combine Adventurer's Lost Soap Bar, Marmoni's Prize and Well-Preserved Bone near the hornswog, then loot Hidden Hornswog Hostage.",
+          "coords": [
+            {
+              "y": 0.696,
+              "x": 0.6493000000000001,
+              "label": "Possessive Hornswog - combine ingredients here"
+            },
+            {
+              "y": 0.8469,
+              "x": 0.39640000000000003,
+              "label": "Adventurer's Lost Soap Bar - near barrel"
+            },
+            {
+              "y": 0.8359000000000001,
+              "x": 0.4771,
+              "label": "Marmoni's Prize - boxes behind tent"
+            },
+            {
+              "y": 0.5529,
+              "x": 0.6618,
+              "label": "Well-Preserved Bone - top of tower"
+            }
+          ],
+          "location": "Hidden Hornswog Hostage - puzzle and ingredients",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "treasure"
+        }
+      ],
+      "contentID": 10
+    },
+    {
+      "itemName": "Blackfeather Nester",
+      "action": "Collect Tree Sap inside the trunk, use the stick near the top to lure Pepper Hammer, then interact with the bird for Blackfeather Nester.",
+      "petID": 3321,
+      "expansionLabel": "Dragonflight",
+      "acquisitionType": "treasure",
+      "expansion": "dragonflight",
+      "guideLabel": "Pet acquisition - Dragonflight",
+      "repeatability": "This is a one-time treasure per eligible character; use alts for additional copies.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=189156/blackfeather-nester",
+        "https://www.warcraftpets.com/wow-pets/flying/miscellaneous/blackfeather-nester/"
+      ],
+      "tips": [
+        "Tree Sap lasts five minutes. If the stick is unresponsive, a UI reload has resolved it in player reports.",
+        "This is a one-time treasure per eligible character; use alts for additional copies.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Blackfeather Nester: Collect Tree Sap inside the trunk, use the stick near the top to lure Pepper Hammer, then interact with the bird for Blackfeather Nester.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Reach the hollow tree trunk near Traitor's Rest in The Azure Span.",
+      "spots": [
+        {
+          "mapID": 2024,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=189156/blackfeather-nester",
+            "https://www.warcraftpets.com/wow-pets/flying/miscellaneous/blackfeather-nester/"
+          ],
+          "id": "ah-pet-3321-1",
+          "routeType": "farm-pet",
+          "mapName": "The Azure Span",
+          "tips": [
+            "Tree Sap lasts five minutes. If the stick is unresponsive, a UI reload has resolved it in player reports.",
+            "This is a one-time treasure per eligible character; use alts for additional copies.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Collect Tree Sap inside the trunk, use the stick near the top to lure Pepper Hammer, then interact with the bird for Blackfeather Nester.",
+          "coords": [
+            {
+              "y": 0.4618,
+              "x": 0.2652,
+              "label": "Tree Sap, stick and Pepper Hammer in the hollow trunk"
+            }
+          ],
+          "location": "Traitor's Rest hollow tree - Pepper Hammer",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "treasure"
+        }
+      ],
+      "contentID": 10
+    },
+    {
+      "itemName": "Yipper",
+      "action": "Accept The Great Shokhari, defeat the quest target and return to Zon'Wogi for Yipper.",
+      "petID": 3319,
+      "expansionLabel": "Dragonflight",
+      "acquisitionType": "quest",
+      "expansion": "dragonflight",
+      "guideLabel": "Pet acquisition - Dragonflight",
+      "repeatability": "One quest reward per eligible character; use alts for further sale copies.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=189204/yipper",
+        "https://www.warcraftpets.com/wow-pets/flying/miscellaneous/yipper/"
+      ],
+      "tips": [
+        "The marker is the quest giver and turn-in, not the enemy. Follow the quest objective to find the slyvern.",
+        "One quest reward per eligible character; use alts for further sale copies.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Yipper: Accept The Great Shokhari, defeat the quest target and return to Zon'Wogi for Yipper.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Speak to Zon'Wogi beside the flight master at Three-Falls Lookout.",
+      "spots": [
+        {
+          "mapID": 2024,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=189204/yipper",
+            "https://www.warcraftpets.com/wow-pets/flying/miscellaneous/yipper/"
+          ],
+          "id": "ah-pet-3319-1",
+          "routeType": "farm-pet",
+          "mapName": "The Azure Span",
+          "tips": [
+            "The marker is the quest giver and turn-in, not the enemy. Follow the quest objective to find the slyvern.",
+            "One quest reward per eligible character; use alts for further sale copies.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Accept The Great Shokhari, defeat the quest target and return to Zon'Wogi for Yipper.",
+          "coords": [
+            {
+              "y": 0.24,
+              "x": 0.19,
+              "label": "Zon'Wogi - The Great Shokhari quest start and turn-in"
+            }
+          ],
+          "location": "Three-Falls Lookout - Zon'Wogi",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "contentID": 10
+    },
+    {
+      "itemName": "Crackleroar",
+      "action": "Farm Stormtouched Pridetalons on Siren Isle's high peaks during the storm; Tempest Talon can also drop Crackleroar.",
+      "petID": 4726,
+      "expansionLabel": "The War Within",
+      "acquisitionType": "storm-drop",
+      "expansion": "warWithin",
+      "guideLabel": "Pet acquisition - The War Within",
+      "repeatability": "Ordinary Stormtouched Pridetalons allow repeated attempts while the storm phase is active.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=234379/crackleroar",
+        "https://www.wowhead.com/npc=235124/crackleroar"
+      ],
+      "tips": [
+        "Bring Experimental Go-Packs to move between peaks. The marked ordinary-enemy locations are farming anchors, not the Tempest Talon rare spawn.",
+        "Ordinary Stormtouched Pridetalons allow repeated attempts while the storm phase is active.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Crackleroar: Farm Stormtouched Pridetalons on Siren Isle's high peaks during the storm; Tempest Talon can also drop Crackleroar.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Unlock Siren Isle and talk to Suzie Boltwrench to enter the storm phase.",
+      "spots": [
+        {
+          "mapID": 2369,
+          "sourceUrls": [
+            "https://www.wowhead.com/item=234379/crackleroar",
+            "https://www.wowhead.com/npc=235124/crackleroar"
+          ],
+          "id": "ah-pet-4726-1",
+          "routeType": "farm-pet",
+          "mapName": "Siren Isle",
+          "tips": [
+            "Bring Experimental Go-Packs to move between peaks. The marked ordinary-enemy locations are farming anchors, not the Tempest Talon rare spawn.",
+            "Ordinary Stormtouched Pridetalons allow repeated attempts while the storm phase is active.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Farm Stormtouched Pridetalons on Siren Isle's high peaks during the storm; Tempest Talon can also drop Crackleroar.",
+          "coords": [
+            {
+              "y": 0.2354,
+              "x": 0.5493,
+              "label": "Northern peak - storm-phase Pridetalons"
+            },
+            {
+              "y": 0.19940000000000002,
+              "x": 0.5127,
+              "label": "Northern Pridetalon farming anchor"
+            },
+            {
+              "y": 0.6034,
+              "x": 0.4188,
+              "label": "Southwestern Pridetalon farming anchor"
+            }
+          ],
+          "location": "Stormtouched Pridetalon mountain farming areas",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "contentID": 11
+    },
+    {
+      "itemName": "Proper Parrot",
+      "action": "Defeat Bilge Rat pirates, including the named elites and rares, for Proper Parrot.",
+      "petID": 2541,
+      "expansionLabel": "The War Within",
+      "acquisitionType": "invasion-drop",
+      "expansion": "warWithin",
+      "guideLabel": "Pet acquisition - The War Within",
+      "repeatability": "Pirate kills can provide repeated attempts during the pirate invasion; the pet is not a guaranteed rare reward.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=166358/proper-parrot",
+        "https://www.wow-petguide.com/News/515",
+        "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+      ],
+      "tips": [
+        "The species was originally unused BFA data; this entry is grouped under its obtainable Siren Isle source in The War Within.",
+        "Pirate kills can provide repeated attempts during the pirate invasion; the pet is not a guaranteed rare reward.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Proper Parrot: Defeat Bilge Rat pirates, including the named elites and rares, for Proper Parrot.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Visit Siren Isle while the pirate invasion is active.",
+      "spots": [
+        {
+          "mapID": 2369,
+          "sourceUrls": [
+            "https://www.wowhead.com/item=166358/proper-parrot",
+            "https://www.wow-petguide.com/News/515",
+            "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+          ],
+          "id": "ah-pet-2541-1",
+          "routeType": "farm-pet",
+          "mapName": "Siren Isle",
+          "tips": [
+            "The species was originally unused BFA data; this entry is grouped under its obtainable Siren Isle source in The War Within.",
+            "Pirate kills can provide repeated attempts during the pirate invasion; the pet is not a guaranteed rare reward.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Defeat Bilge Rat pirates, including the named elites and rares, for Proper Parrot.",
+          "coords": [
+            {
+              "y": 0.62,
+              "x": 0.51,
+              "label": "Bicephalic Bill - pirate invasion"
+            },
+            {
+              "y": 0.68,
+              "x": 0.55,
+              "label": "Timmy Two-Tongue - pirate invasion"
+            },
+            {
+              "y": 0.65,
+              "x": 0.65,
+              "label": "Spare-Head Ed - pirate invasion"
+            },
+            {
+              "y": 0.6889,
+              "x": 0.6114,
+              "label": "First Mate Shellshock - pirate invasion"
+            },
+            {
+              "y": 0.904,
+              "x": 0.622,
+              "label": "Twin-Dome Doug - pirate invasion"
+            },
+            {
+              "y": 0.48,
+              "x": 0.61,
+              "label": "Bert and Benny - pirate invasion"
+            },
+            {
+              "y": 0.7,
+              "x": 0.48,
+              "label": "Finny Four-Eyes - pirate invasion"
+            },
+            {
+              "y": 0.85,
+              "x": 0.66,
+              "label": "Chef Chum Platter - pirate invasion rare"
+            },
+            {
+              "y": 0.87,
+              "x": 0.59,
+              "label": "Plank-Master Bluebelly - pirate invasion rare"
+            }
+          ],
+          "location": "Pirate invasion - named Bilge Rat enemies",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "contentID": 11
+    },
+    {
+      "itemName": "Dragonhawk Munchkin",
+      "action": "Buy Dragonhawk Munchkin from Caeris Fairdawn at Saltheril's Haven, then learn and cage it for sale.",
+      "petID": 4928,
+      "expansionLabel": "Midnight",
+      "acquisitionType": "renown-vendor",
+      "expansion": "midnight",
+      "guideLabel": "Pet acquisition - Midnight",
+      "repeatability": "Vendor stock is unlimited once unlocked; each purchase costs currency and still requires learning and caging.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/dragonkin/dragonhawks/dragonhawk-munchkin/",
+        "https://www.wowhead.com/npc=240838/caeris-fairdawn",
+        "https://www.wowhead.com/npc=255257/dragonhawk-munchkin"
+      ],
+      "tips": [
+        "Use the Midnight Eversong Woods map. This is a currency-to-pet option; compare the pet's market before spending Marl.",
+        "Vendor stock is unlimited once unlocked; each purchase costs currency and still requires learning and caging.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Dragonhawk Munchkin: Buy Dragonhawk Munchkin from Caeris Fairdawn at Saltheril's Haven, then learn and cage it for sale.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Earn Renown 12 with the Silvermoon Court and bring 2,500 Voidlight Marl.",
+      "spots": [
+        {
+          "mapID": 2395,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/dragonkin/dragonhawks/dragonhawk-munchkin/",
+            "https://www.wowhead.com/npc=240838/caeris-fairdawn",
+            "https://www.wowhead.com/npc=255257/dragonhawk-munchkin"
+          ],
+          "id": "ah-pet-4928-1",
+          "routeType": "farm-pet",
+          "mapName": "Eversong Woods (Midnight)",
+          "tips": [
+            "Use the Midnight Eversong Woods map. This is a currency-to-pet option; compare the pet's market before spending Marl.",
+            "Vendor stock is unlimited once unlocked; each purchase costs currency and still requires learning and caging.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Buy Dragonhawk Munchkin from Caeris Fairdawn at Saltheril's Haven, then learn and cage it for sale.",
+          "coords": [
+            {
+              "y": 0.4742,
+              "x": 0.4346,
+              "label": "Caeris Fairdawn - Silvermoon Court Renown 12"
+            }
+          ],
+          "location": "Saltheril's Haven - Caeris Fairdawn",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "vendor"
+        }
+      ],
+      "contentID": 12
+    },
+    {
+      "itemName": "Curious Lynx Kitten",
+      "action": "Complete Eversong Woods Void Strikes for a chance at a Wriggling Field Pouch containing Curious Lynx Kitten.",
+      "petID": 5040,
+      "expansionLabel": "Midnight",
+      "acquisitionType": "rotating-event-cache",
+      "expansion": "midnight",
+      "guideLabel": "Pet acquisition - Midnight",
+      "repeatability": "Repeat active Void Strikes during the correct zone rotation; the pouch replaces the ordinary reward only occasionally.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=262788/curious-lynx-kitten",
+        "https://www.warcraftpets.com/wow-pets/beast/felines/curious-lynx-kitten/",
+        "https://www.wowhead.com/guide/collections/midnight-battle-pets-locations-sources",
+        "https://www.wowhead.com/achievement=62570/cosmic-slayer"
+      ],
+      "tips": [
+        "Pins mark two documented Void Strike locations. Check the active event on the world map; neither pin is a permanent pet or chest spawn.",
+        "Repeat active Void Strikes during the correct zone rotation; the pouch replaces the ordinary reward only occasionally.",
+        "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+      ],
+      "cageable": true,
+      "summary": "Curious Lynx Kitten: Complete Eversong Woods Void Strikes for a chance at a Wriggling Field Pouch containing Curious Lynx Kitten.",
+      "saleMethod": "item-or-cage",
+      "requirement": "Unlock Void Assaults and participate in Eversong Woods Void Strikes during the Eversong rotation.",
+      "spots": [
+        {
+          "mapID": 2395,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=262788/curious-lynx-kitten",
+            "https://www.warcraftpets.com/wow-pets/beast/felines/curious-lynx-kitten/",
+            "https://www.wowhead.com/guide/collections/midnight-battle-pets-locations-sources",
+            "https://www.wowhead.com/achievement=62570/cosmic-slayer"
+          ],
+          "id": "ah-pet-5040-1",
+          "routeType": "farm-pet",
+          "mapName": "Eversong Woods (Midnight)",
+          "tips": [
+            "Pins mark two documented Void Strike locations. Check the active event on the world map; neither pin is a permanent pet or chest spawn.",
+            "Repeat active Void Strikes during the correct zone rotation; the pouch replaces the ordinary reward only occasionally.",
+            "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Eversong Woods Void Strikes for a chance at a Wriggling Field Pouch containing Curious Lynx Kitten.",
+          "coords": [
+            {
+              "y": 0.39399999999999996,
+              "x": 0.53,
+              "label": "Void Ritual: Springclaw - only when active"
+            },
+            {
+              "y": 0.768,
+              "x": 0.56,
+              "label": "Void Ritual: Croaker - only when active"
+            }
+          ],
+          "location": "Eversong Void Strikes - rotating event anchors",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "event"
+        }
+      ],
+      "contentID": 12
+    },
+    {
+      "itemName": "Wriggling Capybara",
+      "action": "Complete Zul'Aman Void Strikes for a chance at a Wriggling Field Pouch containing Wriggling Capybara.",
+      "petID": 5038,
+      "expansionLabel": "Midnight",
+      "acquisitionType": "rotating-event-cache",
+      "expansion": "midnight",
+      "guideLabel": "Pet acquisition - Midnight",
+      "repeatability": "Repeat active Void Strikes during the correct zone rotation; no published guaranteed attempt count is assumed.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.wowhead.com/npc=262786/wriggling-capybara",
+        "https://www.warcraftpets.com/wow-pets/beast/rodents/wriggling-capybara/",
+        "https://www.wowhead.com/guide/collections/midnight-battle-pets-locations-sources",
+        "https://www.wowhead.com/achievement=62570/cosmic-slayer"
+      ],
+      "tips": [
+        "The Grizzly ritual pin is a documented event anchor. Follow the current world-map event; the pet does not spawn at the marker.",
+        "Repeat active Void Strikes during the correct zone rotation; no published guaranteed attempt count is assumed.",
+        "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+      ],
+      "cageable": true,
+      "summary": "Wriggling Capybara: Complete Zul'Aman Void Strikes for a chance at a Wriggling Field Pouch containing Wriggling Capybara.",
+      "saleMethod": "item-or-cage",
+      "requirement": "Unlock Void Assaults and participate in Zul'Aman Void Strikes during the Zul'Aman rotation.",
+      "spots": [
+        {
+          "mapID": 2437,
+          "sourceUrls": [
+            "https://www.wowhead.com/npc=262786/wriggling-capybara",
+            "https://www.warcraftpets.com/wow-pets/beast/rodents/wriggling-capybara/",
+            "https://www.wowhead.com/guide/collections/midnight-battle-pets-locations-sources",
+            "https://www.wowhead.com/achievement=62570/cosmic-slayer"
+          ],
+          "id": "ah-pet-5038-1",
+          "routeType": "farm-pet",
+          "mapName": "Zul'Aman (Midnight)",
+          "tips": [
+            "The Grizzly ritual pin is a documented event anchor. Follow the current world-map event; the pet does not spawn at the marker.",
+            "Repeat active Void Strikes during the correct zone rotation; no published guaranteed attempt count is assumed.",
+            "The unlearned pet item can be auctioned; the learned pet can also be caged for sale."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Zul'Aman Void Strikes for a chance at a Wriggling Field Pouch containing Wriggling Capybara.",
+          "coords": [
+            {
+              "y": 0.716,
+              "x": 0.32,
+              "label": "Void Ritual: Grizzly! - only when active"
+            }
+          ],
+          "location": "Zul'Aman Void Strikes - rotating event anchor",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "event"
+        }
+      ],
+      "contentID": 12
+    },
+    {
+      "itemName": "Toothy",
+      "action": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "petID": 163,
+      "expansionLabel": "The Burning Crusade",
+      "acquisitionType": "fishing-daily",
+      "expansion": "burningCrusade",
+      "guideLabel": "Pet acquisition - The Burning Crusade",
+      "repeatability": "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/toothy/",
+        "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+        "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+      ],
+      "tips": [
+        "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+        "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Toothy: Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Learn Fishing and check Old Man Barlo's daily at Slimyr Lake in Terokkar Forest.",
+      "spots": [
+        {
+          "mapID": 108,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/toothy/",
+            "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+            "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+          ],
+          "id": "ah-pet-163-1",
+          "routeType": "farm-pet",
+          "mapName": "Terokkar Forest",
+          "tips": [
+            "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+            "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+          "coords": [
+            {
+              "y": 0.128,
+              "x": 0.386,
+              "label": "Old Man Barlo - quest start and turn-in"
+            }
+          ],
+          "location": "Slimyr Lake - Old Man Barlo",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "contentID": 2
+    },
+    {
+      "itemName": "Muckbreath",
+      "action": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "petID": 164,
+      "expansionLabel": "The Burning Crusade",
+      "acquisitionType": "fishing-daily",
+      "expansion": "burningCrusade",
+      "guideLabel": "Pet acquisition - The Burning Crusade",
+      "repeatability": "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/muckbreath/",
+        "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+        "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+      ],
+      "tips": [
+        "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+        "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Muckbreath: Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Learn Fishing and check Old Man Barlo's daily at Slimyr Lake in Terokkar Forest.",
+      "spots": [
+        {
+          "mapID": 108,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/muckbreath/",
+            "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+            "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+          ],
+          "id": "ah-pet-164-1",
+          "routeType": "farm-pet",
+          "mapName": "Terokkar Forest",
+          "tips": [
+            "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+            "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+          "coords": [
+            {
+              "y": 0.128,
+              "x": 0.386,
+              "label": "Old Man Barlo - quest start and turn-in"
+            }
+          ],
+          "location": "Slimyr Lake - Old Man Barlo",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "contentID": 2
+    },
+    {
+      "itemName": "Snarly",
+      "action": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "petID": 173,
+      "expansionLabel": "The Burning Crusade",
+      "acquisitionType": "fishing-daily",
+      "expansion": "burningCrusade",
+      "guideLabel": "Pet acquisition - The Burning Crusade",
+      "repeatability": "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/snarly/",
+        "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+        "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+      ],
+      "tips": [
+        "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+        "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Snarly: Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Learn Fishing and check Old Man Barlo's daily at Slimyr Lake in Terokkar Forest.",
+      "spots": [
+        {
+          "mapID": 108,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/snarly/",
+            "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+            "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+          ],
+          "id": "ah-pet-173-1",
+          "routeType": "farm-pet",
+          "mapName": "Terokkar Forest",
+          "tips": [
+            "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+            "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+          "coords": [
+            {
+              "y": 0.128,
+              "x": 0.386,
+              "label": "Old Man Barlo - quest start and turn-in"
+            }
+          ],
+          "location": "Slimyr Lake - Old Man Barlo",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "contentID": 2
+    },
+    {
+      "itemName": "Chuck",
+      "action": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "petID": 174,
+      "expansionLabel": "The Burning Crusade",
+      "acquisitionType": "fishing-daily",
+      "expansion": "burningCrusade",
+      "guideLabel": "Pet acquisition - The Burning Crusade",
+      "repeatability": "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/chuck/",
+        "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+        "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+      ],
+      "tips": [
+        "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+        "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Chuck: Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Learn Fishing and check Old Man Barlo's daily at Slimyr Lake in Terokkar Forest.",
+      "spots": [
+        {
+          "mapID": 108,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/aquatic/crocolisks/chuck/",
+            "https://www.wow-petguide.com/News/412/Burning_Crusade_Timewalking_2023-04-26?sel_lang=en",
+            "https://www.wowhead.com/quest=11665/crocolisks-in-the-city"
+          ],
+          "id": "ah-pet-174-1",
+          "routeType": "farm-pet",
+          "mapName": "Terokkar Forest",
+          "tips": [
+            "Pick up the quest in Outland, fish the quest crocolisk in the Stormwind or Orgrimmar city water, then return to Barlo. The pin marks Barlo, not a direct pet drop.",
+            "Barlo offers one of five daily quests. Only Crocolisks in the City has these pets; use eligible characters when it is offered.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Complete Crocolisks in the City when offered, then open that daily's Bag of Fishing Treasures for a chance at the crocolisk pet.",
+          "coords": [
+            {
+              "y": 0.128,
+              "x": 0.386,
+              "label": "Old Man Barlo - quest start and turn-in"
+            }
+          ],
+          "location": "Slimyr Lake - Old Man Barlo",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "quest"
+        }
+      ],
+      "contentID": 2
+    },
+    {
+      "itemName": "Zandalari Kneebiter",
+      "action": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "petID": 1180,
+      "expansionLabel": "Mists of Pandaria",
+      "acquisitionType": "open-world-drop",
+      "expansion": "mists",
+      "guideLabel": "Pet acquisition - Mists of Pandaria",
+      "repeatability": "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-kneebiter/",
+        "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+        "https://www.wowhead.com/npc=70096/war-god-dokah",
+        "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+      ],
+      "tips": [
+        "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+        "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Zandalari Kneebiter: Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Travel to Isle of Giants and find the Zandalari Dinomancers around the ships.",
+      "spots": [
+        {
+          "mapID": 507,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-kneebiter/",
+            "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+            "https://www.wowhead.com/npc=70096/war-god-dokah",
+            "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+          ],
+          "id": "ah-pet-1180-1",
+          "routeType": "farm-pet",
+          "mapName": "Isle of Giants",
+          "tips": [
+            "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+            "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+          "coords": [
+            {
+              "y": 0.8140000000000001,
+              "x": 0.782,
+              "label": "Southeastern ship - Dinomancers around War-God Dokah"
+            }
+          ],
+          "location": "Southeastern Zandalari ship - Dinomancer farm",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "contentID": 5
+    },
+    {
+      "itemName": "Zandalari Anklerender",
+      "action": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "petID": 1211,
+      "expansionLabel": "Mists of Pandaria",
+      "acquisitionType": "open-world-drop",
+      "expansion": "mists",
+      "guideLabel": "Pet acquisition - Mists of Pandaria",
+      "repeatability": "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-anklerender/",
+        "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+        "https://www.wowhead.com/npc=70096/war-god-dokah",
+        "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+      ],
+      "tips": [
+        "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+        "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Zandalari Anklerender: Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Travel to Isle of Giants and find the Zandalari Dinomancers around the ships.",
+      "spots": [
+        {
+          "mapID": 507,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-anklerender/",
+            "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+            "https://www.wowhead.com/npc=70096/war-god-dokah",
+            "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+          ],
+          "id": "ah-pet-1211-1",
+          "routeType": "farm-pet",
+          "mapName": "Isle of Giants",
+          "tips": [
+            "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+            "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+          "coords": [
+            {
+              "y": 0.8140000000000001,
+              "x": 0.782,
+              "label": "Southeastern ship - Dinomancers around War-God Dokah"
+            }
+          ],
+          "location": "Southeastern Zandalari ship - Dinomancer farm",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "contentID": 5
+    },
+    {
+      "itemName": "Zandalari Footslasher",
+      "action": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "petID": 1212,
+      "expansionLabel": "Mists of Pandaria",
+      "acquisitionType": "open-world-drop",
+      "expansion": "mists",
+      "guideLabel": "Pet acquisition - Mists of Pandaria",
+      "repeatability": "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-footslasher/",
+        "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+        "https://www.wowhead.com/npc=70096/war-god-dokah",
+        "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+      ],
+      "tips": [
+        "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+        "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Zandalari Footslasher: Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Travel to Isle of Giants and find the Zandalari Dinomancers around the ships.",
+      "spots": [
+        {
+          "mapID": 507,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-footslasher/",
+            "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+            "https://www.wowhead.com/npc=70096/war-god-dokah",
+            "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+          ],
+          "id": "ah-pet-1212-1",
+          "routeType": "farm-pet",
+          "mapName": "Isle of Giants",
+          "tips": [
+            "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+            "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+          "coords": [
+            {
+              "y": 0.8140000000000001,
+              "x": 0.782,
+              "label": "Southeastern ship - Dinomancers around War-God Dokah"
+            }
+          ],
+          "location": "Southeastern Zandalari ship - Dinomancer farm",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "contentID": 5
+    },
+    {
+      "itemName": "Zandalari Toenibbler",
+      "action": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "petID": 1213,
+      "expansionLabel": "Mists of Pandaria",
+      "acquisitionType": "open-world-drop",
+      "expansion": "mists",
+      "guideLabel": "Pet acquisition - Mists of Pandaria",
+      "repeatability": "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+      "researchedAt": "2026-10-21",
+      "sourceUrls": [
+        "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-toenibbler/",
+        "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+        "https://www.wowhead.com/npc=70096/war-god-dokah",
+        "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+      ],
+      "tips": [
+        "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+        "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+        "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+      ],
+      "cageable": true,
+      "summary": "Zandalari Toenibbler: Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+      "saleMethod": "learn-and-cage",
+      "requirement": "Travel to Isle of Giants and find the Zandalari Dinomancers around the ships.",
+      "spots": [
+        {
+          "mapID": 507,
+          "sourceUrls": [
+            "https://www.warcraftpets.com/wow-pets/beast/raptors/zandalari-toenibbler/",
+            "https://www.wow-petguide.com/Pet/70451/Zandalari_Anklerender?sel_lang=en",
+            "https://www.wowhead.com/npc=70096/war-god-dokah",
+            "https://warcraft.wiki.gg/wiki/BattlePetSpeciesID"
+          ],
+          "id": "ah-pet-1213-1",
+          "routeType": "farm-pet",
+          "mapName": "Isle of Giants",
+          "tips": [
+            "The southeastern ship marker is a farming-area anchor. Clear Dinomancers on and around the ships; do not mistake the nearby dinosaurs for the primary raptor-pet source.",
+            "Ordinary Dinomancers can be farmed repeatedly; their loot is random and does not guarantee the desired raptor.",
+            "The acquisition reward is bound or learned directly. Learn it, then use Put in Cage in the Pet Journal to sell it on the Auction House."
+          ],
+          "density": "Named source or farming-area anchor",
+          "dropDifficulty": "Yield varies; follow the source requirements and repeatability notes.",
+          "farmAction": "Kill Zandalari Dinomancers for a chance at any of the four Zandalari raptor pets.",
+          "coords": [
+            {
+              "y": 0.8140000000000001,
+              "x": 0.782,
+              "label": "Southeastern ship - Dinomancers around War-God Dokah"
+            }
+          ],
+          "location": "Southeastern Zandalari ship - Dinomancer farm",
+          "confidence": "medium",
+          "isRoute": false,
+          "mapRole": "farming-area"
+        }
+      ],
+      "contentID": 5
+    }
+  ]
+}

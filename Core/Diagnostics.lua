@@ -192,9 +192,10 @@ function GoldTracker:EnsureDiagnosticsState()
     return self:NormalizeDiagnosisSnapshot(state)
 end
 
-function GoldTracker:ResetDiagnosticsState()
+function GoldTracker:ResetDiagnosticsState(scope)
     self.diagnosticsState = CreateEmptyDiagnosisSnapshot(time(), nil)
-    if type(self.session) == "table" and self.session.active == true then
+    -- Runtime-only resets keep the current session's captured evidence intact.
+    if scope ~= "runtime" and type(self.session) == "table" and self.session.active == true then
         self.session.diagnosisSnapshot = CreateEmptyDiagnosisSnapshot(time(), self.session.startTime)
     end
     if type(self.UpdateDiagnosisWindow) == "function" then

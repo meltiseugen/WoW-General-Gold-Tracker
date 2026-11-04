@@ -1,0 +1,166 @@
+{
+  "scope": "Missing visible Retail BfA Materials maps, including Raid items; Composed materials excluded",
+  "checkedAt": "2026-10-23T12:44:02.609824+00:00",
+  "itemCount": 7,
+  "sourceCount": 7,
+  "items": [
+    {
+      "itemID": 154990,
+      "itemName": "Etched Drust Bone",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:154990"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=154990/etched-drust-bone",
+        "https://www.cymre.com/2018/06/01/archaeology-in-bfa/",
+        "https://warcraft.wiki.gg/wiki/Archaeology_locations"
+      ]
+    },
+    {
+      "itemID": 154989,
+      "itemName": "Zandalari Idol",
+      "category": "Archaeology Keystone",
+      "sourceKeys": [
+        "item:154989"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=154989/zandalari-idol",
+        "https://www.cymre.com/2018/06/01/archaeology-in-bfa/",
+        "https://warcraft.wiki.gg/wiki/Archaeology_locations"
+      ]
+    },
+    {
+      "itemID": 163833,
+      "itemName": "Recipe: Heartsbane Hexwurst",
+      "category": "Dropped Recipe",
+      "sourceKeys": [
+        "item:163833"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=163833/recipe-heartsbane-hexwurst",
+        "https://www.wowhead.com/zone=9424/waycrest-manor"
+      ]
+    },
+    {
+      "itemID": 153636,
+      "itemName": "Crimson Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:153636"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=153636/crimson-pigment",
+        "https://www.wowhead.com/spell=51005/milling"
+      ]
+    },
+    {
+      "itemID": 168662,
+      "itemName": "Maroon Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:168662"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=51005/milling",
+        "https://www.wow-professions.com/guides/milling-table-inscription"
+      ]
+    },
+    {
+      "itemID": 153635,
+      "itemName": "Ultramarine Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:153635"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=51005/milling",
+        "https://warcraft.wiki.gg/wiki/Ultramarine_Pigment"
+      ]
+    },
+    {
+      "itemID": 153669,
+      "itemName": "Viridescent Pigment",
+      "category": "Pigment",
+      "sourceKeys": [
+        "item:153669"
+      ],
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=153669/viridescent-pigment"
+      ]
+    }
+  ],
+  "method": "Indexed public item pages, firsthand item comments, profession tables, archaeology field research and digsite lists reviewed with the web search tool on 2026-10-23. Item identity and acquisition evidence do not independently verify inherited herb-route coordinates.",
+  "directTooltipAttempts": {
+    "item:153635": {
+      "kind": "item",
+      "id": 153635,
+      "pageUrl": "https://www.wowhead.com/item=153635",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/153635?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    },
+    "item:153636": {
+      "kind": "item",
+      "id": 153636,
+      "pageUrl": "https://www.wowhead.com/item=153636",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/153636?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    },
+    "item:153669": {
+      "kind": "item",
+      "id": 153669,
+      "pageUrl": "https://www.wowhead.com/item=153669",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/153669?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    },
+    "item:154989": {
+      "kind": "item",
+      "id": 154989,
+      "pageUrl": "https://www.wowhead.com/item=154989",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/154989?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    },
+    "item:154990": {
+      "kind": "item",
+      "id": 154990,
+      "pageUrl": "https://www.wowhead.com/item=154990",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/154990?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    },
+    "item:163833": {
+      "kind": "item",
+      "id": 163833,
+      "pageUrl": "https://www.wowhead.com/item=163833",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/163833?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    },
+    "item:168662": {
+      "kind": "item",
+      "id": 168662,
+      "pageUrl": "https://www.wowhead.com/item=168662",
+      "retrievalUrl": "https://nether.wowhead.com/tooltip/item/168662?dataEnv=1&locale=0",
+      "status": "failed",
+      "error": "URLError: <urlopen error [WinError 10013] An attempt was made to access a socket in a way forbidden by its access permissions>"
+    }
+  },
+  "directTooltipFailureCount": 7,
+  "evidenceReviewedItemCount": 7,
+  "limitations": [
+    "Direct tooltip requests were blocked by local socket permissions (WinError 10013); no fresh tooltip payloads were retrieved. Indexed web pages and guides provided the evidence used here.",
+    "Inherited herb-route provenance is retained from the existing addon records; no new in-game route, spawn, yield, lockout or drop-rate measurements were made.",
+    "Archaeology options open source zones without invented fixed coordinates."
+  ]
+}

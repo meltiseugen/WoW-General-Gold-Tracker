@@ -1,0 +1,225 @@
+{
+  "build": "12.1.5.70529",
+  "root_map": 12,
+  "zone_maps": [
+    7,
+    199
+  ],
+  "art_ids": [
+    8,
+    204
+  ],
+  "issue": "Automatic zone ownership cropped The Great Gate name and mixed two differently placed drawings of the gate/road.",
+  "changes": [
+    "One complete Mulgore gate and western approach instead of two partial gate paintings.",
+    "Whole labels for Ruins of Taurajo, Fort Triumph and Razorfen Kraul.",
+    "The native Great Gate glyphs move west; the original caption is locally restored and excluded from zone masks so it cannot reappear during crossfade.",
+    "A short native Barrens road strip bends into the gate exit with its original transverse ink width, feathered sides and ends."
+  ],
+  "scope": "Shared renderer and offline tools; this reviewed road link is the Mulgore/Southern Barrens crossing. Other crossings need their own native endpoint annotations.",
+  "composite": {
+    "name": "The Great Gate and Mulgore road approach",
+    "root_map": 12,
+    "front_art": 8,
+    "back_art": 204,
+    "feather": 2,
+    "outline": [
+      [
+        0.668,
+        0.5185
+      ],
+      [
+        0.7355,
+        0.5185
+      ],
+      [
+        0.7355,
+        0.5833
+      ],
+      [
+        0.722,
+        0.6035
+      ],
+      [
+        0.731,
+        0.6258
+      ],
+      [
+        0.7355,
+        0.6743
+      ],
+      [
+        0.668,
+        0.6743
+      ],
+      [
+        0.6652,
+        0.6176
+      ],
+      [
+        0.6491,
+        0.6078
+      ],
+      [
+        0.6491,
+        0.5875
+      ]
+    ]
+  },
+  "road_links": [
+    {
+      "name": "Great Gate to Taurajo road",
+      "source_path": [
+        [
+          0.406528,
+          0.523636
+        ],
+        [
+          0.418443,
+          0.519467
+        ],
+        [
+          0.428372,
+          0.51917
+        ]
+      ],
+      "target_path": [
+        [
+          0.415464,
+          0.522742
+        ],
+        [
+          0.422414,
+          0.52304
+        ],
+        [
+          0.432344,
+          0.521254
+        ],
+        [
+          0.442273,
+          0.51917
+        ],
+        [
+          0.452202,
+          0.513215
+        ],
+        [
+          0.462131,
+          0.511727
+        ]
+      ],
+      "width": 9,
+      "feather": 3,
+      "file": "204-0",
+      "rect": [
+        0.405189620758483,
+        0.49550898203592814,
+        0.4740518962075848,
+        0.5404191616766467
+      ],
+      "uv": [
+        0,
+        0.5390625,
+        0,
+        0.234375
+      ],
+      "sha256": "a8b9fbda04885eabe779fe3f29a9e35df4e89f6f6eb565275362398efb81e3fa"
+    }
+  ],
+  "label_moves": [
+    {
+      "name": "The Great Gate",
+      "source": [
+        0.671,
+        0.63,
+        0.74,
+        0.675
+      ],
+      "offset": [
+        -0.06,
+        0
+      ],
+      "lines": [
+        [
+          0.672655,
+          0.634731,
+          0.736527,
+          0.651198
+        ],
+        [
+          0.688623,
+          0.652695,
+          0.719561,
+          0.667665
+        ]
+      ],
+      "sample": [
+        0.75,
+        0.6,
+        0.84,
+        0.71
+      ],
+      "file": "8-0",
+      "rect": [
+        0.6106586826347304,
+        0.6302395209580839,
+        0.6795209580838324,
+        0.6751497005988024
+      ],
+      "uv": [
+        0,
+        0.5390625,
+        0,
+        0.234375
+      ],
+      "sha256": "23616406b7dca3459513175d2ecbb820637f93f9be457aaaa2594ebaa11396f7"
+    }
+  ],
+  "preservation": {
+    "overview_pixel_identical": true,
+    "previous_native_backgrounds_and_corners_unchanged": true,
+    "map_projection_and_character_pin_coordinates_unchanged": true,
+    "terrain_thresholds_and_fully_revealed_policy_unchanged": true,
+    "native_terrain_covers_roads_and_labels_during_deep_zoom": true
+  },
+  "asset_sha256": {
+    "UI/Maps/ArtMaskIndex.lua": "46339f0ebcd7fddddd4fe03dd8ff27f12fc6f3880aacef49a3dcedb603fda450",
+    "UI/Maps/MapRenderer.lua": "96b2fa9c3f1aec87ec81d13790b2c873fd3f8ffbd2c5f35ac8ecaeea18c73afe",
+    "UI/Maps/Media/ArtLabels/204.blp": "3923fdfa2bcde3c5c6708dde378f549aec99ff7ec811fb8cdc4df29a929d85cb",
+    "UI/Maps/Media/ArtMasks/204.blp": "e124f682872f2042a98813a2d2b0f873a23d99de5c97a0db76ff6cd7af7ceb71",
+    "UI/Maps/Media/ArtMasks/8.blp": "c2466a9962042596d3d8d91a6a9129525d3b59793dc589e1cbb70b2d70a1cd3b",
+    "UI/Maps/Media/CaptionRepairs/8-0.blp": "3711e5e26b7206dbbe8047f3c97b3fa6789de067fdae79b4693e2df9f80606e0",
+    "UI/Maps/Media/LabelMoves/8-0.blp": "23616406b7dca3459513175d2ecbb820637f93f9be457aaaa2594ebaa11396f7",
+    "UI/Maps/Media/RoadLinks/204-0.blp": "a8b9fbda04885eabe779fe3f29a9e35df4e89f6f6eb565275362398efb81e3fa"
+  },
+  "policy_sha256": "252939d6ef2379b131929c6fe905cec79e18982a95e3093594493052a2fafa70",
+  "source_metadata_sha256": {
+    "UiMap.csv": "c07589d908b00d7d079e9e88b8c50d80ae8bd36631a661615bd7e636e5bbb7b3",
+    "UiMapArt.csv": "4007c26df8db966191e12376d8f3ec86d24ec636776a38c86113cac04f5d5848",
+    "UiMapArtStyleLayer.csv": "a682384554520220f7a9255d8f5f89c644e89d2fa707de80d81f00973cf05b9b",
+    "UiMapAssignment.csv": "69cacfcfe8ddda76b36b10fbfb96ebb313c0c429788a41f053352273ba819e8b",
+    "UiMapLink.csv": "6c9fe798330475d0fc5a2da62c65237ac6a0b34394aee5b10a8687f25b1deb6a",
+    "UiMapXMapArt.csv": "9fb1ba6466e44889959cb2dc7ac6a91e0fb9ee77ae96c52106543625d9c239e0",
+    "WorldMapOverlay.csv": "a30553a7669133009ea67deb818976b36b3c56fa85e37e3f317adab9693cbc11",
+    "WorldMapOverlayTile.csv": "63b48bb99b11d7f44f88323694af08015195fce2ecf59a7b84ecc22f87984b14"
+  },
+  "validation": {
+    "python_map_checks": 62,
+    "lua_interactive_map_checks": 49,
+    "audit_cases": 32,
+    "audited_zoom_states": 224,
+    "largest_audited_region_count": 2199,
+    "manifest": "8 manifests, 282 runtime Lua files",
+    "visual_previews": [
+      "continent overview and zone transition",
+      "Kalimdor gate at zoom 4 and 6",
+      "Global Map gate at zoom 8.5 and 12.5"
+    ],
+    "limits": [
+      "Offline previews and audits do not establish native WoW rendering or performance.",
+      "Gate terrain was audited without rasterization; local cached terrain texture 207936.blp was unavailable for the attempted zoom-10 raster."
+    ]
+  },
+  "copyright": "Map artwork and local road/caption derivatives are copyright Blizzard Entertainment. Masks, algorithms and annotations are independently authored."
+}

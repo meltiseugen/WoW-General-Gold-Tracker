@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -197,7 +200,9 @@ local function ApplySessionStyleOptionVisual(button, isSelected)
     end
 
     if button.text then
-        if isSelected then
+        if Theme.key and Theme.key ~= "midnight" then
+            button.text:SetTextColor(unpack(Theme:GetColor(isSelected and "selectionText" or "text")))
+        elseif isSelected then
             button.text:SetTextColor(1.0, 0.93, 0.62)
         else
             button.text:SetTextColor(0.90, 0.92, 0.98)
@@ -983,9 +988,11 @@ function GoldTracker:RefreshMainWindowLayout()
     if frame.headerAccent then
         frame.headerAccent:SetShown(not isTinyMode)
     end
+    if frame.headerDecoration then frame.headerDecoration:SetShown(not isTinyMode) end
+    if frame.headerDecorationMirror then frame.headerDecorationMirror:SetShown(not isTinyMode) end
     if frame.headerTitleText then
         frame.headerTitleText:ClearAllPoints()
-        frame.headerTitleText:SetPoint("LEFT", frame.headerBar, "LEFT", 14, 0)
+        frame.headerTitleText:SetPoint("LEFT", frame.headerBar, "LEFT", (Theme.art and Theme.art.titleLeftOffset) or 14, 0)
         frame.headerTitleText:SetJustifyH("LEFT")
         if frame.headerTitleText.SetWordWrap then
             frame.headerTitleText:SetWordWrap(false)
@@ -1959,7 +1966,7 @@ function GoldTracker:CreateTotalWindow()
     end
 
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerTotalFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerTotalFrame", UIParent)
     frame:SetSize(340, 220)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
     frame:SetFrameStrata("DIALOG")
@@ -2197,7 +2204,7 @@ function GoldTracker:CreateMainWindow()
     frame.headerAccent = headerAccent
 
     local headerTitle = headerBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    headerTitle:SetPoint("LEFT", headerBar, "LEFT", 14, 0)
+    headerTitle:SetPoint("LEFT", headerBar, "LEFT", (Theme.art and Theme.art.titleLeftOffset) or 14, 0)
     headerTitle:SetJustifyH("LEFT")
     headerTitle:SetText("General Gold Tracker")
     if headerTitle.SetWordWrap then

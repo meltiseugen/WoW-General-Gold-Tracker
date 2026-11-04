@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -175,7 +178,7 @@ function GoldTracker:RefreshFarmRoutePlanWindow(recalculate)
     if frame.overviewButton then
         local overview, overviewReason = self:BuildCustomFarmRoutePlanOverview(farm.id)
         frame.overviewButton:SetEnabled(overview ~= nil)
-        frame.overviewButton.tooltipText = overview and "Show every planned stop on one numbered route map."
+        frame.overviewButton.tooltipText = overview and "Show numbered route stops. Choose a map when the route spans separate maps."
             or overviewReason
     end
     local contentWidth = frame.scrollFrame and (frame.scrollFrame:GetWidth() or 0) or 0
@@ -233,7 +236,7 @@ function GoldTracker:CreateFarmRoutePlanWindow()
         return self.farmRoutePlanFrame
     end
     local addon = self
-    local frame = CreateFrame("Frame", "GoldTrackerFarmRoutePlanFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerFarmRoutePlanFrame", UIParent)
     frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 30)
     frame:SetFrameStrata("DIALOG")

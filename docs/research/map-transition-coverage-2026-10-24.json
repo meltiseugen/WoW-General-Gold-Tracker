@@ -1,0 +1,428 @@
+{
+  "build": "12.1.5.70529",
+  "nativeRuntimeVerified": false,
+  "scope": "Shared interactive Alts and Global Map renderer; default client art and unconditional map links",
+  "source_urls": [
+    "https://wago.tools/db2/UiMap/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/UiMapAssignment/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/UiMapLink/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/UiMapArt/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/UiMapXMapArt/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/UiMapArtStyleLayer/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/UiMapArtTile/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/WorldMapOverlay/csv?build=12.1.5.70529",
+    "https://wago.tools/db2/WorldMapOverlayTile/csv?build=12.1.5.70529"
+  ],
+  "input_sha256": {
+    "UiMap.csv": "c07589d908b00d7d079e9e88b8c50d80ae8bd36631a661615bd7e636e5bbb7b3",
+    "UiMapAssignment.csv": "69cacfcfe8ddda76b36b10fbfb96ebb313c0c429788a41f053352273ba819e8b",
+    "UiMapLink.csv": "6c9fe798330475d0fc5a2da62c65237ac6a0b34394aee5b10a8687f25b1deb6a",
+    "UiMapArt.csv": "4007c26df8db966191e12376d8f3ec86d24ec636776a38c86113cac04f5d5848",
+    "UiMapXMapArt.csv": "9fb1ba6466e44889959cb2dc7ac6a91e0fb9ee77ae96c52106543625d9c239e0",
+    "UiMapArtStyleLayer.csv": "a682384554520220f7a9255d8f5f89c644e89d2fa707de80d81f00973cf05b9b",
+    "UiMapArtTile.csv": "20e538327d98874203d77a101ed6692de219e3bb9f2c4c70b55b415a5e6e0ffe",
+    "WorldMapOverlay.csv": "a30553a7669133009ea67deb818976b36b3c56fa85e37e3f317adab9693cbc11",
+    "WorldMapOverlayTile.csv": "63b48bb99b11d7f44f88323694af08015195fce2ecf59a7b84ecc22f87984b14"
+  },
+  "runtime_sha256": {
+    "UI/Maps/Geometry.lua": "b50de8628503b0c0b4cf46e3dbe24eca2cf6e6b899fcde666720822a5344669d",
+    "UI/Maps/InteractiveMap.lua": "80044c695a914e0a0f96979c5b307a2f0cfb809341f5647a91f2e5f644b4bb78",
+    "UI/Maps/MapRenderer.lua": "bdde9c952d9f7f4892227056010f36cabe6e77b2483958eefed15255fc64da7a",
+    "UI/Maps/MapScene.lua": "88b37f1bb7a190fee4dd2f40285c3be850bbdc4ec9b1c15ae7596efd9192c1e4",
+    "UI/Maps/MapSource.lua": "6cccc3d7228558f04d6a10fc16949fd1cac4efb07ffe9d6fffab58c4f8712cbf"
+  },
+  "renderLimit": 4096,
+  "previousRenderLimit": 1400,
+  "continentCases": [
+    {
+      "mapID": 12,
+      "name": "Kalimdor",
+      "focusMapID": 10,
+      "mappedNodes": 34,
+      "stages": 7,
+      "peakRegions": 911,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 13,
+      "name": "Eastern Kingdoms",
+      "focusMapID": 37,
+      "mappedNodes": 56,
+      "stages": 7,
+      "peakRegions": 994,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 101,
+      "name": "Outland",
+      "focusMapID": 100,
+      "mappedNodes": 9,
+      "stages": 7,
+      "peakRegions": 366,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 113,
+      "name": "Northrend",
+      "focusMapID": 115,
+      "mappedNodes": 12,
+      "stages": 7,
+      "peakRegions": 540,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 424,
+      "name": "Pandaria",
+      "focusMapID": 376,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 371,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 572,
+      "name": "Draenor",
+      "focusMapID": 535,
+      "mappedNodes": 9,
+      "stages": 7,
+      "peakRegions": 355,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 619,
+      "name": "Broken Isles",
+      "focusMapID": 680,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 275,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 875,
+      "name": "Zandalar",
+      "focusMapID": 862,
+      "mappedNodes": 5,
+      "stages": 7,
+      "peakRegions": 1041,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 876,
+      "name": "Kul Tiras",
+      "focusMapID": 895,
+      "mappedNodes": 7,
+      "stages": 7,
+      "peakRegions": 1180,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 905,
+      "name": "Argus",
+      "focusMapID": 830,
+      "mappedNodes": 4,
+      "stages": 7,
+      "peakRegions": 96,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 948,
+      "name": "The Maelstrom",
+      "focusMapID": 207,
+      "mappedNodes": 5,
+      "stages": 7,
+      "peakRegions": 100,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 1550,
+      "name": "The Shadowlands",
+      "focusMapID": 1533,
+      "mappedNodes": 9,
+      "stages": 7,
+      "peakRegions": 1410,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 1978,
+      "name": "Dragon Isles",
+      "focusMapID": 2022,
+      "mappedNodes": 10,
+      "stages": 7,
+      "peakRegions": 2197,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 2274,
+      "name": "Khaz Algar",
+      "focusMapID": 2248,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 1372,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 2274,
+      "name": "Khaz Algar",
+      "focusMapID": 2214,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 2052,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 2274,
+      "name": "Khaz Algar",
+      "focusMapID": 2371,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 1429,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 2537,
+      "name": "Quel'Thalas",
+      "focusMapID": 2395,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 1287,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 2537,
+      "name": "Quel'Thalas",
+      "focusMapID": 2413,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 1422,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 2537,
+      "name": "Quel'Thalas",
+      "focusMapID": 2405,
+      "mappedNodes": 13,
+      "stages": 7,
+      "peakRegions": 1652,
+      "budgetReached": false,
+      "terrainReached": true
+    }
+  ],
+  "globalCases": [
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 10,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 933,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 37,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 870,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 115,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 547,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 376,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 380,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 680,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 317,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 862,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 1052,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 895,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 1211,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 2022,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 2192,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 2248,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 1786,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 2214,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 1551,
+      "budgetReached": false,
+      "terrainReached": true
+    },
+    {
+      "mapID": 947,
+      "name": "Azeroth",
+      "focusMapID": 2395,
+      "mappedNodes": 168,
+      "stages": 7,
+      "peakRegions": 1552,
+      "budgetReached": false,
+      "terrainReached": true
+    }
+  ],
+  "zoomStatesChecked": 210,
+  "visualCasesCompleted": [
+    {
+      "mapID": 101,
+      "focusMapID": 100
+    },
+    {
+      "mapID": 113,
+      "focusMapID": 115
+    },
+    {
+      "mapID": 12,
+      "focusMapID": 10
+    },
+    {
+      "mapID": 13,
+      "focusMapID": 37
+    },
+    {
+      "mapID": 1550,
+      "focusMapID": 1533
+    },
+    {
+      "mapID": 1978,
+      "focusMapID": 2022
+    },
+    {
+      "mapID": 2274,
+      "focusMapID": 2214
+    },
+    {
+      "mapID": 2274,
+      "focusMapID": 2248
+    },
+    {
+      "mapID": 2274,
+      "focusMapID": 2371
+    },
+    {
+      "mapID": 2537,
+      "focusMapID": 2395
+    },
+    {
+      "mapID": 2537,
+      "focusMapID": 2405
+    },
+    {
+      "mapID": 2537,
+      "focusMapID": 2413
+    },
+    {
+      "mapID": 424,
+      "focusMapID": 376
+    },
+    {
+      "mapID": 572,
+      "focusMapID": 535
+    },
+    {
+      "mapID": 619,
+      "focusMapID": 680
+    },
+    {
+      "mapID": 875,
+      "focusMapID": 862
+    },
+    {
+      "mapID": 876,
+      "focusMapID": 895
+    },
+    {
+      "mapID": 905,
+      "focusMapID": 830
+    },
+    {
+      "mapID": 948,
+      "focusMapID": 207
+    }
+  ],
+  "limitations": [
+    "Offline CSV fixtures cannot emulate active player conditions or phase selection.",
+    "Native WoW rendering, interaction performance and GPU resource behavior remain unverified."
+  ],
+  "commands": [
+    "preview_interactive_map.py --all-continents --audit-only",
+    "preview_interactive_map.py --global-cases --audit-only",
+    "preview_interactive_map.py --all-continents --download"
+  ]
+}

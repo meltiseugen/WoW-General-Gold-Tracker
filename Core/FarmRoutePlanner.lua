@@ -33,7 +33,8 @@ local function GetPointXY(point)
     return NormalizeCoordinate(point.x or point[1]), NormalizeCoordinate(point.y or point[2])
 end
 
-local function GetCatalogFarmByID(farmID)
+local function GetCatalogFarmByID(farmID, entry)
+    if entry and type(entry.catalogSnapshot) == "table" then return entry.catalogSnapshot end
     local catalog = NS.FarmCatalog
     local position = type(catalog) == "table" and type(catalog.byID) == "table" and catalog.byID[farmID] or nil
     return position and type(catalog.farms) == "table" and catalog.farms[tonumber(position)] or nil
@@ -188,14 +189,19 @@ local function BuildCatalogCandidates(addon, catalogFarm, playerLocation)
     local seen = {}
     local mapsWithExactRoutes = {}
     local instanceEntrance
-    if type(addon.ResolveCatalogFarmInstanceEntrance) == "function" then
+    if type(catalogFarm.ggtEntrance) == "table" then
+        instanceEntrance = catalogFarm.ggtEntrance
+        candidates[#candidates + 1] = instanceEntrance
+        seen[instanceEntrance.id] = true
+    elseif type(addon.ResolveCatalogFarmInstanceEntrance) == "function" then
         instanceEntrance = addon:ResolveCatalogFarmInstanceEntrance(catalogFarm)
         if instanceEntrance then
             candidates[#candidates + 1] = instanceEntrance
             seen[instanceEntrance.id] = true
         end
     end
-    local records = type(NS.CatalogGatheringData) == "table" and NS.CatalogGatheringData.farmsByRecordID or nil
+    local records = catalogFarm.ggtGatheringRecords
+    if not records then records = type(NS.CatalogGatheringData) == "table" and NS.CatalogGatheringData.farmsByRecordID or nil end
     for _, recordID in ipairs(catalogFarm and catalogFarm.sourceRecordIDs or {}) do
         local record = records and records[recordID] or nil
         for routeIndex, route in ipairs(type(record) == "table" and record.routes or {}) do
@@ -395,7 +401,7 @@ local function BuildPlanNodes(addon, farm, playerLocation)
     local state = GetPlanState(farm)
     local nodes = {}
     for originalIndex, step in ipairs(addon:GetCustomFarmSteps(farm)) do
-        local catalogFarm = step.catalogFarmID and GetCatalogFarmByID(step.catalogFarmID) or nil
+        local catalogFarm = step.catalogFarmID and GetCatalogFarmByID(step.catalogFarmID, step.entries and step.entries[1]) or nil
         local candidates = catalogFarm and BuildCatalogCandidates(addon, catalogFarm, playerLocation) or BuildStandaloneCandidates(addon, step)
         local destination = SelectCandidate(candidates, state.locationOverrides[step.key], playerLocation)
         local mapID = destination and destination.mapID or tonumber(step.mapIDs and step.mapIDs[1])
@@ -748,7 +754,7 @@ function GoldTracker:BuildCustomFarmRoutePlanStepProjection(farmID, stepKey)
     local mapOption
     local selectedMapOptionIndex = 1
     if selected.catalogFarmID and type(self.BuildFarmDetailsMapOptions) == "function" then
-        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID)
+        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID, firstEntry)
         mapOptions = catalogFarm and self:BuildFarmDetailsMapOptions(
             { catalogFarm },
             firstEntry and firstEntry.itemID or nil
@@ -1120,58 +1126,111 @@ function GoldTracker:NavigateActiveCustomFarmRoutePlanStep(direction)
     return self:ActivateCustomFarmRoutePlanStep(active.farm.id, target.key)
 end
 
+local function BuildRouteOverviewMaps(plan, routeID, sharedMapID)
+    local mapOptions, optionsByMapID, pins, pinsByStepIndex = {}, {}, {}, {}
+    local previousMapID, segment = nil, 0
+    for index, node in ipairs(plan) do
+        local sourceMapID = tonumber(node.mapID)
+        local mapID = sourceMapID and (sharedMapID or sourceMapID)
+        if mapID then
+            local hasExactLocation = node.x ~= nil and node.y ~= nil
+            local x, y = ProjectRoutePointToOverviewMap(sourceMapID, mapID, node.x, node.y)
+            if not x or not y then
+                return nil, "A route stop could not be projected onto the shared parent map."
+            end
+            local sourceMapName = node.mapName or (GetMapInfo(sourceMapID) or {}).name
+                or ("Map " .. tostring(sourceMapID))
+            local option = optionsByMapID[mapID]
+            if not option then
+                local mapName = (GetMapInfo(mapID) or {}).name or sourceMapName
+                option = {
+                    id = sharedMapID and routeID or (routeID .. ":map:" .. tostring(mapID)),
+                    mapID = mapID,
+                    mapLabel = mapName,
+                    label = sharedMapID and "Route overview" or mapName,
+                    sourceType = "route-plan",
+                    sourceLabel = "Custom farm route plan",
+                    showRouteLinesWithIcons = true,
+                    pins = {},
+                }
+                optionsByMapID[mapID] = option
+                mapOptions[#mapOptions + 1] = option
+            end
+            if mapID ~= previousMapID then
+                segment = segment + 1
+                previousMapID = mapID
+            end
+            local pin = {
+                mapID = mapID,
+                x = x,
+                y = y,
+                label = string.format("%d. %s", index, node.name or "Farm stop"),
+                itemName = node.name,
+                spotLocation = hasExactLocation and sourceMapName
+                    or (sourceMapName .. " zone center; exact arrival unavailable"),
+                isRoute = true,
+                routeID = sharedMapID and segment == 1 and routeID or (routeID .. ":segment:" .. tostring(segment)),
+                routeType = "farm-plan",
+                routeOrder = index,
+                routeTotal = #plan,
+                mapIconType = node.isInstance and "dungeon" or nil,
+                mapIconAtlas = node.isInstance and "Dungeon" or nil,
+                sourceMapID = sourceMapID,
+                sourceMapName = sourceMapName,
+                confidence = node.confidence,
+                approximate = not hasExactLocation,
+            }
+            pins[#pins + 1] = pin
+            pinsByStepIndex[index] = pin
+            option.pins[#option.pins + 1] = pin
+        else
+            -- An unresolved stop also interrupts the visible route line.
+            previousMapID = nil
+        end
+    end
+    return mapOptions, pins, pinsByStepIndex
+end
+
 function GoldTracker:BuildCustomFarmRoutePlanOverview(farmID)
     local farm = self:GetCustomFarmByID(farmID)
     if not farm then
         return nil, "The selected custom farm is unavailable."
     end
     local plan = self:BuildCustomFarmRoutePlan(farm.id, false)
-    local overviewMapID, reason = GetSharedRouteOverviewMapID(plan)
-    if not overviewMapID then
-        return nil, reason
+    if #plan == 0 then
+        return nil, "This route has no stops to display."
     end
-
+    local mappedPlan = {}
+    for _, node in ipairs(plan) do
+        if tonumber(node.mapID) then mappedPlan[#mappedPlan + 1] = node end
+    end
+    if #mappedPlan == 0 then
+        return nil, "No route stops have map data. Choose a mapped location for a stop first."
+    end
     local routeID = "farm-plan:" .. tostring(farm.id)
-    local pins = {}
-    for index, node in ipairs(plan) do
-        local hasExactLocation = node.x ~= nil and node.y ~= nil
-        local x, y = ProjectRoutePointToOverviewMap(node.mapID, overviewMapID, node.x, node.y)
-        if not x or not y then
-            return nil, "A route stop could not be projected onto the shared parent map."
-        end
-        local sourceMapName = node.mapName or (GetMapInfo(node.mapID) or {}).name
-            or ("Map " .. tostring(node.mapID))
-        pins[#pins + 1] = {
-            mapID = overviewMapID,
-            x = x,
-            y = y,
-            label = string.format("%d. %s", index, node.name or "Farm stop"),
-            itemName = node.name,
-            spotLocation = hasExactLocation and sourceMapName
-                or (sourceMapName .. " zone center; exact arrival unavailable"),
-            isRoute = true,
-            routeID = routeID,
-            routeType = "farm-plan",
-            routeOrder = index,
-            routeTotal = #plan,
-            mapIconType = node.isInstance and "dungeon" or nil,
-            mapIconAtlas = node.isInstance and "Dungeon" or nil,
-            sourceMapID = node.mapID,
-            sourceMapName = sourceMapName,
-            confidence = node.confidence,
-            approximate = not hasExactLocation,
-        }
+    local overviewMapID = GetSharedRouteOverviewMapID(mappedPlan)
+    local mapOptions, pins, pinsByStepIndex = BuildRouteOverviewMaps(plan, routeID, overviewMapID)
+    if not mapOptions and overviewMapID then
+        -- Some parent maps cannot project their child zones. Keep those stops
+        -- available on their own maps instead of disabling the overview.
+        overviewMapID = nil
+        mapOptions, pins, pinsByStepIndex = BuildRouteOverviewMaps(plan, routeID)
+    end
+    if not mapOptions then
+        return nil, pins
     end
 
-    local overviewMapInfo = GetMapInfo(overviewMapID)
     return {
         farm = farm,
         plan = plan,
-        mapID = overviewMapID,
-        mapName = overviewMapInfo and overviewMapInfo.name or ("Map " .. tostring(overviewMapID)),
+        mapID = mapOptions[1].mapID,
+        mapName = mapOptions[1].mapLabel,
+        mapOptions = mapOptions,
         pins = pins,
+        pinsByStepIndex = pinsByStepIndex,
+        unmappedStopCount = #plan - #pins,
         routeID = routeID,
-        usesParentMap = tonumber(plan[1] and plan[1].mapID) ~= overviewMapID,
+        usesParentMap = overviewMapID ~= nil and tonumber(mappedPlan[1].mapID) ~= overviewMapID,
     }
 end
 
@@ -1179,7 +1238,7 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
     local overview, reason = self:BuildCustomFarmRoutePlanOverview(farmID)
     if not overview then
         if reason and type(self.Print) == "function" then
-            self:Print(reason)
+            self:Print(reason, "warnings")
         end
         return false
     end
@@ -1187,6 +1246,15 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
         return false
     end
 
+    local overviewText = #overview.mapOptions > 1
+        and ("Choose a map above to view its numbered stops. Route spans " .. #overview.mapOptions .. " maps.")
+        or overview.usesParentMap and ("Shared parent map: " .. overview.mapName)
+        or ("Mapped route stops are on " .. overview.mapName)
+    if overview.unmappedStopCount > 0 then
+        overviewText = overviewText .. string.format(" %d %s no map data and %s listed below.",
+            overview.unmappedStopCount, overview.unmappedStopCount == 1 and "stop has" or "stops have",
+            overview.unmappedStopCount == 1 and "is" or "are")
+    end
     local detailLines = {
         {
             type = "text",
@@ -1197,16 +1265,14 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
         },
         {
             type = "text",
-            text = overview.usesParentMap
-                and ("Shared parent map: " .. overview.mapName)
-                or ("All route stops are on " .. overview.mapName),
+            text = overviewText,
             r = 0.72, g = 0.86, b = 1.0,
             gap = 8,
             fontObject = "GameFontHighlight",
         },
     }
     for index, node in ipairs(overview.plan) do
-        local pin = overview.pins[index]
+        local pin = overview.pinsByStepIndex[index]
         detailLines[#detailLines + 1] = {
             type = "text",
             text = string.format(
@@ -1214,7 +1280,7 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
                 index,
                 node.name or "Farm stop",
                 node.mapName or "Unknown location",
-                pin.approximate and " (zone center)" or ""
+                not pin and " (map location unavailable)" or pin.approximate and " (zone center)" or ""
             ),
             r = 0.82, g = 0.86, b = 0.92,
             gap = 4,
@@ -1225,18 +1291,7 @@ function GoldTracker:OpenCustomFarmRoutePlanOverview(farmID)
     self:OpenStandaloneMapWindow({
         title = "Route Overview — " .. overview.farm.name,
         projectionKey = overview.routeID,
-        mapOptions = {
-            {
-                id = overview.routeID,
-                mapID = overview.mapID,
-                mapLabel = overview.mapName,
-                label = "Route overview",
-                sourceType = "route-plan",
-                sourceLabel = "Custom farm route plan",
-                showRouteLinesWithIcons = true,
-                pins = overview.pins,
-            },
-        },
+        mapOptions = overview.mapOptions,
         displayMode = "icons",
         detailLinesBuilder = function()
             return detailLines
@@ -1260,7 +1315,7 @@ function GoldTracker:OpenCustomFarmRoutePlanStepMap(farmID, stepKey)
     local firstEntry = selected.entries and selected.entries[1] or nil
     if selected.catalogFarmID and type(self.BuildFarmDetailsMapOptions) == "function"
         and type(self.OpenStandaloneMapWindow) == "function" then
-        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID)
+        local catalogFarm = GetCatalogFarmByID(selected.catalogFarmID, firstEntry)
         local mapOptions = catalogFarm and self:BuildFarmDetailsMapOptions(
             { catalogFarm },
             firstEntry and firstEntry.itemID or nil
@@ -1348,24 +1403,25 @@ function GoldTracker:NavigateCustomFarmRoutePlanStep(farmID, stepKey)
             if C_SuperTrack and type(C_SuperTrack.SetSuperTrackedUserWaypoint) == "function" then
                 C_SuperTrack.SetSuperTrackedUserWaypoint(true)
             end
-            self:Print("Next farm stop: " .. (selected.mapName or selected.name) .. ".")
+            self:Print("Next farm stop: " .. (selected.mapName or selected.name) .. ".", "navigation")
             return true
         end
     end
     if selected.catalogFarmID and type(self.OpenFarmDetails) == "function" then
-        self:Print("Exact arrival coordinates are unavailable; opening the farm map.")
+        self:Print("Exact arrival coordinates are unavailable; opening the farm map.", "warnings")
         return self:OpenFarmDetails(selected.catalogFarmID, {
             itemID = selected.entries[1] and selected.entries[1].itemID or nil,
+            farmSnapshot = selected.entries[1] and selected.entries[1].catalogSnapshot,
         }) == true
     end
     if selected.mapID and type(C_Map) == "table" and type(C_Map.OpenWorldMap) == "function" then
-        self:Print("Exact arrival coordinates are unavailable; opening the destination map.")
+        self:Print("Exact arrival coordinates are unavailable; opening the destination map.", "warnings")
         return pcall(C_Map.OpenWorldMap, selected.mapID)
     end
     if selected.mapID and type(OpenWorldMap) == "function" then
-        self:Print("Exact arrival coordinates are unavailable; opening the destination map.")
+        self:Print("Exact arrival coordinates are unavailable; opening the destination map.", "warnings")
         return pcall(OpenWorldMap, selected.mapID)
     end
-    self:Print("This farm step has no navigable location yet.")
+    self:Print("This farm step has no navigable location yet.", "warnings")
     return false
 end

@@ -1,0 +1,737 @@
+{
+  "date": "2026-10-21",
+  "scope": "131 Pandaria base materials; composed materials excluded",
+  "note": "Search results are discovery evidence and may include Classic or PTR pages. Runtime item and cut identities were checked individually against current Retail dataEnv=1 tooltip sources; Classic numerical skill requirements, drop rates and binding rules were not imported.",
+  "searchedItemCount": 131,
+  "batches": [
+    {
+      "items": [
+        "Ghost Iron Ore",
+        "Kyparite",
+        "Black Trillium Ore",
+        "White Trillium Ore"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D72092/ghost-iron-ore",
+        "https://www.wow-professions.com/farming/ghost-iron-ore-farming",
+        "https://www.wowhead.com/mop-classic/item%3D72103/white-trillium-ore",
+        "https://www.wowhead.com/mop-classic/ko/guide/pandaren-ore-mining-farming-guide",
+        "https://www.wowhead.com/ptr/item%3D72094/black-trillium-ore",
+        "https://www.wowhead.com/ptr/item%3D72092/ghost-iron-ore",
+        "https://www.wowhead.com/mop-classic/item%3D72094/black-trillium-ore",
+        "https://www.wowhead.com/mop-classic/ko/item%3D72103/%ED%95%98%EC%96%80-%ED%8A%B8%EB%A6%B4%EB%A6%AC%EC%9B%80-%EA%B4%91%EC%84%9D",
+        "https://www.wowhead.com/mop-classic/mx/item%3D72103/mena-de-trillium-blanco",
+        "https://www.wowhead.com/mop-classic/it/item%3D72092/ghost-iron-ore",
+        "https://www.wowhead.com/mop-classic/it/item%3D72103/white-trillium-ore",
+        "https://www.wowhead.com/mop-classic/object%3D209311/ghost-iron-deposit"
+      ]
+    },
+    {
+      "items": [
+        "Snow Lily",
+        "Fool's Cap",
+        "Green Tea Leaf",
+        "Silkweed"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/guide/pandaren-herb-farming-guide",
+        "https://www.wowhead.com/mop-classic/mx/guide/pandaren-herb-farming-guide",
+        "https://www.wow-professions.com/farming/fools-cap-farming",
+        "https://www.wowhead.com/mop-classic/object%3D209349/green-tea-leaf",
+        "https://www.wowhead.com/mop-classic/item%3D79011/fools-cap",
+        "https://www.wowhead.com/object%3D209349/green-tea-leaf",
+        "https://www.wowhead.com/mop-classic/es/guide/pandaren-herb-farming-guide",
+        "https://www.wowhead.com/mop-classic/item%3D72234/green-tea-leaf",
+        "https://www.wowhead.com/mop-classic/object%3D209355/fools-cap",
+        "https://www.wowhead.com/mop-classic/object%3D215405/green-tea-leaf",
+        "https://www.wowhead.com/mop-classic/ko/item%3D72234/%EB%85%B9%EC%B0%A8-%EC%9E%8E",
+        "https://www.wowhead.com/fr/object%3D209349/feuille-de-th%C3%A9-vert"
+      ]
+    },
+    {
+      "items": [
+        "Rain Poppy",
+        "Golden Lotus",
+        "Desecrated Herb",
+        "Sha-Touched Leather"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/item%3D72162/sha-touched-leather",
+        "https://www.wowhead.com/mop-classic/fr/guide/mist-touched-leather-profession-farming-guide",
+        "https://www.wow-professions.com/farming/rain-poppy-farming",
+        "https://www.wowhead.com/mop-classic/mx/guide/pandaren-herb-farming-guide",
+        "https://www.wowhead.com/item%3D72120/mist-touched-leather",
+        "https://www.wowhead.com/mop-classic/tw/item%3D72162/%E7%85%9E%E5%8C%96%E7%9A%AE%E9%9D%A9",
+        "https://www.wowhead.com/ptr/item%3D72120/mist-touched-leather",
+        "https://www.wowhead.com/mop-classic/item%3D72238/golden-lotus",
+        "https://www.wowhead.com/mop-classic/fr/item%3D72120/cuir-touch%C3%A9-par-la-brume",
+        "https://www.wowhead.com/mop-classic/de/item%3D72120/nebelber%C3%BChrtes-leder",
+        "https://www.wowhead.com/mop-classic/mx/item%3D72120/cuero-de-neblina",
+        "https://www.wowhead.com/object%3D209354/golden-lotus"
+      ]
+    },
+    {
+      "items": [
+        "Prismatic Scale",
+        "Windwool Cloth",
+        "Spirit Dust",
+        "Mote of Harmony"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wow-professions.com/farming/spirit-of-harmony-farming",
+        "https://www.wowhead.com/mop-classic/item%3D89112/mote-of-harmony",
+        "https://warcraft.wiki.gg/wiki/Windwool_Cloth",
+        "https://www.wowhead.com/mop-classic/guide/windwool-cloth-tailoring-farming-guide",
+        "https://www.wow-professions.com/farming/windwool-cloth-farming",
+        "https://www.wowhead.com/mop-classic/item%3D72988/windwool-cloth",
+        "https://www.wowhead.com/ptr-2/item%3D72988/windwool-cloth",
+        "https://www.wowhead.com/classic/news/best-ways-to-farm-spirit-of-harmony-in-mists-of-pandaria-classic-377864",
+        "https://www.wowhead.com/mop-classic/item%3D79101/prismatic-scale",
+        "https://warcraft.wiki.gg/wiki/Mote_of_Harmony",
+        "https://warcraft.wiki.gg/wiki/Spirit_Dust",
+        "https://www.wowhead.com/mop-classic/tw/item%3D89112/%E5%92%8C%E8%AB%A7%E5%BE%AE%E7%B2%92"
+      ]
+    },
+    {
+      "items": [
+        "Raw Tiger Steak",
+        "Mushan Ribs",
+        "Raw Turtle Meat",
+        "Raw Crab Meat"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D74834/mushan-ribs",
+        "https://www.wowhead.com/mop-classic/item%3D74837/raw-turtle-meat",
+        "https://www.wowhead.com/ptr/item%3D74833/raw-tiger-steak",
+        "https://www.wowhead.com/mop-classic/item%3D74833/raw-tiger-steak",
+        "https://www.wowhead.com/mop-classic/item%3D74838/raw-crab-meat",
+        "https://www.wowhead.com/ptr-2/achievement%3D7306/master-of-pandaren-cooking",
+        "https://www.wowhead.com/ptr/item%3D76091/greater-potion-of-luck",
+        "https://www.wowhead.com/ptr-2/npc%3D65790/muck-sifter",
+        "https://warcraft.wiki.gg/wiki/Turtle_Meat",
+        "https://www.wowhead.com/mop-classic/item%3D79101/prismatic-scale",
+        "https://www.wowhead.com/ptr/quest%3D31536/preserving-freshness",
+        "https://www.wowhead.com/mop-classic/es/npc%3D63369/quebrador-concharroca"
+      ]
+    },
+    {
+      "items": [
+        "Wildfowl Breast",
+        "Raw Crocolisk Belly",
+        "Viseclaw Meat",
+        "Jade Lungfish"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/ptr-2/item%3D75014/raw-crocolisk-belly",
+        "https://www.wowhead.com/mop-classic/item%3D75014/raw-crocolisk-belly",
+        "https://www.wowhead.com/ptr-2/achievement%3D7306/master-of-pandaren-cooking",
+        "https://warcraft.wiki.gg/wiki/Raw_Crocolisk_Belly",
+        "https://www.wowhead.com/ptr/item%3D74856/jade-lungfish",
+        "https://www.wowhead.com/ptr-2/item%3D74856/jade-lungfish",
+        "https://www.wowhead.com/ptr/npc%3D58455/stillwater-crocolisk",
+        "https://www.wowhead.com/ptr/item%3D101662/pandaren-treasure-noodle-cart-kit",
+        "https://www.wowhead.com/ptr/npc%3D54558/bog-crocolisk",
+        "https://www.wowhead.com/ptr-2/item%3D74839/wildfowl-breast",
+        "https://www.wowhead.com/mop-classic/it/item%3D74839/wildfowl-breast",
+        "https://www.wowhead.com/mop-classic/item%3D87687/empty-crocolisk-belly-container"
+      ]
+    },
+    {
+      "items": [
+        "Giant Mantis Shrimp",
+        "Emperor Salmon",
+        "Redbelly Mandarin",
+        "Tiger Gourami"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D74857/giant-mantis-shrimp",
+        "https://www.wowhead.com/ptr-2/item%3D74859/emperor-salmon",
+        "https://www.wowhead.com/mop-classic/item%3D74859/emperor-salmon",
+        "https://www.wowhead.com/mop-classic/item%3D74860/redbelly-mandarin",
+        "https://www.wowhead.com/ptr-2/quest%3D31521/to-be-a-master",
+        "https://www.wowhead.com/ptr/item%3D74646/black-pepper-ribs-and-shrimp",
+        "https://www.wowhead.com/item%3D74857/giant-mantis-shrimp",
+        "https://www.wowhead.com/mop-classic/item%3D87724/sack-of-redbelly-mandarin",
+        "https://www.wowhead.com/mop-classic/mx/item%3D74859/salm%C3%B3n-emperador",
+        "https://www.wowhead.com/ptr/item%3D86542/flying-tiger-gourami",
+        "https://www.wowhead.com/guide/mop-fishing-and-anglers-overview-1069",
+        "https://www.wowhead.com/mop-classic/guide/zones/valley-of-the-four-winds-overview"
+      ]
+    },
+    {
+      "items": [
+        "Jewel Danio",
+        "Reef Octopus",
+        "Krasarang Paddlefish",
+        "Golden Carp"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D74865/krasarang-paddlefish",
+        "https://www.wowhead.com/ptr/item%3D74864/reef-octopus",
+        "https://www.wowhead.com/ptr-2/item%3D74865/krasarang-paddlefish",
+        "https://www.wowhead.com/ptr-2/achievement%3D7306/master-of-pandaren-cooking",
+        "https://www.wowhead.com/mop-classic/guide/zones/krasarang-wilds-overview",
+        "https://www.wowhead.com/ptr-2/npc%3D70398/ben-of-the-booming-voice",
+        "https://warcraft.wiki.gg/wiki/Krasarang_Paddlefish",
+        "https://www.wowhead.com/mop-classic/pt/item%3D74866/carpa-dourada",
+        "https://www.wowhead.com/ptr/object%3D227868/sparkling-pool",
+        "https://www.wowhead.com/ptr/item%3D97981/impeccably-sharp-tooth",
+        "https://www.wowhead.com/mop-classic/item%3D86545/mimic-octopus",
+        "https://www.wowhead.com/mop-classic/it/item%3D74865/krasarang-paddlefish"
+      ]
+    },
+    {
+      "items": [
+        "Spinefish",
+        "Tiger Opal",
+        "Lapis Lazuli",
+        "Sunstone"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Spinefish",
+        "https://www.wowhead.com/item%3D83064/spinefish",
+        "https://www.wowhead.com/mop-classic/item%3D83064/spinefish",
+        "https://www.wowhead.com/mop-classic/item%3D86544/spinefish-alpha",
+        "https://www.wowhead.com/mop-classic/achievement%3D7274/learning-from-the-best",
+        "https://www.elsanglin.com/fish/spinefish.html",
+        "https://warcraft.wiki.gg/wiki/Spinefish_Alpha",
+        "https://warcraft.wiki.gg/wiki/Raw_gem",
+        "https://warcraft.wiki.gg/wiki/Rich_Kyparite_Deposit",
+        "https://warcraft.wiki.gg/wiki/Pandaria_Jewelcrafting",
+        "https://warcraft.wiki.gg/wiki/Spinefish_%28mob%29",
+        "https://www.wowhead.com/npc%3D87412/spinefish"
+      ]
+    },
+    {
+      "items": [
+        "Roguestone",
+        "Pandarian Garnet",
+        "Alexandrite",
+        "Sealed Tome of the Lost Legion"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D92426/sealed-tome-of-the-lost-legion",
+        "https://warcraft.wiki.gg/wiki/Sealed_Tome_of_the_Lost_Legion",
+        "https://www.wowhead.com/item%3D92426/sealed-tome-of-the-lost-legion",
+        "https://www.wowhead.com/quest%3D32295/an-unusual-tome",
+        "https://www.wowhead.com/mop-classic/item%3D25055/alexandrite-ring",
+        "https://www.wowhead.com/mop-classic/items%3D11.3",
+        "https://www.wowhead.com/title/of-the-black-harvest-391",
+        "https://www.wowhead.com/mop-classic/ko/item%3D92426/%EC%9E%83%EC%96%B4%EB%B2%84%EB%A6%B0-%EA%B5%B0%EB%8B%A8%EC%9D%98-%EB%B4%89%EC%9D%B8%EB%90%9C-%EA%B3%A0%EC%84%9C",
+        "https://www.wowhead.com/mop-classic/news/warlocks-can-now-unlock-the-power-of-fel-magic-in-mists-of-pandaria-classic-379709",
+        "https://www.wowhead.com/fr/object%3D209330/riche-filon-de-trillium",
+        "https://www.wowhead.com/mop-classic/items/max-level%3A110",
+        "https://www.wowhead.com/mop-classic/cn/item%3D92426/%E5%A4%B1%E8%90%BD%E5%86%9B%E5%9B%A2%E7%9A%84%E5%B0%81%E5%8D%B0%E4%B9%A6%E5%85%B8"
+      ]
+    },
+    {
+      "items": [
+        "Green Cabbage",
+        "Jade Squash",
+        "Juicycrunch Carrot",
+        "Mogu Pumpkin"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Juicycrunch_Carrot",
+        "https://www.wowhead.com/mop-classic/item%3D80590/juicycrunch-carrot-seeds",
+        "https://www.wowhead.com/mop-classic/item%3D74847/jade-squash",
+        "https://www.wowhead.com/mop-classic/npc%3D63153/growing-juicycrunch-carrot",
+        "https://www.wowhead.com/mop-classic/item%3D74841/juicycrunch-carrot",
+        "https://www.wowhead.com/mop-classic/item%3D74842/mogu-pumpkin",
+        "https://www.wowhead.com/mop-classic/item%3D74840/green-cabbage",
+        "https://warcraft.wiki.gg/wiki/Mogu_Pumpkin",
+        "https://www.wowhead.com/ptr/item%3D74841/juicycrunch-carrot",
+        "https://www.wowhead.com/ptr-2/quest%3D30439/a-dish-for-jogu",
+        "https://www.wowhead.com/mop-classic/item%3D80592/mogu-pumpkin-seeds",
+        "https://www.wowhead.com/mop-classic/de/item%3D74841/saftigleckere-karotte"
+      ]
+    },
+    {
+      "items": [
+        "Pink Turnip",
+        "Red Blossom Leek",
+        "Scallions",
+        "Striped Melon"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Scallions",
+        "https://www.wowhead.com/mop-classic/tw/item%3D74848/%E6%A2%9D%E7%B4%8B%E7%94%9C%E7%93%9C",
+        "https://www.wowhead.com/item%3D74848/striped-melon",
+        "https://www.wowhead.com/mop-classic/pt/item%3D74848/mel%C3%A3o-listrado",
+        "https://www.wowhead.com/mop-classic/es/item%3D74848/mel%C3%B3n-a-rayas",
+        "https://www.wowhead.com/mop-classic/de/item%3D74848/streifenmelone",
+        "https://www.wowhead.com/mop-classic/fr/item%3D74848/melon-%C3%A0-rayures",
+        "https://www.wowhead.com/mop-classic/it/item%3D74848/striped-melon",
+        "https://www.wowhead.com/mop-classic/npc%3D63224/growing-red-blossom-leek",
+        "https://www.wowhead.com/item%3D80593/red-blossom-leek-seeds",
+        "https://www.wowhead.com/mop-classic/item%3D74844/red-blossom-leek",
+        "https://www.wowhead.com/mop-classic/npc%3D66129/ripe-striped-melon"
+      ]
+    },
+    {
+      "items": [
+        "White Turnip",
+        "Witchberries",
+        "Small Ethereal Shard",
+        "Blood Spirit"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Blood_Spirit",
+        "https://www.wowhead.com/mop-classic/item%3D74247/ethereal-shard",
+        "https://www.wowhead.com/mop-classic/item%3D74850/white-turnip",
+        "https://www.wowhead.com/mop-classic/item%3D80433/blood-spirit",
+        "https://www.wowhead.com/mop-classic/item%3D74846/witchberries",
+        "https://www.wowhead.com/item%3D80433/blood-spirit",
+        "https://warcraft.wiki.gg/wiki/Small_Ethereal_Shard",
+        "https://www.wowhead.com/mop-classic/quest%3D31943/which-berries-witchberries",
+        "https://www.wowhead.com/ptr/news/september-18th-hotfixes-battle-chest-updates-mists-of-pandaria-profession-206541",
+        "https://www.wowhead.com/mop-classic/npc%3D63265/ripe-white-turnip",
+        "https://www.wowhead.com/mop-classic/tw/item%3D74850/%E7%99%BD%E8%8F%9C%E9%A0%AD",
+        "https://www.wowhead.com/mop-classic/item%3D52721/heavenly-shard"
+      ]
+    },
+    {
+      "items": [
+        "Haunting Spirit",
+        "Spirit of War",
+        "Misty Pigment",
+        "Shadow Pigment"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Shadow_Pigment",
+        "https://www.wowhead.com/mop-classic/item%3D79251/shadow-pigment",
+        "https://warcraft.wiki.gg/wiki/Spirit_of_War",
+        "https://warcraft.wiki.gg/wiki/Haunting_Spirit",
+        "https://warcraft.wiki.gg/wiki/Technique%3A_The_Spirit_of_War",
+        "https://warcraft.wiki.gg/wiki/Zen_Master_inscription_techniques",
+        "https://warcraft.wiki.gg/wiki/Pandaria_inscription_techniques",
+        "https://warcraft.wiki.gg/wiki/Pigment",
+        "https://www.wowhead.com/mop-classic/mx/item%3D79254/tinta-on%C3%ADrica",
+        "https://warcraft.wiki.gg/wiki/Inks",
+        "https://warcraft.wiki.gg/wiki/Inscription_ingredients",
+        "https://www.wowhead.com/mop-classic/npc%3D4958/haunting-spirit"
+      ]
+    },
+    {
+      "items": [
+        "Sparkling Shard",
+        "Mantid Amber Sliver",
+        "Mogu Statue Piece",
+        "Pandaren Pottery Shard"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/item%3D79869/mogu-statue-piece",
+        "https://www.wowhead.com/mop-classic/item%3D79868/pandaren-pottery-shard",
+        "https://warcraft.wiki.gg/wiki/Sparkling_Shard",
+        "https://warcraft.wiki.gg/wiki/Mogu_Statue_Piece",
+        "https://warcraft.wiki.gg/wiki/Pandaren_Pottery_Shard",
+        "https://www.wowhead.com/object%3D211163/pandaren-archaeology-find",
+        "https://warcraft.wiki.gg/wiki/Mantid_Amber_Sliver",
+        "https://www.wowhead.com/ptr/item%3D79869/mogu-statue-piece",
+        "https://www.wowhead.com/mop-classic/npc%3D62596/ancient-haunt",
+        "https://www.wowhead.com/mop-classic/item%3D79916/mogu-coin",
+        "https://www.wowhead.com/item%3D79916/mogu-coin",
+        "https://warcraft.wiki.gg/wiki/Anatomical_Dummy"
+      ]
+    },
+    {
+      "items": [
+        "Bamboo Lumber",
+        "Hozen Peace Pipe",
+        "Giant Dinosaur Bone",
+        "Sha Crystal Fragment"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Hozen_Peace_Pipe",
+        "https://www.wowhead.com/item%3D251763/bamboo-lumber",
+        "https://www.wowhead.com/mop-classic/item%3D94288/giant-dinosaur-bone",
+        "https://www.wowhead.com/ptr-2/item%3D251763/bamboo-lumber",
+        "https://www.wowhead.com/mop-classic/achievement%3D7437/a-worthy-opponent",
+        "https://www.wowhead.com/guide/mists-of-pandaria-rare-elite-and-rare-item-locations-1452",
+        "https://www.wowhead.com/mop-classic/quest%3D32616/a-large-pile-of-giant-dinosaur-bones",
+        "https://www.wowhead.com/mop-classic/cn/item%3D94288/%E5%B7%A8%E5%9E%8B%E6%81%90%E9%BE%99%E9%AA%A8%E5%A4%B4",
+        "https://www.wowhead.com/mop-classic/es/npc%3D50831/chillidos",
+        "https://warcraft.wiki.gg/wiki/Bamboo_Lumber",
+        "https://www.wowhead.com/guide/secrets-of-pandaria-6212",
+        "https://www.wowhead.com/it/item%3D251763/legname-di-bamb%C3%B9"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Rigid Lapis Lazuli",
+        "Perfect Stormy Lapis Lazuli",
+        "Perfect Sparkling Lapis Lazuli",
+        "Perfect Solid Lapis Lazuli"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76570/perfect-rigid-lapis-lazuli",
+        "https://www.wowhead.com/items/gems/name%3Arigid",
+        "https://www.wowhead.com/mop-classic/item%3D76572/perfect-sparkling-lapis-lazuli",
+        "https://www.wowhead.com/ptr-2/items/gems/name%3Asolid",
+        "https://www.wowhead.com/mop-classic/item%3D76573/perfect-solid-lapis-lazuli",
+        "https://www.wowhead.com/mop-classic/items/gems/name%3Asolid",
+        "https://www.wowhead.com/mop-classic/items/gems/blue/name%3Arigid",
+        "https://www.wowhead.com/mop-classic/mx/item%3D76572/lapisl%C3%A1zuli-chispeante-perfecto",
+        "https://www.wowhead.com/mop-classic/it/item%3D76572/perfect-sparkling-lapis-lazuli",
+        "https://warcraft.wiki.gg/wiki/Hit",
+        "https://www.wowhead.com/mop-classic/item%3D76638/sparkling-rivers-heart",
+        "https://www.wowhead.com/mop-classic/item%3D81099/shadowspine-shoulderguards"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Misty Alexandrite",
+        "Perfect Piercing Alexandrite",
+        "Perfect Lightning Alexandrite",
+        "Perfect Sensei's Alexandrite"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/item%3D76576/perfect-lightning-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76575/perfect-piercing-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76574/perfect-misty-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76577/perfect-senseis-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76576/perfect-lightning-alexandrite",
+        "https://www.wowhead.com/mop-classic/items/gems/green",
+        "https://www.wowhead.com/guide/mists-of-pandaria-jewelcrafting-overview-1638",
+        "https://www.wowhead.com/items/gems/green",
+        "https://www.wowhead.com/mop-classic/guide/professions/jewelcrafting/overview",
+        "https://www.wowhead.com/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292?page=2",
+        "https://www.wowhead.com/mop-classic/it/item%3D76576/perfect-lightning-alexandrite",
+        "https://www.wowhead.com/guide/outdated-arcane-mage-pve-guide-5-4-1525"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Effulgent Alexandrite",
+        "Perfect Zen Alexandrite",
+        "Perfect Balanced Alexandrite",
+        "Perfect Vivid Alexandrite"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Effulgent_Alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76578/perfect-effulgent-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76579/perfect-zen-alexandrite",
+        "https://www.wowhead.com/mop-classic/items/gems/green",
+        "https://www.wowhead.com/guide/mists-of-pandaria-jewelcrafting-overview-1638",
+        "https://www.wowhead.com/mop-classic/guide/professions/jewelcrafting/overview",
+        "https://www.wowhead.com/mop-classic/item%3D88912/effulgent-adventurine",
+        "https://www.wowhead.com/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292?page=2",
+        "https://www.wowhead.com/items/gems/green",
+        "https://www.wowhead.com/mop-classic/item%3D76647/vivid-wild-jade",
+        "https://www.wowhead.com/mx/guide/mists-of-pandaria-jewelcrafting-overview-1638",
+        "https://www.wowhead.com/mop-classic/it/guide/professions/jewelcrafting/overview"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Turbid Alexandrite",
+        "Perfect Radiant Alexandrite",
+        "Perfect Shattered Alexandrite",
+        "Perfect Energized Alexandrite"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Turbid_Alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76585/perfect-energized-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76582/perfect-turbid-alexandrite",
+        "https://www.wowhead.com/items/gems/green"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Regal Alexandrite",
+        "Perfect Forceful Alexandrite",
+        "Perfect Puissant Alexandrite",
+        "Perfect Steady Alexandrite"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76591/perfect-steady-alexandrite",
+        "https://www.wowhead.com/mop-classic/item%3D76587/perfect-regal-alexandrite",
+        "https://www.wowhead.com/items/gems/green",
+        "https://www.wowhead.com/mop-classic/fr/spell%3D55534/gemme-parfaite",
+        "https://www.wowhead.com/mop-classic/mx/spell%3D55534/perfecci%C3%B3n-de-gemas",
+        "https://www.wowhead.com/tw/spell%3D55534/%E5%AF%B6%E7%9F%B3%E5%AE%8C%E7%BE%8E%E5%B7%A5%E6%B3%95",
+        "https://www.wowhead.com/mop-classic/ko/spell%3D55534/%EB%B3%B4%EC%84%9D%EC%9D%98-%EC%99%84%EB%B2%BD%ED%95%A8",
+        "https://www.wowhead.com/ru/spell%3D55534/%D0%BE%D0%B3%D1%80%D0%B0%D0%BD%D0%BA%D0%B0-%D0%BA%D0%B0%D0%BC%D0%BD%D0%B5%D0%B9",
+        "https://www.wowhead.com/mop-classic/pt/spell%3D55534/gema-perfeita",
+        "https://www.wowhead.com/mop-classic/de/spell%3D55534/edelsteinperfektion",
+        "https://www.wowhead.com/mop-classic/it/spell%3D55534/gem-perfection",
+        "https://www.wowhead.com/mop-classic/cn/spell%3D55534/%E5%88%87%E5%89%B2%E5%AE%8C%E7%BE%8E%E5%AE%9D%E7%9F%B3"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Deadly Tiger Opal",
+        "Perfect Crafty Tiger Opal",
+        "Perfect Potent Tiger Opal",
+        "Perfect Inscribed Tiger Opal"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76592/perfect-deadly-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76593/perfect-crafty-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76594/perfect-potent-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76595/perfect-inscribed-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/type%3A5",
+        "https://www.wowhead.com/mop-classic/items/gems/orange/min-level%3A85",
+        "https://www.wowhead.com/guide/the-art-of-survival-a-guide-for-hunters-archive-1643",
+        "https://www.wowhead.com/mop-classic/item%3D76526/deadly-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/name%3ADeadly",
+        "https://www.wowhead.com/mop-classic/fr/item%3D76592/opale-du-tigre-mortelle-parfaite",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://www.wowhead.com/mop-classic/item%3D76660/potent-vermilion-onyx"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Polished Tiger Opal",
+        "Perfect Resolute Tiger Opal",
+        "Perfect Stalwart Tiger Opal",
+        "Perfect Champion's Tiger Opal"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76596/perfect-polished-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76597/perfect-resolute-tiger-opal",
+        "https://www.wowhead.com/ptr/items/name%3Astalwart?filter=81%3B7%3B0",
+        "https://www.wowhead.com/items/name%3Astalwart?filter=81%3B7%3B0",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://www.wowhead.com/ptr/item%3D76665/champions-vermilion-onyx",
+        "https://www.wowhead.com/guide/wowheads-patch-4-3-guide-archive-685"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Deft Tiger Opal",
+        "Perfect Wicked Tiger Opal",
+        "Perfect Reckless Tiger Opal",
+        "Perfect Fierce Tiger Opal"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76600/perfect-deft-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76601/perfect-wicked-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76603/perfect-fierce-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76602/perfect-reckless-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/type%3A5",
+        "https://www.wowhead.com/item%3D76602/perfect-reckless-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/name%3AWicked",
+        "https://www.wowhead.com/mop-classic/item%3D76534/deft-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/orange",
+        "https://www.wowhead.com/mop-classic/items/gems/orange/min-level%3A85",
+        "https://www.wowhead.com/mop-classic/guide/classes/mage/frost/dps-best-gear-bis-pre-raid",
+        "https://www.wowhead.com/mop-classic/guide/classes/mage/frost/dps-best-gear-bis-pve"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Adept Tiger Opal",
+        "Perfect Keen Tiger Opal",
+        "Perfect Artful Tiger Opal",
+        "Perfect Fine Tiger Opal"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76606/perfect-artful-tiger-opal",
+        "https://www.wowhead.com/mop-classic/item%3D76604/perfect-adept-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/orange",
+        "https://www.wowhead.com/mop-classic/items/gems/orange/min-level%3A85",
+        "https://www.wowhead.com/mop-classic/item%3D76607/perfect-fine-tiger-opal",
+        "https://www.wowhead.com/mop-classic/ru/item%3D76606/%D1%81%D0%BE%D0%B2%D0%B5%D1%80%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9-%D0%B8%D1%81%D0%BA%D1%83%D1%81%D0%BD%D1%8B%D0%B9-%D1%82%D0%B8%D0%B3%D1%80%D0%BE%D0%B2%D1%8B%D0%B9-%D0%BE%D0%BF%D0%B0%D0%BB",
+        "https://www.wowhead.com/mop-classic/items/gems/type%3A5",
+        "https://www.wowhead.com/guide/outdated-arcane-mage-pve-guide-5-4-1525",
+        "https://www.wowhead.com/ptr-2/items/gems?filter=81%3B2%3B0",
+        "https://www.wowhead.com/mop-classic/it/item%3D76672/artful-vermilion-onyx",
+        "https://www.wowhead.com/ptr/item%3D76671/keen-vermilion-onyx",
+        "https://www.wowhead.com/pt/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Skillful Tiger Opal",
+        "Perfect Lucent Tiger Opal",
+        "Perfect Tenuous Tiger Opal",
+        "Perfect Willful Tiger Opal"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Skillful_Tiger_Opal",
+        "https://www.wowhead.com/mop-classic/item%3D76608/perfect-skillful-tiger-opal",
+        "https://www.wowhead.com/guide/hunter-pvp-1544",
+        "https://www.wowhead.com/mop-classic/items/gems/orange/min-level%3A85",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://www.wowhead.com/mop-classic/item%3D76677/willful-vermilion-onyx",
+        "https://www.wowhead.com/guide/wowheads-patch-4-3-guide-archive-685"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Splendid Tiger Opal",
+        "Perfect Resplendent Tiger Opal",
+        "Perfect Glinting Roguestone",
+        "Perfect Accurate Roguestone"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76614/perfect-glinting-roguestone",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://www.wowhead.com/mop-classic/item%3D76613/perfect-resplendent-tiger-opal",
+        "https://www.wowhead.com/mop-classic/items/gems/orange/min-level%3A85",
+        "https://www.wowhead.com/mop-classic/items/gems/purple/min-level%3A80/quality%3A3",
+        "https://www.wowhead.com/mop-classic/it/items/gems/orange",
+        "https://warcraft.wiki.gg/wiki/Hit",
+        "https://www.wowhead.com/pt/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292",
+        "https://warcraft.wiki.gg/wiki/Template%3APandaria_hit_rating_gems",
+        "https://www.wowhead.com/mop-classic/items/gems/min-level%3A65/quality%3A2",
+        "https://www.wowhead.com/ptr/skill%3D755/jewelcrafting",
+        "https://www.wowhead.com/mop-classic/it/items/gems/purple"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Veiled Roguestone",
+        "Perfect Retaliating Roguestone",
+        "Perfect Etched Roguestone",
+        "Perfect Mysterious Roguestone"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76618/perfect-etched-roguestone",
+        "https://www.wowhead.com/item%3D76616/perfect-veiled-roguestone",
+        "https://www.wowhead.com/mop-classic/item%3D76616/perfect-veiled-roguestone",
+        "https://www.wowhead.com/mop-classic/items/gems/purple/min-level%3A80/quality%3A3",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://www.wowhead.com/mop-classic/guide/professions/jewelcrafting/overview",
+        "https://www.wowhead.com/guide/mists-of-pandaria-jewelcrafting-overview-1638",
+        "https://www.wowhead.com/mop-classic/it/item%3D76682/veiled-imperial-amethyst",
+        "https://www.wowhead.com/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292?page=2",
+        "https://www.wowhead.com/es/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292",
+        "https://www.wowhead.com/diablo-4/it/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292",
+        "https://www.wowhead.com/mx/guide/mists-of-pandaria-jewelcrafting-overview-1638"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Purified Roguestone",
+        "Perfect Shifting Roguestone",
+        "Perfect Guardian's Roguestone",
+        "Perfect Timeless Roguestone"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://warcraft.wiki.gg/wiki/Perfect_Purified_Roguestone",
+        "https://www.wowhead.com/mop-classic/item%3D76620/perfect-purified-roguestone",
+        "https://www.wowhead.com/mop-classic/items/gems/purple/min-level%3A80/quality%3A3",
+        "https://www.wowhead.com/mop-classic/items/gems/name%3AGuardian%27s",
+        "https://www.wowhead.com/ptr-2/item%3D76686/purified-imperial-amethyst",
+        "https://www.wowhead.com/mop-classic/it/items/gems/purple",
+        "https://www.wowhead.com/mop-classic/items/gems/min-level%3A65/quality%3A2"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Defender's Roguestone",
+        "Perfect Sovereign Roguestone",
+        "Perfect Delicate Pandarian Garnet",
+        "Perfect Precise Pandarian Garnet"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/spell%3D107624/delicate-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/item%3D76626/perfect-delicate-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/spell%3D107624/delicate-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/item%3D76627/perfect-precise-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/item%3D76625/perfect-sovereign-roguestone",
+        "https://www.wowhead.com/ptr-2/items/gems?filter=81%3B2%3B0",
+        "https://www.wowhead.com/mop-classic/items/gems/name%3ADelicate",
+        "https://www.wowhead.com/ptr/items/name%3Adelicate/class%3A3/quality%3A2%3A3%3A4",
+        "https://warcraft.wiki.gg/wiki/Defender%27s_Roguestone",
+        "https://www.wowhead.com/items/gems/name%3Adelicate/class%3A3/quality%3A2%3A3%3A4/type%3A0?filter=qu%3D2%3A3%3A4%3Bty%3D0%3Bna%3Ddelicate%3Bub%3D3%3Bcr%3D131%3Bcrs%3D1%3Bcrv%3D0",
+        "https://www.wowhead.com/mop-classic/item%3D76624/perfect-defenders-roguestone",
+        "https://www.wowhead.com/guide/hunter-pvp-1544"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Brilliant Pandarian Garnet",
+        "Perfect Flashing Pandarian Garnet",
+        "Perfect Bold Pandarian Garnet",
+        "Perfect Smooth Sunstone"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D76564/bold-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/item%3D76630/perfect-bold-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/item%3D76628/perfect-brilliant-pandarian-garnet",
+        "https://www.wowhead.com/guide/mists-of-pandaria-jewelcrafting-overview-1638",
+        "https://www.wowhead.com/news/mists-of-pandaria-jewelcrafting-overview-updated-for-5-4-204292",
+        "https://www.wowhead.com/item%3D76628/perfect-brilliant-pandarian-garnet",
+        "https://www.wowhead.com/mop-classic/guide/professions/jewelcrafting/overview",
+        "https://www.wowhead.com/mop-classic/item%3D76631/perfect-smooth-sunstone",
+        "https://www.wowhead.com/items/gems/name%3Abrilliant",
+        "https://www.wowhead.com/guide/mop-5-3-fear-the-beard-fury-warrior-guide-archive-1408",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://www.wowhead.com/mop-classic/it/guide/professions/jewelcrafting/overview"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Subtle Sunstone",
+        "Perfect Quick Sunstone",
+        "Perfect Fractured Sunstone",
+        "Perfect Mystic Sunstone"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/item%3D76633/perfect-quick-sunstone",
+        "https://www.wowhead.com/mop-classic/item%3D76634/perfect-fractured-sunstone",
+        "https://www.wowhead.com/items/gems/name%3Afractured",
+        "https://www.wowhead.com/mop-classic/item%3D76633/perfect-quick-sunstone",
+        "https://www.wowhead.com/mop-classic/items/gems/name%3AFractured",
+        "https://www.wowhead.com/mop-classic/items/gems/yellow",
+        "https://www.wowhead.com/mop-classic/item%3D76635/perfect-mystic-sunstone",
+        "https://www.wowhead.com/guide/outdated-arcane-mage-pve-guide-5-4-1525",
+        "https://www.wowhead.com/mop-classic/it/items/gems/yellow",
+        "https://www.wowhead.com/mop-classic/cn/item%3D76634/%E5%AE%8C%E7%BE%8E%E6%96%AD%E8%A3%82%E6%97%A5%E9%95%BF%E7%9F%B3",
+        "https://www.wowhead.com/mop-classic/pt/item%3D76635/pedra-solar-m%C3%ADstica-perfeita",
+        "https://www.wowhead.com/mop-classic/ru/item%3D76633/%D1%81%D0%BE%D0%B2%D0%B5%D1%80%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9-%D0%BC%D1%8F%D0%B3%D0%BA%D0%B8%D0%B9-%D1%81%D0%BE%D0%BB%D0%BD%D0%B5%D1%87%D0%BD%D1%8B%D0%B9-%D0%BA%D0%B0%D0%BC%D0%B5%D0%BD%D1%8C"
+      ]
+    },
+    {
+      "items": [
+        "Perfect Tense Roguestone",
+        "Perfect Assassin's Roguestone",
+        "Perfect Nimble Alexandrite"
+      ],
+      "status": "fulfilled",
+      "sourcePages": [
+        "https://www.wowhead.com/mop-classic/item%3D89679/perfect-assassins-roguestone",
+        "https://www.wowhead.com/guide/hunter-pvp-1544",
+        "https://www.wowhead.com/mop-classic/items/gems/purple/min-level%3A80/quality%3A3",
+        "https://warcraft.wiki.gg/wiki/Template%3AStrength_gems",
+        "https://warcraft.wiki.gg/wiki/Hit",
+        "https://warcraft.wiki.gg/wiki/Category%3AJewelcrafting_crafted_gems"
+      ]
+    }
+  ]
+}

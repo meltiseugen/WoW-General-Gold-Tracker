@@ -1,0 +1,3 @@
+local _, NS = ...
+local shared = assert(_G.GeneralGoldTrackerCatalogNamespace, "General Gold Tracker must load first")
+setmetatable(NS, { __index = shared, __newindex = shared })

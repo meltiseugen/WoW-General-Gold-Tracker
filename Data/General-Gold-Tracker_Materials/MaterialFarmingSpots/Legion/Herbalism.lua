@@ -280,6 +280,344 @@ local ASTRAL_GLORY_EREDATH_ROUTE = {
     confidence = "medium",
 }
 
+-- Supplied generated candidates: each variant stays a separate map dropdown option.
+-- Coordinates are approximate route vertices, not independently tested herb nodes.
+local function SuppliedHerbRoute(id, sortOrder, mapID, mapName, name, variant, routeType, packedCoords, tips, sourceUrls)
+    local coords = {}
+    for index, packed in ipairs(packedCoords) do
+        coords[#coords + 1] = C(math.floor(packed / 10000) / 10000, (packed % 10000) / 10000, name .. " #" .. index)
+    end
+    return {
+        id = id,
+        sortOrder = sortOrder,
+        mapID = mapID,
+        mapName = mapName,
+        location = name,
+        dropdownLabel = mapName .. ": " .. sortOrder .. ". " .. variant .. " - " .. name,
+        routeType = routeType,
+        source = "User-supplied generated Retail Routes candidate; linked guides credited for inspiration",
+        sourceUrls = sourceUrls,
+        dropDifficulty = "Generated candidate loop, not independently game-tested. Waypoints are approximate route vertices, not guaranteed herb nodes.",
+        tips = tips,
+        coords = coords,
+        confidence = "low",
+        inGameTested = false,
+        isRoute = true,
+    }
+end
+
+local SUPPLIED_HERB_ROUTES = {
+    [124101] = {
+        SuppliedHerbRoute(
+            "legion-aethril-north-azsuna-arc-supplied", 1,
+            630, "Azsuna", "Aethril North Azsuna Arc", "Main",
+            "herbalism-loop",
+            { 46202620, 49301950, 53001540, 58701880, 63102370, 63503250, 66804080, 63004980, 59405460, 54205170, 49004450, 45203810 },
+            {
+                "Fly around Azurewing Repose, Narthalas Academy and the northeastern slopes; this is a long respawn-friendly sweep rather than a fixed-node trail.",
+                "Collect the extra Aethril from Withered Hungerers that can appear on harvest.",
+                "Prioritize Rank 3 Aethril and the Legion Herbalism glove enchant.",
+            },
+            {
+                "https://www.wow-professions.com/farming/aethril-farming",
+                "https://epicwowguides.com/material/aethril-farming/",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-aethril-south-azsuna-coast-supplied", 2,
+            630, "Azsuna", "Aethril South Azsuna Coast", "Alternative",
+            "herbalism-loop",
+            { 45204340, 50104760, 55205360, 58606030, 56906900, 50807280, 45106990, 42706320, 40805660, 42604920 },
+            {
+                "Use the southern Azsuna coastal and roadside path when the northern corridor is occupied.",
+                "Check water-adjacent greenery and avoid spending time clearing non-gathering mobs.",
+                "Flying helps to bridge sparse sections and return to your first harvested nodes.",
+            },
+            {
+                "https://www.wow-professions.com/farming/aethril-farming",
+                "https://epicwowguides.com/material/aethril-farming/",
+            }
+        ),
+    },
+    [124102] = {
+        SuppliedHerbRoute(
+            "legion-dreamleaf-valsharah-broad-forest-supplied", 1,
+            641, "Val'sharah", "Dreamleaf Valsharah Broad Forest", "Main",
+            "herbalism-loop",
+            { 41203520, 46003190, 51303210, 56703680, 63403530, 69403940, 71304780, 67005340, 62105750, 56006340, 49806610, 44606090, 41105440, 38804370 },
+            {
+                "Run the larger forest sweep to provide respawn time; pick Dreamleaf along forest edges and glades.",
+                "Kill Nightmare Creepers that appear from corrupted Dreamleaf harvests to gain bonus Dreamleaf.",
+                "Rank 3 increases output per node; use GatherMate2 to cut unproductive sections after one lap.",
+            },
+            {
+                "https://www.wow-professions.com/farming/dreamleaf-farming",
+                "https://www.wowhead.com/item=124102/dreamleaf",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-dreamleaf-shalanir-treant-farm-supplied", 2,
+            641, "Val'sharah", "Dreamleaf Shalanir Treant Farm", "Alternative",
+            "herbalism-and-herbable-mob-loop",
+            { 58003570, 59303620, 61603650, 62503870, 61404050, 59404140, 57803970, 57403750 },
+            {
+                "This is a kill-and-herb circuit, not a standard plant-node loop: kill Vilepetal Rooters, Defiled Grovewalkers and Desecrated Ancients.",
+                "Use Herbalism on eligible corpses after looting; farm around the 60,38 Shala’nir cluster.",
+                "Also generates Yseralline Seeds; competitive alternative when normal plant nodes are scarce.",
+            },
+            {
+                "https://www.wow-professions.com/farming/dreamleaf-farming",
+                "https://www.wowhead.com/item=124102/dreamleaf",
+            }
+        ),
+    },
+    [124103] = {
+        SuppliedHerbRoute(
+            "legion-foxflower-highmountain-valley-arc-supplied", 1,
+            650, "Highmountain", "Foxflower Highmountain Valley Arc", "Main",
+            "herbalism-loop",
+            { 43503880, 49203550, 54503990, 59904270, 65504990, 68505740, 66506580, 61007050, 56107540, 50407080, 45406530, 40105770, 39804750 },
+            {
+                "Follow valley floors and lower slopes where possible; mountain walls create detours even with flying.",
+                "When a fox appears after harvesting, follow its trail and run over the scattered Foxflowers.",
+                "Use the Majestic Elderhorn Hoof if owned, but its speed effect does not stack with Leystone Hoofplates.",
+            },
+            {
+                "https://www.wow-professions.com/farming/foxflower-farming",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-foxflower-southern-wetlands-supplied", 2,
+            650, "Highmountain", "Foxflower Southern Wetlands", "Alternative",
+            "herbalism-loop",
+            { 48106230, 54006440, 59806800, 64607330, 61507990, 55108360, 49608010, 45407490, 43706870 },
+            {
+                "Focus on the southern and Blind Marshlands side of Highmountain if central valleys are contested.",
+                "Watch for hostile mobs; the original non-flying guide recommends flight-path repositioning between sectors.",
+                "Collect bonus Foxflower along a fox trail immediately rather than finishing the circuit.",
+            },
+            {
+                "https://www.wow-professions.com/farming/foxflower-farming",
+            }
+        ),
+    },
+    [124104] = {
+        SuppliedHerbRoute(
+            "legion-fjarnskaggl-stormheim-upland-sweep-supplied", 1,
+            634, "Stormheim", "Fjarnskaggl Stormheim Upland Sweep", "Main",
+            "herbalism-loop",
+            { 35803550, 40203170, 47403120, 53203500, 59403790, 65104220, 68704950, 64705580, 58105310, 52205870, 45505610, 40204940, 35804240 },
+            {
+                "Sweep open Stormheim highlands and the cliff-adjacent terraces rather than pushing into mob-packed settlements.",
+                "Alliance characters should avoid cutting through hostile Horde encampments on the ground.",
+                "Fjarnskaggl Rank 3 helps remount speed; pick while mounted where eligible.",
+            },
+            {
+                "https://www.wow-professions.com/farming/fjarnskaggl-farming",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-fjarnskaggl-eastern-fjord-loop-supplied", 2,
+            634, "Stormheim", "Fjarnskaggl Eastern Fjord Loop", "Alternative",
+            "herbalism-loop",
+            { 55602590, 62402790, 67403160, 74303920, 75404770, 71005580, 64305900, 60405390, 60804470, 57903710 },
+            {
+                "Test the eastern fjord terrain as a secondary circuit if the interior route is depleted.",
+                "Use flying to avoid steep elevation changes; on foot, follow available ramps and bridges.",
+                "Allow enough time between short laps for nodes to respawn.",
+            },
+            {
+                "https://www.wow-professions.com/farming/fjarnskaggl-farming",
+            }
+        ),
+    },
+    [124105] = {
+        SuppliedHerbRoute(
+            "legion-starlight-rose-falanaar-telanor-supplied", 1,
+            680, "Suramar", "Starlight Rose Falanaar Telanor", "Main",
+            "herbalism-loop",
+            { 27404390, 31203850, 35203290, 40103220, 44603520, 48102950, 53003230, 56603870, 53304360, 49204920, 43005070, 37104870, 32505300, 28105020 },
+            {
+                "Sweep the Falanaar and Tel’anor exterior terrain; avoid unnecessary detours into the city itself.",
+                "Prioritize Rank 3 Starlight Rose: lower ranks can fail and give Starlight Rosedust instead.",
+                "Kill Withered Hungerers created on a gather for possible extra Starlight Rose.",
+            },
+            {
+                "https://www.wow-professions.com/farming/starlight-rose-farming",
+                "https://www.mmobase.de/spiele/world-of-warcraft-legion/tipps/32/",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-starlight-rose-irongrove-northern-supplied", 2,
+            680, "Suramar", "Starlight Rose Irongrove Northern", "Alternative",
+            "herbalism-loop",
+            { 27102820, 31202330, 37402170, 44002480, 50002730, 53003380, 49103830, 42803700, 37903400, 31903530, 27403370 },
+            {
+                "Cover the northern Suramar ridges and Irongrove Retreat margins as an alternative to crowded Falanaar.",
+                "The loop is better suited to a flying character, since forest ridges interrupt ground travel.",
+                "Use a wider circuit to give Starlight Rose nodes time to repopulate.",
+            },
+            {
+                "https://www.wow-professions.com/farming/starlight-rose-farming",
+                "https://www.mmobase.de/spiele/world-of-warcraft-legion/tipps/32/",
+            }
+        ),
+    },
+    [124106] = {
+        SuppliedHerbRoute(
+            "legion-felwort-azsuna-wq-check-supplied", 1,
+            630, "Azsuna", "Felwort Azsuna WQ Check", "Main - WQ only",
+            "world-quest-herb-target",
+            { 47405570, 48605720, 49505900, 50905740, 49405540 },
+            {
+                "Only investigate this short waypoint circuit when an active Felwort Herbalism World Quest targets Azsuna.",
+                "Historical Felwort WQ location reported near 48.6,57.2; the marker can change or be absent.",
+                "Felwort is not a repeatably spawning ordinary herb route.",
+            },
+            {
+                "https://www.wowhead.com/item=124106/felwort",
+                "https://warcraft.wiki.gg/wiki/Fertile_Soil_(Broken_Isles)",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-felwort-highmountain-wq-check-supplied", 2,
+            650, "Highmountain", "Felwort Highmountain WQ Check", "Alternative - WQ only",
+            "world-quest-herb-target",
+            { 34804080, 36104220, 37504360, 38004110, 36704020 },
+            {
+                "Check for an active Felwort profession World Quest before visiting the historical location at 36.1,42.2.",
+                "Harvest the quest-specific Felwort after meeting quest and herbalism unlock requirements.",
+                "This is a reconnaissance route; repeating it with no active quest will not reliably yield Felwort.",
+            },
+            {
+                "https://www.wowhead.com/item=124106/felwort",
+                "https://warcraft.wiki.gg/wiki/Fertile_Soil_(Broken_Isles)",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-felwort-ironhorn-fertile-soil-supplied", 3,
+            650, "Highmountain", "Felwort Ironhorn Fertile Soil", "Alternative - seeds only",
+            "seed-planting-loop",
+            { 54408410, 55108490, 56308530, 56908390, 55908340 },
+            {
+                "Carry Felwort Seeds obtained from the relevant profession source; these are not Yseralline Seeds.",
+                "Find Fertile Soil around the Ironhorn Enclave, especially near 55.4,84.9.",
+                "Plant seeds and remain nearby until harvestable. Other herbalists may harvest planted herbs.",
+            },
+            {
+                "https://www.wowhead.com/item=124106/felwort",
+                "https://warcraft.wiki.gg/wiki/Fertile_Soil_(Broken_Isles)",
+            }
+        ),
+    },
+    [151565] = {
+        SuppliedHerbRoute(
+            "legion-astral-glory-krokuun-fel-herb-sweep-supplied", 1,
+            830, "Krokuun", "Astral Glory Krokuun Fel Herb Sweep", "Main",
+            "herbalism-loop",
+            { 53202980, 58703630, 63704260, 66804990, 64905980, 59606510, 55407390, 47807380, 42706640, 36805980, 38905010, 45204190, 48303580 },
+            {
+                "Harvest Fel-Encrusted Herb nodes: despite their name, they can yield Astral Glory.",
+                "Expect heavy enemy density and combat interruptions; anti-daze or a tank specialization helps.",
+                "Argus is ground-based; Demonsteel Stirrups are not effective here according to the farming guide.",
+            },
+            {
+                "https://www.wow-professions.com/farming/astral-glory-farming",
+                "https://www.wowhead.com/item=151565/astral-glory",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-astral-glory-eredath-northern-supplied", 2,
+            882, "Eredath", "Astral Glory Eredath Northern", "Alternative",
+            "herbalism-loop",
+            { 37803940, 44003310, 51902880, 58203390, 63004140, 67005020, 63905840, 58506310, 52406230, 46105690, 40304870 },
+            {
+                "Target the actual Astral Glory nodes scattered across Eredath rather than Krokuun-style Fel-Encrusted Herbs.",
+                "Use the opened Vindicaar teleport network to minimize travel to the starting sector.",
+                "Eredath had somewhat lower yields than Krokuun in the source guide, so measure herbs per minute.",
+            },
+            {
+                "https://www.wow-professions.com/farming/astral-glory-farming",
+                "https://www.wowhead.com/item=151565/astral-glory",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-astral-glory-antoran-fel-clusters-supplied", 3,
+            885, "Antoran Wastes", "Astral Glory Antoran Fel Clusters", "Alternative - mixed",
+            "herbalism-loop",
+            { 54003090, 59803350, 64704090, 67704880, 65005700, 60706310, 55605980, 49505420, 47404650, 50703930 },
+            {
+                "This is an experimental Antoran Wastes scouting circuit, not a proven optimal route.",
+                "Look for Fel-Encrusted Herbs as you move; these nodes can produce Astral Glory.",
+                "Expect hostile mobs and inaccessible cliff shortcuts; take road-grade detours.",
+            },
+            {
+                "https://www.wow-professions.com/farming/astral-glory-farming",
+                "https://www.wowhead.com/item=151565/astral-glory",
+            }
+        ),
+    },
+    [128304] = {
+        SuppliedHerbRoute(
+            "legion-yseralline-seed-shalanir-plants-supplied", 1,
+            641, "Val'sharah", "Yseralline Seed Shalanir Plants", "Main - corpse gather",
+            "herbalism-and-herbable-mob-loop",
+            { 58003630, 59803610, 61703740, 62903900, 61104130, 59604080, 57703950, 57803760 },
+            {
+                "Kill Vilepetal Rooters, Defiled Grovewalkers and Desecrated Ancients and herbalism-gather their corpses.",
+                "Circle Shala’nir near 60,38.5; this is a targeted alternative to indiscriminate herb gathering.",
+                "You will also collect Dreamleaf while farming Yseralline Seeds.",
+            },
+            {
+                "https://warcraft.wiki.gg/wiki/Yseralline_Seed",
+                "https://www.wowhead.com/item=128304/yseralline-seed",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-yseralline-seed-foxflower-valley-supplied", 2,
+            650, "Highmountain", "Yseralline Seed Foxflower Valley", "Alternative - herb nodes",
+            "herbalism-loop",
+            { 45704580, 51404170, 57704560, 64705040, 66605750, 61806330, 56606500, 50106160, 45105520 },
+            {
+                "Collect Foxflower nodes in Highmountain; Yseralline Seeds can be bonus gathering output.",
+                "Follow foxes that appear from Foxflower harvesting to maximize total herb yield.",
+                "Avoid Suramar Starlight Rose circuits for this particular material.",
+            },
+            {
+                "https://warcraft.wiki.gg/wiki/Yseralline_Seed",
+                "https://www.wowhead.com/item=128304/yseralline-seed",
+            }
+        ),
+        SuppliedHerbRoute(
+            "legion-yseralline-seed-azsuna-aethril-supplied", 3,
+            630, "Azsuna", "Yseralline Seed Azsuna Aethril", "Alternative - herb nodes",
+            "herbalism-loop",
+            { 48102630, 54002110, 60802630, 64603440, 62604300, 58204980, 53204630, 48504050, 44803370 },
+            {
+                "Collect Aethril herb nodes as the main source of Yseralline Seeds on this circuit.",
+                "The more open Azsuna terrain can be easier than Highmountain for flying or fast mounts.",
+                "Expect an accompanying haul of Aethril; compare both reagent prices when choosing a farm.",
+            },
+            {
+                "https://warcraft.wiki.gg/wiki/Yseralline_Seed",
+                "https://www.wowhead.com/item=128304/yseralline-seed",
+            }
+        ),
+    },
+}
+
+local function WithSuppliedRoutes(itemID, spots)
+    local routes = {}
+    for _, spot in ipairs(SUPPLIED_HERB_ROUTES[itemID] or {}) do
+        routes[#routes + 1] = spot
+    end
+    for _, spot in ipairs(spots) do
+        spot.isRoute = true
+        routes[#routes + 1] = spot
+    end
+    return routes
+end
+
 local function RegisterHerb(itemID, itemName, spots, summary)
     Register({
         itemID = itemID,
@@ -287,9 +625,10 @@ local function RegisterHerb(itemID, itemName, spots, summary)
         expansion = "legion",
         professions = { "herbalism", "alchemy", "inscription" },
         category = "Herb",
+        isRoute = true,
         sourceUrls = { ItemUrl(itemID) },
         summary = summary,
-        spots = spots,
+        spots = WithSuppliedRoutes(itemID, spots),
     })
 end
 
@@ -344,6 +683,7 @@ Register({
     expansion = "legion",
     professions = { "herbalism", "alchemy", "inscription", "cooking" },
     category = "Seed",
+    isRoute = true,
     sourceUrls = {
         ItemUrl(128304),
         "https://www.wowhead.com/guide/legion-herbalism",
@@ -351,7 +691,7 @@ Register({
         "https://warcraft.wiki.gg/wiki/Yseralline_Seed",
     },
     summary = "Common Legion seed found while gathering Broken Isles herbs and used by Alchemy, Inscription, and Cooking workflows.",
-    spots = { DREAMLEAF_ROUTE, AETHRIL_ROUTE, STARLIGHT_ROSE_ROUTE },
+    spots = WithSuppliedRoutes(128304, { DREAMLEAF_ROUTE, AETHRIL_ROUTE, STARLIGHT_ROSE_ROUTE }),
 })
 
 RegisterSeed(129284, "Aethril Seed", { AETHRIL_ROUTE }, "Plantable Legion herb seed obtained from Aethril and other Broken Isles herbalism routes.")

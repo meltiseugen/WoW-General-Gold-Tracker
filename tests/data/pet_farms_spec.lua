@@ -13,6 +13,7 @@ local function load_pet_farms(catalog)
     assert(dropsChunk, dropsError)
     dropsChunk("General-Gold-Tracker", ns)
 
+    assert(loadfile("Data/General-Gold-Tracker_Farms/PetAcquisitionResearch.lua"))("General-Gold-Tracker", ns)
     local petsChunk, petsError = loadfile("Data/General-Gold-Tracker_Farms/PetFarms.lua")
     assert(petsChunk, petsError)
     petsChunk("General-Gold-Tracker", ns)
@@ -20,18 +21,19 @@ local function load_pet_farms(catalog)
 end
 
 describe("Data/PetFarms", function()
-    it("maps outdoor and raid pet rows to exact research with at least one valid pin", function()
+    it("maps outdoor and raid sources and retains crafting pet guides without pins", function()
         local ns = load_pet_farms()
         local outdoorRows = ns.CatalogDropsData.categories.pets
         local raidRows = ns.CatalogDropsData.categories.raidPets
         local rows = ns.PetFarmData.rows
 
-        assert.equals(47, #outdoorRows)
+        assert.equals(45, #outdoorRows)
         assert.equals(91, #raidRows)
         assert.equals(#outdoorRows + #raidRows, ns.PetFarmData.sourceRowCount)
-        assert.equals(147, ns.PetFarmData.curatedRowCount)
+        assert.equals(183, ns.PetFarmData.curatedRowCount)
         assert.equals(#rows, #ns.PetFarmData.farms)
-        assert.equals("2026-10-08", ns.PetFarmData.researchedAt)
+        assert.equals("2026-10-23", ns.PetFarmData.researchedAt)
+        assert.equals("2026-10-08", ns.PetFarmData.baseResearchedAt)
         assert.equals(#rows, ns.FarmCatalog.sourceCounts.curatedPets)
 
         local petRows = 0
@@ -51,7 +53,11 @@ describe("Data/PetFarms", function()
             assert.is_true(#farm.sourceUrls >= 2)
             assert.is_true(#farm.guide.tips >= 3)
             assert.equals(farm.routeCount, #farm.mapOptions)
-            assert.is_true(#farm.mapOptions >= 1, "no map option for " .. tostring(row.recordID))
+            if row.petID == 1039 or row.petID == 1040 then
+                assert.equals(0, #farm.mapOptions, "crafting bonus pets have no fabricated source pins")
+            else
+                assert.is_true(#farm.mapOptions >= 1, "no map option for " .. tostring(row.recordID))
+            end
 
             assert.is_number(row.petID)
             petRows = petRows + 1
@@ -71,7 +77,12 @@ describe("Data/PetFarms", function()
             for _, option in ipairs(farm.mapOptions) do
                 optionCount = optionCount + 1
                 assert.is_number(option.mapID)
-                assert.is_true(#option.pins >= 1)
+                if option.mapOnly then
+                    assert.equals(0,#option.pins)
+                    assert.equals("profession-context",option.mapRole)
+                else
+                    assert.is_true(#option.pins >= 1)
+                end
                 for _, pin in ipairs(option.pins) do
                     pinCount = pinCount + 1
                     assert.is_true(pin.x >= 0 and pin.x <= 1)
@@ -81,9 +92,9 @@ describe("Data/PetFarms", function()
             end
         end
 
-        assert.equals(147, petRows)
-        assert.is_true(optionCount >= 147)
-        assert.is_true(pinCount >= 147)
+        assert.equals(183, petRows)
+        assert.is_true(optionCount >= 182)
+        assert.is_true(pinCount >= 182)
         assert.is_nil(ns.FarmCatalog.indexes.byItemID and ns.FarmCatalog.indexes.byItemID[82800],
             "shared pet cage item must never drive pet lookup")
 
@@ -152,12 +163,57 @@ describe("Data/PetFarms", function()
         assert.equals(1530, nyalotha.mapOptions[3].mapID)
     end)
 
+    it("adds saleable researched pets in every expansion with complete map metadata", function()
+        local ns = load_pet_farms()
+        local counts = {}
+        local expected = { 1, 5, 1, 1, 4, 1, 3, 3, 2, 3, 3, 3 }
+        assert.equals(30, ns.PetFarmData.additionalResearchCount)
+        for _, research in ipairs(ns.PetAcquisitionResearch) do
+            counts[research.contentID] = (counts[research.contentID] or 0) + 1
+            assert.is_true(research.cageable)
+            assert.is_true(research.saleMethod == "item-or-cage" or research.saleMethod == "learn-and-cage")
+            assert.is_string(research.repeatability)
+            local positions = ns.FarmCatalog.indexes.byPetID[research.petID]
+            assert.equals(1, #positions, "duplicate species " .. research.petID)
+            local farm = ns.FarmCatalog.farms[positions[1]]
+            assert.equals("Drops > Pets", farm.sourcePath)
+            assert.equals(research.itemName, farm.name)
+            assert.equals(research.saleMethod, farm.saleMethod)
+            assert.equals(research.requirement, farm.guide.requirement)
+            assert.equals(research.action, farm.guide.action)
+            assert.is_true(#farm.guide.tips >= 3)
+            assert.equals(#research.spots, #farm.mapOptions)
+            for index, spot in ipairs(research.spots) do
+                local option = farm.mapOptions[index]
+                assert.equals(spot.mapID, option.mapID)
+                assert.equals(spot.mapName, option.mapLabel)
+                assert.equals(spot.mapRole, option.mapRole)
+                assert.equals("farm-pet", option.routeType)
+                assert.is_false(option.isRoute)
+                assert.same(spot.sourceUrls, option.sourceUrls)
+                assert.same(spot.coords, option.pins)
+            end
+        end
+        assert.same(expected, counts)
+        local function farm(id) return ns.FarmCatalog.farms[ns.FarmCatalog.indexes.byPetID[id][1]] end
+        assert.equals("learn-and-cage", farm(193).saleMethod) -- The rat's original item is BoP.
+        assert.equals("item-or-cage", farm(5040).saleMethod) -- Bound pouch, tradeable pet item.
+        assert.equals("item-or-cage", farm(5038).saleMethod)
+        assert.equals(4, #farm(3365).mapOptions[1].pins) -- Final puzzle plus all three ingredients.
+        assert.equals(2, #farm(3008).mapOptions[1].pins) -- Ink downstairs, quill on the wall.
+        assert.equals(9, #farm(2541).mapOptions[1].pins) -- Seven named elites and two rares.
+        assert.equals(126, farm(193).mapOptions[1].mapID) -- Underbelly, not surface Dalaran.
+        assert.equals(2395, farm(5040).mapOptions[1].mapID)
+        assert.equals(2437, farm(5038).mapOptions[1].mapID)
+        assert.equals("event", farm(5038).mapOptions[1].mapRole)
+    end)
+
     it("does not duplicate farms or indexes if the module is loaded twice", function()
         local first = load_pet_farms()
         local second = load_pet_farms(first.FarmCatalog)
         local firstRecordID = second.CatalogDropsData.categories.pets[1].recordID
 
-        assert.equals(147, #second.FarmCatalog.farms)
+        assert.equals(183, #second.FarmCatalog.farms)
         assert.equals(1, #second.FarmCatalog.indexes.byPetID[59])
         assert.equals(1, #second.FarmCatalog.indexes.byRecordID[firstRecordID])
     end)

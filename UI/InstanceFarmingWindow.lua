@@ -1,4 +1,7 @@
 local _, NS = ...
+local function CreateFrame(...)
+    return (NS.CreateThemedFrame or _G.CreateFrame)(...)
+end
 local GoldTracker = NS.GoldTracker
 local Theme = NS.JanisTheme
 
@@ -919,6 +922,9 @@ local function EnsureInstanceTransmogRowPriceData(addon, frame, row)
     row.valueSourceWasFallback = prices.valueSourceWasFallback == true
     row.transmogRequestedValueSourceID = requestedValueSourceID
     row.transmogPricesLoaded = true
+    if type(addon.RecordDisplayedItemMarketSnapshots) == "function" then
+        addon:RecordDisplayedItemMarketSnapshots(row)
+    end
 end
 
 local function EnsureInstanceTransmogRowData(addon, frame, row)
@@ -1878,12 +1884,12 @@ end
 function GoldTracker:OpenInstanceFarmingMap(row)
     local mapOptions = self:BuildInstanceFarmingMapOptions(row)
     if #mapOptions == 0 then
-        self:Print("No instance map details are available for this row yet.")
+        self:Print("No instance map details are available for this row yet.", "warnings")
         return false
     end
 
     if type(self.OpenStandaloneMapWindow) ~= "function" then
-        self:Print("The map window is not loaded yet.")
+        self:Print("The map window is not loaded yet.", "warnings")
         return false
     end
 
@@ -2281,6 +2287,9 @@ function GoldTracker:RefreshInstanceFarmingWindowControls()
         return
     end
     local scanning = frame.scanState ~= nil
+    if frame.progressBackdrop then
+        frame.progressBackdrop:SetShown(scanning and frame.progressComplete ~= true)
+    end
     local source = self.VALUE_SOURCE_BY_ID[frame.valueSourceID] or self:GetInstanceFarmingValueSource()
     UIDropDownMenu_SetSelectedValue(frame.valueSourceDropdown, source.id)
     UIDropDownMenu_SetText(frame.valueSourceDropdown, source.label)
@@ -2591,7 +2600,8 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             local expansionWidth = 116
             local sourceWidth = 170
             local expansionX = contentWidth - expansionWidth - 12
-            local addX = expansionX - ADD_WIDTH - columnGap
+            local showAdd = self:GetActiveCustomFarm() ~= nil
+            local addX = expansionX - (showAdd and (ADD_WIDTH + columnGap) or 0)
             local sourceX = addX - sourceWidth - columnGap
             local averageX = sourceX - valueWidth - columnGap
             local regionX = averageX - valueWidth - columnGap
@@ -2686,7 +2696,7 @@ function GoldTracker:RefreshInstanceFarmingLibraryWindow()
             row.favoriteAverageText:SetPoint("LEFT", row, "LEFT", averageX, 0)
             row.favoriteAverageText:SetWidth(valueWidth)
             row.favoriteAverageText:SetText(self:FormatMoney(favorite.averageValue or 0))
-            row.favoriteAddButton:Show()
+            row.favoriteAddButton:SetShown(showAdd)
             row.favoriteAddButton:ClearAllPoints()
             row.favoriteAddButton:SetPoint("LEFT", row, "LEFT", addX, 0)
             row:SetScript("OnClick", function(self)
@@ -2924,7 +2934,7 @@ function GoldTracker:FinishInstanceFarmingScan()
     ))
     self:RefreshInstanceFarmingWindowControls()
     self:RefreshInstanceFarmingWindow(true)
-    self:Print(string.format("Instance farming scan complete: %d items found.", #frame.lastResults))
+    self:Print(string.format("Instance farming scan complete: %d items found.", #frame.lastResults), "scans")
 end
 
 function GoldTracker:CancelInstanceFarmingScan()
@@ -3107,7 +3117,7 @@ function GoldTracker:RescanCurrentInstanceFarmingSelection()
     self:StartInstanceFarmingScan()
 end
 
-function GoldTracker:ToggleInstanceFarmingSort(sortKey)
+function GoldTracker:ToggleInstanceFarmingSort(sortKey, mouseButton)
     local frame = self.instanceFarmingFrame
     if not frame then
         return
@@ -3120,6 +3130,7 @@ function GoldTracker:ToggleInstanceFarmingSort(sortKey)
         and normalizedSortKey ~= "tracked"
     self:ToggleTableSortCriterion(frame, normalizedSortKey, defaultAscending, {
         validKeys = SORT_KEYS,
+        mouseButton = mouseButton,
     })
     if frame.instanceFarmingViewID ~= "transmogs" or frame.transmogFlatList ~= true then
         EnsureInstanceLocationGroupingSort(self, frame)
@@ -3534,12 +3545,13 @@ ApplyTableColumnLayout = function(frame)
     end
     local showingPets = frame.instanceFarmingViewID == "pets"
     local showingTransmogs = frame.instanceFarmingViewID == "transmogs"
+    local showAdd = GoldTracker:GetActiveCustomFarm() ~= nil
     local contentWidth = GetInstanceFarmingTableViewportWidth(frame)
     local trackWidth = showingPets and 0 or TRACK_WIDTH
     local mapWidth = MAP_WIDTH
     local detailsWidth = (showingPets or showingTransmogs) and 0 or DETAILS_WIDTH
-    local addWidth = ADD_WIDTH
-    local gapCount = showingPets and 10 or (showingTransmogs and 11 or 12)
+    local addWidth = showAdd and ADD_WIDTH or 0
+    local gapCount = (showingPets and 10 or (showingTransmogs and 11 or 12)) - (showAdd and 0 or 1)
     local requiredItemWidth = Theme:GetRequiredTextColumnWidth(frame.rowPool, "itemText", ITEM_MIN_WIDTH, {
         padding = 10,
         leadingWidth = ICON_SIZE + 8,
@@ -3591,7 +3603,7 @@ ApplyTableColumnLayout = function(frame)
     local trackX = HEADER_LEFT_INSET
     local mapX = showingPets and trackX or (trackX + trackWidth + COLUMN_GAP)
     local addX = mapX + mapWidth + COLUMN_GAP
-    local itemX = addX + addWidth + COLUMN_GAP
+    local itemX = addX + addWidth + (showAdd and COLUMN_GAP or 0)
     local typeX = itemX + itemWidth + COLUMN_GAP
     local valueX = typeX + TYPE_WIDTH + COLUMN_GAP
     local instanceX = valueX + valueWidth + COLUMN_GAP
@@ -3606,6 +3618,7 @@ ApplyTableColumnLayout = function(frame)
     SetHeaderColumn(frame.trackHeaderButton, frame.listPanel, trackX - horizontalOffset, trackWidth)
     SetHeaderColumn(frame.mapHeaderButton, frame.listPanel, mapX - horizontalOffset, mapWidth)
     SetHeaderColumn(frame.addHeaderButton, frame.listPanel, addX - horizontalOffset, addWidth)
+    if frame.addHeaderButton then frame.addHeaderButton:SetShown(showAdd) end
     SetHeaderColumn(frame.itemHeaderButton, frame.listPanel, itemX - horizontalOffset, itemWidth)
     SetHeaderColumn(frame.typeHeaderButton, frame.listPanel, typeX - horizontalOffset, TYPE_WIDTH)
     SetHeaderColumn(frame.valueHeaderButton, frame.listPanel, valueX - horizontalOffset, valueWidth)
@@ -3630,7 +3643,8 @@ ApplyTableColumnLayout = function(frame)
             row.trackButton:SetSize(TRACKED_BUTTON_WIDTH, TRACKED_BUTTON_HEIGHT)
         end
         SetColumn(row.mapButton, row, mapX - horizontalOffset, mapWidth)
-        SetColumn(row.addButton, row, addX - horizontalOffset, addWidth)
+        SetColumn(row.addButton, row, addX - horizontalOffset, ADD_WIDTH)
+        if row.addButton then row.addButton:SetShown(showAdd and not row.isLocationGroupHeader) end
         row.icon:ClearAllPoints()
         row.icon:SetPoint("LEFT", row, "LEFT", itemX - horizontalOffset, 0)
         SetColumn(row.itemText, row, itemX + ICON_SIZE + 8 - horizontalOffset, math.max(80, itemWidth - ICON_SIZE - 8))
@@ -3643,6 +3657,14 @@ ApplyTableColumnLayout = function(frame)
         SetColumn(row.averageText, row, averageX - horizontalOffset, valueWidth)
         SetColumn(row.detailsButton, row, detailsX - horizontalOffset, detailsWidth)
         SetColumn(row.expansionText, row, expansionX - horizontalOffset, expansionWidth)
+    end
+end
+
+function GoldTracker:RefreshInstanceFarmingWindowLayout()
+    local frame = self.instanceFarmingFrame
+    ApplyTableColumnLayout(frame)
+    if frame and frame.libraryPanel and frame.libraryPanel:IsShown() then
+        self:RefreshInstanceFarmingLibraryWindow()
     end
 end
 
@@ -3758,6 +3780,10 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
         )
     end
     frame.displayRows = displayRows
+
+    if type(self.RecordDisplayedItemMarketSnapshots) == "function" then
+        self:RecordDisplayedItemMarketSnapshots(itemRows)
+    end
 
     local scrollFrame = frame.scrollFrame
     local visibleRows = GetInstanceFarmingVisibleRows(frame)
@@ -3875,7 +3901,7 @@ function GoldTracker:RefreshInstanceFarmingWindow(scrollToTop)
             row.trackButton:SetShown(not showingPets)
             row.mapButton:Show()
             row.detailsButton:SetShown(not showingPets and not showingTransmogs)
-            row.addButton:Show()
+            row.addButton:SetShown(self:GetActiveCustomFarm() ~= nil)
             row.trackButton:SetText(row.tracked and "-" or "<3")
             if row.trackButton.SetSelected then
                 row.trackButton:SetSelected(row.tracked)
@@ -4050,8 +4076,7 @@ function GoldTracker:CreateInstanceTransmogExpandedWindow()
     local frame = CreateFrame(
         "Frame",
         "GoldTrackerInstanceTransmogExpandedFrame",
-        UIParent,
-        "BasicFrameTemplateWithInset"
+        UIParent
     )
     frame:SetSize(TRANSMOG_EXPANDED_WINDOW_WIDTH, TRANSMOG_EXPANDED_WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
@@ -4149,7 +4174,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
         return
     end
 
-    local frame = CreateFrame("Frame", "GoldTrackerInstanceFarmingFrame", UIParent, "BasicFrameTemplateWithInset")
+    local frame = CreateFrame("Frame", "GoldTrackerInstanceFarmingFrame", UIParent)
     frame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("DIALOG")
@@ -4479,6 +4504,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
     progressBackdrop:SetPoint("TOPRIGHT", helpText, "BOTTOMRIGHT", 0, -8)
     progressBackdrop:SetHeight(14)
     frame.progressBackdrop = progressBackdrop
+    progressBackdrop:Hide()
     local progressBar = CreateFrame("StatusBar", nil, progressBackdrop)
     progressBar:SetAllPoints(progressBackdrop)
     progressBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -4646,9 +4672,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
         averageValue = frame.averageHeaderButton,
     }
     for sortKey, button in pairs(frame.sortHeaders) do
-        button:SetScript("OnClick", function()
-            self:ToggleInstanceFarmingSort(sortKey)
-        end)
+        self:BindTableSortHeaderClick(button, self.ToggleInstanceFarmingSort, sortKey)
     end
 
     local scrollFrame = CreateFrame("ScrollFrame", "GoldTrackerInstanceFarmingResultsScrollFrame", listPanel, "FauxScrollFrameTemplate")
@@ -4724,7 +4748,7 @@ function GoldTracker:CreateInstanceFarmingWindow()
             return
         end
         if frame.scanState then
-            self:Print("Instance farming scan continues in the background. Reopen the window to watch progress, or use Stop before closing next time.")
+            self:Print("Instance farming scan continues in the background. Reopen the window to watch progress, or use Stop before closing next time.", "scans")
         end
     end)
 

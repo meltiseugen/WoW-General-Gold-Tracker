@@ -569,15 +569,93 @@ describe("Core/FarmRoutePlanner", function()
         end)
     end)
 
-    it("declines a combined overview when route stops do not share a map parent", function()
+    it("opens separate map choices when route stops do not share a map parent", function()
         local catalog, gathering = build_catalog()
         with_planner(catalog, gathering, function(addon)
             local farm = addon:CreateCustomFarm("Cross-continent", true)
             add_catalog_target(addon, farm, 100, "Sword", catalog.farms[1].id, "instances")
             add_catalog_target(addon, farm, 2770, "Copper Ore", catalog.farms[2].id, "materials")
-            local overview, reason = addon:BuildCustomFarmRoutePlanOverview(farm.id)
+            local overview = assert(addon:BuildCustomFarmRoutePlanOverview(farm.id))
+            assert.equals(2, #overview.mapOptions)
+            for index, option in ipairs(overview.mapOptions) do
+                assert.equals(overview.plan[index].mapID, option.mapID)
+                assert.equals(index, option.pins[1].routeOrder)
+                assert.equals(overview.plan[index].x or 0.5, option.pins[1].x)
+                assert.equals(overview.plan[index].y or 0.5, option.pins[1].y)
+            end
+            local opened
+            addon.OpenStandaloneMapWindow = function(_, options) opened = options end
+            assert.is_true(addon:OpenCustomFarmRoutePlanOverview(farm.id))
+            assert.equals(2, #opened.mapOptions)
+            assert.matches("Choose a map", opened.detailLinesBuilder()[2].text)
+        end)
+    end)
+
+    it("falls back to source maps if a shared map cannot project every stop", function()
+        with_planner({}, {}, function(addon)
+            addon.GetCustomFarmByID = function() return { id = 1, name = "Sibling zones" } end
+            addon.BuildCustomFarmRoutePlan = function()
+                return {
+                    { mapID = 1, x = 0.2, y = 0.3 },
+                    { mapID = 2, x = 0.6, y = 0.7 },
+                    { mapID = 1, x = 0.8, y = 0.9 },
+                }
+            end
+            local overview = assert(addon:BuildCustomFarmRoutePlanOverview(1))
+            assert.equals(2, #overview.mapOptions)
+            local first = overview.mapOptions[1]
+            assert.equals(1, first.mapID)
+            assert.equals(2, #first.pins)
+            assert.equals(1, first.pins[1].routeOrder)
+            assert.equals(3, first.pins[2].routeOrder)
+            assert.equals(0.2, first.pins[1].x)
+            assert.equals(0.9, first.pins[2].y)
+            -- A visit to another map interrupts the line between these stops.
+            assert.is_false(first.pins[1].routeID == first.pins[2].routeID)
+        end, { mapInfo = {
+            [1] = { name = "West", parentMapID = 12 },
+            [2] = { name = "East", parentMapID = 12 },
+            [12] = { name = "Continent" },
+        }, getMapRectOnMap = function(childMapID)
+            if childMapID == 1 then return 0.1, 0.4, 0.2, 0.6 end
+        end })
+    end)
+
+    it("shows mapped stops and explicitly lists unresolved stops with their original numbers", function()
+        with_planner({}, {}, function(addon)
+            addon.GetCustomFarmByID = function() return { id = 1, name = "Unresolved" } end
+            addon.BuildCustomFarmRoutePlan = function()
+                return { {}, { mapID = 1, x = 0.2, y = 0.3 }, {}, { mapID = 1 } }
+            end
+            local overview = assert(addon:BuildCustomFarmRoutePlanOverview(1))
+            assert.equals(1, #overview.mapOptions)
+            assert.equals(2, overview.unmappedStopCount)
+            assert.equals(2, #overview.pins)
+            assert.equals(2, overview.pins[1].routeOrder)
+            assert.equals(4, overview.pins[2].routeOrder)
+            assert.is_false(overview.pins[1].routeID == overview.pins[2].routeID)
+            assert.is_true(overview.pins[2].approximate)
+            local opened
+            addon.OpenStandaloneMapWindow = function(_, options) opened = options end
+            assert.is_true(addon:OpenCustomFarmRoutePlanOverview(1))
+            local lines = opened.detailLinesBuilder()
+            assert.equals(6, #lines)
+            assert.matches("2 stops have no map data", lines[2].text)
+            assert.matches("map location unavailable", lines[3].text)
+            assert.matches("zone center", lines[6].text)
+        end)
+    end)
+
+    it("explains why an overview cannot open when no stops have map data", function()
+        with_planner({}, {}, function(addon)
+            addon.GetCustomFarmByID = function() return { id = 1, name = "Unresolved" } end
+            addon.BuildCustomFarmRoutePlan = function() return { {}, {} } end
+            addon.OpenStandaloneMapWindow = function() error("An overview without maps must not open") end
+            local overview, reason = addon:BuildCustomFarmRoutePlanOverview(1)
             assert.is_nil(overview)
-            assert.matches("do not share one parent map", reason, 1, true)
+            assert.matches("No route stops have map data", reason)
+            assert.is_false(addon:OpenCustomFarmRoutePlanOverview(1))
+            assert.equals(reason, addon.messages[1])
         end)
     end)
 

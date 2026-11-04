@@ -1,0 +1,11 @@
+## Interface: 120001, 120000
+## Title: General Gold Tracker - Map Data
+## Category: Auction & Economy
+## Group: General-Gold-Tracker
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
+## Notes: Terrain file IDs and exploration metadata, loaded when a GGT map needs them.
+## Dependencies: General-Gold-Tracker
+## LoadOnDemand: 1
+
+Namespace.lua
+TerrainIndex.lua

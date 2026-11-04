@@ -136,6 +136,24 @@ describe("UI/History date filtering and formatting", function()
 end)
 
 describe("UI/History data service", function()
+    it("uses recorded visits and the active-time preference for location rates", function()
+        local addon, constants, _, DataService = load_history_namespace()
+        addon.IsActiveTimeForGoldPerHourEnabled = function() return true end
+        local service = DataService:New(addon)
+        local session = {
+            startTime=100,stopTime=5000,activeDuration=140,
+            recordingPeriods={{startTime=100,stopTime=200},{startTime=4900,stopTime=5000}},
+            locationVisits={{locationKey="zone:1",startTime=100,stopTime=200},{locationKey="zone:1",startTime=4900,stopTime=5000}},
+            itemLoots={{mapID=1,timestamp=110,totalValue=10},{mapID=1,timestamp=4990,totalValue=20}},
+            moneyLoots={{mapID=1,timestamp=150,amount=5}},
+        }
+        local all = service:BuildHistoryDetailsSummary(session,constants.DETAILS_LOCATION_FILTER_ALL)
+        local location = service:BuildHistoryDetailsSummary(session,"loc:zone:1")
+        assert.equals(200,all.duration); assert.equals(140,all.rateDuration)
+        assert.equals(200,location.duration); assert.equals(140,location.rateDuration)
+        assert.equals("Recorded visits",location.timingLabel)
+        assert.equals("Estimated active loot time",location.rateBasis)
+    end)
     it("aggregates visible detailed loot by item, value source, and loot source", function()
         local _, constants, _, DataService = load_history_namespace()
         local service = DataService:New({

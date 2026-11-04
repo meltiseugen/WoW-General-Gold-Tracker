@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-26",
+  "scope": "Browser-only globe visual experiment for Azeroth. No globe projection is installed in the addon. The separate experimental map flag is implemented in the addon.",
+  "build": "12.1.5.70529",
+  "root_map_id": 947,
+  "root_art_id": 970,
+  "detail_context_map_id": 113,
+  "inputs": "Real GGT Lua renderer, native Blizzard art, fully revealed accepted Northrend zone masks/hatching; same geographic placements as the flat world scene. Prototype-only Scene forces Northrend painted detail at world scale for a two-level atlas. No reference-addon code or assets. The close endpoint uses a separate full-resolution accepted Northrend root render, preventing low world-atlas density from limiting local detail.",
+  "projection": "Schematic equirectangular placement of the existing illustrated map on a sphere, with drag rotation/tilt and zoom. The surface transitions to a local flat projection before close painted detail to avoid polar distortion of letters and coastlines. It does not establish canonical planetary latitude/longitude.",
+  "coverage": "Azeroth world painting, one Northrend painted-detail atlas blend and the accepted local Northrend root painting. Close minimap terrain, alt markers, other worlds and native interaction/performance are outside this browser prototype.",
+  "browser_verification": "Headless Chrome/SwiftShader: shader compiled; all three source images loaded; focus/zoom/reset and flat comparison changed pixels; QA valid true, no reported errors. Wide viewport and true 320-pixel iframe inspected. Close endpoint transitions into the existing local Northrend composition. Screenshots under .local/visualizations.",
+  "native_feasibility_inference": "The client exposes texture corner offsets (SetVertexOffset); a tessellated 2.5D overview followed by the existing flat renderer is a plausible route to investigate. A browser custom shader cannot be assumed to run in the WoW UI. Native masks, limb clipping, marker projection and texture budgets must be implemented and tested separately.",
+  "primary_api_source": "https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/SimpleTextureBaseAPIDocumentation.lua",
+  "source_sha256": {
+    ".local/visualizations/azeroth-globe.html": "76362de807ffda249885a2c5943c6aa06067b3587bf04b2a4fb028852f356ec0",
+    ".local/globe-prototype-scene.lua": "821551eb9ecc9438f06e315c1f5f2c7bb46000f49d7ba2b1391972f915951fd2",
+    ".local/build_globe_preview.py": "c1163b9c3a67abfb23996568633268bf4c54cc6114456b47dbecea0eca38020e",
+    "UI/Maps/MapScene.lua": "68968b676fee86db50b5d2d0d07ad0d4546052d58cd84c64247a6ce9afc16a1e",
+    "UI/Maps/MapRenderer.lua": "7f6ff94cbea97465fe8c589c0a519aac91b487ea8f3c71d9b08981236a67f63a",
+    "tools/preview_interactive_map.py": "69c3e45438cc02fd48642ce0cdaad9a33a4f0a0ce40030b1724b503da897bf98"
+  },
+  "copyright": "Map art is copyright Blizzard Entertainment.",
+  "fragment_size_bytes": 657847
+}

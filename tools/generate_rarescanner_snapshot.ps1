@@ -4,6 +4,13 @@ $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $AddOnsRoot = Split-Path -Parent $RepoRoot
 $RareScannerRoot = Join-Path $AddOnsRoot "RareScanner"
 $OutputPath = Join-Path $RepoRoot "Data\General-Gold-Tracker_Rares\RareDrops.lua"
+$catalogExclusions = Get-Content -LiteralPath (Join-Path $PSScriptRoot "catalog_exclusions.json") -Raw | ConvertFrom-Json
+$excludedItemIDs = [System.Collections.Generic.HashSet[int]]::new()
+foreach ($range in $catalogExclusions.darkmoonItemRanges) {
+    for ($itemID = $range[0]; $itemID -le $range[1]; $itemID++) {
+        [void] $excludedItemIDs.Add($itemID)
+    }
+}
 
 function ConvertTo-LuaString {
     param([string] $Value)
@@ -77,9 +84,14 @@ function Get-LootTable {
             continue
         }
 
+        if ([int] $match.Groups[1].Value -in $catalogExclusions.darkmoonNpcIDs -or $match.Groups[3].Value -match 'Darkmoon') {
+            continue
+        }
         $itemIDs = @()
         foreach ($itemMatch in [regex]::Matches($match.Groups[2].Value, "\d+")) {
-            $itemIDs += [int] $itemMatch.Value
+            if (-not $excludedItemIDs.Contains([int] $itemMatch.Value)) {
+                $itemIDs += [int] $itemMatch.Value
+            }
         }
         if ($itemIDs.Count -eq 0) {
             continue

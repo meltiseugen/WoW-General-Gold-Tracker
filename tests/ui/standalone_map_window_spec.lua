@@ -111,6 +111,10 @@ local function make_frame()
         self.shown = false
     end
 
+    function frame:SetShown(shown)
+        if shown then self:Show() else self:Hide() end
+    end
+
     function frame:SetScript(scriptName, handler)
         self.scripts = self.scripts or {}
         self.scripts[scriptName] = handler
@@ -193,6 +197,20 @@ local function make_frame()
 end
 
 describe("UI/StandaloneMapWindow", function()
+    it("focuses an already-visible map when the route overview opens it again", function()
+        local focused
+        local addon = loader.load_module("UI/StandaloneMapWindow.lua", {}, {
+            JanisTheme = { BringManagedWindowToFront = function(_, frame) focused = frame end },
+        })
+        local frame = make_frame()
+        frame:Show()
+        frame.Raise = function() end
+        addon.standaloneMapFrame = frame
+        addon.RefreshStandaloneMapWindow = function() end
+        addon:OpenStandaloneMapWindow({ mapID = 104, pins = {} })
+        assert.equals(frame, focused)
+    end)
+
     it("renders a source preview overlay independently and clears old art on a missing map", function()
         local addon = load_window()
         local standalone = { mapID = 999 }
@@ -1223,6 +1241,10 @@ describe("UI/StandaloneMapWindow", function()
                 pins = { { mapID = 100, x = 0.2, y = 0.3 } },
             })
             local button = addon.standaloneMapFrame.addToFarmButton
+            assert.is_false(button.shown)
+            addon.db = {}
+            local farm = addon:CreateCustomFarm("Map targets", true)
+            assert.is_true(button.shown)
             assert.equals("Add to farm", button.text)
             assert.equals("Project on BLizzard map", addon.standaloneMapFrame.projectButton.text)
             assert.equals(160, addon.standaloneMapFrame.projectButton.width)
@@ -1238,6 +1260,8 @@ describe("UI/StandaloneMapWindow", function()
             assert.equals("materials", captured.sourceType)
             assert.equals(1, #captured.mapSource.pins)
             assert.near(0.2, captured.row.x, 0.0001)
+            addon:FinishCustomFarmBuild(farm.id)
+            assert.is_false(button.shown)
         end)
     end)
 

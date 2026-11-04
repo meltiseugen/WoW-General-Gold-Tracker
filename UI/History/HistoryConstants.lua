@@ -1,8 +1,8 @@
 local _, NS = ...
 
 local HistoryConstants = {
-    ROW_HEIGHT = 40,
-    ROW_SPACING = 44,
+    ROW_HEIGHT = 52,
+    ROW_SPACING = 56,
     DETAILS_LOCATION_FILTER_ALL = "__all__",
 
     DATE_FILTER_ALL = "__all_time__",

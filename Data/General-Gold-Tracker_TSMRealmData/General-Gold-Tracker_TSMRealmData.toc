@@ -1,0 +1,13 @@
+## Interface: 120001, 120000
+## Title: General Gold Tracker - TSM Realm Prices
+## Category: Auction & Economy
+## Group: General-Gold-Tracker
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
+## Notes: Optional non-commodity realm prices from TSM downloads. Use /gttsm for diagnostics.
+## Dependencies: General-Gold-Tracker, TradeSkillMaster
+## DefaultState: enabled
+## SavedVariables: GGTTSMRealmDataSettings
+
+Namespace.lua
+Diagnostics.lua
+Capture.lua

@@ -1,0 +1,71 @@
+{
+  "researchedAt": "2026-10-23",
+  "scope": "Six missing visible Shadowlands Materials maps; 343 Composed entries excluded; Raid items checked (zero visible entries).",
+  "method": "Indexed public source pages, firsthand item comments and profession guides reviewed with the web tool; no raw tooltip download or new in-game coordinate verification is claimed. Existing input-route provenance is retained.",
+  "items": [
+    {
+      "itemID": 173056,
+      "itemName": "Umbral Pigment",
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=51005/milling",
+        "https://www.wowhead.com/item=175788/tranquil-pigment",
+        "https://www.wow-professions.com/guides/shadowlands-inscription-leveling-guide"
+      ],
+      "observation": "Seven eligible Shadowlands herbs supply random inscription pigments, including First Flower; the copied maps locate herb inputs."
+    },
+    {
+      "itemID": 173057,
+      "itemName": "Luminous Pigment",
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=51005/milling",
+        "https://www.wowhead.com/item=175788/tranquil-pigment",
+        "https://www.wow-professions.com/guides/shadowlands-inscription-leveling-guide"
+      ],
+      "observation": "Seven eligible Shadowlands herbs supply random inscription pigments, including First Flower; the copied maps locate herb inputs."
+    },
+    {
+      "itemID": 175788,
+      "itemName": "Tranquil Pigment",
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/spell=51005/milling",
+        "https://www.wowhead.com/item=175788/tranquil-pigment",
+        "https://www.wow-professions.com/guides/shadowlands-inscription-leveling-guide"
+      ],
+      "observation": "Seven eligible Shadowlands herbs supply random inscription pigments, including First Flower; the copied maps locate herb inputs."
+    },
+    {
+      "itemID": 177061,
+      "itemName": "Twilight Bark",
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=177061/twilight-bark",
+        "https://warcraft.wiki.gg/wiki/Twilight_Bark"
+      ],
+      "observation": "Mine Phaedrum and Rich Phaedrum Deposits in Ardenweald for chance bark byproducts; vendor stocks are not assumed."
+    },
+    {
+      "itemID": 186017,
+      "itemName": "Korthite Crystal",
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/guide/korthia-comprehensive-guide",
+        "https://www.wowhead.com/guide/daily-korthia-to-do-list-archivists-codex-reputation-rares-treasures",
+        "https://www.icy-veins.com/wow/korthia-zone-overview-and-guide"
+      ],
+      "observation": "Korthia daily reward selection varies; treasure/rare loot is chance-based and Shaping Fate has a documented weekly chest reward. Zone navigation is used without fabricated spawn pins."
+    },
+    {
+      "itemID": 189148,
+      "itemName": "Poultrid Lattice",
+      "status": "public-source-evidence-reviewed",
+      "sourceUrls": [
+        "https://www.wowhead.com/item=189148/poultrid-lattice",
+        "https://www.icy-veins.com/wow/protoform-synthesis-mount-and-pet-guide"
+      ],
+      "observation": "Interactable Avian Nests are the documented source; random zone spawns do not establish a fixed pin. A possible mob drop is an uncertain single report."
+    }
+  ]
+}
