@@ -2,4 +2,4 @@
 
 ### Next:
 
-- CONTINUE WITH MATERIALS REFINEMENT - NEXT IS CATA EXPANSION
+- add to the bags window and exclude proffesion items? exclude only current expansions items
