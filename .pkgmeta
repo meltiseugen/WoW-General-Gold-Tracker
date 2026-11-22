@@ -12,6 +12,8 @@ ignore:
   - BACKLOG.md
   - README.md
   - release.ps1
+  - PROMPTS.md
+  - CURSEFORGE.md
 
 move-folders:
   General-Gold-Tracker/Data/General-Gold-Tracker_Rares: General-Gold-Tracker_Rares
