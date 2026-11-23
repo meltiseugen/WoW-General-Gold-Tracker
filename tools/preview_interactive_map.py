@@ -87,14 +87,10 @@ def preview(root: Path, output: Path, download: bool, outland: bool = False,
             CreatePanel = function(_,parent) return widget(nil,nil,parent) end,
             CreateButton = function(_,parent) local b=widget(nil,nil,parent); b.label=b:CreateFontString();return b end,
         } }
-        GeneralGoldTrackerCatalogNamespace = ns
         for _,name in ipairs({"Geometry","ArtMaskIndex","OceanIndex","CornerFillIndex","WaterHatchingIndex","MapSource","MapScene","MapRenderer","InteractiveMap"}) do
             assert(loadfile(name == "MapRenderer" and rendererPath or name == "MapScene" and scenePath or "UI/Maps/"..name..".lua"))("General-Gold-Tracker",ns)
         end
-        addon.LoadCatalog=function()
-            assert(loadfile("Data/General-Gold-Tracker_MapData/TerrainIndex.lua"))()
-            return true
-        end
+        assert(loadfile("Data/General-Gold-Tracker_MapData/TerrainIndex.lua"))("General-Gold-Tracker", ns)
         map = addon:CreateInteractiveMapCard(widget(),"Map")
         map.viewport:SetSize(1000,650)
         map:SetSubject({ key="preview", mapID=zoneID, continentMapID=rootID,x=0.43,y=0.63,

@@ -3,8 +3,9 @@
 local ns = {}
 assert(loadfile("Data/FarmingItems.lua"))("General-Gold-Tracker", ns)
 local root = "Data/General-Gold-Tracker_Materials/"
-for line in io.lines(root .. "General-Gold-Tracker_Materials.toc") do
+for line in io.lines("General-Gold-Tracker.toc") do
     line = line:gsub("\r", "")
+    line = line:sub(1, #root) == root and line:sub(#root + 1) or ""
     if line:match("%.lua$") and line ~= "Namespace.lua" then
         assert(loadfile(root .. line))("General-Gold-Tracker", ns)
     end

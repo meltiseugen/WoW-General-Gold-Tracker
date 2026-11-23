@@ -62,25 +62,13 @@ def main() -> int:
         errors.append(f"TOC version must use semantic versioning, got: {version}")
 
     manifests = [(TOC_PATH, entries)]
-    for module_toc in sorted((REPO_ROOT / "Data").glob("General-Gold-Tracker_*/*.toc")):
-        module_headers, module_entries = parse_toc(module_toc)
-        if module_headers.get("Interface") != headers.get("Interface"):
-            errors.append(f"Catalog interface must match the main addon: {module_toc.name}")
-        if module_toc.stem == "General-Gold-Tracker_TSMRealmData":
-            if module_headers.get("LoadOnDemand", "0") != "0":
-                errors.append("TSM realm capture must load at startup")
-            if module_headers.get("Dependencies") != "General-Gold-Tracker, TradeSkillMaster":
-                errors.append("TSM realm capture must depend on GGT and TSM")
-            if module_headers.get("SavedVariables") != "GGTTSMRealmDataSettings" or "SavedVariablesPerCharacter" in module_headers:
-                errors.append("TSM realm module may save diagnostic preferences only")
-        else:
-            if module_headers.get("LoadOnDemand") != "1":
-                errors.append(f"Catalog must load on demand: {module_toc.name}")
-            if module_headers.get("Dependencies") != "General-Gold-Tracker":
-                errors.append(f"Catalog must depend on GGT: {module_toc.name}")
-        if not module_entries or module_entries[0] != "Namespace.lua":
-            errors.append(f"Catalog namespace must load first: {module_toc.name}")
-        manifests.append((module_toc, module_entries))
+    for module_toc in sorted((REPO_ROOT / "Data").rglob("*.toc")):
+        errors.append(f"Data must be bundled in the main addon, not a separate TOC: {module_toc}")
+    if "move-folders:" in (REPO_ROOT / ".pkgmeta").read_text(encoding="utf-8"):
+        errors.append("Packaging must keep data inside the main addon folder")
+    saved_variables = {name.strip() for name in headers.get("SavedVariables", "").split(",")}
+    if saved_variables != {"WoWGeneralGoldTrackerDB", "GGTTSMRealmDataSettings"}:
+        errors.append("Main addon must own tracker data and TSM diagnostic preferences")
 
     toc_runtime_files: set[str] = set()
     for manifest, manifest_entries in manifests:
