@@ -53,14 +53,13 @@ local function with_map(callback, experimental)
         loader.load_module("UI/Maps/MapScene.lua", addon)
         loader.load_module("UI/Maps/MapRenderer.lua", addon)
         loader.load_module("UI/Maps/InteractiveMap.lua", addon, { JanisTheme = theme })
-        addon.LoadCatalog = function()
+        do
             calls.data = calls.data + 1
             local tiles = {}
             for col = 0, 15 do for row = 0, 15 do tiles[#tiles + 1] = (col * 64 + row) .. ":" .. (9000 + col * 64 + row) end end
             sourceNS.MapTerrainData = { fogArt = { [200] = true }, clearArt = { [300] = true },
                 revealedOverlays = { [200] = "512,256,0,0|0:0:7002,1:0:7003" },
                 tiles = { [0] = table.concat(tiles, ",") } }
-            return true
         end
         local map = addon:CreateInteractiveMapCard(widget(), "Map")
         map.viewport:SetSize(800, 500)
@@ -1095,9 +1094,9 @@ describe("Interactive map", function()
         end)
     end)
 
-    it("loads terrain only at detail zoom and masks every terrain piece with the saved discovered shape", function()
+    it("uses bundled terrain at detail zoom and masks every piece with the saved discovered shape", function()
         with_map(function(addon, map, _, calls)
-            assert.equals(0, calls.data)
+            assert.equals(1, calls.data)
             addon.MapGeometry.ZoomAt(map.view, 8, 300, 200)
             map.view.x, map.view.y = 0.16, 0.3
             addon.MapGeometry.Constrain(map.view)
@@ -1186,9 +1185,10 @@ describe("Interactive map", function()
         end)
     end)
 
-    it("keeps painted maps usable when the optional terrain module is unavailable", function()
-        with_map(function(addon, map)
-            addon.LoadCatalog = function() return false, "missing" end
+    it("keeps painted maps usable when terrain data is unavailable", function()
+        with_map(function(addon, map, _, _, _, sourceNS)
+            sourceNS.MapTerrainData = nil
+            map.source.dataAttempted, map.source.data = nil, nil
             addon.MapGeometry.ZoomAt(map.view, 8, 400, 250)
             map:Render()
             assert.is_true(map.hasMapArt)

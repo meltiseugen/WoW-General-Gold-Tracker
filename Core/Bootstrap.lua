@@ -285,9 +285,6 @@ function GoldTracker:OnAddonLoaded(addonName)
         return
     end
 
-    if type(self.InitializeTSMRealmData) == "function" then
-        self:InitializeTSMRealmData()
-    end
     self:InitializeDatabase()
     if type(self.InitializeVisualTheme) == "function" then
         self:InitializeVisualTheme()

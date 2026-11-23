@@ -239,7 +239,6 @@ end
 function Source:TerrainData()
     if not self.dataAttempted then
         self.dataAttempted = true
-        if not rawget(NS, "MapTerrainData") and addon.LoadCatalog then addon:LoadCatalog("MapData") end
         self.data = rawget(NS, "MapTerrainData")
     end
     return self.data

@@ -268,7 +268,7 @@ function GoldTracker:RefreshItemRealmPriceTable(frame)
         if self.tsmRealmCapture then
             panel.status:SetText("No realm prices captured yet. Add realms in the TSM Desktop Application, wait for their downloads, then reload. Select Realm setup for instructions.")
         else
-            panel.status:SetText("Enable TSM Realm Prices (General Gold Tracker - TSM Realm Prices) in WoW's AddOns list, then reload. Select Realm setup for the TSM download steps.")
+            panel.status:SetText("No TSM realm prices captured. Enable TradeSkillMaster and AppHelper, download realm data in the TSM desktop app, then reload. Select Realm setup for the download steps.")
         end
     end
     for index, rowData in ipairs(data) do

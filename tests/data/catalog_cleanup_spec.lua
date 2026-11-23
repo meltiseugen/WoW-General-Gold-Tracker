@@ -5,8 +5,9 @@ local function load_catalogs()
     end
     load("Data/FarmingItems.lua")
     local root = "Data/General-Gold-Tracker_Materials/"
-    for line in io.lines(root .. "General-Gold-Tracker_Materials.toc") do
+    for line in io.lines("General-Gold-Tracker.toc") do
         line = line:gsub("\r", "")
+        line = line:sub(1, #root) == root and line:sub(#root + 1) or ""
         if line:match("%.lua$") and line ~= "Namespace.lua" then load(root .. line) end
     end
     for _, path in ipairs({ "Data/MaterialIndex.lua",

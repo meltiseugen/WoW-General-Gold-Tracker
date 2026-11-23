@@ -15,6 +15,7 @@ end
 for name in ("SetMultiLine SetMaxLetters SetFontObject ClearFocus SetFocus HighlightText"):gmatch("%S+") do
     methods[name] = noop
 end
+function methods:SetTexture(texture) self.texture = texture end
 function methods:GetStringHeight() return 24 end
 function methods:GetFont() return "font", 12, "" end
 function methods:GetNumLines() return 2 end
@@ -58,6 +59,8 @@ function methods:CreateTexture() return widget(nil, nil, self) end
 function methods:CreateFontString() return widget(nil, nil, self) end
 
 function M.with_ui(ns, callback)
+    local previousFactory = ns.CreateThemedFrame
+    ns.CreateThemedFrame = function(...) return _G.CreateFrame(...) end
     local theme = ns.JanisTheme
     local overrides = {
         CreatePanel = function(_, parent) return widget(nil, nil, parent) end,
@@ -83,6 +86,12 @@ function M.with_ui(ns, callback)
         loader.with_globals({
             CreateFrame = widget,
             UIParent = widget(),
+            GoldTrackerInventoryHorizontalScrollBarLow = widget(),
+            GoldTrackerInventoryHorizontalScrollBarHigh = widget(),
+            GoldTrackerInventoryHorizontalScrollBarText = widget(),
+            GoldTrackerAlertsHorizontalScrollBarLow = widget(),
+            GoldTrackerAlertsHorizontalScrollBarHigh = widget(),
+            GoldTrackerAlertsHorizontalScrollBarText = widget(),
             GameTooltip = {
                 Hide = noop, Show = noop, SetOwner = noop, ClearLines = noop,
                 SetHyperlink = noop, AddLine = noop, AddDoubleLine = noop,
@@ -101,6 +110,7 @@ function M.with_ui(ns, callback)
         }, callback)
     end)
     for key in pairs(overrides) do theme[key] = previous[key] end
+    ns.CreateThemedFrame = previousFactory
     if not ok then error(err, 0) end
 end
 return M

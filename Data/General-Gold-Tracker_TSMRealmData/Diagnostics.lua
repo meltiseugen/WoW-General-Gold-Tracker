@@ -97,10 +97,10 @@ function D.Report()
         end
     end
     if D.memoryKiB then
-        lines[#lines + 1] = string.format("WoW-attributed module memory=%.1f KiB; highest sample=%.1f KiB; samples=%d",
+        lines[#lines + 1] = string.format("WoW-attributed addon memory=%.1f KiB; highest sample=%.1f KiB; samples=%d",
             D.memoryKiB, D.peakKiB, D.samples)
     else
-        lines[#lines + 1] = "WoW-attributed module memory=unavailable"
+        lines[#lines + 1] = "WoW-attributed addon memory=unavailable"
     end
     lines[#lines + 1] = "Timing covers capture/query work only. Memory attribution can exclude strings shared with TSM; highest sample is not a true peak."
     return table.concat(lines, "\n")

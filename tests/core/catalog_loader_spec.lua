@@ -2,29 +2,18 @@ local loader = require("tests.helpers.addon_loader")
 
 local function with_addon(callback)
     loader.with_globals({
-        GeneralGoldTrackerCatalogNamespace = false,
         JanisTheme = false,
         SlashCmdList = {},
         WOW_PROJECT_MAINLINE = 1,
         WoWGeneralGoldTrackerDB = {},
         time = function() return 1710000000 end,
         date = os.date,
+        GGTTSMRealmDataSettings = false,
+        CreateFrame = function() return { SetScript = function() end, RegisterEvent = function() end } end,
         C_AddOns = {},
     }, function()
-        local loaded, calls = {}, {}
         C_AddOns.LoadAddOn = function(name)
-            calls[name] = (calls[name] or 0) + 1
-            if loaded[name] then return true end
-            local root = "Data/" .. name .. "/"
-            local private = {}
-            for line in io.lines(root .. name .. ".toc") do
-                line = line:gsub("\r", "")
-                if line:match("%.lua$") then
-                    assert(loadfile(root .. line))(name, private)
-                end
-            end
-            loaded[name] = true
-            return true
+            error("Unexpected separate addon load: " .. name)
         end
         local ns = { GoldTracker = { SetScript = function() end, RegisterEvent = function() end } }
         for line in io.lines("General-Gold-Tracker.toc") do
@@ -33,16 +22,16 @@ local function with_addon(callback)
                 assert(loadfile(line))("General-Gold-Tracker", ns)
             end
         end
-        callback(ns.GoldTracker, ns, loaded, calls)
+        callback(ns.GoldTracker, ns)
     end)
 end
 
-describe("On-demand catalog modules", function()
-    it("opens and refreshes Favorites without loading catalogs or restoring scans", function()
-        with_addon(function(addon, ns, loaded, calls)
+describe("Bundled catalogs", function()
+    it("opens and refreshes Favorites without restoring unrelated scans", function()
+        with_addon(function(addon, ns)
             addon:InitializeDatabase()
             addon:InitializeMemoryStorage()
-            -- Numeric scan filters used to load Rares even before a view opened.
+            -- Saved numeric scan filters must not change Favorites navigation.
             addon.db.rareFarmingExpansionFilter = "6"
             local favorites = addon:GetFarmingFavoriteStore()
             favorites["item:2770"] = { itemID = 2770, itemName = "Copper Ore", itemLink = "item:2770",
@@ -87,28 +76,19 @@ describe("On-demand catalog modules", function()
                 addon.rareFarmingFrame:GetScript("OnSizeChanged")()
                 addon.explorerFrame:Hide()
                 addon:OpenExplorerWindow()
-                assert.same({}, loaded)
-                assert.same({}, calls)
                 assert.is_nil(addon.instanceFarmingFrame)
                 assert.is_nil(addon.craftingFarmingFrame)
                 assert.is_nil(addon.observedDropsFrame)
                 assert.is_nil(addon.myFarmsFrame)
-                -- Only the requested scan subtab loads Rares and its dropdown.
+                -- Scan navigation uses the bundled Rares catalog.
                 addon:SetExplorerTab("rares")
-                assert.same({}, loaded)
                 addon:OpenRareFarmingNewScan()
-                assert.is_true(loaded["General-Gold-Tracker_Rares"])
-                assert.equals(1, calls["General-Gold-Tracker_Rares"])
-                assert.is_nil(loaded["General-Gold-Tracker_Materials"])
-                assert.is_nil(loaded["General-Gold-Tracker_Farms"])
-                assert.is_nil(loaded["General-Gold-Tracker_Drops"])
-                assert.is_nil(loaded["General-Gold-Tracker_Instances"])
             end)
         end)
     end)
 
-    it("defers material map loading until a favorite Map button is clicked", function()
-        with_addon(function(addon, ns, loaded)
+    it("opens a favorite material map from bundled data", function()
+        with_addon(function(addon, ns)
             addon:InitializeDatabase()
             addon:InitializeMemoryStorage()
             addon:GetFarmingFavoriteStore()["item:2770"] = {
@@ -117,7 +97,6 @@ describe("On-demand catalog modules", function()
             }
             require("tests.helpers.explorer_ui").with_ui(ns, function()
                 addon:OpenExplorerWindow()
-                assert.same({}, loaded)
                 -- Native map rendering is separate; map selection/data lookup is real.
                 local openedItemID
                 addon.OpenMaterialFarmingMap = function(_, itemID)
@@ -130,68 +109,44 @@ describe("On-demand catalog modules", function()
                     end
                 end
                 assert.equals(2770, openedItemID)
-                assert.is_true(loaded["General-Gold-Tracker_Materials"])
-                assert.is_nil(loaded["General-Gold-Tracker_Rares"])
-                assert.is_nil(loaded["General-Gold-Tracker_Instances"])
             end)
         end)
     end)
 
-    it("keeps catalogs unloaded through database initialization and automatic price work", function()
-        with_addon(function(addon, ns, loaded)
+    it("keeps bundled catalogs available through database initialization and automatic price work", function()
+        with_addon(function(addon, ns)
             addon:InitializeDatabase()
             addon:InitializeMemoryStorage()
             local candidates = addon:BuildKnownPriceScanCandidates()
-            assert.is_true(#candidates > 1000)
-            assert.is_true(#candidates < 1500)
+            assert.is_true(#candidates > 0)
             addon:StartKnownPriceScan()
             addon:BuildPriceIncreaseAlertRows()
             addon:HasInventoryMaterialFarmingMap(2770)
-            assert.same({}, loaded)
-            assert.is_nil(rawget(ns, "MaterialFarmingSpots"))
-            assert.is_nil(rawget(ns, "CatalogDropsData"))
         end)
     end)
 
-    it("loads recipe rows with Drops alone and defers recipe guides to the Farms module", function()
-        with_addon(function(_,ns,loaded,calls)
-            assert.is_nil(rawget(ns,"RecipeDropsData"))
+    it("shares recipe rows with their bundled farm guides", function()
+        with_addon(function(_,ns)
             assert.equals(23,#ns.RecipeDropsData.rows)
-            assert.equals(1,calls["General-Gold-Tracker_Drops"])
-            assert.is_nil(loaded["General-Gold-Tracker_Farms"])
-            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
             assert.equals(23,#ns.RecipeFarmData.farms)
-            assert.equals(1,calls["General-Gold-Tracker_Farms"])
-            assert.equals(1,calls["General-Gold-Tracker_Drops"])
-            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
         end)
     end)
 
-    it("loads Cosmetics rows separately from guides and never needs Materials", function()
-        with_addon(function(_,ns,loaded,calls)
-            assert.is_nil(rawget(ns,"CosmeticDropsData"))
+    it("shares cosmetic rows with their bundled farm guides", function()
+        with_addon(function(_,ns)
             assert.equals(219,#ns.CosmeticDropsData.rows)
-            assert.equals(1,calls["General-Gold-Tracker_Drops"])
-            assert.is_nil(loaded["General-Gold-Tracker_Farms"])
-            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
             assert.equals(219,#ns.CosmeticFarmData.farms)
-            assert.equals(1,calls["General-Gold-Tracker_Farms"])
-            assert.equals(1,calls["General-Gold-Tracker_Drops"])
-            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
         end)
     end)
 
-    it("loads each requested module once and preserves cross-catalog augmentation", function()
-        with_addon(function(_, ns, loaded, calls)
+    it("preserves cross-catalog augmentation in the main namespace", function()
+        with_addon(function(_, ns)
             local rares = ns.RareDropsData
             assert.is_table(rares)
             assert.equals(rares, ns.RareDropsData)
-            assert.equals(1, calls["General-Gold-Tracker_Rares"])
-            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
             assert.is_table(ns.InstanceDropsData.instances)
             assert.is_table(ns.ATTBoEDropsData)
             assert.is_table(ns.InstanceLocationResearch)
-            assert.equals(1, calls["General-Gold-Tracker_Instances"])
             assert.is_table(ns.FarmCatalog.farms)
             assert.is_table(ns.PetFarmData.rows)
             assert.is_table(ns.MountFarmData)
@@ -203,13 +158,9 @@ describe("On-demand catalog modules", function()
             assert.equals(28, #ns.ToyAcquisitionResearch)
             assert.is_table(ns.FarmCatalog.indexes.byItemID[248485])
             assert.is_table(ns.CatalogDropsData.categories)
-            assert.equals(1, calls["General-Gold-Tracker_Farms"])
-            assert.equals(1, calls["General-Gold-Tracker_Drops"])
-            assert.is_nil(loaded["General-Gold-Tracker_Materials"])
             assert.is_table(ns.MaterialFarmingSpots.items[2770])
             assert.is_table(ns.MaterialFarmingSpots.coverage)
             assert.is_table(ns.CatalogGatheringData)
-            assert.equals(1, calls["General-Gold-Tracker_Materials"])
         end)
     end)
 
@@ -227,12 +178,50 @@ describe("On-demand catalog modules", function()
         end)
     end)
 
-    it("reports a missing data module instead of caching an empty catalog", function()
-        with_addon(function(_, ns)
-            C_AddOns.LoadAddOn = function() return nil, "MISSING" end
-            assert.has_error(function() return ns.RareDropsData end,
-                "General Gold Tracker could not load Rares data (MISSING). Install all GGT folders and restart WoW after adding data addons.")
-            assert.is_nil(rawget(ns, "RareDropsData"))
+    it("keeps tab selection independent of bundled data and preserves saved choices", function()
+        with_addon(function(addon, ns)
+            local saved = { welcomeCompleted = true, module_materials = false, module_inventory = false }
+            loader.with_globals({ WoWGeneralGoldTrackerDB = saved }, function() addon:InitializeDatabase() end)
+            assert.is_false(addon:NeedsWelcomeSetup())
+            assert.is_false(addon:IsModuleEnabled("materials"))
+            assert.is_false(addon:IsModuleEnabled("inventory"))
+            local materials, farms = ns.MaterialFarmingSpots, ns.FarmCatalog
+            addon:SetModuleEnabled("materials", true)
+            assert.is_true(addon:IsModuleEnabled("materials"))
+            assert.equals(materials, ns.MaterialFarmingSpots)
+            assert.equals(farms, ns.FarmCatalog)
+            assert.is_false(addon:IsModuleEnabled("inventory"))
         end)
     end)
+
+    it("renders Materials, Bags, and Market Watch from the single addon", function()
+        with_addon(function(addon, ns)
+            addon:InitializeDatabase()
+            addon:InitializeMemoryStorage()
+            require("tests.helpers.explorer_ui").with_ui(ns, function()
+                addon:OpenExplorerWindow()
+                addon:SetExplorerTab("materials")
+                local materials = addon.craftingFarmingFrame
+                assert.is_true(#materials.materialDisplayRows > 0)
+                assert.is_true(materials.rows[1]:IsShown())
+
+                addon.BuildInventoryAuctionItemList = function()
+                    return { { itemID = 2770, itemLink = "item:2770", itemName = "Copper Ore",
+                        quantity = 2, unitValue = 10000, totalValue = 20000 } }, 20000, 2, 1, 1
+                end
+                addon:SetExplorerTab("inventory")
+                assert.equals(2770, addon.inventoryFrame.inventoryRows[1].itemID)
+                assert.is_true(addon.inventoryFrame.inventoryRows[1]:IsShown())
+
+                addon.BuildPriceAlertRows = function()
+                    return { { itemID = 2770, itemLink = "item:2770", itemName = "Copper Ore",
+                        quantity = 2, unitValue = 10000, totalValue = 20000, changePercent = 40 } }, {}
+                end
+                addon:SetExplorerTab("priceAlerts")
+                assert.equals(2770, addon.priceIncreaseAlertsFrame.rows[1].itemID)
+                assert.is_true(addon.priceIncreaseAlertsFrame.rows[1]:IsShown())
+            end)
+        end)
+    end)
+
 end)

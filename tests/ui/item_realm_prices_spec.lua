@@ -209,13 +209,13 @@ describe("Item details realm prices", function()
         end)
     end)
 
-    it("keeps details usable with the optional module disabled", function()
+    it("keeps details usable without captured realm data", function()
         with_details(function(addon)
             addon.GetCapturedTSMRealms = function() return {} end
             addon:OpenInventoryItemDetailsWindow({ itemID = 6331, itemClassID = 4 })
             local frame = addon.inventoryItemDetailsFrame
             assert.is_true(frame.realmPricesPanel:IsShown())
-            assert.matches("Enable TSM Realm Prices", frame.realmPricesPanel.status:GetText())
+            assert.matches("No TSM realm prices captured", frame.realmPricesPanel.status:GetText())
             assert.equals(0, #frame.realmPricesPanel.data)
             assert.equals("0 realms available", frame.realmPricesPanel.realmCount:GetText())
             assert.is_true(frame.realmPricesPanel.setupButton:IsShown())

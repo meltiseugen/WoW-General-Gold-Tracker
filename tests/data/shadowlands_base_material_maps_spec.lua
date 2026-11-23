@@ -10,8 +10,9 @@ end
 local function load_maps()
     local ns = {GoldTracker={}}
     assert(loadfile("Data/FarmingItems.lua"))("GGT",ns)
-    for line in io.lines(ROOT .. "General-Gold-Tracker_Materials.toc") do
+    for line in io.lines("General-Gold-Tracker.toc") do
         line = line:gsub("\r","")
+        line = line:sub(1, #ROOT) == ROOT and line:sub(#ROOT + 1) or ""
         if line:match("%.lua$") and line ~= "Namespace.lua" and line ~= MODULE then
             assert(loadfile(ROOT .. line))("GGT",ns)
         end

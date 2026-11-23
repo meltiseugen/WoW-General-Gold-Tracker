@@ -37,33 +37,19 @@ Open `/gt options`, then **Appearance** to choose Midnight Classic, Ember Parchm
 ### Option 2: Manual install (ZIP)
 1. Download the addon ZIP.
 2. Extract it.
-3. Move all eight addon folders into:
+3. Move the single `General-Gold-Tracker` folder into:
    `World of Warcraft/_retail_/Interface/AddOns/`
-4. Confirm these folders are beside each other:
-   - `General-Gold-Tracker`
-   - `General-Gold-Tracker_Rares`
-   - `General-Gold-Tracker_Instances`
-   - `General-Gold-Tracker_Drops`
-   - `General-Gold-Tracker_Materials`
-   - `General-Gold-Tracker_Farms`
-   - `General-Gold-Tracker_TSMRealmData` (optional TSM realm comparisons)
-   - `General-Gold-Tracker_MapData` (terrain detail for interactive maps)
-5. Fully exit and restart WoW after adding these folders so it discovers the
-   bundled addons. `/reload` is sufficient for later file updates once all eight
-   folders have been discovered.
+4. Keep its `Data` folder inside the addon. All catalogs, map data, and TSM realm
+   support ship and load together with the main addon.
+5. Restart WoW after the first installation. Use `/reload` for later file updates.
 
 ### Option 3: Development checkout
 
-With the repository at `Interface/AddOns/General-Gold-Tracker`, run this in
-PowerShell from the repository root:
-
-```powershell
-.\tools\install_catalog_modules.ps1
-```
-
-This links the five bundled catalogs, map data, and optional TSM realm module into adjacent
-addon folders so local edits stay in sync. Fully exit and restart WoW after the first installation.
-Missing catalog folders prevent Explorer from displaying their data.
+Place the repository directly at `Interface/AddOns/General-Gold-Tracker`.
+No installer or sibling addon folders are required. On first updating from the
+older split-addon layout, fully restart WoW to refresh its AddOns list. Old
+`General-Gold-Tracker_*` sibling folders are obsolete; keep all data under the
+main addon's `Data` directory.
 
 ---
 
@@ -220,18 +206,15 @@ The generator scripts are developer tools and are excluded from packaged CurseFo
 
 ### Catalog loading and memory
 
-Explorer's large datasets are separate load-on-demand addons: `General-Gold-Tracker_Rares`,
-`General-Gold-Tracker_Instances`, `General-Gold-Tracker_Drops`, `General-Gold-Tracker_Materials`,
-and `General-Gold-Tracker_Farms`. Install every folder from the release ZIP. A catalog loads
-when a feature reads it, including an active farm that needs its route data. Opening Inventory
-or Market Watch does not itself require the full material/location catalog. Once loaded, catalogs
-remain available until the next UI reload; closing a window releases rebuildable view caches.
+All Explorer catalogs, farm guides, material locations, map data, and TSM realm
+support are bundled inside `General-Gold-Tracker`. The main TOC loads them into
+one shared namespace at startup. There are no separate data addons or development
+junctions to install. This uses more startup memory than the older on-demand
+layout; closing windows still releases rebuildable view caches.
 
-For a development checkout directly in `Interface/AddOns`, run
-`powershell -NoProfile -ExecutionPolicy Bypass -File tools/install_catalog_modules.ps1`.
-This creates sibling junctions to the five catalogs, map data, and the optional TSM realm module without copying the datasets.
-Restart WoW completely once after adding them. Release packaging puts the modules in the
-same sibling layout through `.pkgmeta`; end users do not need the development script.
+The welcome window and **Options > Modules** select which Explorer tabs to show.
+These choices apply immediately and preserve saved data. Hiding a tab does not
+unload its shared catalog or prevent another tab from using it.
 
 ### Interactive Alts map
 
@@ -266,8 +249,8 @@ Bank alts. Pan and zoom into its continents and zones; **Reset view** returns to
 the whole selected world. Characters without usable saved coordinates are counted
 as unavailable rather than assigned an approximate marker.
 
-The map component is original GGT code and does not require OpenMap. MapData loads
-when an interactive map needs its painted overlays or terrain. Map art remains in the game client and is
+The map component is original GGT code and does not require OpenMap. Map data is bundled
+with the main addon for painted overlays and terrain. Map art remains in the game client and is
 copyright Blizzard Entertainment.
 
 ### Optional TSM realm prices and diagnostics
@@ -283,19 +266,16 @@ hover a value for its TSM source, snapshot time, and any base-item/species fallb
 Long values use horizontal scrolling and longer realm lists scroll vertically.
 The always-available **Realm setup** button opens the setup steps in Help > Value
 Sources. The table shows the available realm count, invites additional realms when
-only one is captured, and explains how to enable the optional module when needed.
+only one is captured, and provides the TSM download steps when no realms are available.
 
-`General Gold Tracker - TSM Realm Prices` captures non-commodity prices from the
-realms downloaded by the TSM desktop app. Its source is under
-`Data/General-Gold-Tracker_TSMRealmData/` and it ships in the same release as GGT.
-Unlike the catalogs, it loads during startup, before AppHelper delivers its data.
-It requires GGT and TradeSkillMaster. TSM and AppHelper files are never modified.
+Bundled TSM realm support captures non-commodity prices from realms downloaded
+by the TSM desktop app. Its source is under `Data/General-Gold-Tracker_TSMRealmData/`.
+It runs during main-addon startup, before AppHelper delivers its data. TradeSkillMaster
+remains optional: GGT works without it, and TSM and AppHelper files are never modified.
 
-Disable this module in WoW's AddOns list and reload to remove its hook, captured
-payloads, decoder, and profiling state. GGT's normal current-realm TSM pricing
-continues working. Captured data remains in memory only and refreshes at login
-or `/reload`, after the desktop app updates its files. There is no background
-price polling or full decoded price database.
+Captured data remains in memory only and refreshes at login or `/reload`, after
+the desktop app updates its files. There is no background price polling or full
+decoded price database.
 
 Diagnostics are explicit and do not produce startup chat messages:
 
@@ -310,16 +290,16 @@ Diagnostics are explicit and do not produce startup chat messages:
 
 Status/copy reports show hook timing, dataset timestamps, retained payload bytes
 per realm, payload high-water size, and errors. Capture/query counters and elapsed
-time (total, average, maximum) are always available. WoW-attributed module memory
+time (total, average, maximum) are always available. WoW-attributed addon memory
 is sampled at login and on diagnostic reports. Payload bytes are not additional
-RAM: strings shared with TSM may be attributed to TSM instead of this module.
+RAM: strings shared with TSM may be attributed to TSM instead of GGT.
 
 `profile on` enables native per-call execution/allocation measurements where
 supported and samples attributed memory every five seconds; `profile off` cancels
 that timer. Only the profiling preference is saved: enable it and `/reload` to
 measure startup capture allocations as well. Highest sampled memory is not a true
 peak, allocated bytes are cumulative allocation traffic, and timings cover this
-module's capture/query work rather than all TSM processing. No global profiler
+feature's capture/query work rather than all TSM processing. No global profiler
 settings or garbage collections are forced. `reset` clears diagnostic metrics
 while retaining prices. `copy` opens a report for Ctrl+A / Ctrl+C.
 
@@ -330,7 +310,8 @@ so Market Watch eligibility, metadata and map availability stay aligned with the
 Startup migrates automatic known-price records to priced materials used by Market Watch. Detailed
 market snapshots use a compact saved format that retains their values and respects the
 existing retention settings. Session history, favorites, user maps and farms are preserved.
-See [the memory change report](docs/MEMORY_OPTIMIZATION.md) for measurements and validation.
+The [earlier memory change report](docs/MEMORY_OPTIMIZATION.md) records the historical
+split-addon layout; its startup-memory measurements do not describe this bundled layout.
 
 Item price graphs collect an observation whenever a valued item list is displayed in
 Materials (including the expanded view), Instances, Rares, Drops, Bags, Favorites,

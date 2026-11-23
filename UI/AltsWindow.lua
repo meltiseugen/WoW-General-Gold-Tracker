@@ -348,15 +348,80 @@ local function LayoutAltMaps(frame, continentView)
     frame.localMap:ClearAllPoints()
     local top = frame.mapExpanded and 0 or (frame.hasAssignedFarms and not continentView and 90 or 60)
     frame.localMap:SetPoint("TOPLEFT", 0, -top)
-    frame.localMap:SetPoint("BOTTOMRIGHT", 0, 20)
+    if frame.showContinentMap then
+        frame.localMap:SetPoint("BOTTOMRIGHT", frame.detailsPanel, "BOTTOM", -5, 20)
+        frame.continentMap:ClearAllPoints()
+        frame.continentMap:SetPoint("TOPLEFT", frame.detailsPanel, "TOP", 5, -top)
+        frame.continentMap:SetPoint("BOTTOMRIGHT", frame.detailsPanel, "BOTTOMRIGHT", 0, 20)
+        frame.continentMap:Show()
+    else
+        frame.localMap:SetPoint("BOTTOMRIGHT", 0, 20)
+        frame.continentMap:Hide()
+    end
+    frame.localMap.heading:ClearAllPoints()
+    frame.localMap.heading:SetPoint("TOPLEFT", 12, -12)
+    frame.localMap.heading:SetPoint("TOPRIGHT", frame.showContinentMap and -105 or -296, -12)
+    frame.localMap.resetButton:ClearAllPoints()
+    frame.localMap.resetButton:SetPoint("TOPRIGHT", frame.showContinentMap and -10 or -102, -6)
+    frame.localMap.centerButton:SetShown(not frame.showContinentMap)
+    frame.localMap.expandButton:SetShown(not frame.showContinentMap)
     frame.destinationPanel:SetShown(not continentView and frame.detailsOpen == true and not frame.mapExpanded)
     frame.localMap.resetButton.label:SetText(continentView and "Fit continent" or "Fit zone")
     frame.localMap.centerButton:SetEnabled(not continentView and frame.localMap.hasMapArt
         and frame.localMap.x ~= nil and frame.localMap.y ~= nil)
 end
 
+local function ResolveDisplayedAltLocation(location)
+    if not location or location.mapID ~= location.continentMapID or not location.x or not location.y
+        or not C_Map then return location end
+    local ok, child, x, y = pcall(function()
+        local candidate = type(C_Map.GetMapInfoAtPosition) == "function"
+            and C_Map.GetMapInfoAtPosition(location.mapID, location.x, location.y, true)
+        if not candidate or not candidate.mapID or candidate.mapID == location.mapID
+            or (candidate.mapType or 0) ~= 3 then candidate = nil end
+        local function rectPosition(info)
+            if not info or type(C_Map.GetMapRectOnMap) ~= "function" then return end
+            local l, r, t, b = C_Map.GetMapRectOnMap(info.mapID, location.mapID)
+            if type(l) ~= "number" or type(r) ~= "number" or type(t) ~= "number" or type(b) ~= "number"
+                or r <= l or b <= t or location.x < l or location.x > r or location.y < t or location.y > b then return end
+            return (location.x - l) / (r - l), (location.y - t) / (b - t), (r - l) * (b - t)
+        end
+        if candidate and C_Map.GetWorldPosFromMapPos and C_Map.GetMapPosFromWorldPos and type(CreateVector2D) == "function" then
+            local worldID, world = C_Map.GetWorldPosFromMapPos(location.mapID, CreateVector2D(location.x, location.y))
+            if world then
+                local id, point = C_Map.GetMapPosFromWorldPos(worldID, world, candidate.mapID)
+                if id == candidate.mapID and point then
+                    local px, py = point:GetXY()
+                    if type(px) == "number" and type(py) == "number" and px >= 0 and px <= 1 and py >= 0 and py <= 1 then
+                        return candidate, px, py
+                    end
+                end
+            end
+        end
+        if candidate then
+            local px, py = rectPosition(candidate)
+            if px then return candidate, px, py end
+        end
+        if type(C_Map.GetMapChildrenInfo) ~= "function" then return end
+        local best, bestX, bestY, bestArea
+        for _, info in ipairs(C_Map.GetMapChildrenInfo(location.mapID, 3, true) or {}) do
+            if info.mapType == 3 then
+                local px, py, area = rectPosition(info)
+                if px and (not bestArea or area < bestArea) then best, bestX, bestY, bestArea = info, px, py, area end
+            end
+        end
+        return best, bestX, bestY
+    end)
+    if not ok or not child or type(x) ~= "number" or type(y) ~= "number" then return location end
+    local resolved = {}
+    for key, value in pairs(location) do resolved[key] = value end
+    resolved.mapID, resolved.mapName, resolved.x, resolved.y = child.mapID, child.name, x, y
+    resolved.parentMapID, resolved.parentX, resolved.parentY = location.mapID, location.x, location.y
+    return resolved
+end
+
 local function ConfigureInteractiveAltMap(addon, frame, character, overview)
-    local location = character and character.location
+    local location = character and (frame.displayedAltLocation or character.location)
     local mapID = overview and overview.mapID or location and location.mapID
     local continentID = overview and overview.mapID or location and location.continentMapID
     local records, revisions = {}, {}
@@ -427,6 +492,7 @@ function GoldTracker:RefreshAltsWindowLayout()
     LayoutAltMaps(frame, frame.selectedContinentID ~= nil)
     frame.content:SetWidth(math.max(1, frame.scrollFrame:GetWidth()))
     frame.localMap:Resize()
+    if frame.showContinentMap then frame.continentMap:Resize() end
 end
 
 local function RefreshDestinationPanel(addon, frame, character)
@@ -772,6 +838,7 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
     if frame.selectedContinentID then
         local overview = self:BuildAltContinentMap(frame.selectedContinentID)
         if overview then
+            frame.showContinentMap = false
             LayoutAltMaps(frame, true)
             frame.characterTitle:SetText(overview.name)
             frame.locationText:SetText(overview.characterCount .. " characters · Last recorded locations")
@@ -787,8 +854,12 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
         end
         frame.selectedContinentID = nil
     end
-    LayoutAltMaps(frame, false)
     local character = characters[frame.selectedGUID]
+    local selectedLocation = ResolveDisplayedAltLocation(character and character.location)
+    frame.displayedAltLocation = selectedLocation
+    frame.showContinentMap = selectedLocation and selectedLocation.mapID and selectedLocation.continentMapID
+        and selectedLocation.mapID ~= selectedLocation.continentMapID or false
+    LayoutAltMaps(frame, false)
     if character then
         local roleLabels = self:GetAltCharacterRoles(frame.selectedGUID)
         frame.roleButton.label:SetText(#roleLabels > 0 and ("Roles (" .. #roleLabels .. ")") or "Roles")
@@ -832,6 +903,30 @@ function GoldTracker:RefreshAltsWindow(refreshCurrentLocation)
     frame.noProfessions.hasText = character ~= nil and not previous
     frame.noProfessions:SetText(character and character.professions and "No primary professions" or "Professions not recorded yet")
     ConfigureInteractiveAltMap(self, frame, character)
+    if frame.showContinentMap then
+        local overview = self:BuildAltContinentMap(selectedLocation.continentMapID)
+        local selectedPins = {}
+        for _, pin in ipairs(overview and overview.pins or {}) do
+            if pin.guid == frame.selectedGUID then selectedPins[#selectedPins + 1] = pin end
+        end
+        if #selectedPins == 0 and selectedLocation.parentMapID == selectedLocation.continentMapID
+            and selectedLocation.parentX and selectedLocation.parentY then
+            selectedPins[1] = { guid = frame.selectedGUID, name = character.name,
+                label = character.name, x = selectedLocation.parentX, y = selectedLocation.parentY,
+                professions = character.professions }
+        end
+        frame.continentMap:SetSubject({
+            key = "alt-continent:" .. tostring(frame.selectedGUID) .. ":" .. tostring(selectedLocation.continentMapID),
+            revision = character.mapExplorationRevision,
+            mapID = selectedLocation.continentMapID, continentMapID = selectedLocation.continentMapID,
+            heading = "Continent ? " .. (selectedLocation.continentName or "Unknown"),
+            pins = selectedPins,
+            getArt = function(id) return character.mapArtSnapshots and character.mapArtSnapshots[id] end,
+            renderPins = function(card) RenderCharacterPins(card, card.view.width, card.view.height) end,
+            revealAll = true,
+            emptyText = "Continent map unavailable",
+        })
+    end
     self:RefreshAltsWindowLayout()
 end
 
@@ -994,6 +1089,9 @@ function GoldTracker:CreateAltsWindow()
     panel.refreshButton = Theme:CreateButton(panel, 110, 24, "Refresh location", "neutral")
     panel.refreshButton:SetPoint("LEFT", panel.clearButton, "RIGHT", 6, 0)
     panel.refreshButton:SetScript("OnClick", function() self:RefreshAltsWindow(true) end)
+    frame.continentMap = self:CreateInteractiveMapCard(frame.detailsPanel, "Continent")
+    frame.continentMap:SetCompactFooter(true)
+    frame.continentMap:Hide()
     frame.localMap = self:CreateInteractiveMapCard(frame.detailsPanel, "Location")
     frame.localMap:SetCompactFooter(true)
     frame.localMap.heading:ClearAllPoints()

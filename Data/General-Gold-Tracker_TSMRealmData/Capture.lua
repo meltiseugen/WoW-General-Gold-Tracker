@@ -166,7 +166,7 @@ end
 function GoldTracker:BuildTSMRealmCaptureReport(query)
     local realms = SortedRealms()
     local lines = {
-        "GGT TSM Realm Prices v1 (optional module; session memory only)",
+        "GGT TSM Realm Prices v1 (bundled; session memory only)",
         "TSM=" .. Version("TradeSkillMaster") .. "; AppHelper=" .. Version("TradeSkillMaster_AppHelper"),
         "Current realm=" .. (type(GetRealmName) == "function" and GetRealmName() or "unknown"),
         "Hook=" .. (state.hooked and "installed" or "NOT installed")
@@ -251,7 +251,7 @@ local function ShowCopy(report)
     frame.edit:HighlightText()
 end
 
--- Run immediately, while TSM (our dependency) is loaded and AppHelper should
+-- Run immediately, while TSM (our optional dependency) is loaded and AppHelper should
 -- still be pending. A separate frame also catches a delayed TSM load, but cannot
 -- recover payloads that arrived before this file executed.
 InstallHook()

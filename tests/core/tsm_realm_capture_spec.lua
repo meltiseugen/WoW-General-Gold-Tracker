@@ -5,14 +5,12 @@ local function with_capture(options, callback)
     local originalCalls, kept, messages, frames = {}, {}, {}, {}
     local clock, loads, samples, tickers = 0, 0, 0, {}
     local globals = {
-        GeneralGoldTrackerCatalogNamespace = false,
         GGTTSMRealmDataSettings = false,
         C_AddOnProfiler = false,
         GetTimePreciseSec = function() clock = clock + 0.001; return clock end,
         C_AddOns = {
             IsAddOnLoaded = function() return options.late == true end,
             GetAddOnMetadata = function() return "test" end,
-            GetAddOnEnableState = function() return options.disabled and 0 or 2 end,
             UpdateAddOnMemoryUsage = function() samples = samples + 1 end,
             GetAddOnMemoryUsage = function() return options.memory or 100 end,
         },
@@ -51,7 +49,7 @@ local function with_capture(options, callback)
             end,
         },
     }
-    if options.missing then globals.TSM_APPHELPER_LOAD_DATA = false end
+    if options.missing or options.noTSM then globals.TSM_APPHELPER_LOAD_DATA = false end
     if options.native then
         globals.C_AddOnProfiler = {
             MeasureCall = function(fn, ...)
@@ -64,21 +62,10 @@ local function with_capture(options, callback)
     loader.with_globals(globals, function()
         local addon, ns = loader.load_module("Core/Namespace.lua", {})
         addon.db = { enableChatLogging = true }
-        loader.load_module("Core/TSMRealmData.lua", addon, ns)
-        GeneralGoldTrackerCatalogNamespace = ns
-        C_AddOns.LoadAddOn = function(name)
-            loads = loads + 1
-            if options.uninstalled then return nil, "MISSING" end
-            if options.noTSM then return nil, "DEP_MISSING" end
-            local root = "Data/" .. name .. "/"
-            local private = {}
-            for line in io.lines(root .. name .. ".toc") do
-                line = line:gsub("\r", "")
-                if line:match("%.lua$") then assert(loadfile(root .. line))(name, private) end
-            end
-            return true
+        C_AddOns.LoadAddOn = function() error("Realm support must be bundled") end
+        for _, file in ipairs({ "Diagnostics.lua", "Capture.lua" }) do
+            assert(loadfile("Data/General-Gold-Tracker_TSMRealmData/" .. file))("General-Gold-Tracker", ns)
         end
-        addon:InitializeTSMRealmData()
         callback(addon, originalCalls, kept, messages, frames, {
             loads = function() return loads end,
             samples = function() return samples end,
@@ -91,7 +78,7 @@ local CURRENT = 'return {downloadTime=123,fields={"itemString","minBuyout","numA
 local MARKET = 'return {downloadTime=124,fields={"itemString","marketValue"},data={{123,UG0}}}'
 local HISTORICAL = 'return {downloadTime=125,fields={"itemString","historical"},data={{123,VVVVVVVV}}}'
 
-describe("Optional TSM realm data module", function()
+describe("Bundled TSM realm data", function()
     it("captures discarded realms while preserving TSM calls and return values", function()
         with_capture({}, function(addon, calls, kept)
             assert.equals("original result", TSM_APPHELPER_LOAD_DATA("AUCTIONDB_NON_COMMODITY_DATA", "Current", CURRENT))
@@ -186,31 +173,18 @@ describe("Optional TSM realm data module", function()
         end)
     end)
 
-    it("leaves no capture hook or payload state when disabled and keeps normal TSM pricing", function()
-        with_capture({ disabled = true }, function(addon, _, _, _, frames, runtime)
-            assert.is_nil(addon.tsmRealmCapture)
-            assert.equals(0, #frames)
-            assert.equals(0, runtime.loads())
+    it("keeps current-realm pricing usable when TSM is absent", function()
+        with_capture({ noTSM = true }, function(addon)
+            assert.is_nil(addon.tsmRealmCapture.hooked)
             assert.is_nil(addon:GetCapturedTSMRealmItemValues("Other", "123"))
             assert.same({}, addon:GetCapturedTSMRealms())
             assert.equals(0, addon:GetCapturedTSMRealmRevision())
-            assert.matches("disabled", addon:BuildTSMRealmCaptureReport())
+            assert.matches("TSM receiver unavailable", addon:BuildTSMRealmCaptureReport())
             loader.with_globals({ TSM_API = { GetCustomPriceValue = function() return 98765 end } }, function()
                 loader.load_module("Tracking/Valuation.lua", addon)
                 assert.equals(98765, addon:GetTSMItemValueForItemID("DBMarket", 123, true))
             end)
         end)
-    end)
-
-    it("keeps the main addon usable with missing module or missing TSM", function()
-        for _, options in ipairs({ { uninstalled = true }, { noTSM = true } }) do
-            with_capture(options, function(addon, _, _, _, frames)
-                assert.is_nil(addon.tsmRealmCapture)
-                assert.equals(0, #frames)
-                assert.is_nil(addon:GetCapturedTSMRealmItemValues("Other", "123"))
-                assert.matches("unavailable", addon:BuildTSMRealmCaptureReport())
-            end)
-        end
     end)
 
     it("records capture and query timings without detailed profiling or timers", function()
@@ -275,7 +249,7 @@ describe("Optional TSM realm data module", function()
     it("restores profiling before AppHelper data and saves only a boolean preference", function()
         with_capture({ native = true }, function(addon, _, _, _, frames)
             GGTTSMRealmDataSettings = { detailed = true, unwantedPayload = CURRENT }
-            frames[1].handler(nil, "ADDON_LOADED", "General-Gold-Tracker_TSMRealmData")
+            frames[1].handler(nil, "ADDON_LOADED", "General-Gold-Tracker")
             TSM_APPHELPER_LOAD_DATA("AUCTIONDB_NON_COMMODITY_DATA", "Other", CURRENT)
             assert.equals(1, addon.tsmRealmCapture.diagnostics.capture.measured)
             assert.same({ detailed = true }, GGTTSMRealmDataSettings)
